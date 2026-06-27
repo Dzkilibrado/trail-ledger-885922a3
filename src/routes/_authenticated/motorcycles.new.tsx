@@ -123,8 +123,8 @@ function NewMotorcycle() {
         <Field label="Foto principal">
           <Input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
         </Field>
-        <div className="flex gap-3">
-          <Button type="submit" className="btn-glow" disabled={loading}>{loading ? "Salvando…" : "Cadastrar moto"}</Button>
+        <div className="flex flex-wrap gap-3">
+          <Button type="submit" className="btn-glow" disabled={loading || blocked}>{loading ? "Salvando…" : "Cadastrar moto"}</Button>
           <Button type="button" variant="outline" onClick={() => navigate({ to: "/motorcycles" })}>Cancelar</Button>
         </div>
       </form>
