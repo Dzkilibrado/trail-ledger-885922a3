@@ -161,7 +161,7 @@ function PublicCert() {
         <section className="mt-6 surface-elevated overflow-hidden rounded-3xl">
           <div className="grid gap-0 md:grid-cols-[1.4fr_1fr]">
             <div className="relative aspect-[4/3] bg-elevated md:aspect-auto">
-              {photoUrl ? (
+              {photoUrl && show("photo") ? (
                 <img src={photoUrl} alt={moto.nickname || moto.model} className="h-full w-full object-cover" />
               ) : (
                 <div className="grid h-full w-full place-items-center text-muted-foreground"><Bike className="h-16 w-16 opacity-40" /></div>
