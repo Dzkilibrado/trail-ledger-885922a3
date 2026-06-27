@@ -65,6 +65,23 @@ export function NewEventDialog({ moto }: { moto: Motorcycle }) {
           product,
           brand,
         });
+
+        // Atualiza a programação correspondente (engine de regras)
+        const { data: matchingSchedules } = await supabase
+          .from("maintenance_schedules")
+          .select("id")
+          .eq("motorcycle_id", moto.id)
+          .eq("name", service);
+        if (matchingSchedules && matchingSchedules.length > 0) {
+          await supabase
+            .from("maintenance_schedules")
+            .update({
+              last_done_at: occurred_at,
+              last_done_hours: newHours,
+              last_done_km: newKm,
+            })
+            .in("id", matchingSchedules.map((s) => s.id));
+        }
       }
 
       // Attachments
