@@ -344,6 +344,8 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          plan: Database["public"]["Enums"]["plan_tier"]
+          plan_since: string
           updated_at: string
         }
         Insert: {
@@ -352,6 +354,8 @@ export type Database = {
           full_name?: string | null
           id: string
           phone?: string | null
+          plan?: Database["public"]["Enums"]["plan_tier"]
+          plan_since?: string
           updated_at?: string
         }
         Update: {
@@ -360,6 +364,8 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          plan?: Database["public"]["Enums"]["plan_tier"]
+          plan_since?: string
           updated_at?: string
         }
         Relationships: []
@@ -466,6 +472,7 @@ export type Database = {
         | "electrical"
         | "cooling"
         | "other"
+      plan_tier: "free" | "premium" | "workshop"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -621,6 +628,7 @@ export const Constants = {
         "cooling",
         "other",
       ],
+      plan_tier: ["free", "premium", "workshop"],
     },
   },
 } as const
