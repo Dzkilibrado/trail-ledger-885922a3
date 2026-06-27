@@ -4,10 +4,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { StoragePhoto } from "@/components/StoragePhoto";
 import { EventTypeIcon } from "@/components/EventTypeIcon";
 import { NewEventDialog } from "@/components/NewEventDialog";
+import { ScheduleManager } from "@/components/ScheduleManager";
+import { HealthPanel } from "@/components/HealthPanel";
+import { ConservationCard } from "@/components/ConservationCard";
 import { brl, EVENT_TYPE_LABEL, formatDate } from "@/lib/trailbook";
 import { Button } from "@/components/ui/button";
-import { Trash2, QrCode } from "lucide-react";
+import { Trash2, QrCode, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
 import { toast } from "sonner";
+import { priorityList } from "@/lib/maintenance-engine";
+import { computeConservation, categoryHealth, docsHealth, historyHealth } from "@/lib/conservation";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id")({
   head: () => ({ meta: [{ title: "Moto — TrailBook" }] }),
@@ -37,6 +43,22 @@ function MotoDetail() {
     },
   });
 
+  const schedules = useQuery({
+    queryKey: ["schedules", id],
+    queryFn: async () => (await supabase.from("maintenance_schedules").select("*").eq("motorcycle_id", id)).data ?? [],
+  });
+
+  const attachments = useQuery({
+    queryKey: ["attachments", id],
+    queryFn: async () => {
+      const ids = (events.data ?? []).map((e) => e.id);
+      if (ids.length === 0) return [];
+      const { data } = await supabase.from("event_attachments").select("*").in("event_id", ids);
+      return data ?? [];
+    },
+    enabled: !!events.data,
+  });
+
   async function genCertificate() {
     const { data, error } = await supabase.from("certificates").insert({ motorcycle_id: id }).select("public_token").single();
     if (error) return toast.error(error.message);
@@ -60,6 +82,26 @@ function MotoDetail() {
   const m = moto.data;
   const totalCost = events.data?.reduce((s, e) => s + (Number(e.cost) || 0), 0) ?? 0;
 
+  const statuses = (schedules.data && events.data)
+    ? priorityList(schedules.data, m, events.data)
+    : [];
+  const workshopEventIds = new Set((events.data ?? []).filter((e) => e.workshop_id).map((e) => e.id));
+  const conservation = computeConservation({
+    events: events.data ?? [],
+    attachments: attachments.data ?? [],
+    statuses,
+    workshopEventIds,
+    hasDocs: { plate: !!m.plate, renavam: !!m.renavam, chassis: !!m.chassis },
+  });
+  const health = [
+    ...categoryHealth(statuses),
+    docsHealth({ plate: !!m.plate, renavam: !!m.renavam, chassis: !!m.chassis }),
+    historyHealth(events.data ?? []),
+  ];
+
+  // Persiste o score recalculado quando muda
+  useSyncConservation(m.id, m.conservation_score, conservation.score);
+
   return (
     <div className="space-y-8">
       <div className="surface-elevated overflow-hidden rounded-2xl">
@@ -72,7 +114,7 @@ function MotoDetail() {
                 <h1 className="font-display text-3xl font-bold">{m.nickname || m.model}</h1>
                 <div className="mt-1 text-sm text-muted-foreground">{m.model}{m.displacement ? ` · ${m.displacement}cc` : ""}{m.plate ? ` · ${m.plate}` : ""}</div>
               </div>
-              <div className="rounded-full bg-primary/15 px-4 py-1.5 text-sm font-semibold text-primary">{m.conservation_score}/100 conservação</div>
+              <div className="rounded-full bg-primary/15 px-4 py-1.5 text-sm font-semibold text-primary">{conservation.score}/100 · Nota {conservation.grade}</div>
             </div>
             <div className="grid grid-cols-3 gap-3">
               <Stat label="Horas" value={`${Number(m.hours_total).toFixed(1)} h`} />
@@ -81,12 +123,62 @@ function MotoDetail() {
             </div>
             <div className="flex flex-wrap gap-2">
               <NewEventDialog moto={m} />
+              <ScheduleManager motoId={m.id} />
               <Button variant="outline" onClick={genCertificate}><QrCode className="h-4 w-4" /> Gerar certificado</Button>
               <Button variant="ghost" className="text-destructive hover:text-destructive" onClick={removeMoto}><Trash2 className="h-4 w-4" /> Excluir</Button>
             </div>
           </div>
         </div>
       </div>
+
+      <section className="space-y-3">
+        <h2 className="font-display text-lg font-bold">Painel de saúde</h2>
+        <HealthPanel items={health} />
+      </section>
+
+      <section className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+        <div className="space-y-3">
+          <h2 className="font-display text-lg font-bold">Próximas manutenções</h2>
+          {statuses.length === 0 ? (
+            <div className="surface-elevated rounded-2xl p-6 text-sm text-muted-foreground">
+              Nenhuma programação ainda. Use <strong>Programações</strong> para aplicar o catálogo recomendado.
+            </div>
+          ) : (
+            <ul className="space-y-2">
+              {statuses.slice(0, 6).map((s) => {
+                const Icon = s.status === "overdue" ? AlertTriangle : s.status === "due" ? AlertTriangle : s.status === "soon" ? Clock : CheckCircle2;
+                const color = s.status === "overdue" ? "text-destructive" : s.status === "due" ? "text-amber-400" : s.status === "soon" ? "text-amber-300" : "text-emerald-400";
+                return (
+                  <li key={s.schedule.id} className="surface-elevated rounded-2xl p-3">
+                    <div className="flex items-start gap-3">
+                      <Icon className={`mt-0.5 h-4 w-4 ${color}`} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <div className="font-medium">{s.label}</div>
+                          <div className={`text-xs ${color}`}>{s.status === "overdue" ? "Vencida" : s.status === "due" ? "Vence agora" : s.status === "soon" ? "Em breve" : "Em dia"}</div>
+                        </div>
+                        <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
+                          {s.remaining.hours != null && <span>{s.remaining.hours.toFixed(1)} h restantes</span>}
+                          {s.remaining.km != null && <span>{s.remaining.km.toFixed(0)} km restantes</span>}
+                          {s.remaining.days != null && <span>{Math.round(s.remaining.days)} dias restantes</span>}
+                          {s.estimatedDueDate && <span>· estimado {s.estimatedDueDate.toLocaleDateString("pt-BR")}</span>}
+                        </div>
+                        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                          <div
+                            className={`h-full ${s.status === "overdue" || s.status === "due" ? "bg-destructive" : s.status === "soon" ? "bg-amber-400" : "bg-emerald-400"}`}
+                            style={{ width: `${Math.min(100, s.progress * 100)}%` }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+        <ConservationCard result={conservation} />
+      </section>
 
       <section>
         <h2 className="mb-4 font-display text-lg font-bold">Linha do tempo</h2>
