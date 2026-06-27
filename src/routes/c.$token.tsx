@@ -108,7 +108,6 @@ function PublicCert() {
   const photosCount = data.attachments.filter((a) => a.kind === "photo").length;
   const invoicesCount = data.attachments.filter((a) => a.kind === "invoice").length;
   const documentsCount = data.attachments.filter((a) => a.kind === "document").length;
-  const ownerEvents = data.events.filter((e) => e.type === "ownership_transfer");
   const evidenceVisible = show("photos") || show("invoices") || show("documents") || show("workshop");
 
   async function share() {
