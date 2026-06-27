@@ -69,7 +69,7 @@ function AuthedLayout() {
             {NAV.find((n) => pathname.startsWith(n.to))?.label ?? "TrailBook"}
           </div>
           <Link to="/motorcycles/new">
-            <Button size="sm" className="btn-glow"><Plus className="h-4 w-4" /> Nova moto</Button>
+            <Button size="sm" className="btn-glow"><Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nova</span> moto</Button>
           </Link>
         </header>
         <main className="flex-1 px-4 py-6 md:px-8 md:py-8">

@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { formatDate } from "@/lib/trailbook";
 import { CertificateSettingsDialog } from "@/components/CertificateSettingsDialog";
 import { effectiveStatus, STATUS_LABEL, STATUS_TONE } from "@/lib/cert-sections";
+import { PageHeader } from "@/components/PageHeader";
 
 export const Route = createFileRoute("/_authenticated/certificates")({
   head: () => ({ meta: [{ title: "Certificados — TrailBook" }] }),
@@ -43,13 +44,10 @@ function Certificates() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-bold">Certificados digitais</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Compartilhe o histórico autorizado da sua moto via link público com QR Code.{" "}
-          <strong>Qualquer pessoa com o link pode abrir as seções que você liberar.</strong>
-        </p>
-      </div>
+      <PageHeader
+        title="Certificados digitais"
+        description="Compartilhe o histórico autorizado da sua moto via link público com QR Code. Qualquer pessoa com o link pode abrir as seções que você liberar."
+      />
       {isLoading ? (
         <div className="text-muted-foreground">Carregando…</div>
       ) : data && data.length > 0 ? (

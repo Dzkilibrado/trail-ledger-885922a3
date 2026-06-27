@@ -3,9 +3,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRightLeft, Check, X, Inbox, Send, Clock } from "lucide-react";
+import { ArrowRightLeft, Check, X, Inbox, Send, Clock, UserCircle2, Mail, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/trailbook";
+import { PageHeader } from "@/components/PageHeader";
 
 export const Route = createFileRoute("/_authenticated/transfers")({
   head: () => ({ meta: [{ title: "Transferências — TrailBook" }] }),
@@ -56,9 +57,33 @@ function TransfersPage() {
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="font-display text-2xl font-bold">Transferências de propriedade</h1>
-        <p className="text-sm text-muted-foreground">Solicitações enviadas e recebidas. O TrailBook ID e o histórico permanecem vinculados à motocicleta.</p>
+      <PageHeader
+        title="Transferências de propriedade"
+        description="O TrailBook ID e o histórico permanecem vinculados à motocicleta — não ao proprietário."
+      />
+
+      {/* How-to */}
+      <div className="grid gap-4 md:grid-cols-2">
+        <HowTo
+          icon={Send}
+          title="Para quem está vendendo"
+          steps={[
+            "Abra a moto e clique em Transferir",
+            "Informe o e-mail do comprador",
+            "Acompanhe nesta tela o status",
+            "Cancele se necessário, enquanto pendente",
+          ]}
+        />
+        <HowTo
+          icon={Inbox}
+          title="Para quem está comprando"
+          steps={[
+            "Receba a solicitação aqui em Recebidas",
+            "Revise dados, histórico e índice de conservação",
+            "Aceite ou recuse a transferência",
+            "Aceita: a moto entra na sua garagem com todo o histórico",
+          ]}
+        />
       </div>
 
       <Section icon={Inbox} title="Recebidas" desc="Motos sendo transferidas para você">
@@ -83,11 +108,35 @@ function TransfersPage() {
                 <Button size="sm" variant="outline" onClick={() => cancel(t.id)}><X className="h-4 w-4" /> Cancelar</Button>
               )}
               {t.status === "pending" && !t.to_user_id && (
-                <span className="text-xs text-amber-400 flex items-center gap-1"><Clock className="h-3 w-3" /> Aguardando o destinatário criar conta com {t.to_email}</span>
+                <span className="text-xs text-amber-400 flex items-center gap-1"><Mail className="h-3 w-3" /> Aguardando {t.to_email} criar conta no TrailBook</span>
               )}
             </Card>
           ))}
       </Section>
+
+      <div className="surface-elevated rounded-2xl border border-dashed border-border p-4 text-xs text-muted-foreground">
+        <ShieldCheck className="mb-1 inline h-3.5 w-3.5 text-primary" /> A transferência só é efetivada quando o destinatário aprova.
+        O histórico de proprietários é registrado em auditoria imutável.
+      </div>
+    </div>
+  );
+}
+
+function HowTo({ icon: Icon, title, steps }: { icon: any; title: string; steps: string[] }) {
+  return (
+    <div className="surface-elevated rounded-2xl p-5">
+      <div className="flex items-center gap-2">
+        <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary/15 text-primary"><Icon className="h-4 w-4" /></div>
+        <h2 className="font-display font-bold">{title}</h2>
+      </div>
+      <ol className="mt-3 space-y-1.5 text-sm">
+        {steps.map((s, i) => (
+          <li key={i} className="flex gap-2 text-muted-foreground">
+            <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-primary/10 text-[10px] font-bold text-primary">{i + 1}</span>
+            <span>{s}</span>
+          </li>
+        ))}
+      </ol>
     </div>
   );
 }
