@@ -8,7 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MAINTENANCE_PRESETS } from "@/lib/maintenance-presets";
 import { MAINT_CATEGORY_LABEL, type MaintenanceCategory } from "@/lib/trailbook";
-import { Settings2, Trash2, Plus } from "lucide-react";
+import { Settings2, Plus } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 export function ScheduleManager({ motoId }: { motoId: string }) {
@@ -69,10 +71,10 @@ export function ScheduleManager({ motoId }: { motoId: string }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="outline"><Settings2 className="h-4 w-4" /> Programações</Button>
+        <Button variant="outline"><Settings2 className="h-4 w-4" /> Plano de manutenção</Button>
       </DialogTrigger>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader><DialogTitle>Programação de manutenções</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>Plano de manutenção</DialogTitle></DialogHeader>
 
         <section className="space-y-3">
           <h3 className="text-xs uppercase tracking-widest text-muted-foreground">Aplicar do catálogo</h3>
@@ -122,7 +124,7 @@ export function ScheduleManager({ motoId }: { motoId: string }) {
               <div className="space-y-1.5"><Label className="text-xs">A cada (km)</Label><Input name="interval_km" type="number" /></div>
               <div className="space-y-1.5"><Label className="text-xs">A cada (dias)</Label><Input name="interval_days" type="number" /></div>
             </div>
-            <Button type="submit" className="sm:col-span-2 btn-glow"><Plus className="h-4 w-4" /> Adicionar</Button>
+          <Button type="submit" className="sm:col-span-2 btn-glow"><Plus className="h-4 w-4" /> Adicionar programação</Button>
           </form>
         </section>
 
@@ -139,7 +141,27 @@ export function ScheduleManager({ motoId }: { motoId: string }) {
                       {[s.interval_hours && `${s.interval_hours}h`, s.interval_km && `${s.interval_km}km`, s.interval_days && `${s.interval_days}d`].filter(Boolean).join(" · ")}
                     </div>
                   </div>
-                  <button onClick={() => remove(s.id)} className="text-destructive" aria-label="Remover"><Trash2 className="h-4 w-4" /></button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <button className="text-destructive hover:opacity-80" aria-label="Excluir programação">
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Excluir esta programação de manutenção?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          A programação <strong>{s.name}</strong> será removida. Esta ação <strong>não afeta a motocicleta nem o histórico</strong>.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => remove(s.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          Excluir programação
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </li>
               ))}
             </ul>
