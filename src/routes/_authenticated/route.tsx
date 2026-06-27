@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect, Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, LayoutDashboard, Calendar, DollarSign, QrCode, Building2, LogOut, Plus, Menu, X, Crown } from "lucide-react";
+import { Bike, LayoutDashboard, Calendar, DollarSign, QrCode, Building2, LogOut, Plus, Menu, X, Crown, ArrowRightLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -24,6 +24,7 @@ const NAV = [
   { to: "/workshops", label: "Oficinas", icon: Building2 },
   { to: "/financial", label: "Financeiro", icon: DollarSign },
   { to: "/certificates", label: "Certificados", icon: QrCode },
+  { to: "/transfers", label: "Transferências", icon: ArrowRightLeft },
   { to: "/plans", label: "Planos", icon: Crown },
 ] as const;
 

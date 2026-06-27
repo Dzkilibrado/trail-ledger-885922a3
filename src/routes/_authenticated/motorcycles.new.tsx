@@ -69,7 +69,7 @@ function NewMotorcycle() {
         ...parsed.data,
         owner_id: uid,
         main_photo_url,
-      }).select("id").single();
+      } as never).select("id").single();
       if (error) throw error;
       toast.success("Moto cadastrada!");
       navigate({ to: "/motorcycles/$id", params: { id: data.id } });

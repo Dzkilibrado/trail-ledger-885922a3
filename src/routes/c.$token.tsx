@@ -12,6 +12,7 @@ import { priorityList } from "@/lib/maintenance-engine";
 import { computeConservation, categoryHealth, docsHealth, historyHealth } from "@/lib/conservation";
 import { generateCertificatePdf } from "@/lib/cert-pdf";
 import { isAllowed, type CertSectionKey } from "@/lib/cert-sections";
+import { OwnershipTimeline } from "@/components/OwnershipTimeline";
 
 export const Route = createFileRoute("/c/$token")({
   head: () => ({ meta: [{ title: "Certificado TrailBook" }] }),
@@ -33,7 +34,8 @@ type CertPayload = {
   events: EventRow[];
   schedules: Database["public"]["Tables"]["maintenance_schedules"]["Row"][];
   attachments: { id: string; event_id: string; bucket: string; storage_path: string; kind: string; caption: string | null }[];
-  workshops: { id: string; name: string; city: string | null; verified: boolean }[];
+  workshops: { id: string; name: string; city: string | null; verified: boolean; verified_label?: string | null }[];
+  ownership?: { id: string; started_at: string; ended_at: string | null; method: "creation" | "transfer" | "import"; owner_name: string | null }[];
 };
 
 function PublicCert() {
@@ -106,7 +108,6 @@ function PublicCert() {
   const photosCount = data.attachments.filter((a) => a.kind === "photo").length;
   const invoicesCount = data.attachments.filter((a) => a.kind === "invoice").length;
   const documentsCount = data.attachments.filter((a) => a.kind === "document").length;
-  const ownerEvents = data.events.filter((e) => e.type === "ownership_transfer");
   const evidenceVisible = show("photos") || show("invoices") || show("documents") || show("workshop");
 
   async function share() {
@@ -175,6 +176,11 @@ function PublicCert() {
                 <div className="text-xs uppercase tracking-widest text-muted-foreground">{moto.brand}</div>
                 <h1 className="font-display text-3xl font-bold leading-tight">{moto.nickname || moto.model}</h1>
                 <p className="text-sm text-muted-foreground">{moto.model} · {moto.year_model ?? "—"}{moto.displacement ? ` · ${moto.displacement}cc` : ""}</p>
+                {(moto as any).trailbook_id ? (
+                  <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/5 px-3 py-1.5 font-mono text-[11px] font-bold tracking-wider text-primary">
+                    <ShieldCheck className="h-3 w-3" /> {(moto as any).trailbook_id}
+                  </div>
+                ) : null}
                 {show("basic") ? (
                   <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
                     <KV k="Placa" v={moto.plate ?? "—"} />
@@ -311,18 +317,10 @@ function PublicCert() {
         {show("owners") ? (
           <section className="mt-6 surface-elevated rounded-3xl p-6">
             <h2 className="font-display text-lg font-bold">Histórico de proprietários</h2>
-            {ownerEvents.length === 0 ? (
-              <p className="mt-4 text-sm text-muted-foreground">Sem transferências registradas.</p>
-            ) : (
-              <ul className="mt-4 space-y-2">
-                {ownerEvents.map((e) => (
-                  <li key={e.id} className="rounded-xl border border-border bg-card px-3 py-2 text-sm">
-                    <div className="font-medium">{e.title || "Transferência de titularidade"}</div>
-                    <div className="text-xs text-muted-foreground">{formatDate(e.occurred_at)}</div>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <p className="mt-1 text-xs text-muted-foreground">Linha do tempo da titularidade. Nomes são preservados em anonimato no link público.</p>
+            <div className="mt-4">
+              <OwnershipTimeline entries={data.ownership ?? []} anonymize />
+            </div>
           </section>
         ) : null}
 
