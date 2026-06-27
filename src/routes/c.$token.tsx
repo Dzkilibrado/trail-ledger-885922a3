@@ -136,18 +136,18 @@ function PublicCert() {
     <div className="min-h-screen surface-hero">
       <div className="container mx-auto max-w-5xl px-4 py-8 sm:py-12">
         {/* Header */}
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:justify-between">
+          <div className="flex min-w-0 items-center gap-2">
             <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground"><Bike className="h-5 w-5" /></div>
-            <div>
-              <div className="font-display text-lg font-bold leading-none">TrailBook</div>
+            <div className="min-w-0">
+              <div className="truncate font-display text-lg font-bold leading-none">TrailBook</div>
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Prontuário digital</div>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(publicUrl); toast.success("Link copiado"); }}><Copy className="h-4 w-4" /> Copiar link</Button>
-            <Button variant="outline" size="sm" onClick={share}><Share2 className="h-4 w-4" /> Compartilhar</Button>
-            <Button size="sm" onClick={downloadPdf}><Download className="h-4 w-4" /> Baixar PDF</Button>
+          <div className="col-span-2 flex flex-wrap justify-end gap-2 sm:col-span-1">
+            <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(publicUrl); toast.success("Link copiado"); }}><Copy className="h-4 w-4" /> <span className="hidden sm:inline">Copiar link</span></Button>
+            <Button variant="outline" size="sm" onClick={share}><Share2 className="h-4 w-4" /> <span className="hidden sm:inline">Compartilhar</span></Button>
+            <Button size="sm" onClick={downloadPdf}><Download className="h-4 w-4" /> <span className="hidden sm:inline">Baixar </span>PDF</Button>
           </div>
         </header>
 
