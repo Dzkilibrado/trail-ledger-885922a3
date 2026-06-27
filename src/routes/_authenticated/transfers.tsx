@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRightLeft, Check, X, Inbox, Send, Clock, UserCircle2, Mail, ShieldCheck } from "lucide-react";
+import { ArrowRightLeft, Check, X, Inbox, Send, Mail, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/trailbook";
 import { PageHeader } from "@/components/PageHeader";
