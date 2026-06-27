@@ -1,0 +1,125 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { ArrowRightLeft, Check, X, Inbox, Send, Clock } from "lucide-react";
+import { toast } from "sonner";
+import { formatDate } from "@/lib/trailbook";
+
+export const Route = createFileRoute("/_authenticated/transfers")({
+  head: () => ({ meta: [{ title: "Transferências — TrailBook" }] }),
+  component: TransfersPage,
+});
+
+const STATUS_TONE: Record<string, string> = {
+  pending: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+  approved: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+  rejected: "bg-destructive/15 text-destructive border-destructive/30",
+  cancelled: "bg-muted text-muted-foreground border-border",
+};
+const STATUS_LABEL: Record<string, string> = { pending: "Pendente", approved: "Aprovada", rejected: "Recusada", cancelled: "Cancelada" };
+
+function TransfersPage() {
+  const qc = useQueryClient();
+  const me = useQuery({ queryKey: ["me"], queryFn: async () => (await supabase.auth.getUser()).data.user });
+
+  const transfers = useQuery({
+    queryKey: ["transfers"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ownership_transfers")
+        .select("*, motorcycles(id, brand, model, nickname, trailbook_id)")
+        .order("requested_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const uid = me.data?.id;
+  const incoming = (transfers.data ?? []).filter((t: any) => t.to_user_id === uid);
+  const outgoing = (transfers.data ?? []).filter((t: any) => t.from_user_id === uid);
+
+  async function respond(id: string, approve: boolean) {
+    const { error } = await supabase.rpc("respond_ownership_transfer", { _transfer_id: id, _approve: approve } as never);
+    if (error) return toast.error(error.message);
+    toast.success(approve ? "Transferência aprovada" : "Transferência recusada");
+    qc.invalidateQueries({ queryKey: ["transfers"] });
+    qc.invalidateQueries({ queryKey: ["motorcycles"] });
+  }
+  async function cancel(id: string) {
+    const { error } = await supabase.rpc("cancel_ownership_transfer", { _transfer_id: id } as never);
+    if (error) return toast.error(error.message);
+    toast.success("Solicitação cancelada");
+    qc.invalidateQueries({ queryKey: ["transfers"] });
+  }
+
+  return (
+    <div className="space-y-8">
+      <div>
+        <h1 className="font-display text-2xl font-bold">Transferências de propriedade</h1>
+        <p className="text-sm text-muted-foreground">Solicitações enviadas e recebidas. O TrailBook ID e o histórico permanecem vinculados à motocicleta.</p>
+      </div>
+
+      <Section icon={Inbox} title="Recebidas" desc="Motos sendo transferidas para você">
+        {incoming.length === 0 ? <Empty>Nenhuma solicitação recebida.</Empty> :
+          incoming.map((t: any) => (
+            <Card key={t.id} t={t}>
+              {t.status === "pending" && (
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={() => respond(t.id, true)}><Check className="h-4 w-4" /> Aprovar</Button>
+                  <Button size="sm" variant="outline" onClick={() => respond(t.id, false)}><X className="h-4 w-4" /> Recusar</Button>
+                </div>
+              )}
+            </Card>
+          ))}
+      </Section>
+
+      <Section icon={Send} title="Enviadas" desc="Solicitações que você criou">
+        {outgoing.length === 0 ? <Empty>Nenhuma solicitação enviada.</Empty> :
+          outgoing.map((t: any) => (
+            <Card key={t.id} t={t}>
+              {t.status === "pending" && (
+                <Button size="sm" variant="outline" onClick={() => cancel(t.id)}><X className="h-4 w-4" /> Cancelar</Button>
+              )}
+              {t.status === "pending" && !t.to_user_id && (
+                <span className="text-xs text-amber-400 flex items-center gap-1"><Clock className="h-3 w-3" /> Aguardando o destinatário criar conta com {t.to_email}</span>
+              )}
+            </Card>
+          ))}
+      </Section>
+    </div>
+  );
+}
+
+function Section({ icon: Icon, title, desc, children }: { icon: any; title: string; desc: string; children: React.ReactNode }) {
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center gap-2"><Icon className="h-4 w-4 text-primary" /><h2 className="font-display text-lg font-bold">{title}</h2></div>
+      <p className="text-xs text-muted-foreground">{desc}</p>
+      <div className="space-y-2">{children}</div>
+    </section>
+  );
+}
+
+function Card({ t, children }: { t: any; children: React.ReactNode }) {
+  const moto = t.motorcycles;
+  return (
+    <div className="surface-elevated flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <ArrowRightLeft className="h-4 w-4 text-muted-foreground" />
+          <span className="font-semibold">{moto?.nickname || moto?.model || "Moto"}</span>
+          {moto?.trailbook_id && <code className="rounded bg-elevated px-1.5 py-0.5 font-mono text-[10px]">{moto.trailbook_id}</code>}
+          <Badge variant="outline" className={STATUS_TONE[t.status]}>{STATUS_LABEL[t.status]}</Badge>
+        </div>
+        <div className="mt-1 text-xs text-muted-foreground">Para {t.to_email} · {formatDate(t.requested_at)}{t.message ? ` · "${t.message}"` : ""}</div>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">{children}</div>
+    </div>
+  );
+}
+
+function Empty({ children }: { children: React.ReactNode }) {
+  return <div className="surface-elevated rounded-2xl p-6 text-center text-sm text-muted-foreground">{children}</div>;
+}
