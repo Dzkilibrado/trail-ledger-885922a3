@@ -88,7 +88,7 @@ function PublicCert() {
 
   const moto = data.motorcycle;
   const sb = makePublicClient();
-  const photoUrl = moto.photo_path ? sb.storage.from("motorcycle-photos").getPublicUrl(moto.photo_path).data.publicUrl : null;
+  const photoUrl = moto.main_photo_url ? sb.storage.from("motorcycle-photos").getPublicUrl(moto.main_photo_url).data.publicUrl : null;
   const upcoming = computed.statuses.filter((s) => s.status !== "ok").slice(0, 6);
   const lastMaint = data.events.filter((e) => e.type === "maintenance" || e.type === "revision").slice(0, 6);
   const photosCount = data.attachments.filter((a) => a.kind === "image" || a.kind === "photo").length;
@@ -163,8 +163,8 @@ function PublicCert() {
                 <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
                   <KV k="Placa" v={moto.plate ?? "—"} />
                   <KV k="Chassi" v={moto.chassis ?? "—"} />
-                  <KV k="Cor" v={moto.color ?? "—"} />
-                  <KV k="Cidade" v={moto.city ?? "—"} />
+                  <KV k="Renavam" v={moto.renavam ?? "—"} />
+                  <KV k="Ano" v={String(moto.year_model ?? "—")} />
                 </div>
               </div>
               <div className="mt-6 grid grid-cols-3 gap-3 text-center">
