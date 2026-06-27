@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      audit_log: {
+        Row: {
+          action: Database["public"]["Enums"]["audit_action"]
+          actor_id: string | null
+          created_at: string
+          id: string
+          motorcycle_id: string | null
+          new_values: Json | null
+          old_values: Json | null
+          record_id: string
+          table_name: string
+        }
+        Insert: {
+          action: Database["public"]["Enums"]["audit_action"]
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          motorcycle_id?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id: string
+          table_name: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["audit_action"]
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          motorcycle_id?: string | null
+          new_values?: Json | null
+          old_values?: Json | null
+          record_id?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
       certificates: {
         Row: {
           allowed_sections: Json
@@ -292,6 +328,7 @@ export type Database = {
           owner_id: string
           plate: string | null
           renavam: string | null
+          trailbook_id: string
           updated_at: string
           year_make: number | null
           year_model: number | null
@@ -313,6 +350,7 @@ export type Database = {
           owner_id: string
           plate?: string | null
           renavam?: string | null
+          trailbook_id: string
           updated_at?: string
           year_make?: number | null
           year_model?: number | null
@@ -334,11 +372,106 @@ export type Database = {
           owner_id?: string
           plate?: string | null
           renavam?: string | null
+          trailbook_id?: string
           updated_at?: string
           year_make?: number | null
           year_model?: number | null
         }
         Relationships: []
+      }
+      ownership_history: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          id: string
+          method: Database["public"]["Enums"]["ownership_method"]
+          motorcycle_id: string
+          notes: string | null
+          owner_id: string
+          started_at: string
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          method?: Database["public"]["Enums"]["ownership_method"]
+          motorcycle_id: string
+          notes?: string | null
+          owner_id: string
+          started_at?: string
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          method?: Database["public"]["Enums"]["ownership_method"]
+          motorcycle_id?: string
+          notes?: string | null
+          owner_id?: string
+          started_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ownership_history_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ownership_transfers: {
+        Row: {
+          created_at: string
+          from_user_id: string
+          id: string
+          message: string | null
+          motorcycle_id: string
+          requested_at: string
+          resolved_at: string | null
+          resolved_by: string | null
+          status: Database["public"]["Enums"]["transfer_status"]
+          to_email: string
+          to_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          from_user_id: string
+          id?: string
+          message?: string | null
+          motorcycle_id: string
+          requested_at?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["transfer_status"]
+          to_email: string
+          to_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          from_user_id?: string
+          id?: string
+          message?: string | null
+          motorcycle_id?: string
+          requested_at?: string
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["transfer_status"]
+          to_email?: string
+          to_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ownership_transfers_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -406,6 +539,8 @@ export type Database = {
           state: string | null
           updated_at: string
           verified: boolean
+          verified_at: string | null
+          verified_label: string | null
         }
         Insert: {
           city?: string | null
@@ -418,6 +553,8 @@ export type Database = {
           state?: string | null
           updated_at?: string
           verified?: boolean
+          verified_at?: string | null
+          verified_label?: string | null
         }
         Update: {
           city?: string | null
@@ -430,6 +567,8 @@ export type Database = {
           state?: string | null
           updated_at?: string
           verified?: boolean
+          verified_at?: string | null
+          verified_label?: string | null
         }
         Relationships: []
       }
@@ -438,6 +577,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      cancel_ownership_transfer: {
+        Args: { _transfer_id: string }
+        Returns: undefined
+      }
       get_public_certificate: { Args: { _token: string }; Returns: Json }
       has_role: {
         Args: {
@@ -447,10 +590,19 @@ export type Database = {
         Returns: boolean
       }
       is_moto_owner: { Args: { _moto_id: string }; Returns: boolean }
+      request_ownership_transfer: {
+        Args: { _message: string; _moto_id: string; _to_email: string }
+        Returns: string
+      }
+      respond_ownership_transfer: {
+        Args: { _approve: boolean; _transfer_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "owner" | "mechanic" | "admin"
       attachment_kind: "photo" | "video" | "document" | "invoice"
+      audit_action: "insert" | "update" | "delete"
       control_type: "hours" | "km" | "both"
       event_type:
         | "usage"
@@ -475,7 +627,9 @@ export type Database = {
         | "electrical"
         | "cooling"
         | "other"
+      ownership_method: "creation" | "transfer" | "import"
       plan_tier: "free" | "premium" | "workshop"
+      transfer_status: "pending" | "approved" | "rejected" | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -605,6 +759,7 @@ export const Constants = {
     Enums: {
       app_role: ["owner", "mechanic", "admin"],
       attachment_kind: ["photo", "video", "document", "invoice"],
+      audit_action: ["insert", "update", "delete"],
       control_type: ["hours", "km", "both"],
       event_type: [
         "usage",
@@ -631,7 +786,9 @@ export const Constants = {
         "cooling",
         "other",
       ],
+      ownership_method: ["creation", "transfer", "import"],
       plan_tier: ["free", "premium", "workshop"],
+      transfer_status: ["pending", "approved", "rejected", "cancelled"],
     },
   },
 } as const
