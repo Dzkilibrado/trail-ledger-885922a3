@@ -245,8 +245,9 @@ function Stat({ label, value }: { label: string; value: string }) {
   );
 }
 
-function useSyncConservation(motoId: string, current: number, computed: number) {
+function useSyncConservation(motoId: string | null, current: number, computed: number) {
   useEffect(() => {
+    if (!motoId) return;
     if (computed !== current) {
       supabase.from("motorcycles").update({ conservation_score: computed }).eq("id", motoId).then();
     }
