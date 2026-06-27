@@ -229,3 +229,11 @@ function Stat({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+function useSyncConservation(motoId: string, current: number, computed: number) {
+  useEffect(() => {
+    if (computed !== current) {
+      supabase.from("motorcycles").update({ conservation_score: computed }).eq("id", motoId).then();
+    }
+  }, [motoId, current, computed]);
+}
