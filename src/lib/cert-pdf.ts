@@ -65,10 +65,10 @@ export async function generateCertificatePdf(input: CertPdfInput) {
   doc.setFont("helvetica", "normal");
   doc.setFontSize(11);
   doc.setTextColor(...MUTED);
-  doc.text(`${moto.brand} ${moto.model} · ${moto.year ?? "—"}`, tx, y + 36);
-  if (moto.plate || moto.chassis_number) {
+  doc.text(`${moto.brand} ${moto.model} · ${moto.year_model ?? "—"}`, tx, y + 36);
+  if (moto.plate || moto.chassis) {
     doc.setFontSize(9);
-    doc.text(`Placa: ${moto.plate || "—"}   Chassi: ${moto.chassis_number || "—"}`, tx, y + 52);
+    doc.text(`Placa: ${moto.plate || "—"}   Chassi: ${moto.chassis || "—"}`, tx, y + 52);
   }
 
   // Quick stats
@@ -162,9 +162,9 @@ export async function generateCertificatePdf(input: CertPdfInput) {
     if (y > H - 60) { doc.addPage(); y = M; }
     doc.text(formatDate(e.occurred_at), M, y);
     doc.text(EVENT_TYPE_LABEL[e.type] ?? e.type, M + 70, y);
-    const desc = (e.title || e.notes || "").slice(0, 60);
+    const desc = (e.title || e.description || "").slice(0, 60);
     doc.text(desc, M + 160, y);
-    doc.text(brl(e.cost_brl ? Number(e.cost_brl) : null), W - M, y, { align: "right" });
+    doc.text(brl(e.cost != null ? Number(e.cost) : null), W - M, y, { align: "right" });
     y += 13;
   }
 
