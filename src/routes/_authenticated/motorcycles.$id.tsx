@@ -9,7 +9,7 @@ import { HealthPanel } from "@/components/HealthPanel";
 import { ConservationCard } from "@/components/ConservationCard";
 import { brl, EVENT_TYPE_LABEL, formatDate } from "@/lib/trailbook";
 import { Button } from "@/components/ui/button";
-import { Trash2, QrCode, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
+import { Trash2, QrCode, AlertTriangle, CheckCircle2, Clock, ArrowRightLeft, Copy, History } from "lucide-react";
 import { toast } from "sonner";
 import { priorityList } from "@/lib/maintenance-engine";
 import { computeConservation, categoryHealth, docsHealth, historyHealth } from "@/lib/conservation";
@@ -17,6 +17,8 @@ import { useEffect } from "react";
 import { usePlan } from "@/hooks/usePlan";
 import { canCreateCertificate } from "@/lib/plans";
 import { CertificateSettingsDialog } from "@/components/CertificateSettingsDialog";
+import { TransferOwnershipDialog } from "@/components/TransferOwnershipDialog";
+import { OwnershipTimeline } from "@/components/OwnershipTimeline";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id")({
   head: () => ({ meta: [{ title: "Moto — TrailBook" }] }),
@@ -61,6 +63,38 @@ function MotoDetail() {
       return data ?? [];
     },
     enabled: !!events.data,
+  });
+
+  const ownership = useQuery({
+    queryKey: ["ownership", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ownership_history")
+        .select("id, owner_id, started_at, ended_at, method, profiles:owner_id(full_name)")
+        .eq("motorcycle_id", id)
+        .order("started_at", { ascending: true });
+      if (error) throw error;
+      return (data ?? []).map((r: any) => ({
+        id: r.id, started_at: r.started_at, ended_at: r.ended_at, method: r.method,
+        owner_name: r.profiles?.full_name ?? null,
+      }));
+    },
+  });
+
+  const pendingTransfer = useQuery({
+    queryKey: ["transfers-for-moto", id],
+    queryFn: async () => {
+      const { data } = await supabase.from("ownership_transfers").select("*").eq("motorcycle_id", id).eq("status", "pending").maybeSingle();
+      return data;
+    },
+  });
+
+  const audit = useQuery({
+    queryKey: ["audit", id],
+    queryFn: async () => {
+      const { data } = await supabase.from("audit_log").select("*").eq("motorcycle_id", id).order("created_at", { ascending: false }).limit(20);
+      return data ?? [];
+    },
   });
 
   async function checkCertLimit(e: React.MouseEvent) {
@@ -133,6 +167,14 @@ function MotoDetail() {
                 <div className="text-xs uppercase tracking-widest text-muted-foreground">{m.brand} · {m.year_model || m.year_make || ""}</div>
                 <h1 className="font-display text-3xl font-bold">{m.nickname || m.model}</h1>
                 <div className="mt-1 text-sm text-muted-foreground">{m.model}{m.displacement ? ` · ${m.displacement}cc` : ""}{m.plate ? ` · ${m.plate}` : ""}</div>
+                <button
+                  type="button"
+                  onClick={() => { navigator.clipboard.writeText((m as any).trailbook_id ?? ""); toast.success("TrailBook ID copiado"); }}
+                  className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 font-mono text-[11px] font-bold tracking-wider text-primary hover:bg-primary/10"
+                  title="Identidade permanente da motocicleta"
+                >
+                  <Copy className="h-3 w-3" /> {(m as any).trailbook_id}
+                </button>
               </div>
               <div className="rounded-full bg-primary/15 px-4 py-1.5 text-sm font-semibold text-primary">{conservation.score}/100 · Nota {conservation.grade}</div>
             </div>
@@ -148,11 +190,24 @@ function MotoDetail() {
                 motorcycleId={m.id}
                 trigger={<Button variant="outline" onClick={checkCertLimit}><QrCode className="h-4 w-4" /> Gerar certificado</Button>}
               />
+              {pendingTransfer.data ? (
+                <Button variant="outline" disabled className="text-amber-400"><ArrowRightLeft className="h-4 w-4" /> Transferência pendente</Button>
+              ) : (
+                <TransferOwnershipDialog
+                  motorcycleId={m.id}
+                  trigger={<Button variant="outline"><ArrowRightLeft className="h-4 w-4" /> Transferir</Button>}
+                />
+              )}
               <Button variant="ghost" className="text-destructive hover:text-destructive" onClick={removeMoto}><Trash2 className="h-4 w-4" /> Excluir</Button>
             </div>
           </div>
         </div>
       </div>
+
+      <section className="space-y-3">
+        <h2 className="font-display text-lg font-bold">Histórico de proprietários</h2>
+        <OwnershipTimeline entries={ownership.data ?? []} />
+      </section>
 
       <section className="space-y-3">
         <h2 className="font-display text-lg font-bold">Painel de saúde</h2>
@@ -238,6 +293,29 @@ function MotoDetail() {
           <div className="surface-elevated rounded-2xl p-10 text-center text-sm text-muted-foreground">
             Nenhum evento registrado ainda. Clique em <strong>Novo evento</strong> para começar.
           </div>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <div className="flex items-center gap-2">
+          <History className="h-4 w-4 text-primary" />
+          <h2 className="font-display text-lg font-bold">Auditoria</h2>
+          <span className="text-xs text-muted-foreground">Registros imutáveis das últimas alterações</span>
+        </div>
+        {(audit.data ?? []).length === 0 ? (
+          <div className="surface-elevated rounded-2xl p-6 text-center text-sm text-muted-foreground">Sem alterações registradas ainda.</div>
+        ) : (
+          <ul className="surface-elevated divide-y divide-border rounded-2xl">
+            {audit.data!.map((a: any) => (
+              <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${a.action === "delete" ? "bg-destructive/15 text-destructive" : a.action === "insert" ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"}`}>{a.action}</span>
+                  <span className="font-mono text-muted-foreground">{a.table_name}</span>
+                </div>
+                <span className="text-muted-foreground">{formatDate(a.created_at)}</span>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </div>
