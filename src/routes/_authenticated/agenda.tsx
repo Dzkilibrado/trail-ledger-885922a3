@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar, AlertTriangle, Clock, CheckCircle2, EyeOff, Pause, Bike } from "lucide-react";
 import { priorityList, evaluateSchedule, usageRate, type ScheduleStatus } from "@/lib/maintenance-engine";
-import { MAINT_CATEGORY_LABEL, formatDate } from "@/lib/trailbook";
+import { MAINT_CATEGORY_LABEL, formatDate, type MaintenanceCategory } from "@/lib/trailbook";
 import { PageHeader } from "@/components/PageHeader";
 import { ScheduleActionsMenu } from "@/components/ScheduleActionsMenu";
 import { NewEventDialog } from "@/components/NewEventDialog";
@@ -202,7 +202,7 @@ function AgendaCard({ entry, onComplete }: { entry: Entry; onComplete: () => voi
               <Link to="/motorcycles/$id" params={{ id: moto.id }} className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
                 <Bike className="h-3 w-3" /> {moto.nickname || moto.model}
                 <span className="opacity-50">·</span>
-                <span>{MAINT_CATEGORY_LABEL[schedule.category]}</span>
+                <span>{MAINT_CATEGORY_LABEL[schedule.category as MaintenanceCategory]}</span>
               </Link>
             </div>
             <div className="flex items-center gap-1">
