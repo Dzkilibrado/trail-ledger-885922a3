@@ -9,7 +9,12 @@ import { HealthPanel } from "@/components/HealthPanel";
 import { ConservationCard } from "@/components/ConservationCard";
 import { brl, EVENT_TYPE_LABEL, formatDate } from "@/lib/trailbook";
 import { Button } from "@/components/ui/button";
-import { Trash2, QrCode, AlertTriangle, CheckCircle2, Clock, ArrowRightLeft, Copy, History } from "lucide-react";
+import { Trash2, QrCode, AlertTriangle, CheckCircle2, Clock, ArrowRightLeft, Copy } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
+import { useState } from "react";
+import { PageHeader } from "@/components/PageHeader";
+import { AuditSummary, AuditDialog } from "@/components/AuditDialog";
 import { toast } from "sonner";
 import { priorityList } from "@/lib/maintenance-engine";
 import { computeConservation, categoryHealth, docsHealth, historyHealth } from "@/lib/conservation";
@@ -30,6 +35,8 @@ function MotoDetail() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { plan } = usePlan();
+  const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [auditOpen, setAuditOpen] = useState(false);
 
   const moto = useQuery({
     queryKey: ["motorcycle", id],
@@ -108,9 +115,8 @@ function MotoDetail() {
   }
 
   async function removeMoto() {
-    if (!confirm("Excluir esta moto e todo o histórico?")) return;
     const { error } = await supabase.from("motorcycles").delete().eq("id", id);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Moto removida");
     navigate({ to: "/motorcycles" });
   }
@@ -158,6 +164,10 @@ function MotoDetail() {
 
   return (
     <div className="space-y-8">
+      <PageHeader
+        title={m.nickname || m.model}
+        crumbs={[{ label: "Motos", to: "/motorcycles" }, { label: m.nickname || m.model }]}
+      />
       <div className="surface-elevated overflow-hidden rounded-2xl">
         <div className="grid md:grid-cols-[280px_1fr]">
           <StoragePhoto path={m.main_photo_url} className="h-56 w-full md:h-full" />
@@ -184,7 +194,7 @@ function MotoDetail() {
               <Stat label="Investido" value={brl(totalCost)} />
             </div>
             <div className="flex flex-wrap gap-2">
-              <NewEventDialog moto={m} />
+              <NewEventDialog moto={m} triggerLabel="Registrar atividade" />
               <ScheduleManager motoId={m.id} />
               <CertificateSettingsDialog
                 motorcycleId={m.id}
@@ -198,7 +208,40 @@ function MotoDetail() {
                   trigger={<Button variant="outline"><ArrowRightLeft className="h-4 w-4" /> Transferir</Button>}
                 />
               )}
-              <Button variant="ghost" className="text-destructive hover:text-destructive" onClick={removeMoto}><Trash2 className="h-4 w-4" /> Excluir</Button>
+              <AlertDialog onOpenChange={(o) => !o && setDeleteConfirm("")}>
+                <AlertDialogTrigger asChild>
+                  <Button variant="ghost" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /> Excluir moto</Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                      <AlertTriangle className="h-5 w-5" /> Excluir esta motocicleta?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="space-y-2">
+                      <span className="block">
+                        Esta ação <strong>remove permanentemente</strong> a moto <strong>{m.nickname || m.model}</strong> e todo o seu histórico:
+                        eventos, manutenções, anexos, programações, certificados e auditoria.
+                      </span>
+                      <span className="block">
+                        O TrailBook ID <code className="font-mono">{(m as any).trailbook_id}</code> também será descontinuado.
+                        Se você está vendendo a moto, prefira <strong>Transferir</strong>.
+                      </span>
+                      <span className="mt-2 block font-medium text-foreground">Digite <code className="font-mono">EXCLUIR</code> para confirmar:</span>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <Input value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} placeholder="EXCLUIR" autoFocus />
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction
+                      disabled={deleteConfirm !== "EXCLUIR"}
+                      onClick={removeMoto}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-40"
+                    >
+                      Excluir motocicleta
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         </div>
@@ -297,25 +340,16 @@ function MotoDetail() {
       </section>
 
       <section className="space-y-3">
-        <div className="flex items-center gap-2">
-          <History className="h-4 w-4 text-primary" />
-          <h2 className="font-display text-lg font-bold">Auditoria</h2>
-          <span className="text-xs text-muted-foreground">Registros imutáveis das últimas alterações</span>
-        </div>
-        {(audit.data ?? []).length === 0 ? (
-          <div className="surface-elevated rounded-2xl p-6 text-center text-sm text-muted-foreground">Sem alterações registradas ainda.</div>
-        ) : (
-          <ul className="surface-elevated divide-y divide-border rounded-2xl">
-            {audit.data!.map((a: any) => (
-              <li key={a.id} className="flex flex-wrap items-center justify-between gap-2 px-4 py-2 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${a.action === "delete" ? "bg-destructive/15 text-destructive" : a.action === "insert" ? "bg-emerald-500/15 text-emerald-400" : "bg-amber-500/15 text-amber-400"}`}>{a.action}</span>
-                  <span className="font-mono text-muted-foreground">{a.table_name}</span>
-                </div>
-                <span className="text-muted-foreground">{formatDate(a.created_at)}</span>
-              </li>
-            ))}
-          </ul>
+        <AuditSummary rows={(audit.data ?? []) as any} onOpen={() => setAuditOpen(true)} />
+        <AuditDialog
+          rows={(audit.data ?? []) as any}
+          trigger={<button className="hidden" data-audit-trigger />}
+        />
+        {auditOpen && (
+          <AuditDialog
+            rows={(audit.data ?? []) as any}
+            trigger={<span ref={(el) => { if (el && auditOpen) { (el.parentElement?.querySelector('[data-state="closed"]') as HTMLElement | null)?.click(); setAuditOpen(false); } }} />}
+          />
         )}
       </section>
     </div>
