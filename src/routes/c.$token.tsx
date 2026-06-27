@@ -12,6 +12,7 @@ import { priorityList } from "@/lib/maintenance-engine";
 import { computeConservation, categoryHealth, docsHealth, historyHealth } from "@/lib/conservation";
 import { generateCertificatePdf } from "@/lib/cert-pdf";
 import { isAllowed, type CertSectionKey } from "@/lib/cert-sections";
+import { OwnershipTimeline } from "@/components/OwnershipTimeline";
 
 export const Route = createFileRoute("/c/$token")({
   head: () => ({ meta: [{ title: "Certificado TrailBook" }] }),
@@ -33,7 +34,8 @@ type CertPayload = {
   events: EventRow[];
   schedules: Database["public"]["Tables"]["maintenance_schedules"]["Row"][];
   attachments: { id: string; event_id: string; bucket: string; storage_path: string; kind: string; caption: string | null }[];
-  workshops: { id: string; name: string; city: string | null; verified: boolean }[];
+  workshops: { id: string; name: string; city: string | null; verified: boolean; verified_label?: string | null }[];
+  ownership?: { id: string; started_at: string; ended_at: string | null; method: "creation" | "transfer" | "import"; owner_name: string | null }[];
 };
 
 function PublicCert() {
