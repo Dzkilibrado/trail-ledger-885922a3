@@ -1,19 +1,20 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
+import { useMemo, useState } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BRANDS, uploadFile } from "@/lib/trailbook";
+import { MODELS_BY_BRAND, DISPLACEMENTS, MOTO_TYPES, CONTROL_TYPES, OTHER, yearOptions, INCIDENT_DECLARATION_TEXT } from "@/lib/motorcycle-catalog";
+import { PhotoPicker } from "@/components/PhotoPicker";
+import { PageHeader } from "@/components/PageHeader";
 import { toast } from "sonner";
 import { usePlan } from "@/hooks/usePlan";
 import { canCreateMotorcycle } from "@/lib/plans";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "@tanstack/react-router";
-import { Crown } from "lucide-react";
+import { Crown, ShieldAlert } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/new")({
   head: () => ({ meta: [{ title: "Nova moto — TrailBook" }] }),
@@ -40,7 +41,20 @@ function NewMotorcycle() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
+  const [brand, setBrand] = useState("");
+  const [model, setModel] = useState("");
+  const [customModel, setCustomModel] = useState("");
+  const [displacement, setDisplacement] = useState("");
+  const [customDisplacement, setCustomDisplacement] = useState("");
+  const [yearMake, setYearMake] = useState("");
+  const [yearModel, setYearModel] = useState("");
+  const [motoType, setMotoType] = useState("trail_light");
+  const [controlType, setControlType] = useState("hours");
+  const [incident, setIncident] = useState<"yes" | "no" | "unknown">("unknown");
   const { plan } = usePlan();
+  const years = useMemo(() => yearOptions(), []);
+  const availableModels = MODELS_BY_BRAND[brand] ?? [];
+
   const motoCount = useQuery({
     queryKey: ["motorcycles", "count"],
     queryFn: async () => {
@@ -54,7 +68,18 @@ function NewMotorcycle() {
     e.preventDefault();
     if (blocked) { toast.error("Limite do plano atingido. Faça upgrade para cadastrar mais motos."); return; }
     const fd = new FormData(e.currentTarget);
-    const parsed = schema.safeParse(Object.fromEntries(fd));
+    const finalModel = model === OTHER ? customModel.trim() : model;
+    const finalDisp = displacement === OTHER ? customDisplacement.trim() : displacement;
+    const raw = {
+      ...Object.fromEntries(fd),
+      brand,
+      model: finalModel,
+      displacement: finalDisp || undefined,
+      year_make: yearMake || undefined,
+      year_model: yearModel || undefined,
+      control_type: controlType,
+    };
+    const parsed = schema.safeParse(raw);
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
     setLoading(true);
     try {
@@ -65,12 +90,30 @@ function NewMotorcycle() {
         const up = await uploadFile("motorcycle-photos", photo, uid);
         main_photo_url = up.path;
       }
+      const incidentDeclaration = {
+        value: incident,
+        accepted_at: new Date().toISOString(),
+        text: incident === "no" ? INCIDENT_DECLARATION_TEXT : null,
+      };
       const { data, error } = await supabase.from("motorcycles").insert({
         ...parsed.data,
         owner_id: uid,
         main_photo_url,
+        incident_declaration: incidentDeclaration,
+        moto_type: motoType,
       } as never).select("id").single();
       if (error) throw error;
+      // Registra declaração inicial na linha do tempo
+      if (incident !== "unknown") {
+        await supabase.from("events").insert({
+          motorcycle_id: data.id,
+          created_by: uid,
+          type: "declaration",
+          title: incident === "no" ? "Declaração: sem histórico de sinistro" : "Declaração: histórico de sinistro relatado",
+          description: incident === "no" ? INCIDENT_DECLARATION_TEXT : "O proprietário declarou que esta motocicleta possui histórico de sinistro relevante.",
+          occurred_at: new Date().toISOString(),
+        } as never);
+      }
       toast.success("Moto cadastrada!");
       navigate({ to: "/motorcycles/$id", params: { id: data.id } });
     } catch (err: any) {
@@ -80,7 +123,11 @@ function NewMotorcycle() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="font-display text-2xl font-bold">Nova moto</h1>
+      <PageHeader
+        title="Nova motocicleta"
+        crumbs={[{ label: "Motos", to: "/motorcycles" }, { label: "Nova" }]}
+        description="Quanto mais detalhes você informar, mais preciso fica o índice de conservação."
+      />
       {blocked && (
         <div className="surface-elevated flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/40 bg-primary/5 p-4 text-sm">
           <div className="flex items-center gap-2">
@@ -93,24 +140,62 @@ function NewMotorcycle() {
       <form onSubmit={onSubmit} className="surface-elevated space-y-5 rounded-2xl p-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Marca" required>
-            <Select name="brand" required>
+            <Select value={brand} onValueChange={(v) => { setBrand(v); setModel(""); }}>
               <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>{BRANDS.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
             </Select>
           </Field>
-          <Field label="Modelo" required><Input name="model" required placeholder="ex: CRF 250F" /></Field>
+          <Field label="Modelo" required>
+            {availableModels.length > 0 ? (
+              <Select value={model} onValueChange={setModel}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {availableModels.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                  <SelectItem value={OTHER}>Outro modelo…</SelectItem>
+                </SelectContent>
+              </Select>
+            ) : (
+              <Input placeholder="ex: CRF 250F" value={customModel} onChange={(e) => { setCustomModel(e.target.value); setModel(OTHER); }} />
+            )}
+            {model === OTHER && availableModels.length > 0 && (
+              <Input className="mt-2" placeholder="Informe o modelo" value={customModel} onChange={(e) => setCustomModel(e.target.value)} />
+            )}
+          </Field>
           <Field label="Apelido"><Input name="nickname" placeholder="ex: A vermelhinha" /></Field>
-          <Field label="Cilindrada (cc)"><Input name="displacement" type="number" placeholder="250" /></Field>
-          <Field label="Ano fabricação"><Input name="year_make" type="number" placeholder="2024" /></Field>
-          <Field label="Ano modelo"><Input name="year_model" type="number" placeholder="2024" /></Field>
-          <Field label="Tipo de controle">
-            <Select name="control_type" defaultValue="hours">
-              <SelectTrigger><SelectValue /></SelectTrigger>
+          <Field label="Cilindrada (cc)">
+            <Select value={displacement} onValueChange={setDisplacement}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="hours">Horas</SelectItem>
-                <SelectItem value="km">Quilometragem</SelectItem>
-                <SelectItem value="both">Ambos</SelectItem>
+                {DISPLACEMENTS.map((d) => <SelectItem key={d} value={d}>{d} cc</SelectItem>)}
+                <SelectItem value={OTHER}>Outra…</SelectItem>
               </SelectContent>
+            </Select>
+            {displacement === OTHER && (
+              <Input className="mt-2" type="number" placeholder="Informe a cilindrada em cc" value={customDisplacement} onChange={(e) => setCustomDisplacement(e.target.value)} />
+            )}
+          </Field>
+          <Field label="Ano de fabricação">
+            <Select value={yearMake} onValueChange={setYearMake}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="Ano modelo">
+            <Select value={yearModel} onValueChange={setYearModel}>
+              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="Tipo de moto">
+            <Select value={motoType} onValueChange={setMotoType}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{MOTO_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="Tipo de controle">
+            <Select value={controlType} onValueChange={setControlType}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{CONTROL_TYPES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
             </Select>
           </Field>
           <Field label="Chassi"><Input name="chassis" /></Field>
@@ -121,8 +206,50 @@ function NewMotorcycle() {
           <Field label="Km atuais"><Input name="km_total" type="number" step="1" defaultValue={0} /></Field>
         </div>
         <Field label="Foto principal">
-          <Input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
+          <PhotoPicker value={photo} onChange={setPhoto} label="Selecionar foto principal" hint="JPG ou PNG. Aparece no certificado público." />
         </Field>
+
+        {/* Declaração de sinistro */}
+        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
+          <div className="flex items-start gap-2">
+            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+            <div className="space-y-3">
+              <div>
+                <div className="text-sm font-semibold">Histórico de sinistro</div>
+                <div className="text-xs text-muted-foreground">
+                  A moto já sofreu sinistro relevante (queda grave, batida, submersão, danos estruturais)?
+                </div>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {([
+                  { v: "no", label: "Não" },
+                  { v: "yes", label: "Sim" },
+                  { v: "unknown", label: "Não informado" },
+                ] as const).map((o) => (
+                  <button
+                    key={o.v}
+                    type="button"
+                    onClick={() => setIncident(o.v)}
+                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${incident === o.v ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+              {incident === "no" && (
+                <p className="rounded-lg border border-border bg-background/40 p-3 text-[11px] text-muted-foreground">
+                  Ao cadastrar, você aceita: <em>"{INCIDENT_DECLARATION_TEXT}"</em>
+                </p>
+              )}
+              {incident === "yes" && (
+                <p className="text-[11px] text-amber-300">
+                  Após criar a moto, registre cada ocorrência usando <strong>Registrar atividade → Sinistro</strong> para compor o histórico.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+
         <div className="flex flex-wrap gap-3">
           <Button type="submit" className="btn-glow" disabled={loading || blocked}>{loading ? "Salvando…" : "Cadastrar moto"}</Button>
           <Button type="button" variant="outline" onClick={() => navigate({ to: "/motorcycles" })}>Cancelar</Button>
