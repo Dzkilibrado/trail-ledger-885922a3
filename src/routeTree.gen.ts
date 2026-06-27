@@ -12,7 +12,12 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CTokenRouteImport } from './routes/c.$token'
+import { Route as AuthenticatedWorkshopsRouteImport } from './routes/_authenticated/workshops'
+import { Route as AuthenticatedFinancialRouteImport } from './routes/_authenticated/financial'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedCertificatesRouteImport } from './routes/_authenticated/certificates'
+import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated/agenda'
 import { Route as AuthenticatedMotorcyclesIndexRouteImport } from './routes/_authenticated/motorcycles.index'
 import { Route as AuthenticatedMotorcyclesNewRouteImport } from './routes/_authenticated/motorcycles.new'
 import { Route as AuthenticatedMotorcyclesIdRouteImport } from './routes/_authenticated/motorcycles.$id'
@@ -31,9 +36,35 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CTokenRoute = CTokenRouteImport.update({
+  id: '/c/$token',
+  path: '/c/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedWorkshopsRoute = AuthenticatedWorkshopsRouteImport.update({
+  id: '/workshops',
+  path: '/workshops',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedFinancialRoute = AuthenticatedFinancialRouteImport.update({
+  id: '/financial',
+  path: '/financial',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedCertificatesRoute =
+  AuthenticatedCertificatesRouteImport.update({
+    id: '/certificates',
+    path: '/certificates',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAgendaRoute = AuthenticatedAgendaRouteImport.update({
+  id: '/agenda',
+  path: '/agenda',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedMotorcyclesIndexRoute =
@@ -58,7 +89,12 @@ const AuthenticatedMotorcyclesIdRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/agenda': typeof AuthenticatedAgendaRoute
+  '/certificates': typeof AuthenticatedCertificatesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/financial': typeof AuthenticatedFinancialRoute
+  '/workshops': typeof AuthenticatedWorkshopsRoute
+  '/c/$token': typeof CTokenRoute
   '/motorcycles/$id': typeof AuthenticatedMotorcyclesIdRoute
   '/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
   '/motorcycles/': typeof AuthenticatedMotorcyclesIndexRoute
@@ -66,7 +102,12 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/agenda': typeof AuthenticatedAgendaRoute
+  '/certificates': typeof AuthenticatedCertificatesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/financial': typeof AuthenticatedFinancialRoute
+  '/workshops': typeof AuthenticatedWorkshopsRoute
+  '/c/$token': typeof CTokenRoute
   '/motorcycles/$id': typeof AuthenticatedMotorcyclesIdRoute
   '/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
   '/motorcycles': typeof AuthenticatedMotorcyclesIndexRoute
@@ -76,7 +117,12 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
+  '/_authenticated/agenda': typeof AuthenticatedAgendaRoute
+  '/_authenticated/certificates': typeof AuthenticatedCertificatesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/financial': typeof AuthenticatedFinancialRoute
+  '/_authenticated/workshops': typeof AuthenticatedWorkshopsRoute
+  '/c/$token': typeof CTokenRoute
   '/_authenticated/motorcycles/$id': typeof AuthenticatedMotorcyclesIdRoute
   '/_authenticated/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
   '/_authenticated/motorcycles/': typeof AuthenticatedMotorcyclesIndexRoute
@@ -86,7 +132,12 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/agenda'
+    | '/certificates'
     | '/dashboard'
+    | '/financial'
+    | '/workshops'
+    | '/c/$token'
     | '/motorcycles/$id'
     | '/motorcycles/new'
     | '/motorcycles/'
@@ -94,7 +145,12 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/agenda'
+    | '/certificates'
     | '/dashboard'
+    | '/financial'
+    | '/workshops'
+    | '/c/$token'
     | '/motorcycles/$id'
     | '/motorcycles/new'
     | '/motorcycles'
@@ -103,7 +159,12 @@ export interface FileRouteTypes {
     | '/'
     | '/_authenticated'
     | '/auth'
+    | '/_authenticated/agenda'
+    | '/_authenticated/certificates'
     | '/_authenticated/dashboard'
+    | '/_authenticated/financial'
+    | '/_authenticated/workshops'
+    | '/c/$token'
     | '/_authenticated/motorcycles/$id'
     | '/_authenticated/motorcycles/new'
     | '/_authenticated/motorcycles/'
@@ -113,6 +174,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  CTokenRoute: typeof CTokenRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -138,11 +200,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/c/$token': {
+      id: '/c/$token'
+      path: '/c/$token'
+      fullPath: '/c/$token'
+      preLoaderRoute: typeof CTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/workshops': {
+      id: '/_authenticated/workshops'
+      path: '/workshops'
+      fullPath: '/workshops'
+      preLoaderRoute: typeof AuthenticatedWorkshopsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/financial': {
+      id: '/_authenticated/financial'
+      path: '/financial'
+      fullPath: '/financial'
+      preLoaderRoute: typeof AuthenticatedFinancialRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/certificates': {
+      id: '/_authenticated/certificates'
+      path: '/certificates'
+      fullPath: '/certificates'
+      preLoaderRoute: typeof AuthenticatedCertificatesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/agenda': {
+      id: '/_authenticated/agenda'
+      path: '/agenda'
+      fullPath: '/agenda'
+      preLoaderRoute: typeof AuthenticatedAgendaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/motorcycles/': {
@@ -170,14 +267,22 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRoute
+  AuthenticatedCertificatesRoute: typeof AuthenticatedCertificatesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedFinancialRoute: typeof AuthenticatedFinancialRoute
+  AuthenticatedWorkshopsRoute: typeof AuthenticatedWorkshopsRoute
   AuthenticatedMotorcyclesIdRoute: typeof AuthenticatedMotorcyclesIdRoute
   AuthenticatedMotorcyclesNewRoute: typeof AuthenticatedMotorcyclesNewRoute
   AuthenticatedMotorcyclesIndexRoute: typeof AuthenticatedMotorcyclesIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAgendaRoute: AuthenticatedAgendaRoute,
+  AuthenticatedCertificatesRoute: AuthenticatedCertificatesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedFinancialRoute: AuthenticatedFinancialRoute,
+  AuthenticatedWorkshopsRoute: AuthenticatedWorkshopsRoute,
   AuthenticatedMotorcyclesIdRoute: AuthenticatedMotorcyclesIdRoute,
   AuthenticatedMotorcyclesNewRoute: AuthenticatedMotorcyclesNewRoute,
   AuthenticatedMotorcyclesIndexRoute: AuthenticatedMotorcyclesIndexRoute,
@@ -190,6 +295,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  CTokenRoute: CTokenRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
