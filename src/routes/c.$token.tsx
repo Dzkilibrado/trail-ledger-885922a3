@@ -1,10 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { EVENT_TYPE_LABEL, formatDate, brl } from "@/lib/trailbook";
+import { EVENT_TYPE_LABEL, MAINT_CATEGORY_LABEL, formatDate, brl, type EventRow, type Motorcycle } from "@/lib/trailbook";
 import { EventTypeIcon } from "@/components/EventTypeIcon";
-import { Bike, ShieldCheck } from "lucide-react";
+import { Bike, ShieldCheck, Copy, Download, Share2, CheckCircle2, AlertTriangle, Clock, Camera, Receipt, Wrench } from "lucide-react";
+import QRCode from "qrcode";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+import { priorityList } from "@/lib/maintenance-engine";
+import { computeConservation, categoryHealth, docsHealth, historyHealth } from "@/lib/conservation";
+import { generateCertificatePdf } from "@/lib/cert-pdf";
 
 export const Route = createFileRoute("/c/$token")({
   head: () => ({ meta: [{ title: "Certificado TrailBook" }] }),
@@ -19,55 +25,299 @@ function makePublicClient() {
   );
 }
 
+type CertPayload = {
+  certificate: { public_token: string; created_at: string; expires_at: string | null };
+  motorcycle: Motorcycle;
+  owner: { full_name: string | null; avatar_url: string | null } | null;
+  events: EventRow[];
+  schedules: Database["public"]["Tables"]["maintenance_schedules"]["Row"][];
+  attachments: { id: string; event_id: string; bucket: string; path: string; kind: string; caption: string | null }[];
+  workshops: { id: string; name: string; city: string | null; verified: boolean }[];
+};
+
 function PublicCert() {
   const { token } = Route.useParams();
-  const [state, setState] = useState<{ loading: boolean; cert?: any; moto?: any; events?: any[]; error?: string }>({ loading: true });
+  const [data, setData] = useState<CertPayload | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [qrUrl, setQrUrl] = useState<string | null>(null);
+
+  const publicUrl = typeof window !== "undefined" ? `${window.location.origin}/c/${token}` : `/c/${token}`;
 
   useEffect(() => {
-    const sb = makePublicClient();
     (async () => {
-      const { data: cert } = await sb.from("certificates").select("*").eq("public_token", token).maybeSingle();
-      if (!cert) { setState({ loading: false, error: "Certificado inválido ou revogado." }); return; }
-      // Note: events/motorcycles tables require auth — public cert just shows metadata.
-      // Owner must allow public view; for now we render certificate info.
-      setState({ loading: false, cert });
+      const sb = makePublicClient();
+      const { data: res, error: e } = await sb.rpc("get_public_certificate", { _token: token });
+      if (e || !res) { setError("Certificado inválido, revogado ou expirado."); setLoading(false); return; }
+      setData(res as unknown as CertPayload);
+      setLoading(false);
     })();
-  }, [token]);
+    QRCode.toDataURL(publicUrl, { margin: 1, width: 320, color: { dark: "#111113", light: "#FFFFFF" } }).then(setQrUrl);
+  }, [token, publicUrl]);
 
-  if (state.loading) return <div className="grid min-h-screen place-items-center text-muted-foreground">Carregando…</div>;
-  if (state.error) return <div className="grid min-h-screen place-items-center text-muted-foreground">{state.error}</div>;
+  const computed = useMemo(() => {
+    if (!data) return null;
+    const statuses = priorityList(data.schedules, data.motorcycle, data.events);
+    const workshopEventIds = new Set(data.events.filter((e) => e.workshop_id).map((e) => e.id));
+    const hasDocs = { plate: !!data.motorcycle.plate, renavam: !!data.motorcycle.renavam, chassis: !!data.motorcycle.chassis };
+    const conservation = computeConservation({
+      events: data.events,
+      attachments: data.attachments as any,
+      statuses,
+      workshopEventIds,
+      hasDocs,
+    });
+    const health = [
+      ...categoryHealth(statuses),
+      docsHealth(hasDocs),
+      historyHealth(data.events),
+    ];
+    return { statuses, conservation, health };
+  }, [data]);
+
+  if (loading) return <div className="grid min-h-screen place-items-center text-muted-foreground">Carregando certificado…</div>;
+  if (error || !data || !computed) return (
+    <div className="grid min-h-screen place-items-center px-6">
+      <div className="surface-elevated max-w-md rounded-3xl p-8 text-center">
+        <AlertTriangle className="mx-auto h-10 w-10 text-destructive" />
+        <h1 className="mt-4 font-display text-2xl font-bold">Certificado indisponível</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{error}</p>
+      </div>
+    </div>
+  );
+
+  const moto = data.motorcycle;
+  const sb = makePublicClient();
+  const photoUrl = moto.main_photo_url ? sb.storage.from("motorcycle-photos").getPublicUrl(moto.main_photo_url).data.publicUrl : null;
+  const upcoming = computed.statuses.filter((s) => s.status !== "ok").slice(0, 6);
+  const lastMaint = data.events.filter((e) => e.type === "maintenance" || e.type === "revision").slice(0, 6);
+  const photosCount = data.attachments.filter((a) => a.kind === "image" || a.kind === "photo").length;
+  const receiptsCount = data.attachments.filter((a) => a.kind === "invoice" || a.kind === "receipt" || a.kind === "document").length;
+
+  async function share() {
+    if (typeof navigator !== "undefined" && navigator.share) {
+      try { await navigator.share({ title: `TrailBook — ${moto.nickname || moto.model}`, url: publicUrl }); return; } catch { /* cancel */ }
+    }
+    navigator.clipboard.writeText(publicUrl);
+    toast.success("Link copiado");
+  }
+
+  async function downloadPdf() {
+    toast.info("Gerando PDF…");
+    let photoDataUrl: string | null = null;
+    if (photoUrl) {
+      try {
+        const r = await fetch(photoUrl); const b = await r.blob();
+        photoDataUrl = await new Promise((res) => { const fr = new FileReader(); fr.onload = () => res(fr.result as string); fr.readAsDataURL(b); });
+      } catch { /* ignore */ }
+    }
+    await generateCertificatePdf({
+      moto, events: data!.events,
+      conservation: computed!.conservation,
+      health: computed!.health,
+      upcoming: computed!.statuses.slice(0, 6),
+      publicUrl, photoDataUrl,
+      attachmentsCount: data!.attachments.length,
+      workshopsCount: data!.workshops.length,
+    });
+    toast.success("PDF gerado");
+  }
 
   return (
     <div className="min-h-screen surface-hero">
-      <div className="container mx-auto max-w-2xl px-6 py-12">
-        <div className="surface-elevated rounded-3xl p-8 text-center">
-          <div className="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-primary text-primary-foreground btn-glow">
-            <ShieldCheck className="h-7 w-7" />
+      <div className="container mx-auto max-w-5xl px-4 py-8 sm:py-12">
+        {/* Header */}
+        <header className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground"><Bike className="h-5 w-5" /></div>
+            <div>
+              <div className="font-display text-lg font-bold leading-none">TrailBook</div>
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Prontuário digital</div>
+            </div>
           </div>
-          <h1 className="mt-4 font-display text-3xl font-bold">Certificado TrailBook</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Este certificado comprova que a motocicleta possui um prontuário digital ativo no TrailBook.
-          </p>
-          <div className="mt-6 rounded-2xl border border-border bg-card p-5 text-left">
-            <div className="text-xs uppercase tracking-widest text-muted-foreground">Token</div>
-            <div className="font-mono text-sm break-all">{state.cert.public_token}</div>
-            <div className="mt-3 text-xs uppercase tracking-widest text-muted-foreground">Emitido em</div>
-            <div className="text-sm">{formatDate(state.cert.created_at)}</div>
-            {state.cert.expires_at && (
-              <>
-                <div className="mt-3 text-xs uppercase tracking-widest text-muted-foreground">Expira em</div>
-                <div className="text-sm">{formatDate(state.cert.expires_at)}</div>
-              </>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(publicUrl); toast.success("Link copiado"); }}><Copy className="h-4 w-4" /> Copiar link</Button>
+            <Button variant="outline" size="sm" onClick={share}><Share2 className="h-4 w-4" /> Compartilhar</Button>
+            <Button size="sm" onClick={downloadPdf}><Download className="h-4 w-4" /> Baixar PDF</Button>
+          </div>
+        </header>
+
+        {/* Hero */}
+        <section className="mt-6 surface-elevated overflow-hidden rounded-3xl">
+          <div className="grid gap-0 md:grid-cols-[1.4fr_1fr]">
+            <div className="relative aspect-[4/3] bg-elevated md:aspect-auto">
+              {photoUrl ? (
+                <img src={photoUrl} alt={moto.nickname || moto.model} className="h-full w-full object-cover" />
+              ) : (
+                <div className="grid h-full w-full place-items-center text-muted-foreground"><Bike className="h-16 w-16 opacity-40" /></div>
+              )}
+              <div className="absolute left-4 top-4 flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground btn-glow">
+                <ShieldCheck className="h-3.5 w-3.5" /> TRAILBOOK CERTIFIED
+              </div>
+            </div>
+            <div className="flex flex-col justify-between p-6 md:p-8">
+              <div>
+                <div className="text-xs uppercase tracking-widest text-muted-foreground">{moto.brand}</div>
+                <h1 className="font-display text-3xl font-bold leading-tight">{moto.nickname || moto.model}</h1>
+                <p className="text-sm text-muted-foreground">{moto.model} · {moto.year_model ?? "—"}{moto.displacement ? ` · ${moto.displacement}cc` : ""}</p>
+                <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                  <KV k="Placa" v={moto.plate ?? "—"} />
+                  <KV k="Chassi" v={moto.chassis ?? "—"} />
+                  <KV k="Renavam" v={moto.renavam ?? "—"} />
+                  <KV k="Ano" v={String(moto.year_model ?? "—")} />
+                </div>
+              </div>
+              <div className="mt-6 grid grid-cols-3 gap-3 text-center">
+                <Stat label="Horas" value={`${Number(moto.hours_total ?? 0).toFixed(1)}`} unit="h" />
+                <Stat label="Quilometragem" value={`${Number(moto.km_total ?? 0).toFixed(0)}`} unit="km" />
+                <Stat label="Eventos" value={`${data.events.length}`} />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Conservation + QR */}
+        <section className="mt-6 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+          <div className="surface-elevated rounded-3xl p-6">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-lg font-bold">Índice de Conservação</h2>
+              <span className="text-xs text-muted-foreground">Avaliação automática TrailBook</span>
+            </div>
+            <div className="mt-4 flex items-center gap-6">
+              <div className="text-center">
+                <div className="font-display text-6xl font-bold text-primary">{computed.conservation.score}</div>
+                <div className="mt-1 inline-block rounded-full bg-primary/15 px-3 py-0.5 text-xs font-bold text-primary">NOTA {computed.conservation.grade}</div>
+              </div>
+              <ul className="flex-1 space-y-1.5 text-sm">
+                {computed.conservation.factors.map((f) => (
+                  <li key={f.key} className="flex items-center justify-between border-b border-border/40 pb-1.5 last:border-0">
+                    <span className="text-muted-foreground">{f.label}{f.detail ? <span className="ml-1 text-xs">({f.detail})</span> : null}</span>
+                    <span className={`font-mono text-xs font-bold ${f.delta >= 0 ? "text-green-500" : "text-destructive"}`}>{f.delta >= 0 ? "+" : ""}{f.delta}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <div className="surface-elevated rounded-3xl p-6 text-center">
+            <h2 className="font-display text-lg font-bold">Validação</h2>
+            <p className="mt-1 text-xs text-muted-foreground">Escaneie para abrir este certificado</p>
+            {qrUrl ? <img src={qrUrl} alt="QR Code" className="mx-auto mt-4 h-44 w-44 rounded-xl bg-white p-2" /> : <div className="mx-auto mt-4 h-44 w-44 animate-pulse rounded-xl bg-elevated" />}
+            <div className="mt-3 font-mono text-[10px] break-all text-muted-foreground">{data.certificate.public_token}</div>
+            <div className="mt-2 text-xs text-muted-foreground">Emitido em {formatDate(data.certificate.created_at)}</div>
+          </div>
+        </section>
+
+        {/* Health */}
+        <section className="mt-6 surface-elevated rounded-3xl p-6">
+          <h2 className="font-display text-lg font-bold">Saúde da motocicleta</h2>
+          <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {computed.health.map((h) => {
+              const tone = h.status === "good" ? "border-green-500/40 bg-green-500/5" : h.status === "warn" ? "border-yellow-500/40 bg-yellow-500/5" : "border-destructive/40 bg-destructive/5";
+              const Icon = h.status === "good" ? CheckCircle2 : h.status === "warn" ? Clock : AlertTriangle;
+              const iconTone = h.status === "good" ? "text-green-500" : h.status === "warn" ? "text-yellow-500" : "text-destructive";
+              return (
+                <div key={h.label} className={`rounded-2xl border p-4 ${tone}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{h.label}</div>
+                    <Icon className={`h-4 w-4 ${iconTone}`} />
+                  </div>
+                  <div className="mt-2 font-display text-2xl font-bold">{h.score}</div>
+                  <div className="text-xs text-muted-foreground">{h.reason}</div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Upcoming + Last maintenance */}
+        <section className="mt-6 grid gap-6 lg:grid-cols-2">
+          <div className="surface-elevated rounded-3xl p-6">
+            <h2 className="font-display text-lg font-bold">Próximas manutenções críticas</h2>
+            {upcoming.length === 0 ? (
+              <p className="mt-4 text-sm text-muted-foreground">Nenhuma manutenção pendente.</p>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {upcoming.map((u) => {
+                  const tag = u.status === "overdue" ? "Vencida" : u.status === "due" ? "Devida" : "Em breve";
+                  const tagTone = u.status === "overdue" ? "bg-destructive text-destructive-foreground" : u.status === "due" ? "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400" : "bg-muted text-muted-foreground";
+                  return (
+                    <li key={u.schedule.id} className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2">
+                      <div>
+                        <div className="text-sm font-semibold">{u.label}</div>
+                        <div className="text-xs text-muted-foreground">{MAINT_CATEGORY_LABEL[u.category]}{u.estimatedDueDate ? ` · est. ${formatDate(u.estimatedDueDate.toISOString())}` : ""}</div>
+                      </div>
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${tagTone}`}>{tag}</span>
+                    </li>
+                  );
+                })}
+              </ul>
             )}
           </div>
-          <p className="mt-6 text-xs text-muted-foreground">
-            Para visualizar o histórico completo, o proprietário precisa autorizar o compartilhamento.
-          </p>
-        </div>
-        <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-          <Bike className="h-4 w-4" /> TrailBook · Prontuário digital para motos off-road
-        </div>
+          <div className="surface-elevated rounded-3xl p-6">
+            <h2 className="font-display text-lg font-bold">Últimas manutenções</h2>
+            {lastMaint.length === 0 ? (
+              <p className="mt-4 text-sm text-muted-foreground">Nenhuma manutenção registrada.</p>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {lastMaint.map((e) => (
+                  <li key={e.id} className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2">
+                    <div className="flex items-center gap-3">
+                      <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary/15 text-primary"><EventTypeIcon type={e.type} className="h-4 w-4" /></div>
+                      <div>
+                        <div className="text-sm font-semibold">{e.title || EVENT_TYPE_LABEL[e.type]}</div>
+                        <div className="text-xs text-muted-foreground">{formatDate(e.occurred_at)}{e.cost ? ` · ${brl(Number(e.cost))}` : ""}</div>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </section>
+
+        {/* Evidence summary */}
+        <section className="mt-6 surface-elevated rounded-3xl p-6">
+          <h2 className="font-display text-lg font-bold">Evidências e parceiros</h2>
+          <div className="mt-4 grid gap-3 sm:grid-cols-3">
+            <EvidenceCard icon={Camera} label="Fotos" value={photosCount} />
+            <EvidenceCard icon={Receipt} label="Notas fiscais / documentos" value={receiptsCount} />
+            <EvidenceCard icon={Wrench} label="Oficinas registradas" value={data.workshops.length} extra={data.workshops.find((w) => w.verified) ? "Inclui oficina verificada" : undefined} />
+          </div>
+        </section>
+
+        <footer className="mt-10 text-center text-xs text-muted-foreground">
+          <p>Este documento é um laudo digital gerado pelo TrailBook a partir do prontuário ativo da motocicleta.</p>
+          <p className="mt-1">trailbook · prontuário digital para motos off-road</p>
+        </footer>
       </div>
+    </div>
+  );
+}
+
+function KV({ k, v }: { k: string; v: string }) {
+  return (
+    <div>
+      <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{k}</div>
+      <div className="font-medium">{v}</div>
+    </div>
+  );
+}
+
+function Stat({ label, value, unit }: { label: string; value: string; unit?: string }) {
+  return (
+    <div className="rounded-xl bg-elevated p-3">
+      <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className="font-display text-xl font-bold">{value}<span className="ml-1 text-xs font-normal text-muted-foreground">{unit}</span></div>
+    </div>
+  );
+}
+
+function EvidenceCard({ icon: Icon, label, value, extra }: { icon: any; label: string; value: number; extra?: string }) {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4">
+      <div className="flex items-center gap-2 text-sm font-semibold"><Icon className="h-4 w-4 text-primary" /> {label}</div>
+      <div className="mt-2 font-display text-2xl font-bold">{value}</div>
+      {extra ? <div className="text-xs text-primary">{extra}</div> : null}
     </div>
   );
 }
