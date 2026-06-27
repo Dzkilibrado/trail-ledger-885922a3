@@ -22,6 +22,7 @@ export type Database = {
           id: string
           motorcycle_id: string
           public_token: string
+          status: string
         }
         Insert: {
           allowed_sections?: Json
@@ -30,6 +31,7 @@ export type Database = {
           id?: string
           motorcycle_id: string
           public_token?: string
+          status?: string
         }
         Update: {
           allowed_sections?: Json
@@ -38,6 +40,7 @@ export type Database = {
           id?: string
           motorcycle_id?: string
           public_token?: string
+          status?: string
         }
         Relationships: [
           {

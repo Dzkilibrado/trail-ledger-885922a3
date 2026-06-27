@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { priorityList } from "@/lib/maintenance-engine";
 import { computeConservation, categoryHealth, docsHealth, historyHealth } from "@/lib/conservation";
 import { generateCertificatePdf } from "@/lib/cert-pdf";
+import { isAllowed, type CertSectionKey } from "@/lib/cert-sections";
 
 export const Route = createFileRoute("/c/$token")({
   head: () => ({ meta: [{ title: "Certificado TrailBook" }] }),
@@ -26,7 +27,7 @@ function makePublicClient() {
 }
 
 type CertPayload = {
-  certificate: { public_token: string; created_at: string; expires_at: string | null };
+  certificate: { public_token: string; created_at: string; expires_at: string | null; status?: string; allowed_sections?: CertSectionKey[] };
   motorcycle: Motorcycle;
   owner: { full_name: string | null; avatar_url: string | null } | null;
   events: EventRow[];
@@ -98,10 +99,15 @@ function PublicCert() {
   );
 
   const moto = data.motorcycle;
+  const allowed = data.certificate.allowed_sections ?? [];
+  const show = (k: CertSectionKey) => isAllowed(allowed, k);
   const upcoming = computed.statuses.filter((s) => s.status !== "ok").slice(0, 6);
   const lastMaint = data.events.filter((e) => e.type === "maintenance" || e.type === "revision").slice(0, 6);
   const photosCount = data.attachments.filter((a) => a.kind === "photo").length;
-  const receiptsCount = data.attachments.filter((a) => a.kind === "invoice" || a.kind === "document").length;
+  const invoicesCount = data.attachments.filter((a) => a.kind === "invoice").length;
+  const documentsCount = data.attachments.filter((a) => a.kind === "document").length;
+  const ownerEvents = data.events.filter((e) => e.type === "ownership_transfer");
+  const evidenceVisible = show("photos") || show("invoices") || show("documents") || show("workshop");
 
   async function share() {
     if (typeof navigator !== "undefined" && navigator.share) {
@@ -155,7 +161,7 @@ function PublicCert() {
         <section className="mt-6 surface-elevated overflow-hidden rounded-3xl">
           <div className="grid gap-0 md:grid-cols-[1.4fr_1fr]">
             <div className="relative aspect-[4/3] bg-elevated md:aspect-auto">
-              {photoUrl ? (
+              {photoUrl && show("photo") ? (
                 <img src={photoUrl} alt={moto.nickname || moto.model} className="h-full w-full object-cover" />
               ) : (
                 <div className="grid h-full w-full place-items-center text-muted-foreground"><Bike className="h-16 w-16 opacity-40" /></div>
@@ -169,24 +175,29 @@ function PublicCert() {
                 <div className="text-xs uppercase tracking-widest text-muted-foreground">{moto.brand}</div>
                 <h1 className="font-display text-3xl font-bold leading-tight">{moto.nickname || moto.model}</h1>
                 <p className="text-sm text-muted-foreground">{moto.model} · {moto.year_model ?? "—"}{moto.displacement ? ` · ${moto.displacement}cc` : ""}</p>
-                <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
-                  <KV k="Placa" v={moto.plate ?? "—"} />
-                  <KV k="Chassi" v={moto.chassis ?? "—"} />
-                  <KV k="Renavam" v={moto.renavam ?? "—"} />
-                  <KV k="Ano" v={String(moto.year_model ?? "—")} />
+                {show("basic") ? (
+                  <div className="mt-4 grid grid-cols-2 gap-2 text-sm">
+                    <KV k="Placa" v={moto.plate ?? "—"} />
+                    <KV k="Chassi" v={moto.chassis ?? "—"} />
+                    <KV k="Renavam" v={moto.renavam ?? "—"} />
+                    <KV k="Ano" v={String(moto.year_model ?? "—")} />
+                  </div>
+                ) : null}
+              </div>
+              {show("usage") ? (
+                <div className="mt-6 grid grid-cols-3 gap-3 text-center">
+                  <Stat label="Horas" value={`${Number(moto.hours_total ?? 0).toFixed(1)}`} unit="h" />
+                  <Stat label="Quilometragem" value={`${Number(moto.km_total ?? 0).toFixed(0)}`} unit="km" />
+                  <Stat label="Eventos" value={`${data.events.length}`} />
                 </div>
-              </div>
-              <div className="mt-6 grid grid-cols-3 gap-3 text-center">
-                <Stat label="Horas" value={`${Number(moto.hours_total ?? 0).toFixed(1)}`} unit="h" />
-                <Stat label="Quilometragem" value={`${Number(moto.km_total ?? 0).toFixed(0)}`} unit="km" />
-                <Stat label="Eventos" value={`${data.events.length}`} />
-              </div>
+              ) : null}
             </div>
           </div>
         </section>
 
         {/* Conservation + QR */}
         <section className="mt-6 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+          {show("conservation") ? (
           <div className="surface-elevated rounded-3xl p-6">
             <div className="flex items-center justify-between">
               <h2 className="font-display text-lg font-bold">Índice de Conservação</h2>
@@ -207,6 +218,7 @@ function PublicCert() {
               </ul>
             </div>
           </div>
+          ) : <div />}
           <div className="surface-elevated rounded-3xl p-6 text-center">
             <h2 className="font-display text-lg font-bold">Validação</h2>
             <p className="mt-1 text-xs text-muted-foreground">Escaneie para abrir este certificado</p>
@@ -217,7 +229,7 @@ function PublicCert() {
         </section>
 
         {/* Health */}
-        <section className="mt-6 surface-elevated rounded-3xl p-6">
+        {show("health") ? <section className="mt-6 surface-elevated rounded-3xl p-6">
           <h2 className="font-display text-lg font-bold">Saúde da motocicleta</h2>
           <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             {computed.health.map((h) => {
@@ -236,11 +248,11 @@ function PublicCert() {
               );
             })}
           </div>
-        </section>
+        </section> : null}
 
         {/* Upcoming + Last maintenance */}
-        <section className="mt-6 grid gap-6 lg:grid-cols-2">
-          <div className="surface-elevated rounded-3xl p-6">
+        {(show("upcoming") || show("history")) ? <section className="mt-6 grid gap-6 lg:grid-cols-2">
+          {show("upcoming") ? <div className="surface-elevated rounded-3xl p-6">
             <h2 className="font-display text-lg font-bold">Próximas manutenções críticas</h2>
             {upcoming.length === 0 ? (
               <p className="mt-4 text-sm text-muted-foreground">Nenhuma manutenção pendente.</p>
@@ -261,8 +273,8 @@ function PublicCert() {
                 })}
               </ul>
             )}
-          </div>
-          <div className="surface-elevated rounded-3xl p-6">
+          </div> : null}
+          {show("history") ? <div className="surface-elevated rounded-3xl p-6">
             <h2 className="font-display text-lg font-bold">Últimas manutenções</h2>
             {lastMaint.length === 0 ? (
               <p className="mt-4 text-sm text-muted-foreground">Nenhuma manutenção registrada.</p>
@@ -274,25 +286,45 @@ function PublicCert() {
                       <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary/15 text-primary"><EventTypeIcon type={e.type} className="h-4 w-4" /></div>
                       <div>
                         <div className="text-sm font-semibold">{e.title || EVENT_TYPE_LABEL[e.type]}</div>
-                        <div className="text-xs text-muted-foreground">{formatDate(e.occurred_at)}{e.cost ? ` · ${brl(Number(e.cost))}` : ""}</div>
+                        <div className="text-xs text-muted-foreground">{formatDate(e.occurred_at)}{show("costs") && e.cost ? ` · ${brl(Number(e.cost))}` : ""}</div>
                       </div>
                     </div>
                   </li>
                 ))}
               </ul>
             )}
-          </div>
-        </section>
+          </div> : null}
+        </section> : null}
 
         {/* Evidence summary */}
-        <section className="mt-6 surface-elevated rounded-3xl p-6">
+        {evidenceVisible ? <section className="mt-6 surface-elevated rounded-3xl p-6">
           <h2 className="font-display text-lg font-bold">Evidências e parceiros</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <EvidenceCard icon={Camera} label="Fotos" value={photosCount} />
-            <EvidenceCard icon={Receipt} label="Notas fiscais / documentos" value={receiptsCount} />
-            <EvidenceCard icon={Wrench} label="Oficinas registradas" value={data.workshops.length} extra={data.workshops.find((w) => w.verified) ? "Inclui oficina verificada" : undefined} />
+            {show("photos") ? <EvidenceCard icon={Camera} label="Fotos" value={photosCount} /> : null}
+            {show("invoices") || show("documents") ? (
+              <EvidenceCard icon={Receipt} label="Notas fiscais / documentos" value={(show("invoices") ? invoicesCount : 0) + (show("documents") ? documentsCount : 0)} />
+            ) : null}
+            {show("workshop") ? <EvidenceCard icon={Wrench} label="Oficinas registradas" value={data.workshops.length} extra={data.workshops.find((w) => w.verified) ? "Inclui oficina verificada" : undefined} /> : null}
           </div>
-        </section>
+        </section> : null}
+
+        {show("owners") ? (
+          <section className="mt-6 surface-elevated rounded-3xl p-6">
+            <h2 className="font-display text-lg font-bold">Histórico de proprietários</h2>
+            {ownerEvents.length === 0 ? (
+              <p className="mt-4 text-sm text-muted-foreground">Sem transferências registradas.</p>
+            ) : (
+              <ul className="mt-4 space-y-2">
+                {ownerEvents.map((e) => (
+                  <li key={e.id} className="rounded-xl border border-border bg-card px-3 py-2 text-sm">
+                    <div className="font-medium">{e.title || "Transferência de titularidade"}</div>
+                    <div className="text-xs text-muted-foreground">{formatDate(e.occurred_at)}</div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        ) : null}
 
         <footer className="mt-10 text-center text-xs text-muted-foreground">
           <p>Este documento é um laudo digital gerado pelo TrailBook a partir do prontuário ativo da motocicleta.</p>
