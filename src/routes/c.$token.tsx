@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
 import { EVENT_TYPE_LABEL, MAINT_CATEGORY_LABEL, formatDate, brl, type EventRow, type Motorcycle } from "@/lib/trailbook";
 import { EventTypeIcon } from "@/components/EventTypeIcon";
