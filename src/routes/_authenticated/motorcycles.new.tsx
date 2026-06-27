@@ -100,7 +100,6 @@ function NewMotorcycle() {
         owner_id: uid,
         main_photo_url,
         incident_declaration: incidentDeclaration,
-        moto_type: motoType,
       } as never).select("id").single();
       if (error) throw error;
       // Registra declaração inicial na linha do tempo
