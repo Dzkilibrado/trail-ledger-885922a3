@@ -20,6 +20,8 @@ export const EVENT_TYPE_LABEL: Record<EventType, string> = {
   recall: "Recall",
   warranty: "Garantia",
   note: "Observação",
+  incident: "Sinistro / Ocorrência",
+  declaration: "Declaração do proprietário",
 };
 
 export const MAINT_CATEGORY_LABEL: Record<MaintenanceCategory, string> = {
@@ -33,7 +35,10 @@ export const MAINT_CATEGORY_LABEL: Record<MaintenanceCategory, string> = {
   other: "Outros",
 };
 
-export const BRANDS = ["Honda", "Yamaha", "KTM", "GasGas", "Husqvarna", "Beta", "Sherco", "Outra"];
+export const BRANDS = [
+  "Honda", "Yamaha", "KTM", "GasGas", "Husqvarna",
+  "Beta", "Sherco", "Kawasaki", "Suzuki", "Outra",
+];
 
 export async function signedUrl(bucket: string, path: string, expires = 3600) {
   if (!path) return null;

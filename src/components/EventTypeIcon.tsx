@@ -1,4 +1,4 @@
-import { Activity, Wrench, Camera, Video, FileText, ShoppingCart, Tag, RefreshCw, AlertTriangle, Shield, StickyNote, Plus, Bike } from "lucide-react";
+import { Activity, Wrench, Camera, Video, FileText, ShoppingCart, Tag, RefreshCw, AlertTriangle, Shield, StickyNote, Plus, Bike, ShieldAlert, FileCheck2 } from "lucide-react";
 import type { EventType } from "@/lib/trailbook";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +16,8 @@ const MAP: Record<EventType, { icon: React.ComponentType<{ className?: string }>
   recall: { icon: AlertTriangle, tone: "text-destructive bg-destructive/15" },
   warranty: { icon: Shield, tone: "text-success bg-success/15" },
   note: { icon: StickyNote, tone: "text-muted-foreground bg-elevated" },
+  incident: { icon: ShieldAlert, tone: "text-destructive bg-destructive/15" },
+  declaration: { icon: FileCheck2, tone: "text-primary bg-primary/15" },
 };
 
 export function EventTypeIcon({ type, className }: { type: EventType; className?: string }) {
