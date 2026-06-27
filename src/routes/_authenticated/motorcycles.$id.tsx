@@ -14,6 +14,8 @@ import { toast } from "sonner";
 import { priorityList } from "@/lib/maintenance-engine";
 import { computeConservation, categoryHealth, docsHealth, historyHealth } from "@/lib/conservation";
 import { useEffect } from "react";
+import { usePlan } from "@/hooks/usePlan";
+import { canCreateCertificate } from "@/lib/plans";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id")({
   head: () => ({ meta: [{ title: "Moto — TrailBook" }] }),
@@ -24,6 +26,7 @@ function MotoDetail() {
   const { id } = Route.useParams();
   const qc = useQueryClient();
   const navigate = useNavigate();
+  const { plan } = usePlan();
 
   const moto = useQuery({
     queryKey: ["motorcycle", id],
@@ -60,6 +63,12 @@ function MotoDetail() {
   });
 
   async function genCertificate() {
+    const { count } = await supabase.from("certificates").select("id", { count: "exact", head: true });
+    if (!canCreateCertificate(plan, count ?? 0)) {
+      toast.error(`Plano ${plan.label} permite ${plan.limits.activeCertificates} certificado(s). Faça upgrade.`);
+      navigate({ to: "/plans" });
+      return;
+    }
     const { data, error } = await supabase.from("certificates").insert({ motorcycle_id: id }).select("public_token").single();
     if (error) return toast.error(error.message);
     const url = `${window.location.origin}/c/${data.public_token}`;
