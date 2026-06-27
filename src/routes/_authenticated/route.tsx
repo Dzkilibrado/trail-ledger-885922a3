@@ -1,10 +1,11 @@
 import { createFileRoute, Outlet, redirect, Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, LayoutDashboard, Calendar, Wrench, DollarSign, QrCode, Building2, LogOut, Plus, Menu, X } from "lucide-react";
+import { Bike, LayoutDashboard, Calendar, DollarSign, QrCode, Building2, LogOut, Plus, Menu, X, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
+import { usePlan } from "@/hooks/usePlan";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -23,6 +24,7 @@ const NAV = [
   { to: "/workshops", label: "Oficinas", icon: Building2 },
   { to: "/financial", label: "Financeiro", icon: DollarSign },
   { to: "/certificates", label: "Certificados", icon: QrCode },
+  { to: "/plans", label: "Planos", icon: Crown },
 ] as const;
 
 function AuthedLayout() {
@@ -78,6 +80,7 @@ function AuthedLayout() {
 }
 
 function SidebarBody({ pathname, onSignOut, onClose }: { pathname: string; onSignOut: () => void; onClose?: () => void }) {
+  const { plan } = usePlan();
   return (
     <>
       <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
@@ -91,6 +94,10 @@ function SidebarBody({ pathname, onSignOut, onClose }: { pathname: string; onSig
           <button onClick={onClose} aria-label="Fechar menu"><X className="h-5 w-5" /></button>
         )}
       </div>
+      <Link to="/plans" className="mx-3 mt-3 flex items-center justify-between rounded-lg border border-sidebar-border bg-sidebar-accent/40 px-3 py-2 text-xs hover:border-primary/50">
+        <span className="text-muted-foreground">Plano</span>
+        <span className="font-bold uppercase tracking-widest text-primary">{plan.label}</span>
+      </Link>
       <nav className="flex-1 space-y-1 px-3 py-4">
         {NAV.map((item) => {
           const active = pathname === item.to || pathname.startsWith(item.to + "/");

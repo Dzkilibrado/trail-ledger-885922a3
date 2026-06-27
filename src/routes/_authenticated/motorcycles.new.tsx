@@ -9,6 +9,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BRANDS, uploadFile } from "@/lib/trailbook";
 import { toast } from "sonner";
+import { usePlan } from "@/hooks/usePlan";
+import { canCreateMotorcycle } from "@/lib/plans";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { Crown } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/new")({
   head: () => ({ meta: [{ title: "Nova moto — TrailBook" }] }),
@@ -35,9 +40,19 @@ function NewMotorcycle() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
+  const { plan } = usePlan();
+  const motoCount = useQuery({
+    queryKey: ["motorcycles", "count"],
+    queryFn: async () => {
+      const { count } = await supabase.from("motorcycles").select("id", { count: "exact", head: true });
+      return count ?? 0;
+    },
+  });
+  const blocked = !canCreateMotorcycle(plan, motoCount.data ?? 0);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (blocked) { toast.error("Limite do plano atingido. Faça upgrade para cadastrar mais motos."); return; }
     const fd = new FormData(e.currentTarget);
     const parsed = schema.safeParse(Object.fromEntries(fd));
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
@@ -66,6 +81,15 @@ function NewMotorcycle() {
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <h1 className="font-display text-2xl font-bold">Nova moto</h1>
+      {blocked && (
+        <div className="surface-elevated flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/40 bg-primary/5 p-4 text-sm">
+          <div className="flex items-center gap-2">
+            <Crown className="h-4 w-4 text-primary" />
+            <span>Plano <strong>{plan.label}</strong> permite até {plan.limits.motorcycles} moto(s). Faça upgrade para continuar.</span>
+          </div>
+          <Link to="/plans"><Button size="sm" className="btn-glow">Ver planos</Button></Link>
+        </div>
+      )}
       <form onSubmit={onSubmit} className="surface-elevated space-y-5 rounded-2xl p-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Marca" required>
@@ -99,8 +123,8 @@ function NewMotorcycle() {
         <Field label="Foto principal">
           <Input type="file" accept="image/*" onChange={(e) => setPhoto(e.target.files?.[0] ?? null)} />
         </Field>
-        <div className="flex gap-3">
-          <Button type="submit" className="btn-glow" disabled={loading}>{loading ? "Salvando…" : "Cadastrar moto"}</Button>
+        <div className="flex flex-wrap gap-3">
+          <Button type="submit" className="btn-glow" disabled={loading || blocked}>{loading ? "Salvando…" : "Cadastrar moto"}</Button>
           <Button type="button" variant="outline" onClick={() => navigate({ to: "/motorcycles" })}>Cancelar</Button>
         </div>
       </form>

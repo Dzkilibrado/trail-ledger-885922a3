@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedWorkshopsRouteImport } from './routes/_authenticated/workshops'
+import { Route as AuthenticatedPlansRouteImport } from './routes/_authenticated/plans'
 import { Route as AuthenticatedFinancialRouteImport } from './routes/_authenticated/financial'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCertificatesRouteImport } from './routes/_authenticated/certificates'
@@ -44,6 +45,11 @@ const CTokenRoute = CTokenRouteImport.update({
 const AuthenticatedWorkshopsRoute = AuthenticatedWorkshopsRouteImport.update({
   id: '/workshops',
   path: '/workshops',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedPlansRoute = AuthenticatedPlansRouteImport.update({
+  id: '/plans',
+  path: '/plans',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedFinancialRoute = AuthenticatedFinancialRouteImport.update({
@@ -93,6 +99,7 @@ export interface FileRoutesByFullPath {
   '/certificates': typeof AuthenticatedCertificatesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/financial': typeof AuthenticatedFinancialRoute
+  '/plans': typeof AuthenticatedPlansRoute
   '/workshops': typeof AuthenticatedWorkshopsRoute
   '/c/$token': typeof CTokenRoute
   '/motorcycles/$id': typeof AuthenticatedMotorcyclesIdRoute
@@ -106,6 +113,7 @@ export interface FileRoutesByTo {
   '/certificates': typeof AuthenticatedCertificatesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/financial': typeof AuthenticatedFinancialRoute
+  '/plans': typeof AuthenticatedPlansRoute
   '/workshops': typeof AuthenticatedWorkshopsRoute
   '/c/$token': typeof CTokenRoute
   '/motorcycles/$id': typeof AuthenticatedMotorcyclesIdRoute
@@ -121,6 +129,7 @@ export interface FileRoutesById {
   '/_authenticated/certificates': typeof AuthenticatedCertificatesRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/financial': typeof AuthenticatedFinancialRoute
+  '/_authenticated/plans': typeof AuthenticatedPlansRoute
   '/_authenticated/workshops': typeof AuthenticatedWorkshopsRoute
   '/c/$token': typeof CTokenRoute
   '/_authenticated/motorcycles/$id': typeof AuthenticatedMotorcyclesIdRoute
@@ -136,6 +145,7 @@ export interface FileRouteTypes {
     | '/certificates'
     | '/dashboard'
     | '/financial'
+    | '/plans'
     | '/workshops'
     | '/c/$token'
     | '/motorcycles/$id'
@@ -149,6 +159,7 @@ export interface FileRouteTypes {
     | '/certificates'
     | '/dashboard'
     | '/financial'
+    | '/plans'
     | '/workshops'
     | '/c/$token'
     | '/motorcycles/$id'
@@ -163,6 +174,7 @@ export interface FileRouteTypes {
     | '/_authenticated/certificates'
     | '/_authenticated/dashboard'
     | '/_authenticated/financial'
+    | '/_authenticated/plans'
     | '/_authenticated/workshops'
     | '/c/$token'
     | '/_authenticated/motorcycles/$id'
@@ -212,6 +224,13 @@ declare module '@tanstack/react-router' {
       path: '/workshops'
       fullPath: '/workshops'
       preLoaderRoute: typeof AuthenticatedWorkshopsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/plans': {
+      id: '/_authenticated/plans'
+      path: '/plans'
+      fullPath: '/plans'
+      preLoaderRoute: typeof AuthenticatedPlansRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/financial': {
@@ -271,6 +290,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCertificatesRoute: typeof AuthenticatedCertificatesRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFinancialRoute: typeof AuthenticatedFinancialRoute
+  AuthenticatedPlansRoute: typeof AuthenticatedPlansRoute
   AuthenticatedWorkshopsRoute: typeof AuthenticatedWorkshopsRoute
   AuthenticatedMotorcyclesIdRoute: typeof AuthenticatedMotorcyclesIdRoute
   AuthenticatedMotorcyclesNewRoute: typeof AuthenticatedMotorcyclesNewRoute
@@ -282,6 +302,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCertificatesRoute: AuthenticatedCertificatesRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFinancialRoute: AuthenticatedFinancialRoute,
+  AuthenticatedPlansRoute: AuthenticatedPlansRoute,
   AuthenticatedWorkshopsRoute: AuthenticatedWorkshopsRoute,
   AuthenticatedMotorcyclesIdRoute: AuthenticatedMotorcyclesIdRoute,
   AuthenticatedMotorcyclesNewRoute: AuthenticatedMotorcyclesNewRoute,

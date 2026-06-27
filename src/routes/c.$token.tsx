@@ -31,7 +31,7 @@ type CertPayload = {
   owner: { full_name: string | null; avatar_url: string | null } | null;
   events: EventRow[];
   schedules: Database["public"]["Tables"]["maintenance_schedules"]["Row"][];
-  attachments: { id: string; event_id: string; bucket: string; path: string; kind: string; caption: string | null }[];
+  attachments: { id: string; event_id: string; bucket: string; storage_path: string; kind: string; caption: string | null }[];
   workshops: { id: string; name: string; city: string | null; verified: boolean }[];
 };
 
@@ -41,18 +41,28 @@ function PublicCert() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
 
   const publicUrl = typeof window !== "undefined" ? `${window.location.origin}/c/${token}` : `/c/${token}`;
 
   useEffect(() => {
+    let active = true;
     (async () => {
       const sb = makePublicClient();
       const { data: res, error: e } = await sb.rpc("get_public_certificate", { _token: token });
+      if (!active) return;
       if (e || !res) { setError("Certificado inválido, revogado ou expirado."); setLoading(false); return; }
-      setData(res as unknown as CertPayload);
+      const payload = res as unknown as CertPayload;
+      setData(payload);
       setLoading(false);
+      const photo = payload.motorcycle.main_photo_url;
+      if (photo) {
+        const { data: signed } = await sb.storage.from("motorcycle-photos").createSignedUrl(photo, 3600);
+        if (active) setPhotoUrl(signed?.signedUrl ?? null);
+      }
     })();
-    QRCode.toDataURL(publicUrl, { margin: 1, width: 320, color: { dark: "#111113", light: "#FFFFFF" } }).then(setQrUrl);
+    QRCode.toDataURL(publicUrl, { margin: 1, width: 320, color: { dark: "#111113", light: "#FFFFFF" } }).then((u) => active && setQrUrl(u));
+    return () => { active = false; };
   }, [token, publicUrl]);
 
   const computed = useMemo(() => {
@@ -81,18 +91,17 @@ function PublicCert() {
       <div className="surface-elevated max-w-md rounded-3xl p-8 text-center">
         <AlertTriangle className="mx-auto h-10 w-10 text-destructive" />
         <h1 className="mt-4 font-display text-2xl font-bold">Certificado indisponível</h1>
-        <p className="mt-2 text-sm text-muted-foreground">{error}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{error ?? "Esse certificado pode ter sido revogado ou ainda não foi emitido."}</p>
+        <p className="mt-4 text-xs text-muted-foreground">Se você acredita que isso é um erro, peça ao proprietário um novo link.</p>
       </div>
     </div>
   );
 
   const moto = data.motorcycle;
-  const sb = makePublicClient();
-  const photoUrl = moto.main_photo_url ? sb.storage.from("motorcycle-photos").getPublicUrl(moto.main_photo_url).data.publicUrl : null;
   const upcoming = computed.statuses.filter((s) => s.status !== "ok").slice(0, 6);
   const lastMaint = data.events.filter((e) => e.type === "maintenance" || e.type === "revision").slice(0, 6);
-  const photosCount = data.attachments.filter((a) => a.kind === "image" || a.kind === "photo").length;
-  const receiptsCount = data.attachments.filter((a) => a.kind === "invoice" || a.kind === "receipt" || a.kind === "document").length;
+  const photosCount = data.attachments.filter((a) => a.kind === "photo").length;
+  const receiptsCount = data.attachments.filter((a) => a.kind === "invoice" || a.kind === "document").length;
 
   async function share() {
     if (typeof navigator !== "undefined" && navigator.share) {
@@ -127,18 +136,18 @@ function PublicCert() {
     <div className="min-h-screen surface-hero">
       <div className="container mx-auto max-w-5xl px-4 py-8 sm:py-12">
         {/* Header */}
-        <header className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
+        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:justify-between">
+          <div className="flex min-w-0 items-center gap-2">
             <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground"><Bike className="h-5 w-5" /></div>
-            <div>
-              <div className="font-display text-lg font-bold leading-none">TrailBook</div>
+            <div className="min-w-0">
+              <div className="truncate font-display text-lg font-bold leading-none">TrailBook</div>
               <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Prontuário digital</div>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(publicUrl); toast.success("Link copiado"); }}><Copy className="h-4 w-4" /> Copiar link</Button>
-            <Button variant="outline" size="sm" onClick={share}><Share2 className="h-4 w-4" /> Compartilhar</Button>
-            <Button size="sm" onClick={downloadPdf}><Download className="h-4 w-4" /> Baixar PDF</Button>
+          <div className="col-span-2 flex flex-wrap justify-end gap-2 sm:col-span-1">
+            <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(publicUrl); toast.success("Link copiado"); }}><Copy className="h-4 w-4" /> <span className="hidden sm:inline">Copiar link</span></Button>
+            <Button variant="outline" size="sm" onClick={share}><Share2 className="h-4 w-4" /> <span className="hidden sm:inline">Compartilhar</span></Button>
+            <Button size="sm" onClick={downloadPdf}><Download className="h-4 w-4" /> <span className="hidden sm:inline">Baixar </span>PDF</Button>
           </div>
         </header>
 
