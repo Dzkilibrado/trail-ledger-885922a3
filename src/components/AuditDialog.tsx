@@ -84,35 +84,44 @@ function diffFields(row: AuditRow): { field: string; from: any; to: any }[] {
   return out.slice(0, 8);
 }
 
-export function AuditSummary({ rows, onOpen }: { rows: AuditRow[]; onOpen: () => void }) {
+/** Card-resumo já com botão que abre o modal completo. */
+export function AuditSummary({ rows }: { rows: AuditRow[] }) {
+  const [open, setOpen] = useState(false);
   const last = rows[0];
   return (
-    <div className="surface-elevated flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4">
-      <div className="flex items-start gap-3">
-        <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
-          <History className="h-5 w-5" />
-        </div>
-        <div>
-          <div className="text-sm font-semibold">Histórico de alterações</div>
-          <div className="text-xs text-muted-foreground">
-            {rows.length === 0
-              ? "Sem alterações registradas ainda."
-              : `${rows.length} registro(s) · última em ${formatDate(last.created_at)}`}
+    <>
+      <div className="surface-elevated flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4">
+        <div className="flex items-start gap-3">
+          <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
+            <History className="h-5 w-5" />
+          </div>
+          <div>
+            <div className="text-sm font-semibold">Histórico de alterações</div>
+            <div className="text-xs text-muted-foreground">
+              {rows.length === 0
+                ? "Nenhuma alteração registrada ainda."
+                : `${rows.length} registro(s) · última em ${formatDate(last.created_at)}`}
+            </div>
           </div>
         </div>
+        {rows.length > 0 && (
+          <Button variant="outline" size="sm" onClick={() => setOpen(true)}>Ver histórico completo</Button>
+        )}
       </div>
-      {rows.length > 0 && (
-        <Button variant="outline" size="sm" onClick={onOpen}>Ver histórico completo</Button>
-      )}
-    </div>
+      <AuditDialog rows={rows} open={open} onOpenChange={setOpen} />
+    </>
   );
 }
 
-export function AuditDialog({ rows, trigger }: { rows: AuditRow[]; trigger: React.ReactNode }) {
-  const [open, setOpen] = useState(false);
+export function AuditDialog({
+  rows, trigger, open, onOpenChange,
+}: { rows: AuditRow[]; trigger?: React.ReactNode; open?: boolean; onOpenChange?: (v: boolean) => void }) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const isOpen = open ?? internalOpen;
+  const setOpen = (v: boolean) => { onOpenChange ? onOpenChange(v) : setInternalOpen(v); };
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={setOpen}>
+      {trigger ? <DialogTrigger asChild>{trigger}</DialogTrigger> : null}
       <DialogContent className="max-h-[85vh] max-w-3xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2"><History className="h-5 w-5 text-primary" /> Histórico de alterações</DialogTitle>

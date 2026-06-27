@@ -14,7 +14,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { AuditSummary, AuditDialog } from "@/components/AuditDialog";
+import { AuditSummary } from "@/components/AuditDialog";
 import { toast } from "sonner";
 import { priorityList } from "@/lib/maintenance-engine";
 import { computeConservation, categoryHealth, docsHealth, historyHealth } from "@/lib/conservation";
@@ -36,7 +36,6 @@ function MotoDetail() {
   const navigate = useNavigate();
   const { plan } = usePlan();
   const [deleteConfirm, setDeleteConfirm] = useState("");
-  const [auditOpen, setAuditOpen] = useState(false);
 
   const moto = useQuery({
     queryKey: ["motorcycle", id],
@@ -340,17 +339,7 @@ function MotoDetail() {
       </section>
 
       <section className="space-y-3">
-        <AuditSummary rows={(audit.data ?? []) as any} onOpen={() => setAuditOpen(true)} />
-        <AuditDialog
-          rows={(audit.data ?? []) as any}
-          trigger={<button className="hidden" data-audit-trigger />}
-        />
-        {auditOpen && (
-          <AuditDialog
-            rows={(audit.data ?? []) as any}
-            trigger={<span ref={(el) => { if (el && auditOpen) { (el.parentElement?.querySelector('[data-state="closed"]') as HTMLElement | null)?.click(); setAuditOpen(false); } }} />}
-          />
-        )}
+        <AuditSummary rows={(audit.data ?? []) as any} />
       </section>
     </div>
   );
