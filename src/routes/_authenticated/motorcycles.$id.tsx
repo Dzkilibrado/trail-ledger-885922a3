@@ -76,13 +76,10 @@ function MotoDetail() {
     navigate({ to: "/motorcycles" });
   }
 
-  if (moto.isLoading) return <div className="text-muted-foreground">Carregando…</div>;
-  if (!moto.data) return <div>Moto não encontrada.</div>;
-
   const m = moto.data;
   const totalCost = events.data?.reduce((s, e) => s + (Number(e.cost) || 0), 0) ?? 0;
 
-  const statuses = (schedules.data && events.data)
+  const statuses = (m && schedules.data && events.data)
     ? priorityList(schedules.data, m, events.data)
     : [];
   const workshopEventIds = new Set((events.data ?? []).filter((e) => e.workshop_id).map((e) => e.id));
@@ -91,16 +88,34 @@ function MotoDetail() {
     attachments: attachments.data ?? [],
     statuses,
     workshopEventIds,
-    hasDocs: { plate: !!m.plate, renavam: !!m.renavam, chassis: !!m.chassis },
+    hasDocs: { plate: !!m?.plate, renavam: !!m?.renavam, chassis: !!m?.chassis },
   });
   const health = [
     ...categoryHealth(statuses),
-    docsHealth({ plate: !!m.plate, renavam: !!m.renavam, chassis: !!m.chassis }),
+    docsHealth({ plate: !!m?.plate, renavam: !!m?.renavam, chassis: !!m?.chassis }),
     historyHealth(events.data ?? []),
   ];
 
-  // Persiste o score recalculado quando muda
-  useSyncConservation(m.id, m.conservation_score, conservation.score);
+  // Persiste o score recalculado quando muda (hook deve vir antes de qualquer return)
+  useSyncConservation(m?.id ?? null, m?.conservation_score ?? 0, conservation.score);
+
+  if (moto.isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="surface-elevated h-56 animate-pulse rounded-2xl" />
+        <div className="surface-elevated h-32 animate-pulse rounded-2xl" />
+      </div>
+    );
+  }
+  if (!m) {
+    return (
+      <div className="surface-elevated rounded-2xl p-10 text-center">
+        <AlertTriangle className="mx-auto h-10 w-10 text-destructive" />
+        <h2 className="mt-4 font-display text-xl font-bold">Moto não encontrada</h2>
+        <p className="mt-1 text-sm text-muted-foreground">Ela pode ter sido removida ou pertence a outro usuário.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8">
