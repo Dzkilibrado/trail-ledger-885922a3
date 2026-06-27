@@ -117,8 +117,18 @@ export function priorityList(
   events: Pick<EventRow, "occurred_at" | "hours_delta" | "km_delta">[],
 ): ScheduleStatus[] {
   const rate = usageRate(events);
+  const now = Date.now();
   return schedules
-    .filter((s) => s.active)
+    .filter((s) => {
+      if (!s.active) return false;
+      const st = (s as any).status as string | undefined;
+      if (st === "ignored") return false;
+      if (st === "snoozed") {
+        const until = (s as any).snoozed_until as string | null | undefined;
+        if (until && new Date(until).getTime() > now) return false;
+      }
+      return true;
+    })
     .map((s) => evaluateSchedule(s, moto, rate))
     .sort((a, b) => {
       // Ordena por: vencidos > severidade > progresso descrescente

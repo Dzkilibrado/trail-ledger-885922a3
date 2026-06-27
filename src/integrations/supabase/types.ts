@@ -263,11 +263,14 @@ export type Database = {
           interval_days: number | null
           interval_hours: number | null
           interval_km: number | null
+          last_completed_event_id: string | null
           last_done_at: string | null
           last_done_hours: number | null
           last_done_km: number | null
           motorcycle_id: string
           name: string
+          snoozed_until: string | null
+          status: Database["public"]["Enums"]["schedule_status"]
           updated_at: string
         }
         Insert: {
@@ -278,11 +281,14 @@ export type Database = {
           interval_days?: number | null
           interval_hours?: number | null
           interval_km?: number | null
+          last_completed_event_id?: string | null
           last_done_at?: string | null
           last_done_hours?: number | null
           last_done_km?: number | null
           motorcycle_id: string
           name: string
+          snoozed_until?: string | null
+          status?: Database["public"]["Enums"]["schedule_status"]
           updated_at?: string
         }
         Update: {
@@ -293,14 +299,24 @@ export type Database = {
           interval_days?: number | null
           interval_hours?: number | null
           interval_km?: number | null
+          last_completed_event_id?: string | null
           last_done_at?: string | null
           last_done_hours?: number | null
           last_done_km?: number | null
           motorcycle_id?: string
           name?: string
+          snoozed_until?: string | null
+          status?: Database["public"]["Enums"]["schedule_status"]
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "maintenance_schedules_last_completed_event_id_fkey"
+            columns: ["last_completed_event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "maintenance_schedules_motorcycle_id_fkey"
             columns: ["motorcycle_id"]
@@ -321,6 +337,7 @@ export type Database = {
           engine_number: string | null
           hours_total: number
           id: string
+          incident_declaration: Json | null
           km_total: number
           main_photo_url: string | null
           model: string
@@ -343,6 +360,7 @@ export type Database = {
           engine_number?: string | null
           hours_total?: number
           id?: string
+          incident_declaration?: Json | null
           km_total?: number
           main_photo_url?: string | null
           model: string
@@ -365,6 +383,7 @@ export type Database = {
           engine_number?: string | null
           hours_total?: number
           id?: string
+          incident_declaration?: Json | null
           km_total?: number
           main_photo_url?: string | null
           model?: string
@@ -618,6 +637,8 @@ export type Database = {
         | "recall"
         | "warranty"
         | "note"
+        | "incident"
+        | "declaration"
       maintenance_category:
         | "engine"
         | "suspension"
@@ -629,6 +650,7 @@ export type Database = {
         | "other"
       ownership_method: "creation" | "transfer" | "import"
       plan_tier: "free" | "premium" | "workshop"
+      schedule_status: "active" | "snoozed" | "ignored" | "done"
       transfer_status: "pending" | "approved" | "rejected" | "cancelled"
     }
     CompositeTypes: {
@@ -775,6 +797,8 @@ export const Constants = {
         "recall",
         "warranty",
         "note",
+        "incident",
+        "declaration",
       ],
       maintenance_category: [
         "engine",
@@ -788,6 +812,7 @@ export const Constants = {
       ],
       ownership_method: ["creation", "transfer", "import"],
       plan_tier: ["free", "premium", "workshop"],
+      schedule_status: ["active", "snoozed", "ignored", "done"],
       transfer_status: ["pending", "approved", "rejected", "cancelled"],
     },
   },
