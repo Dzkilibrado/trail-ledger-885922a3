@@ -15,6 +15,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedMotorcyclesIndexRouteImport } from './routes/_authenticated/motorcycles.index'
 import { Route as AuthenticatedMotorcyclesNewRouteImport } from './routes/_authenticated/motorcycles.new'
+import { Route as AuthenticatedMotorcyclesIdRouteImport } from './routes/_authenticated/motorcycles.$id'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -47,11 +48,18 @@ const AuthenticatedMotorcyclesNewRoute =
     path: '/motorcycles/new',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMotorcyclesIdRoute =
+  AuthenticatedMotorcyclesIdRouteImport.update({
+    id: '/motorcycles/$id',
+    path: '/motorcycles/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/motorcycles/$id': typeof AuthenticatedMotorcyclesIdRoute
   '/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
   '/motorcycles/': typeof AuthenticatedMotorcyclesIndexRoute
 }
@@ -59,6 +67,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/motorcycles/$id': typeof AuthenticatedMotorcyclesIdRoute
   '/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
   '/motorcycles': typeof AuthenticatedMotorcyclesIndexRoute
 }
@@ -68,20 +77,34 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/motorcycles/$id': typeof AuthenticatedMotorcyclesIdRoute
   '/_authenticated/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
   '/_authenticated/motorcycles/': typeof AuthenticatedMotorcyclesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard' | '/motorcycles/new' | '/motorcycles/'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/motorcycles/$id'
+    | '/motorcycles/new'
+    | '/motorcycles/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/motorcycles/new' | '/motorcycles'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/motorcycles/$id'
+    | '/motorcycles/new'
+    | '/motorcycles'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/dashboard'
+    | '/_authenticated/motorcycles/$id'
     | '/_authenticated/motorcycles/new'
     | '/_authenticated/motorcycles/'
   fileRoutesById: FileRoutesById
@@ -136,17 +159,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMotorcyclesNewRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/motorcycles/$id': {
+      id: '/_authenticated/motorcycles/$id'
+      path: '/motorcycles/$id'
+      fullPath: '/motorcycles/$id'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedMotorcyclesIdRoute: typeof AuthenticatedMotorcyclesIdRoute
   AuthenticatedMotorcyclesNewRoute: typeof AuthenticatedMotorcyclesNewRoute
   AuthenticatedMotorcyclesIndexRoute: typeof AuthenticatedMotorcyclesIndexRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedMotorcyclesIdRoute: AuthenticatedMotorcyclesIdRoute,
   AuthenticatedMotorcyclesNewRoute: AuthenticatedMotorcyclesNewRoute,
   AuthenticatedMotorcyclesIndexRoute: AuthenticatedMotorcyclesIndexRoute,
 }
