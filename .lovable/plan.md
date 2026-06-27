@@ -1,92 +1,110 @@
-# TrailBook — Plano de Construção
 
-Prontuário digital para motos off-road com histórico permanente tipo "Carfax". Dado o escopo grande, vou entregar em fases incrementais, começando por uma base sólida (design system + auth + cadastro de moto + timeline) e evoluindo até certificado público e financeiro.
+# Revisão UX TrailBook v1.0 — Plano de Execução
 
-## Stack
-- React + TypeScript + Vite + TanStack Start (já configurado no template)
-- Tailwind v4 + Shadcn UI
-- Lovable Cloud (Supabase) — Auth, Postgres, Storage, Realtime
+Escopo grande, mas **sem novas features estruturais**: foco em navegação, clareza, ações, linguagem pt-BR, correção do bug crítico de exclusão e enriquecimento dos módulos fracos. Vou agrupar em ondas para entregar e validar incrementalmente.
 
-## Design System
-- Tema escuro premium (sem toggle light)
-- Tokens em `src/styles.css` (oklch):
-  - `--background` preto grafite (~oklch(0.18 0.01 250))
-  - `--card` cinza escuro elevado
-  - `--primary` laranja vibrante (~oklch(0.72 0.19 50))
-  - `--foreground` branco quente
-  - Gradientes e sombras laranja para CTAs e cards de destaque
-- Tipografia: Inter (corpo) + Space Grotesk (display) via `<link>` no `__root.tsx`
-- Componentes shadcn customizados com variantes `premium`, `hero`, `metric`
+## Onda 1 — Críticos e fundações (entrego primeiro)
 
-## Arquitetura de Dados (Supabase)
+1. **🔴 BUG crítico — Exclusão na Agenda apagava a moto**
+   - Auditar `agenda.tsx`, `ScheduleManager.tsx` e qualquer botão "Excluir" próximo a items de programação.
+   - Garantir que ações sobre schedule só toquem `maintenance_schedules`. Adicionar confirmação textual explícita: "Excluir esta programação de manutenção?".
+   - Exclusão de moto permanece **somente** no detalhe da moto, já com confirm.
 
-Tabelas principais:
-- `profiles` (id, full_name, avatar_url, phone)
-- `user_roles` (id, user_id, role enum: owner|mechanic|admin) — RLS segura
-- `motorcycles` (id, owner_id, brand, model, year_make, year_model, displacement, control_type, chassis, engine_number, plate, renavam, main_photo_url, hours_total, km_total, conservation_score)
-- `motorcycle_photos` (id, motorcycle_id, url, caption)
-- `workshops` (id, name, cnpj, city, owner_user_id, verified)
-- `events` (id, motorcycle_id, type enum, occurred_at, title, description, hours_at_event, km_at_event, cost, workshop_id, signed_by, signature_data, metadata jsonb)
-- `event_attachments` (id, event_id, url, kind: photo|video|document|invoice)
-- `maintenance_items` (id, event_id, category, service, product, brand, qty, unit_value)
-- `maintenance_schedules` (id, motorcycle_id, name, category, interval_hours, interval_km, interval_days, last_done_hours, last_done_km, last_done_at)
-- `certificates` (id, motorcycle_id, public_token, expires_at, allowed_sections)
+2. **Navegação consistente (web + mobile)**
+   - Criar componente `PageHeader` com: título, breadcrumb opcional, botão Voltar (history-aware) e botão "Ir para início".
+   - Aplicar em todas as rotas internas: Agenda, Detalhe moto, Certificados, Transferências, Oficinas, Financeiro, Nova moto, Planos.
+   - Diálogos/forms: garantir botão **Cancelar** e toasts de sucesso/erro após salvar/excluir, com redirect claro (ex.: após criar moto → detalhe; após excluir → lista).
 
-Todas com RLS: owner vê só suas motos; eventos visíveis ao dono; oficinas só leem motos onde foram convidadas (junção via evento). `certificates.public_token` permite leitura pública via RPC.
+3. **Linguagem pt-BR**
+   - Substituir "Escolher ficheiro" no input file por componente custom `<PhotoPicker>` com texto "Selecionar foto".
+   - Renomear:
+     - "Programações" → "Plano de manutenção"
+     - "Novo evento" → "Registrar atividade" (uso/manutenção)
+     - "Registros imutáveis das últimas alterações" → "Histórico de alterações"
 
-Storage buckets:
-- `motorcycle-photos` (público)
-- `event-media` (público)
-- `documents` (privado, signed URLs)
+## Onda 2 — Agenda redesenhada (item 2, 3, 4, 13)
 
-## Tipos de Evento (Timeline)
-Enum único: `usage | maintenance | revision | accessory | photo | video | document | purchase | sale | ownership_transfer | recall | warranty | note`
+- Novo layout em **cards** com badge discreta de status: Em dia / Próxima / Vencida / Postergada / Ignorada / Concluída.
+- Barra de filtros (chips): Todas · Vencidas · Próximas · Concluídas · Postergadas · Ignoradas.
+- Cada card exibe: serviço, moto, categoria, última execução, próxima estimada, horas/km restantes, severidade, ação recomendada.
+- **Menu de ações por card** (dropdown): Registrar como concluída · Postergar · Ignorar · Editar · Excluir programação · Ver histórico.
+- "Registrar como concluída" abre `NewEventDialog` pré-preenchido (tipo=manutenção, item ligado ao schedule). Ao salvar, atualiza `last_done_*` da schedule, timeline, agenda, score, painel de saúde e gera audit log.
+- Schema: adicionar colunas `status` (`active|snoozed|ignored|done`), `snoozed_until`, `last_completed_event_id` em `maintenance_schedules` + RLS já existente cobre.
 
-Cada tipo renderiza um card específico na timeline vertical com ícone, cor, métricas (h/km), anexos e custo.
+## Onda 3 — Auditoria amigável (item 5)
 
-## Fases de Entrega
+- Esconder lista bruta do detalhe da moto. Em vez disso, card-resumo: "Última alteração há X · Y registros · por Z" + botão "Ver histórico completo".
+- Modal/Sheet com tabela legível: Campo alterado · Valor anterior · Novo valor · Alterado por · Data.
+- Helper `humanizeAuditDiff(old, new)` mapeando colunas técnicas → labels pt-BR (`hours_total` → "Horímetro").
 
-### Fase 1 — Fundação (este turno)
-1. Ativar Lovable Cloud
-2. Design system completo (tokens, fontes, variantes shadcn)
-3. Schema do banco + RLS + storage buckets + trigger profile
-4. Auth (email/senha + Google) com rota `/auth` pública e layout `_authenticated`
-5. Shell autenticado com sidebar (Dashboard, Motos, Agenda, Financeiro, Oficinas, Certificados)
-6. Listagem + cadastro de motos com upload de foto principal
-7. Página da moto com Dashboard básico (foto, h/km, índice placeholder, próximas) e Timeline vazia
-8. Registro rápido de eventos: uso, manutenção, foto, observação
-9. Landing page pública premium em `/`
+## Onda 4 — Oficinas (item 6)
 
-### Fase 2 (próximas iterações)
-- Catálogo estruturado de manutenções por categoria com formulário rico
-- Agenda Inteligente: cálculo automático de alertas (primeiro limite atingido entre h/km/dias)
-- Cálculo do Índice de Conservação 0–100 com explicação dos fatores
-- Upload de notas fiscais, vídeos e documentos
-- Eventos de compra/venda/transferência de proprietário
+- Lista enriquecida: card com nome, selo "TrailBook Verified" quando aplicável, cidade, especialidades, contagem de serviços, motos atendidas, último serviço, total movimentado (sum de `events.cost` com `workshop_id`).
+- Perfil de oficina (rota `workshops.$id`): histórico de serviços, clientes (anonimizados), KPIs simples.
+- Botões "Registrar serviço" e "Ver histórico" em cada card.
 
-### Fase 3
-- Certificado Digital com QR Code e página pública `/c/:token` (SSR para SEO/compartilhamento)
-- Exportação PDF do histórico
-- Módulo Oficina: cadastro, convite, assinatura digital de serviços
-- Financeiro: gráficos (Recharts) por período/categoria/moto, relatórios CSV
+## Onda 5 — Financeiro (item 7)
 
-### Fase 4
-- Realtime nos eventos (Supabase channels)
-- Preparação para Premium, marketplace e integrações
+- KPIs: gasto total · mês atual · ano atual.
+- Gráfico simples (Recharts já presente) por mês (últimos 12) e breakdown por categoria + por moto.
+- Lista "Últimos lançamentos" derivada de `events.cost > 0`.
+- Filtro por período (mês/ano/custom) e por moto.
+- Botões: "Registrar despesa" (abre NewEventDialog tipo=outro com cost), "Adicionar manutenção com custo".
+- Exportar CSV simples dos lançamentos filtrados.
 
-## Detalhes Técnicos
-- Server functions com `createServerFn` + `requireSupabaseAuth` para mutações sensíveis (criar moto, registrar evento)
-- Reads autenticados direto pelo cliente browser (RLS protege)
-- Rota pública do certificado usa server fn pública lendo via cliente publishable + policy `TO anon` filtrada por token
-- Validação com Zod em todos os formulários
-- Componentes reutilizáveis: `MetricCard`, `TimelineEvent`, `MotorcycleCard`, `EventTypeIcon`, `FileUpload`, `ConservationGauge`
+## Onda 6 — Certificado: pré-visualização (item 8)
 
-## Confirmações antes de começar
-Vou seguir com:
-- Auth: **email/senha + Google** (defaults Lovable Cloud)
-- Tabela **profiles** sim (nome, avatar, telefone)
-- Idioma da interface: **Português (BR)**
-- Sem modo claro
-- Começo pela **Fase 1** completa neste turno; demais fases em turnos seguintes conforme você priorizar.
+- Em `CertificateSettingsDialog`, botão "Pré-visualizar" abre Sheet renderizando o **mesmo componente** da página pública (`PublicCertificateView`) com dados locais e `allowed_sections` em tempo real — sem precisar publicar.
+- Extrair render da `c.$token.tsx` para componente reutilizável.
 
-Se quiser ajustar prioridade (ex: já incluir Certificado ou Financeiro na Fase 1), me avise. Caso contrário, aprovo e parto para implementação.
+## Onda 7 — Transferências (item 9)
+
+- Topo da página com passo-a-passo visual (2 cards: "Vendedor" / "Comprador") explicando o fluxo.
+- Estados de botão claros + tooltip quando comprador ainda não tem conta ("Convidaremos por e-mail assim que ele criar a conta").
+- Aba "Histórico" listando transferências resolvidas.
+
+## Onda 8 — Cadastro de moto (itens 10, 11)
+
+- Listas de seleção (Select com opção "Outros" → libera input):
+  - Marca: Honda, Yamaha, KTM, GasGas, Husqvarna, Beta, Sherco, Kawasaki, Suzuki, Outros.
+  - Modelo: catálogo por marca (CRF230F, CRF250F, CRF250R, CRF300L, WR250F, WR450F, 250 EXC-F, 350 EXC-F, etc. + Outros).
+  - Cilindrada: 150, 230, 250, 300, 350, 450, 500, Outros.
+  - Tipo de moto: Trilha leve, Enduro, MotoCross, Rally, Adventure, Outros.
+  - Tipo de controle: Horímetro, Hodômetro, Ambos.
+  - Anos: dropdown 1990–ano+1.
+- Componente `<PhotoPicker>` substituindo o input file padrão (label "Selecionar foto").
+
+## Onda 9 — Sinistro / Ocorrências (item 12)
+
+- Novo tipo de evento `incident` (adicionar ao enum existente).
+- `NewEventDialog` ganha aba/preset "Sinistro" com: tipo de ocorrência (select), data, descrição, peças afetadas, reparos, oficina, custo, fotos, documentos.
+- Em **Cadastro de moto** novo passo: pergunta "A moto já teve sinistro?" — Sim / Não / Não informado. Se "Não", grava aceite (`incident_declaration` em `motorcycles`) com texto da declaração + timestamp e registra evento `declaration` na timeline + audit.
+- `conservation.ts`: penalizar score quando houver `incident` recente (peso configurável).
+- Certificado público: nova seção opcional "Sinistros declarados" no `cert-sections` (oculta por padrão).
+
+## Banco de dados (migrações necessárias)
+
+- `maintenance_schedules`: + `status` enum (`active|snoozed|ignored|done`), + `snoozed_until timestamptz`, + `last_completed_event_id uuid`.
+- `motorcycles`: + `incident_declaration jsonb` (texto + accepted_at).
+- `events.type` enum: adicionar `incident` e `declaration`.
+- `cert-sections`: adicionar chave `incidents`.
+
+Todas com GRANTs e RLS já existentes propagados.
+
+## Fora de escopo desta rodada (registrado para roadmap)
+
+- Dashboard real da oficina com login dedicado.
+- Stripe / cobrança real.
+- Exportação avançada de relatórios financeiros (PDF formatado).
+- Convite por e-mail real ao comprador sem conta (depende de Resend/SMTP).
+
+## Entregáveis
+
+- Código + migrações aplicadas.
+- Build/typecheck limpos.
+- Smoke test via Playwright (login demo) capturando 4-5 telas-chave para confirmar visual.
+- Resumo final no formato pedido: **Ajustado · Melhorado · Bugs corrigidos · Oportunidades futuras**.
+
+---
+
+**Confirma esta sequência?** Posso começar pela Onda 1 (bug crítico + navegação + linguagem) ainda agora, ou prefere reordenar prioridades / cortar alguma onda (ex.: deixar Sinistro para depois)?
