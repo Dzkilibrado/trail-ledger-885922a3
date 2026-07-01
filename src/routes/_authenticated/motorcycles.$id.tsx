@@ -24,6 +24,7 @@ import { canCreateCertificate } from "@/lib/plans";
 import { CertificateSettingsDialog } from "@/components/CertificateSettingsDialog";
 import { TransferOwnershipDialog } from "@/components/TransferOwnershipDialog";
 import { OwnershipTimeline } from "@/components/OwnershipTimeline";
+import { MotorcycleDocuments } from "@/components/MotorcycleDocuments";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id")({
   head: () => ({ meta: [{ title: "Moto — TrailBook" }] }),
@@ -250,6 +251,8 @@ function MotoDetail() {
         <h2 className="font-display text-lg font-bold">Histórico de proprietários</h2>
         <OwnershipTimeline entries={ownership.data ?? []} />
       </section>
+
+      <MotorcycleDocuments motorcycleId={m.id} />
 
       <section className="space-y-3">
         <h2 className="font-display text-lg font-bold">Painel de saúde</h2>
