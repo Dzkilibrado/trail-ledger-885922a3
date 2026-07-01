@@ -109,8 +109,8 @@ function PublicCert() {
   const photosCount = data.attachments.filter((a) => a.kind === "photo").length;
   const invoicesCount = data.attachments.filter((a) => a.kind === "invoice").length;
   const documentsCount = data.attachments.filter((a) => a.kind === "document").length;
-  const evidenceVisible = show("photos") || show("invoices") || show("documents") || show("workshop");
   const hasOriginDoc = !!data.documents_presence?.invoice && show("invoices");
+  const evidenceVisible = show("photos") || show("documents") || show("workshop") || hasOriginDoc;
 
   async function share() {
     if (typeof navigator !== "undefined" && navigator.share) {
