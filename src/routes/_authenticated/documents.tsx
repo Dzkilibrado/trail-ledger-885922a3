@@ -15,7 +15,7 @@ function DocumentsHub() {
     queryKey: ["docs-hub"],
     queryFn: async () => {
       const { data: motos } = await supabase.from("motorcycles")
-        .select("id, brand, model, year, nickname, trailbook_id, main_photo_bucket, main_photo_path")
+        .select("id, brand, model, year_model, nickname, trailbook_id")
         .order("created_at", { ascending: false });
       const { data: docs } = await supabase.from("motorcycle_documents" as never)
         .select("motorcycle_id, doc_type, is_current, deleted_at, updated_at");
@@ -31,7 +31,8 @@ function DocumentsHub() {
         if (d.doc_type === "invoice") e.hasInvoice = true;
         if (!e.last || d.updated_at > e.last) e.last = d.updated_at;
       }
-      return (motos ?? []).map((m) => ({ ...m, stats: byMoto[m.id] ?? { total: 0, hasInvoice: false, last: null } }));
+      const list = (motos ?? []) as Array<{ id: string; brand: string | null; model: string | null; year_model: number | null; nickname: string | null; trailbook_id: string | null }>;
+      return list.map((m) => ({ ...m, stats: byMoto[m.id] ?? { total: 0, hasInvoice: false, last: null } }));
     },
   });
 
@@ -39,7 +40,7 @@ function DocumentsHub() {
     <div className="mx-auto max-w-5xl space-y-6">
       <PageHeader
         title="📂 Minha Documentação"
-        subtitle="Organize aqui todos os documentos importantes da sua motocicleta. Eles ficam protegidos, disponíveis sempre que você precisar e fazem parte do histórico permanente da moto."
+        description="Organize aqui todos os documentos importantes da sua motocicleta. Eles ficam protegidos, disponíveis sempre que você precisar e fazem parte do histórico permanente da moto."
       />
 
       {q.isLoading ? (
@@ -61,7 +62,7 @@ function DocumentsHub() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate font-semibold">
-                  {m.nickname ?? `${m.brand} ${m.model}`} <span className="text-muted-foreground">· {m.year}</span>
+                  {m.nickname ?? `${m.brand ?? ""} ${m.model ?? ""}`.trim()} <span className="text-muted-foreground">· {m.year_model ?? ""}</span>
                 </div>
                 <div className="text-[11px] text-muted-foreground">
                   <span className="font-mono">{m.trailbook_id ?? "—"}</span>
