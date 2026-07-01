@@ -326,6 +326,71 @@ export type Database = {
           },
         ]
       }
+      motorcycle_documents: {
+        Row: {
+          amount: number | null
+          bucket: string
+          created_at: string
+          created_by: string | null
+          custom_label: string | null
+          doc_date: string | null
+          doc_number: string | null
+          doc_type: Database["public"]["Enums"]["motorcycle_document_type"]
+          file_name: string | null
+          id: string
+          issuer: string | null
+          mime_type: string | null
+          motorcycle_id: string
+          notes: string | null
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          amount?: number | null
+          bucket?: string
+          created_at?: string
+          created_by?: string | null
+          custom_label?: string | null
+          doc_date?: string | null
+          doc_number?: string | null
+          doc_type: Database["public"]["Enums"]["motorcycle_document_type"]
+          file_name?: string | null
+          id?: string
+          issuer?: string | null
+          mime_type?: string | null
+          motorcycle_id: string
+          notes?: string | null
+          storage_path: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number | null
+          bucket?: string
+          created_at?: string
+          created_by?: string | null
+          custom_label?: string | null
+          doc_date?: string | null
+          doc_number?: string | null
+          doc_type?: Database["public"]["Enums"]["motorcycle_document_type"]
+          file_name?: string | null
+          id?: string
+          issuer?: string | null
+          mime_type?: string | null
+          motorcycle_id?: string
+          notes?: string | null
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "motorcycle_documents_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       motorcycles: {
         Row: {
           brand: string
@@ -648,6 +713,13 @@ export type Database = {
         | "electrical"
         | "cooling"
         | "other"
+      motorcycle_document_type:
+        | "invoice"
+        | "manual"
+        | "warranty"
+        | "import"
+        | "contract"
+        | "other"
       ownership_method: "creation" | "transfer" | "import"
       plan_tier: "free" | "premium" | "workshop"
       schedule_status: "active" | "snoozed" | "ignored" | "done"
@@ -808,6 +880,14 @@ export const Constants = {
         "wheels",
         "electrical",
         "cooling",
+        "other",
+      ],
+      motorcycle_document_type: [
+        "invoice",
+        "manual",
+        "warranty",
+        "import",
+        "contract",
         "other",
       ],
       ownership_method: ["creation", "transfer", "import"],
