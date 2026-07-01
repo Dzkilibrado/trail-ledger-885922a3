@@ -9,6 +9,7 @@ import { usePlan } from "@/hooks/usePlan";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useModules } from "@/hooks/useModules";
 import { ROUTE_TO_MODULE } from "@/lib/modules";
+import { ModuleGate } from "@/components/ModuleGate";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -89,11 +90,19 @@ function AuthedLayout() {
           </div>
         </header>
         <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
-          <Outlet />
+          <RoutedModuleGate pathname={pathname}>
+            <Outlet />
+          </RoutedModuleGate>
         </main>
       </div>
     </div>
   );
+}
+
+function RoutedModuleGate({ pathname, children }: { pathname: string; children: React.ReactNode }) {
+  const entry = Object.entries(ROUTE_TO_MODULE).find(([path]) => pathname === path || pathname.startsWith(path + "/"));
+  if (!entry) return <>{children}</>;
+  return <ModuleGate moduleKey={entry[1]}>{children}</ModuleGate>;
 }
 
 function SidebarBody({ pathname, onSignOut, onClose }: { pathname: string; onSignOut: () => void; onClose?: () => void }) {
