@@ -618,6 +618,54 @@ export type Database = {
           },
         ]
       }
+      platform_modules: {
+        Row: {
+          created_at: string
+          description: string | null
+          hide_when_disabled: boolean
+          id: string
+          key: string
+          label: string
+          maintenance_message: string | null
+          maintenance_reason: string | null
+          maintenance_until: string | null
+          sort_order: number
+          status: Database["public"]["Enums"]["module_status"]
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          hide_when_disabled?: boolean
+          id?: string
+          key: string
+          label: string
+          maintenance_message?: string | null
+          maintenance_reason?: string | null
+          maintenance_until?: string | null
+          sort_order?: number
+          status?: Database["public"]["Enums"]["module_status"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          hide_when_disabled?: boolean
+          id?: string
+          key?: string
+          label?: string
+          maintenance_message?: string | null
+          maintenance_reason?: string | null
+          maintenance_until?: string | null
+          sort_order?: number
+          status?: Database["public"]["Enums"]["module_status"]
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -922,6 +970,37 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_update_module: {
+        Args: {
+          _hide_when_disabled?: boolean
+          _key: string
+          _maintenance_message?: string
+          _maintenance_reason?: string
+          _maintenance_until?: string
+          _status: Database["public"]["Enums"]["module_status"]
+        }
+        Returns: {
+          created_at: string
+          description: string | null
+          hide_when_disabled: boolean
+          id: string
+          key: string
+          label: string
+          maintenance_message: string | null
+          maintenance_reason: string | null
+          maintenance_until: string | null
+          sort_order: number
+          status: Database["public"]["Enums"]["module_status"]
+          updated_at: string
+          updated_by: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "platform_modules"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       admin_update_profile: {
         Args: { _full_name: string; _phone: string; _user: string }
         Returns: undefined
@@ -929,6 +1008,30 @@ export type Database = {
       cancel_ownership_transfer: {
         Args: { _transfer_id: string }
         Returns: undefined
+      }
+      get_platform_modules: {
+        Args: never
+        Returns: {
+          created_at: string
+          description: string | null
+          hide_when_disabled: boolean
+          id: string
+          key: string
+          label: string
+          maintenance_message: string | null
+          maintenance_reason: string | null
+          maintenance_until: string | null
+          sort_order: number
+          status: Database["public"]["Enums"]["module_status"]
+          updated_at: string
+          updated_by: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "platform_modules"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_public_certificate: { Args: { _token: string }; Returns: Json }
       has_role: {
@@ -978,6 +1081,7 @@ export type Database = {
         | "electrical"
         | "cooling"
         | "other"
+      module_status: "active" | "maintenance" | "disabled" | "beta"
       motorcycle_document_type:
         | "invoice"
         | "manual"
@@ -1178,6 +1282,7 @@ export const Constants = {
         "cooling",
         "other",
       ],
+      module_status: ["active", "maintenance", "disabled", "beta"],
       motorcycle_document_type: [
         "invoice",
         "manual",
