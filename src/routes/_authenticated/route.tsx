@@ -1,11 +1,12 @@
 import { createFileRoute, Outlet, redirect, Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, LayoutDashboard, Calendar, DollarSign, QrCode, Building2, LogOut, Plus, Menu, X, Crown, ArrowRightLeft } from "lucide-react";
+import { Bike, LayoutDashboard, Calendar, DollarSign, QrCode, Building2, LogOut, Plus, Menu, X, Crown, ArrowRightLeft, LifeBuoy, Shield, Bell } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { usePlan } from "@/hooks/usePlan";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -25,7 +26,14 @@ const NAV = [
   { to: "/financial", label: "Financeiro", icon: DollarSign },
   { to: "/certificates", label: "Certificados", icon: QrCode },
   { to: "/transfers", label: "Transferências", icon: ArrowRightLeft },
+  { to: "/tickets", label: "Chamados", icon: LifeBuoy },
   { to: "/plans", label: "Planos", icon: Crown },
+] as const;
+
+const ADMIN_NAV = [
+  { to: "/admin", label: "Painel", icon: LayoutDashboard },
+  { to: "/admin/users", label: "Usuários", icon: Shield },
+  { to: "/admin/tickets", label: "Chamados", icon: LifeBuoy },
 ] as const;
 
 function AuthedLayout() {
@@ -68,9 +76,12 @@ function AuthedLayout() {
           <div className="font-display text-sm font-semibold text-muted-foreground">
             {NAV.find((n) => pathname.startsWith(n.to))?.label ?? "TrailBook"}
           </div>
-          <Link to="/motorcycles/new">
-            <Button size="sm" className="btn-glow"><Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nova</span> moto</Button>
-          </Link>
+          <div className="flex items-center gap-2">
+            <NotificationsBell />
+            <Link to="/motorcycles/new">
+              <Button size="sm" className="btn-glow"><Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nova</span> moto</Button>
+            </Link>
+          </div>
         </header>
         <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
           <Outlet />
@@ -82,6 +93,7 @@ function AuthedLayout() {
 
 function SidebarBody({ pathname, onSignOut, onClose }: { pathname: string; onSignOut: () => void; onClose?: () => void }) {
   const { plan } = usePlan();
+  const { isAdmin } = useIsAdmin();
   return (
     <>
       <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
@@ -118,6 +130,22 @@ function SidebarBody({ pathname, onSignOut, onClose }: { pathname: string; onSig
             </Link>
           );
         })}
+        {isAdmin && (
+          <>
+            <div className="mt-4 px-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Administração</div>
+            {ADMIN_NAV.map((item) => {
+              const active = pathname === item.to || pathname.startsWith(item.to + "/");
+              return (
+                <Link key={item.to} to={item.to} className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  active ? "bg-primary/15 text-primary" : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                )}>
+                  <item.icon className="h-4 w-4" />{item.label}
+                </Link>
+              );
+            })}
+          </>
+        )}
       </nav>
       <div className="border-t border-sidebar-border p-3">
         <Button variant="ghost" className="w-full justify-start gap-3 text-sidebar-foreground/80" onClick={onSignOut}>
@@ -125,5 +153,30 @@ function SidebarBody({ pathname, onSignOut, onClose }: { pathname: string; onSig
         </Button>
       </div>
     </>
+  );
+}
+
+function NotificationsBell() {
+  const { data } = useQuery({
+    queryKey: ["notifications", "unread"],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("notifications")
+        .select("id", { count: "exact", head: true })
+        .is("read_at", null);
+      return count ?? 0;
+    },
+    refetchInterval: 30_000,
+  });
+  const count = data ?? 0;
+  return (
+    <Link to="/tickets" aria-label="Notificações" className="relative rounded-md p-2 hover:bg-muted">
+      <Bell className="h-4 w-4" />
+      {count > 0 && (
+        <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+          {count > 9 ? "9+" : count}
+        </span>
+      )}
+    </Link>
   );
 }
