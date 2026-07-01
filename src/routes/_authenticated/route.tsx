@@ -1,12 +1,14 @@
 import { createFileRoute, Outlet, redirect, Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, LayoutDashboard, Calendar, DollarSign, QrCode, Building2, LogOut, Plus, Menu, X, Crown, ArrowRightLeft, LifeBuoy, Shield, Bell, FolderOpen } from "lucide-react";
+import { Bike, LayoutDashboard, Calendar, DollarSign, QrCode, Building2, LogOut, Plus, Menu, X, Crown, ArrowRightLeft, LifeBuoy, Shield, Bell, FolderOpen, Blocks, Wrench, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { usePlan } from "@/hooks/usePlan";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useModules } from "@/hooks/useModules";
+import { ROUTE_TO_MODULE } from "@/lib/modules";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -36,6 +38,7 @@ const ADMIN_NAV = [
   { to: "/admin/users", label: "Usuários", icon: Shield },
   { to: "/admin/tickets", label: "Chamados", icon: LifeBuoy },
   { to: "/admin/documents", label: "Documentos", icon: FolderOpen },
+  { to: "/admin/modules", label: "Módulos", icon: Blocks },
 ] as const;
 
 function AuthedLayout() {
