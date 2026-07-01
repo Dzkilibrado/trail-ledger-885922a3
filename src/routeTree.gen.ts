@@ -31,6 +31,7 @@ import { Route as AuthenticatedMotorcyclesIdRouteImport } from './routes/_authen
 import { Route as AuthenticatedDocumentsIdRouteImport } from './routes/_authenticated/documents.$id'
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedAdminTicketsRouteImport } from './routes/_authenticated/admin.tickets'
+import { Route as AuthenticatedAdminDocumentsRouteImport } from './routes/_authenticated/admin.documents'
 
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
@@ -147,6 +148,12 @@ const AuthenticatedAdminTicketsRoute =
     path: '/tickets',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminDocumentsRoute =
+  AuthenticatedAdminDocumentsRouteImport.update({
+    id: '/documents',
+    path: '/documents',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -162,6 +169,7 @@ export interface FileRoutesByFullPath {
   '/transfers': typeof AuthenticatedTransfersRoute
   '/workshops': typeof AuthenticatedWorkshopsRoute
   '/c/$token': typeof CTokenRoute
+  '/admin/documents': typeof AuthenticatedAdminDocumentsRoute
   '/admin/tickets': typeof AuthenticatedAdminTicketsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/documents/$id': typeof AuthenticatedDocumentsIdRoute
@@ -185,6 +193,7 @@ export interface FileRoutesByTo {
   '/transfers': typeof AuthenticatedTransfersRoute
   '/workshops': typeof AuthenticatedWorkshopsRoute
   '/c/$token': typeof CTokenRoute
+  '/admin/documents': typeof AuthenticatedAdminDocumentsRoute
   '/admin/tickets': typeof AuthenticatedAdminTicketsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/documents/$id': typeof AuthenticatedDocumentsIdRoute
@@ -210,6 +219,7 @@ export interface FileRoutesById {
   '/_authenticated/transfers': typeof AuthenticatedTransfersRoute
   '/_authenticated/workshops': typeof AuthenticatedWorkshopsRoute
   '/c/$token': typeof CTokenRoute
+  '/_authenticated/admin/documents': typeof AuthenticatedAdminDocumentsRoute
   '/_authenticated/admin/tickets': typeof AuthenticatedAdminTicketsRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
   '/_authenticated/documents/$id': typeof AuthenticatedDocumentsIdRoute
@@ -235,6 +245,7 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/workshops'
     | '/c/$token'
+    | '/admin/documents'
     | '/admin/tickets'
     | '/admin/users'
     | '/documents/$id'
@@ -258,6 +269,7 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/workshops'
     | '/c/$token'
+    | '/admin/documents'
     | '/admin/tickets'
     | '/admin/users'
     | '/documents/$id'
@@ -282,6 +294,7 @@ export interface FileRouteTypes {
     | '/_authenticated/transfers'
     | '/_authenticated/workshops'
     | '/c/$token'
+    | '/_authenticated/admin/documents'
     | '/_authenticated/admin/tickets'
     | '/_authenticated/admin/users'
     | '/_authenticated/documents/$id'
@@ -455,15 +468,24 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminTicketsRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/documents': {
+      id: '/_authenticated/admin/documents'
+      path: '/documents'
+      fullPath: '/admin/documents'
+      preLoaderRoute: typeof AuthenticatedAdminDocumentsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
   }
 }
 
 interface AuthenticatedAdminRouteChildren {
+  AuthenticatedAdminDocumentsRoute: typeof AuthenticatedAdminDocumentsRoute
   AuthenticatedAdminTicketsRoute: typeof AuthenticatedAdminTicketsRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
+  AuthenticatedAdminDocumentsRoute: AuthenticatedAdminDocumentsRoute,
   AuthenticatedAdminTicketsRoute: AuthenticatedAdminTicketsRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
 }
