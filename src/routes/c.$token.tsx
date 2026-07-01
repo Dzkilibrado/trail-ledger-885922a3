@@ -36,6 +36,7 @@ type CertPayload = {
   attachments: { id: string; event_id: string; bucket: string; storage_path: string; kind: string; caption: string | null }[];
   workshops: { id: string; name: string; city: string | null; verified: boolean; verified_label?: string | null }[];
   ownership?: { id: string; started_at: string; ended_at: string | null; method: "creation" | "transfer" | "import"; owner_name: string | null }[];
+  documents_presence?: { invoice?: boolean };
 };
 
 function PublicCert() {
@@ -108,7 +109,8 @@ function PublicCert() {
   const photosCount = data.attachments.filter((a) => a.kind === "photo").length;
   const invoicesCount = data.attachments.filter((a) => a.kind === "invoice").length;
   const documentsCount = data.attachments.filter((a) => a.kind === "document").length;
-  const evidenceVisible = show("photos") || show("invoices") || show("documents") || show("workshop");
+  const hasOriginDoc = !!data.documents_presence?.invoice && show("invoices");
+  const evidenceVisible = show("photos") || show("documents") || show("workshop") || hasOriginDoc;
 
   async function share() {
     if (typeof navigator !== "undefined" && navigator.share) {
@@ -305,10 +307,15 @@ function PublicCert() {
         {/* Evidence summary */}
         {evidenceVisible ? <section className="mt-6 surface-elevated rounded-3xl p-6">
           <h2 className="font-display text-lg font-bold">Evidências e parceiros</h2>
+          {hasOriginDoc ? (
+            <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-400">
+              <Receipt className="h-3.5 w-3.5" /> 📄 Documento de origem registrado
+            </div>
+          ) : null}
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
             {show("photos") ? <EvidenceCard icon={Camera} label="Fotos" value={photosCount} /> : null}
-            {show("invoices") || show("documents") ? (
-              <EvidenceCard icon={Receipt} label="Notas fiscais / documentos" value={(show("invoices") ? invoicesCount : 0) + (show("documents") ? documentsCount : 0)} />
+            {show("documents") ? (
+              <EvidenceCard icon={Receipt} label="Documentos anexados" value={invoicesCount + documentsCount} />
             ) : null}
             {show("workshop") ? <EvidenceCard icon={Wrench} label="Oficinas registradas" value={data.workshops.length} extra={data.workshops.find((w) => w.verified) ? "Inclui oficina verificada" : undefined} /> : null}
           </div>
