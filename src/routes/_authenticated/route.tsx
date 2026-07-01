@@ -1,12 +1,15 @@
 import { createFileRoute, Outlet, redirect, Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, LayoutDashboard, Calendar, DollarSign, QrCode, Building2, LogOut, Plus, Menu, X, Crown, ArrowRightLeft, LifeBuoy, Shield, Bell, FolderOpen } from "lucide-react";
+import { Bike, LayoutDashboard, Calendar, DollarSign, QrCode, Building2, LogOut, Plus, Menu, X, Crown, ArrowRightLeft, LifeBuoy, Shield, Bell, FolderOpen, Blocks, Wrench, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { usePlan } from "@/hooks/usePlan";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { useModules } from "@/hooks/useModules";
+import { ROUTE_TO_MODULE } from "@/lib/modules";
+import { ModuleGate } from "@/components/ModuleGate";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -36,6 +39,7 @@ const ADMIN_NAV = [
   { to: "/admin/users", label: "Usuários", icon: Shield },
   { to: "/admin/tickets", label: "Chamados", icon: LifeBuoy },
   { to: "/admin/documents", label: "Documentos", icon: FolderOpen },
+  { to: "/admin/modules", label: "Módulos", icon: Blocks },
 ] as const;
 
 function AuthedLayout() {
@@ -86,16 +90,26 @@ function AuthedLayout() {
           </div>
         </header>
         <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
-          <Outlet />
+          <RoutedModuleGate pathname={pathname}>
+            <Outlet />
+          </RoutedModuleGate>
         </main>
       </div>
     </div>
   );
 }
 
+function RoutedModuleGate({ pathname, children }: { pathname: string; children: React.ReactNode }) {
+  const entry = Object.entries(ROUTE_TO_MODULE).find(([path]) => pathname === path || pathname.startsWith(path + "/"));
+  if (!entry) return <>{children}</>;
+  return <ModuleGate moduleKey={entry[1]}>{children}</ModuleGate>;
+}
+
 function SidebarBody({ pathname, onSignOut, onClose }: { pathname: string; onSignOut: () => void; onClose?: () => void }) {
   const { plan } = usePlan();
   const { isAdmin } = useIsAdmin();
+  const modulesQ = useModules();
+  const moduleByKey = new Map((modulesQ.data ?? []).map((m) => [m.key, m]));
   return (
     <>
       <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
@@ -116,6 +130,20 @@ function SidebarBody({ pathname, onSignOut, onClose }: { pathname: string; onSig
       <nav className="flex-1 space-y-1 px-3 py-4">
         {NAV.map((item) => {
           const active = pathname === item.to || pathname.startsWith(item.to + "/");
+          const modKey = ROUTE_TO_MODULE[item.to];
+          const mod = modKey ? moduleByKey.get(modKey) : undefined;
+          if (!isAdmin && mod) {
+            if (mod.status === "disabled" && mod.hide_when_disabled) return null;
+          }
+          const disabled = !isAdmin && mod?.status === "disabled";
+          const inMaint = !isAdmin && mod?.status === "maintenance";
+          if (disabled) {
+            return (
+              <div key={item.to} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground/60 cursor-not-allowed" title="Módulo indisponível">
+                <Lock className="h-4 w-4" /> {item.label}
+              </div>
+            );
+          }
           return (
             <Link
               key={item.to}
@@ -128,7 +156,8 @@ function SidebarBody({ pathname, onSignOut, onClose }: { pathname: string; onSig
               )}
             >
               <item.icon className="h-4 w-4" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {inMaint && <Wrench className="h-3 w-3 text-amber-400" />}
             </Link>
           );
         })}
