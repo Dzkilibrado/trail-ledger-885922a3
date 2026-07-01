@@ -463,6 +463,39 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          kind: string
+          link: string | null
+          read_at: string | null
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind: string
+          link?: string | null
+          read_at?: string | null
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          kind?: string
+          link?: string | null
+          read_at?: string | null
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ownership_history: {
         Row: {
           created_at: string
@@ -561,34 +594,197 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          email: string | null
           full_name: string | null
           id: string
+          last_seen_at: string | null
           phone: string | null
           plan: Database["public"]["Enums"]["plan_tier"]
           plan_since: string
+          status: Database["public"]["Enums"]["user_status"]
           updated_at: string
         }
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id: string
+          last_seen_at?: string | null
           phone?: string | null
           plan?: Database["public"]["Enums"]["plan_tier"]
           plan_since?: string
+          status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
         }
         Update: {
           avatar_url?: string | null
           created_at?: string
+          email?: string | null
           full_name?: string | null
           id?: string
+          last_seen_at?: string | null
           phone?: string | null
           plan?: Database["public"]["Enums"]["plan_tier"]
           plan_since?: string
+          status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
         }
         Relationships: []
+      }
+      ticket_attachments: {
+        Row: {
+          bucket: string
+          created_at: string
+          file_name: string | null
+          id: string
+          message_id: string | null
+          mime_type: string | null
+          size_bytes: number | null
+          storage_path: string
+          ticket_id: string
+          uploaded_by: string
+        }
+        Insert: {
+          bucket?: string
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          message_id?: string | null
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path: string
+          ticket_id: string
+          uploaded_by: string
+        }
+        Update: {
+          bucket?: string
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          message_id?: string | null
+          mime_type?: string | null
+          size_bytes?: number | null
+          storage_path?: string
+          ticket_id?: string
+          uploaded_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "ticket_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ticket_attachments_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ticket_messages: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          is_internal: boolean
+          ticket_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          ticket_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          is_internal?: boolean
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      tickets: {
+        Row: {
+          assigned_to: string | null
+          closed_at: string | null
+          code: string | null
+          created_at: string
+          description: string
+          id: string
+          last_activity_at: string
+          module: Database["public"]["Enums"]["ticket_module"]
+          motorcycle_id: string | null
+          priority: Database["public"]["Enums"]["ticket_priority"]
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["ticket_status"]
+          title: string
+          type: Database["public"]["Enums"]["ticket_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assigned_to?: string | null
+          closed_at?: string | null
+          code?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          last_activity_at?: string
+          module?: Database["public"]["Enums"]["ticket_module"]
+          motorcycle_id?: string | null
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          title: string
+          type?: Database["public"]["Enums"]["ticket_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assigned_to?: string | null
+          closed_at?: string | null
+          code?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          last_activity_at?: string
+          module?: Database["public"]["Enums"]["ticket_module"]
+          motorcycle_id?: string | null
+          priority?: Database["public"]["Enums"]["ticket_priority"]
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          title?: string
+          type?: Database["public"]["Enums"]["ticket_type"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -661,6 +857,47 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_dashboard_stats: { Args: never; Returns: Json }
+      admin_list_users: {
+        Args: {
+          _from?: string
+          _has_moto?: boolean
+          _has_ticket?: boolean
+          _limit?: number
+          _plan?: string
+          _search?: string
+          _status?: string
+          _to?: string
+        }
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          is_admin: boolean
+          last_seen_at: string
+          motorcycles_count: number
+          open_tickets: number
+          phone: string
+          plan: Database["public"]["Enums"]["plan_tier"]
+          status: Database["public"]["Enums"]["user_status"]
+        }[]
+      }
+      admin_set_user_plan: {
+        Args: { _plan: Database["public"]["Enums"]["plan_tier"]; _user: string }
+        Returns: undefined
+      }
+      admin_set_user_status: {
+        Args: {
+          _status: Database["public"]["Enums"]["user_status"]
+          _user: string
+        }
+        Returns: undefined
+      }
+      admin_update_profile: {
+        Args: { _full_name: string; _phone: string; _user: string }
+        Returns: undefined
+      }
       cancel_ownership_transfer: {
         Args: { _transfer_id: string }
         Returns: undefined
@@ -723,7 +960,38 @@ export type Database = {
       ownership_method: "creation" | "transfer" | "import"
       plan_tier: "free" | "premium" | "workshop"
       schedule_status: "active" | "snoozed" | "ignored" | "done"
+      ticket_module:
+        | "dashboard"
+        | "motorcycle"
+        | "agenda"
+        | "maintenance"
+        | "financial"
+        | "certificate"
+        | "transfer"
+        | "documentation"
+        | "workshop"
+        | "account"
+        | "other"
+      ticket_priority: "low" | "medium" | "high" | "critical"
+      ticket_status:
+        | "open"
+        | "in_analysis"
+        | "awaiting_user"
+        | "in_progress"
+        | "resolved"
+        | "closed"
+        | "cancelled"
+      ticket_type:
+        | "bug"
+        | "question"
+        | "moto"
+        | "certificate"
+        | "billing"
+        | "suggestion"
+        | "admin_request"
+        | "other"
       transfer_status: "pending" | "approved" | "rejected" | "cancelled"
+      user_status: "active" | "pending" | "blocked" | "inactive"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -893,7 +1161,41 @@ export const Constants = {
       ownership_method: ["creation", "transfer", "import"],
       plan_tier: ["free", "premium", "workshop"],
       schedule_status: ["active", "snoozed", "ignored", "done"],
+      ticket_module: [
+        "dashboard",
+        "motorcycle",
+        "agenda",
+        "maintenance",
+        "financial",
+        "certificate",
+        "transfer",
+        "documentation",
+        "workshop",
+        "account",
+        "other",
+      ],
+      ticket_priority: ["low", "medium", "high", "critical"],
+      ticket_status: [
+        "open",
+        "in_analysis",
+        "awaiting_user",
+        "in_progress",
+        "resolved",
+        "closed",
+        "cancelled",
+      ],
+      ticket_type: [
+        "bug",
+        "question",
+        "moto",
+        "certificate",
+        "billing",
+        "suggestion",
+        "admin_request",
+        "other",
+      ],
       transfer_status: ["pending", "approved", "rejected", "cancelled"],
+      user_status: ["active", "pending", "blocked", "inactive"],
     },
   },
 } as const
