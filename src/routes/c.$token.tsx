@@ -109,7 +109,8 @@ function PublicCert() {
   const photosCount = data.attachments.filter((a) => a.kind === "photo").length;
   const invoicesCount = data.attachments.filter((a) => a.kind === "invoice").length;
   const documentsCount = data.attachments.filter((a) => a.kind === "document").length;
-  const hasOriginDoc = !!data.documents_presence?.invoice && show("invoices");
+  // Presence-only badge — no sensitive data is exposed, so it is always shown when a Nota Fiscal exists.
+  const hasOriginDoc = !!data.documents_presence?.invoice;
   const evidenceVisible = show("photos") || show("documents") || show("workshop") || hasOriginDoc;
 
   async function share() {
