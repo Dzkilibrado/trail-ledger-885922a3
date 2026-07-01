@@ -1,0 +1,105 @@
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { PageHeader } from "@/components/PageHeader";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from "sonner";
+import { TICKET_MODULES, TICKET_PRIORITIES, TICKET_TYPES } from "@/lib/tickets";
+
+export const Route = createFileRoute("/_authenticated/tickets/new")({
+  head: () => ({ meta: [{ title: "Novo chamado — TrailBook" }] }),
+  component: NewTicketPage,
+});
+
+function NewTicketPage() {
+  const navigate = useNavigate();
+  const [type, setType] = useState<string>("question");
+  const [module, setModule] = useState<string>("other");
+  const [priority, setPriority] = useState<string>("medium");
+  const [motoId, setMotoId] = useState<string>("none");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const motos = useQuery({
+    queryKey: ["my-motos-min"],
+    queryFn: async () => {
+      const { data } = await supabase.from("motorcycles").select("id, brand, model, nickname").order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
+
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!title.trim() || !description.trim()) return toast.error("Preencha título e descrição");
+    setSaving(true);
+    const { data: u } = await supabase.auth.getUser();
+    if (!u.user) { setSaving(false); return; }
+    const { data, error } = await supabase.from("tickets").insert({
+      user_id: u.user.id,
+      type: type as any, module: module as any, priority: priority as any,
+      motorcycle_id: motoId !== "none" ? motoId : null,
+      title: title.trim(), description: description.trim(),
+    }).select("id").single();
+    setSaving(false);
+    if (error) return toast.error(error.message);
+    toast.success("Chamado aberto! Nossa equipe entrará em contato por aqui.");
+    navigate({ to: "/tickets/$id", params: { id: data.id } });
+  }
+
+  return (
+    <div className="mx-auto max-w-2xl space-y-6">
+      <PageHeader title="Novo chamado" description="Nos conte o que aconteceu — quanto mais detalhes, mais rápido resolvemos." crumbs={[{ label: "Meus chamados", to: "/tickets" }, { label: "Novo" }]} />
+      <form onSubmit={submit} className="space-y-5 rounded-xl border border-border bg-card p-6">
+        <div className="grid gap-4 md:grid-cols-2">
+          <FieldSelect label="Tipo" value={type} onChange={setType} options={TICKET_TYPES as any} />
+          <FieldSelect label="Módulo relacionado" value={module} onChange={setModule} options={TICKET_MODULES as any} />
+          <FieldSelect label="Prioridade" value={priority} onChange={setPriority} options={TICKET_PRIORITIES as any} />
+          <div className="space-y-2">
+            <Label>Moto relacionada (opcional)</Label>
+            <Select value={motoId} onValueChange={setMotoId}>
+              <SelectTrigger><SelectValue placeholder="Nenhuma" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Nenhuma</SelectItem>
+                {(motos.data ?? []).map((m: any) => (
+                  <SelectItem key={m.id} value={m.id}>{m.nickname || `${m.brand} ${m.model}`}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label>Título</Label>
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={140} placeholder="Resumo em uma frase" />
+        </div>
+        <div className="space-y-2">
+          <Label>Descrição</Label>
+          <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={6} placeholder="Descreva o problema, quando aconteceu e o que já tentou." />
+        </div>
+        <div className="flex justify-end gap-2">
+          <Button type="button" variant="ghost" onClick={() => navigate({ to: "/tickets" })}>Cancelar</Button>
+          <Button type="submit" className="btn-glow" disabled={saving}>{saving ? "Enviando…" : "Enviar chamado"}</Button>
+        </div>
+      </form>
+    </div>
+  );
+}
+
+function FieldSelect({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: readonly { value: string; label: string }[] }) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      <Select value={value} onValueChange={onChange}>
+        <SelectTrigger><SelectValue /></SelectTrigger>
+        <SelectContent>
+          {options.map((o) => (<SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>))}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
