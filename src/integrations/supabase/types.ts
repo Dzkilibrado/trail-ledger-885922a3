@@ -333,17 +333,24 @@ export type Database = {
           created_at: string
           created_by: string | null
           custom_label: string | null
+          deleted_at: string | null
+          deleted_by: string | null
           doc_date: string | null
           doc_number: string | null
           doc_type: Database["public"]["Enums"]["motorcycle_document_type"]
           file_name: string | null
           id: string
+          is_current: boolean
           issuer: string | null
           mime_type: string | null
           motorcycle_id: string
           notes: string | null
+          parent_id: string | null
+          sha256: string | null
+          size_bytes: number | null
           storage_path: string
           updated_at: string
+          version: number
         }
         Insert: {
           amount?: number | null
@@ -351,17 +358,24 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_label?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           doc_date?: string | null
           doc_number?: string | null
           doc_type: Database["public"]["Enums"]["motorcycle_document_type"]
           file_name?: string | null
           id?: string
+          is_current?: boolean
           issuer?: string | null
           mime_type?: string | null
           motorcycle_id: string
           notes?: string | null
+          parent_id?: string | null
+          sha256?: string | null
+          size_bytes?: number | null
           storage_path: string
           updated_at?: string
+          version?: number
         }
         Update: {
           amount?: number | null
@@ -369,17 +383,24 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           custom_label?: string | null
+          deleted_at?: string | null
+          deleted_by?: string | null
           doc_date?: string | null
           doc_number?: string | null
           doc_type?: Database["public"]["Enums"]["motorcycle_document_type"]
           file_name?: string | null
           id?: string
+          is_current?: boolean
           issuer?: string | null
           mime_type?: string | null
           motorcycle_id?: string
           notes?: string | null
+          parent_id?: string | null
+          sha256?: string | null
+          size_bytes?: number | null
           storage_path?: string
           updated_at?: string
+          version?: number
         }
         Relationships: [
           {
@@ -387,6 +408,13 @@ export type Database = {
             columns: ["motorcycle_id"]
             isOneToOne: false
             referencedRelation: "motorcycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "motorcycle_documents_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycle_documents"
             referencedColumns: ["id"]
           },
         ]
