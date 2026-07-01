@@ -99,6 +99,8 @@ function AuthedLayout() {
 function SidebarBody({ pathname, onSignOut, onClose }: { pathname: string; onSignOut: () => void; onClose?: () => void }) {
   const { plan } = usePlan();
   const { isAdmin } = useIsAdmin();
+  const modulesQ = useModules();
+  const moduleByKey = new Map((modulesQ.data ?? []).map((m) => [m.key, m]));
   return (
     <>
       <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
@@ -119,6 +121,20 @@ function SidebarBody({ pathname, onSignOut, onClose }: { pathname: string; onSig
       <nav className="flex-1 space-y-1 px-3 py-4">
         {NAV.map((item) => {
           const active = pathname === item.to || pathname.startsWith(item.to + "/");
+          const modKey = ROUTE_TO_MODULE[item.to];
+          const mod = modKey ? moduleByKey.get(modKey) : undefined;
+          if (!isAdmin && mod) {
+            if (mod.status === "disabled" && mod.hide_when_disabled) return null;
+          }
+          const disabled = !isAdmin && mod?.status === "disabled";
+          const inMaint = !isAdmin && mod?.status === "maintenance";
+          if (disabled) {
+            return (
+              <div key={item.to} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground/60 cursor-not-allowed" title="Módulo indisponível">
+                <Lock className="h-4 w-4" /> {item.label}
+              </div>
+            );
+          }
           return (
             <Link
               key={item.to}
@@ -131,7 +147,8 @@ function SidebarBody({ pathname, onSignOut, onClose }: { pathname: string; onSig
               )}
             >
               <item.icon className="h-4 w-4" />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {inMaint && <Wrench className="h-3 w-3 text-amber-400" />}
             </Link>
           );
         })}
