@@ -1,13 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Copy, QrCode, Trash2, Settings2, ExternalLink, RefreshCcw, ShieldOff } from "lucide-react";
+import { Copy, QrCode, Trash2, Settings2, ExternalLink, RefreshCcw, ShieldOff, Activity, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/trailbook";
 import { CertificateSettingsDialog } from "@/components/CertificateSettingsDialog";
-import { effectiveStatus, STATUS_LABEL, STATUS_TONE } from "@/lib/cert-sections";
+import { CertificateAccessLogDialog } from "@/components/CertificateAccessLogDialog";
+import { effectiveStatus, STATUS_LABEL, STATUS_TONE, AUDIENCE_LABEL, type CertAudience } from "@/lib/cert-sections";
 import { PageHeader } from "@/components/PageHeader";
 
 export const Route = createFileRoute("/_authenticated/certificates")({
@@ -64,6 +65,11 @@ function Certificates() {
                   <div className="flex flex-wrap items-center gap-2">
                     <div className="font-semibold">{m?.nickname || `${m?.brand} ${m?.model}`}</div>
                     <Badge variant="outline" className={STATUS_TONE[eff]}>{STATUS_LABEL[eff]}</Badge>
+                    {(c as any).audience && (c as any).audience !== "custom" ? (
+                      <Badge variant="outline" className="border-primary/40 text-[10px] text-primary">
+                        <Users className="mr-1 h-3 w-3" /> {AUDIENCE_LABEL[(c as any).audience as CertAudience] ?? (c as any).audience}
+                      </Badge>
+                    ) : null}
                     {c.expires_at ? <span className="text-[11px] text-muted-foreground">expira em {formatDate(c.expires_at)}</span> : null}
                   </div>
                   <div className="truncate text-xs text-muted-foreground">{isActive ? url : "link inativo"} · criado em {formatDate(c.created_at)}</div>
@@ -77,6 +83,10 @@ function Certificates() {
                   ) : eff === "revoked" || eff === "private" ? (
                     <Button size="sm" variant="outline" onClick={() => reactivate(c.id)}><RefreshCcw className="h-4 w-4" /> Reativar</Button>
                   ) : null}
+                  <CertificateAccessLogDialog
+                    certificateId={c.id}
+                    trigger={<Button size="sm" variant="outline"><Activity className="h-4 w-4" /> Acessos</Button>}
+                  />
                   {m?.id ? (
                     <CertificateSettingsDialog
                       motorcycleId={m.id}
