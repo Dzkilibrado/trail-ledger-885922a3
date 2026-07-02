@@ -280,7 +280,9 @@ export type Database = {
           id: string
           product: string | null
           qty: number | null
+          schedule_id: string | null
           service: string
+          template_item_id: string | null
           unit_value: number | null
           warranty_months: number | null
         }
@@ -292,7 +294,9 @@ export type Database = {
           id?: string
           product?: string | null
           qty?: number | null
+          schedule_id?: string | null
           service: string
+          template_item_id?: string | null
           unit_value?: number | null
           warranty_months?: number | null
         }
@@ -304,7 +308,9 @@ export type Database = {
           id?: string
           product?: string | null
           qty?: number | null
+          schedule_id?: string | null
           service?: string
+          template_item_id?: string | null
           unit_value?: number | null
           warranty_months?: number | null
         }
@@ -314,6 +320,20 @@ export type Database = {
             columns: ["event_id"]
             isOneToOne: false
             referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_items_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_schedules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_items_template_item_id_fkey"
+            columns: ["template_item_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_plan_items"
             referencedColumns: ["id"]
           },
         ]
@@ -442,6 +462,7 @@ export type Database = {
           name: string
           snoozed_until: string | null
           status: Database["public"]["Enums"]["schedule_status"]
+          template_item_id: string | null
           updated_at: string
         }
         Insert: {
@@ -460,6 +481,7 @@ export type Database = {
           name: string
           snoozed_until?: string | null
           status?: Database["public"]["Enums"]["schedule_status"]
+          template_item_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -478,6 +500,7 @@ export type Database = {
           name?: string
           snoozed_until?: string | null
           status?: Database["public"]["Enums"]["schedule_status"]
+          template_item_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -493,6 +516,13 @@ export type Database = {
             columns: ["motorcycle_id"]
             isOneToOne: false
             referencedRelation: "motorcycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_schedules_template_item_id_fkey"
+            columns: ["template_item_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_plan_items"
             referencedColumns: ["id"]
           },
         ]
