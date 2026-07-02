@@ -169,7 +169,7 @@ export function derivePending(input: {
   if (!motorcycle.plate) out.push({ key: "plate", label: "Placa não informada", severity: "warn" });
   if (!motorcycle.chassis) out.push({ key: "chassis", label: "Chassi não informado", severity: "warn" });
   if (!motorcycle.renavam) out.push({ key: "renavam", label: "RENAVAM não informado", severity: "info" });
-  if (photos.filter((p) => !p.deleted_at).length === 0) out.push({ key: "photos", label: "Sem fotos cadastradas", severity: "info" });
+  if (photos.length === 0) out.push({ key: "photos", label: "Sem fotos cadastradas", severity: "info" });
   if (!hasInvoice) out.push({ key: "invoice", label: "Nota fiscal ausente", severity: "warn", hint: "Anexe em Documentação → Nota fiscal." });
   const activeDocs = documents.filter((d) => !d.deleted_at).length;
   if (activeDocs === 0) out.push({ key: "docs", label: "Nenhum documento anexado", severity: "warn" });
