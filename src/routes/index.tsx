@@ -19,6 +19,10 @@ import {
   Lock,
   Sparkles,
   ArrowRight,
+  Heart,
+  Eye,
+  Target,
+  Handshake,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -71,6 +75,9 @@ function Landing() {
       <SecuritySection />
       <Plans />
       <FAQ />
+      <BrandStory />
+      <MissionVision />
+      <BrandValues />
       <FinalCTA />
       <SiteFooter />
     </div>
