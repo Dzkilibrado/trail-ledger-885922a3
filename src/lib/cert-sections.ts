@@ -41,6 +41,40 @@ export const CERT_SECTIONS: CertSection[] = [
 
 export const DEFAULT_SECTIONS: CertSectionKey[] = CERT_SECTIONS.filter((s) => s.defaultOn).map((s) => s.key);
 
+/**
+ * Audience presets — mapeamento fixo de persona → seções liberadas.
+ * Fonte única para o botão "Compartilhar como…". Cada preset é aditivo
+ * ao DEFAULT_SECTIONS; sensíveis só entram onde faz sentido para aquela
+ * audiência. "custom" preserva a seleção manual do usuário.
+ */
+export type CertAudience = "buyer" | "workshop" | "insurer" | "dispatcher" | "family" | "custom";
+
+export const AUDIENCE_LABEL: Record<CertAudience, string> = {
+  buyer: "Comprador",
+  workshop: "Oficina",
+  insurer: "Seguradora",
+  dispatcher: "Despachante",
+  family: "Familiar",
+  custom: "Personalizado",
+};
+
+export const AUDIENCE_DESCRIPTION: Record<CertAudience, string> = {
+  buyer: "Foco em confiança: identidade, histórico, saúde, nota fiscal e proprietários anteriores.",
+  workshop: "Foco técnico: identidade, saúde, plano e histórico completo de manutenções.",
+  insurer: "Foco em cobertura: identidade, histórico, documentos, custos e proprietários.",
+  dispatcher: "Foco documental: identidade e documentos da moto.",
+  family: "Visão resumida — identidade, saúde e histórico principal.",
+  custom: "Seleção manual das seções — o usuário decide.",
+};
+
+export const AUDIENCE_PRESETS: Record<Exclude<CertAudience, "custom">, CertSectionKey[]> = {
+  buyer: ["basic", "photo", "usage", "conservation", "health", "upcoming", "history", "photos", "workshop", "invoices", "owners"],
+  workshop: ["basic", "photo", "usage", "conservation", "health", "upcoming", "history", "photos", "workshop"],
+  insurer: ["basic", "photo", "usage", "conservation", "health", "history", "photos", "workshop", "costs", "invoices", "documents", "owners"],
+  dispatcher: ["basic", "photo", "documents"],
+  family: ["basic", "photo", "usage", "conservation", "health", "upcoming", "history"],
+};
+
 export function isAllowed(allowed: unknown, key: CertSectionKey): boolean {
   if (!Array.isArray(allowed)) return false;
   return (allowed as string[]).includes(key);

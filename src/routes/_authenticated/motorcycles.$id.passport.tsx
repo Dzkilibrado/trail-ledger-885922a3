@@ -346,10 +346,10 @@ function Passport() {
       </section>
 
       <div className="surface-elevated rounded-2xl border border-dashed border-border p-4 text-xs text-muted-foreground">
-        <strong className="text-foreground">Roadmap do Passaporte:</strong> compartilhamento por audiência (comprador/oficina/seguradora),
-        log de acessos, TrailBook Score próprio, módulo de valorização e resumos por IA já estão previstos como pontos de
-        evolução em <code>src/lib/passport.ts</code>. Enquanto isso, o compartilhamento externo usa o certificado atual, que
-        respeita as seções liberadas por você.
+        <strong className="text-foreground">Compartilhamento ativo:</strong> use o botão acima para gerar um link público
+        com audiência definida (comprador, oficina, seguradora, despachante, familiar), QR Code pronto para impressão,
+        data de expiração opcional e revogação a qualquer momento. Cada abertura fica registrada no log de acessos do
+        certificado. Próximos passos previstos: TrailBook Score próprio, módulo de valorização e resumos por IA.
       </div>
     </div>
   );

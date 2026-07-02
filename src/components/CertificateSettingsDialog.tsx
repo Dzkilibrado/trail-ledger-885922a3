@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,13 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
-import { Eye, Globe2, Lock, ShieldAlert, Copy, ExternalLink } from "lucide-react";
-import { CERT_SECTIONS, DEFAULT_SECTIONS, type CertSectionKey, type CertStatus, STATUS_LABEL, STATUS_TONE, effectiveStatus } from "@/lib/cert-sections";
+import { Eye, Globe2, Lock, ShieldAlert, Copy, ExternalLink, QrCode, Users } from "lucide-react";
+import QRCode from "qrcode";
+import {
+  CERT_SECTIONS, DEFAULT_SECTIONS, type CertSectionKey, type CertStatus,
+  STATUS_LABEL, STATUS_TONE, effectiveStatus,
+  AUDIENCE_PRESETS, AUDIENCE_LABEL, AUDIENCE_DESCRIPTION, type CertAudience,
+} from "@/lib/cert-sections";
 
 type CertRow = {
   id: string;
@@ -17,6 +22,7 @@ type CertRow = {
   status: string | null;
   expires_at: string | null;
   allowed_sections: unknown;
+  audience?: string | null;
 };
 
 type Props = {
@@ -33,7 +39,9 @@ export function CertificateSettingsDialog({ motorcycleId, existing, trigger, onS
   const [sections, setSections] = useState<Set<CertSectionKey>>(new Set(initial));
   const [status, setStatus] = useState<CertStatus>((existing?.status as CertStatus) || "active");
   const [expires, setExpires] = useState<string>(existing?.expires_at ? existing.expires_at.slice(0, 10) : "");
+  const [audience, setAudience] = useState<CertAudience>((existing?.audience as CertAudience) || "custom");
   const [saving, setSaving] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
@@ -41,6 +49,7 @@ export function CertificateSettingsDialog({ motorcycleId, existing, trigger, onS
     setSections(new Set(next));
     setStatus((existing?.status as CertStatus) || "active");
     setExpires(existing?.expires_at ? existing.expires_at.slice(0, 10) : "");
+    setAudience((existing?.audience as CertAudience) || "custom");
   }, [open, existing]);
 
   function toggle(k: CertSectionKey) {
@@ -49,6 +58,12 @@ export function CertificateSettingsDialog({ motorcycleId, existing, trigger, onS
       n.has(k) ? n.delete(k) : n.add(k);
       return n;
     });
+    setAudience("custom");
+  }
+
+  function applyAudience(a: CertAudience) {
+    setAudience(a);
+    if (a !== "custom") setSections(new Set(AUDIENCE_PRESETS[a]));
   }
 
   async function save() {
@@ -58,6 +73,7 @@ export function CertificateSettingsDialog({ motorcycleId, existing, trigger, onS
       allowed_sections: Array.from(sections),
       status,
       expires_at: expires ? new Date(expires).toISOString() : null,
+      audience,
     };
     const q = existing
       ? supabase.from("certificates").update(payload).eq("id", existing.id).select("*").single()
@@ -74,6 +90,30 @@ export function CertificateSettingsDialog({ motorcycleId, existing, trigger, onS
   const eff = effectiveStatus({ status, expires_at: expires ? new Date(expires).toISOString() : null });
   const publicUrl = existing && typeof window !== "undefined" ? `${window.location.origin}/c/${existing.public_token}` : null;
   const sensitiveOn = CERT_SECTIONS.filter((s) => s.sensitive && sections.has(s.key));
+
+  useEffect(() => {
+    if (!publicUrl) { setQrDataUrl(null); return; }
+    let active = true;
+    QRCode.toDataURL(publicUrl, { margin: 1, width: 220, color: { dark: "#111113", light: "#FFFFFF" } })
+      .then((u) => { if (active) setQrDataUrl(u); })
+      .catch(() => { if (active) setQrDataUrl(null); });
+    return () => { active = false; };
+  }, [publicUrl]);
+
+  function downloadQr() {
+    if (!qrDataUrl) return;
+    const a = document.createElement("a");
+    a.href = qrDataUrl;
+    a.download = `trailbook-qr-${existing?.public_token ?? "cert"}.png`;
+    a.click();
+  }
+  function printQr() {
+    if (!qrDataUrl || !publicUrl) return;
+    const w = window.open("", "_blank", "width=480,height=640");
+    if (!w) return;
+    w.document.write(`<html><head><title>QR Code · TrailBook</title><style>body{font-family:system-ui;text-align:center;padding:32px}img{width:320px;height:320px}code{display:block;margin-top:16px;font-size:12px;word-break:break-all;color:#444}</style></head><body><h2>Passaporte Digital — TrailBook</h2><img src="${qrDataUrl}"/><code>${publicUrl}</code><script>window.onload=()=>setTimeout(()=>window.print(),200)</script></body></html>`);
+    w.document.close();
+  }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -96,6 +136,28 @@ export function CertificateSettingsDialog({ motorcycleId, existing, trigger, onS
               se você não quiser compartilhá-las.
             </div>
           </div>
+        </div>
+
+        {/* Audience presets */}
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2 text-xs uppercase tracking-wide text-muted-foreground">
+            <Users className="h-3.5 w-3.5" /> Compartilhar como…
+          </Label>
+          <div className="flex flex-wrap gap-2">
+            {(Object.keys(AUDIENCE_LABEL) as CertAudience[]).map((a) => (
+              <button
+                key={a}
+                type="button"
+                onClick={() => applyAudience(a)}
+                className={`rounded-full border px-3 py-1.5 text-xs font-semibold transition ${
+                  audience === a ? "border-primary bg-primary/15 text-primary" : "border-border text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {AUDIENCE_LABEL[a]}
+              </button>
+            ))}
+          </div>
+          <p className="text-[11px] text-muted-foreground">{AUDIENCE_DESCRIPTION[audience]}</p>
         </div>
 
         {/* Status + expiração */}
@@ -164,10 +226,23 @@ export function CertificateSettingsDialog({ motorcycleId, existing, trigger, onS
               `${sections.size} de ${CERT_SECTIONS.length} seções serão exibidas.`}
           </div>
           {publicUrl ? (
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <code className="truncate rounded-md bg-elevated px-2 py-1 text-[11px]">{publicUrl}</code>
-              <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(publicUrl); toast.success("Link copiado"); }}><Copy className="h-3.5 w-3.5" /> Copiar</Button>
-              <a href={publicUrl} target="_blank" rel="noreferrer"><Button size="sm" variant="outline"><ExternalLink className="h-3.5 w-3.5" /> Pré-visualizar</Button></a>
+            <div className="mt-3 grid gap-3 md:grid-cols-[140px_1fr]">
+              {qrDataUrl ? (
+                <img src={qrDataUrl} alt="QR Code do certificado" className="h-[140px] w-[140px] rounded-lg border border-border bg-white p-1" />
+              ) : (
+                <div className="grid h-[140px] w-[140px] place-items-center rounded-lg border border-dashed border-border text-xs text-muted-foreground">
+                  <QrCode className="h-6 w-6" />
+                </div>
+              )}
+              <div className="space-y-2">
+                <code className="block truncate rounded-md bg-elevated px-2 py-1 text-[11px]">{publicUrl}</code>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(publicUrl); toast.success("Link copiado"); }}><Copy className="h-3.5 w-3.5" /> Copiar</Button>
+                  <a href={publicUrl} target="_blank" rel="noreferrer"><Button size="sm" variant="outline"><ExternalLink className="h-3.5 w-3.5" /> Abrir</Button></a>
+                  <Button size="sm" variant="outline" onClick={downloadQr} disabled={!qrDataUrl}><QrCode className="h-3.5 w-3.5" /> Baixar QR</Button>
+                  <Button size="sm" variant="outline" onClick={printQr} disabled={!qrDataUrl}>Imprimir QR</Button>
+                </div>
+              </div>
             </div>
           ) : (
             <p className="mt-3 text-[11px] text-muted-foreground">O link será gerado ao salvar.</p>
