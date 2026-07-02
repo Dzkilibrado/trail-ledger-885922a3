@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EVENT_TYPE_LABEL, MAINT_CATEGORY_LABEL, uploadFile, type EventType, type Motorcycle, ACTIVITY_EVENT_TYPES } from "@/lib/trailbook";
-import { Plus, Upload } from "lucide-react";
+import { Plus, Upload, AlertTriangle } from "lucide-react";
 import { INCIDENT_TYPES } from "@/lib/motorcycle-catalog";
+import { fetchMaintenanceCatalog, fetchMotorcycleSchedules, type CatalogEntry } from "@/lib/maintenance-catalog";
 import { toast } from "sonner";
 
 type SchedulePreset = {
@@ -17,6 +18,21 @@ type SchedulePreset = {
   name: string;
   category: string;
 };
+
+const USAGE_KINDS = [
+  { value: "trilha", label: "Trilha" },
+  { value: "passeio", label: "Passeio" },
+  { value: "treino", label: "Treino" },
+  { value: "competicao", label: "Competição" },
+  { value: "deslocamento", label: "Deslocamento" },
+  { value: "outro", label: "Outro" },
+];
+
+const INCIDENT_SEVERITY = [
+  { value: "low", label: "Leve" },
+  { value: "medium", label: "Moderado" },
+  { value: "high", label: "Grave" },
+];
 
 export function NewEventDialog({
   moto,
@@ -38,10 +54,39 @@ export function NewEventDialog({
   const [type, setType] = useState<EventType>(preset ? "maintenance" : "usage");
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState<FileList | null>(null);
+  const [selectedCatalogId, setSelectedCatalogId] = useState<string>("");
+  const [category, setCategory] = useState<string>(preset?.category || "engine");
+  const [service, setService] = useState<string>(preset?.name || "");
+
+  // Catálogo SSOT: itens do plano padrão (marca/modelo → default).
+  const catalog = useQuery({
+    queryKey: ["maintenance-catalog", moto.brand, moto.model],
+    queryFn: () => fetchMaintenanceCatalog(moto.brand, moto.model),
+    enabled: open && (type === "maintenance" || type === "revision"),
+    staleTime: 5 * 60_000,
+  });
 
   useEffect(() => {
     if (preset && open) setType("maintenance");
   }, [preset, open]);
+
+  useEffect(() => {
+    // Reset campos quando trocar tipo — evita vazamento entre formulários.
+    if (!preset) {
+      setSelectedCatalogId("");
+      setCategory("engine");
+      setService("");
+    }
+  }, [type, preset]);
+
+  function pickCatalog(id: string) {
+    setSelectedCatalogId(id);
+    const item = catalog.data?.find((c) => c.id === id);
+    if (item) {
+      setCategory(item.category);
+      setService(item.item_name);
+    }
+  }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -50,8 +95,9 @@ export function NewEventDialog({
     try {
       const { data: u } = await supabase.auth.getUser();
       const uid = u.user!.id;
-      const title = String(fd.get("title") || EVENT_TYPE_LABEL[type]);
-      const description = String(fd.get("description") || "") || null;
+      const rawTitle = String(fd.get("title") || "").trim();
+      const title = rawTitle || service || EVENT_TYPE_LABEL[type];
+      let description = String(fd.get("description") || "").trim();
       const location = String(fd.get("location") || "") || null;
       const hours_delta = fd.get("hours_delta") ? Number(fd.get("hours_delta")) : null;
       const km_delta = fd.get("km_delta") ? Number(fd.get("km_delta")) : null;
@@ -61,12 +107,38 @@ export function NewEventDialog({
       const newHours = Number(moto.hours_total) + (hours_delta ?? 0);
       const newKm = Number(moto.km_total) + (km_delta ?? 0);
 
+      // Enriquecimento de metadados por tipo — armazenado em description
+      // para não exigir novas colunas no banco. Prefixado com tag legível.
+      const meta: string[] = [];
+      if (type === "usage") {
+        const kind = String(fd.get("usage_kind") || "");
+        const riders = String(fd.get("riders") || "");
+        const conditions = String(fd.get("conditions") || "");
+        if (kind) meta.push(`Tipo de uso: ${USAGE_KINDS.find((k) => k.value === kind)?.label ?? kind}`);
+        if (riders) meta.push(`Participantes: ${riders}`);
+        if (conditions) meta.push(`Condições: ${conditions}`);
+      }
+      if (type === "incident") {
+        const inc = String(fd.get("incident_type") || "");
+        const sev = String(fd.get("incident_severity") || "");
+        const consent = fd.get("lgpd_consent") === "on";
+        if (!consent) {
+          setLoading(false);
+          return toast.error("É necessário confirmar a ciência de LGPD para registrar sinistro.");
+        }
+        if (inc) meta.push(`Ocorrência: ${INCIDENT_TYPES.find((i) => i.value === inc)?.label ?? inc}`);
+        if (sev) meta.push(`Gravidade: ${INCIDENT_SEVERITY.find((s) => s.value === sev)?.label ?? sev}`);
+      }
+      if (meta.length) {
+        description = meta.join(" · ") + (description ? `\n\n${description}` : "");
+      }
+
       const { data: ev, error } = await supabase.from("events").insert({
         motorcycle_id: moto.id,
         created_by: uid,
         type,
         title,
-        description,
+        description: description || null,
         location,
         occurred_at,
         hours_delta,
@@ -79,28 +151,30 @@ export function NewEventDialog({
 
       // Maintenance item
       if (type === "maintenance" || type === "revision") {
-        const category = String(fd.get("category") || preset?.category || "other");
-        const service = String(fd.get("service") || title);
+        const cat = category || String(fd.get("category") || preset?.category || "other");
+        const svc = service || String(fd.get("service") || title);
         const product = String(fd.get("product") || "") || null;
         const brand = String(fd.get("brand_used") || "") || null;
         await supabase.from("maintenance_items").insert({
           event_id: ev.id,
-          category: category as any,
-          service,
+          category: cat as any,
+          service: svc,
           product,
           brand,
         });
 
-        // Atualiza a programação: explícita (preset) ou por nome.
+        // Integração automática: atualiza a programação vinculada.
+        // 1) Se veio de um preset (clique em "registrar" no plano), usa o ID direto.
+        // 2) Senão, casa pelo nome do serviço (item do catálogo SSOT).
         const targetIds: string[] = [];
         if (preset) targetIds.push(preset.scheduleId);
         else {
-          const { data: match } = await supabase
-            .from("maintenance_schedules")
-            .select("id")
-            .eq("motorcycle_id", moto.id)
-            .eq("name", service);
-          for (const m of match ?? []) targetIds.push(m.id);
+          const schedules = await fetchMotorcycleSchedules(moto.id);
+          // Casa pelo prefixo (ex: "Óleo do motor — Troca prevista") ou por nome do item.
+          const matched = schedules.filter((s) =>
+            s.name === svc || s.name.startsWith(`${svc} —`) || s.name.includes(svc),
+          );
+          for (const m of matched) targetIds.push(m.id);
         }
         if (targetIds.length > 0) {
           await supabase
@@ -132,7 +206,17 @@ export function NewEventDialog({
         await supabase.from("motorcycles").update({ hours_total: newHours, km_total: newKm }).eq("id", moto.id);
       }
 
-      toast.success(preset ? "Manutenção registrada e plano atualizado" : "Atividade registrada");
+      // Integração cross-módulo: refresca dashboard, financeiro, plano,
+      // histórico e alertas. invalidateQueries() sem filtro força todos os
+      // consumidores das queries a rebuscarem — barato porque tudo já usa
+      // React Query com chaves declaradas.
+      toast.success(
+        preset
+          ? "Manutenção registrada. Plano, histórico e financeiro atualizados."
+          : type === "incident"
+            ? "Sinistro registrado no histórico."
+            : "Atividade registrada.",
+      );
       setOpen(false);
       qc.invalidateQueries();
     } catch (err: any) {
@@ -153,7 +237,7 @@ export function NewEventDialog({
           <DialogDescription>
             {preset
               ? `Preencha os dados do serviço executado em "${preset.name}". Isso atualiza o plano de manutenção, a linha do tempo e o índice de conservação.`
-              : "Registre uso (trilha, passeio), manutenção, sinistro ou qualquer outra atividade da motocicleta."}
+              : "O formulário se adapta ao tipo escolhido. Manutenções atualizam plano, financeiro e alertas automaticamente."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="space-y-4">
@@ -165,13 +249,29 @@ export function NewEventDialog({
               </SelectContent>
             </Select>
           </F>
-          <F label="Título"><Input name="title" placeholder={preset?.name || EVENT_TYPE_LABEL[type]} defaultValue={preset?.name} /></F>
           <F label="Data"><Input name="occurred_at" type="datetime-local" defaultValue={new Date().toISOString().slice(0, 16)} /></F>
 
           {(type === "maintenance" || type === "revision") && (
             <>
+              {!preset && (
+                <F label="Serviço do catálogo (opcional)">
+                  <Select value={selectedCatalogId} onValueChange={pickCatalog}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={catalog.isLoading ? "Carregando…" : "Escolher do catálogo padrão"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(catalog.data ?? []).map((c) => (
+                        <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-muted-foreground">
+                    Selecione um item para preencher categoria e serviço automaticamente e vincular ao plano.
+                  </p>
+                </F>
+              )}
               <F label="Categoria">
-                <Select name="category" defaultValue={preset?.category || "engine"}>
+                <Select value={category} onValueChange={setCategory}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {Object.entries(MAINT_CATEGORY_LABEL).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
@@ -179,25 +279,78 @@ export function NewEventDialog({
                 </Select>
               </F>
               <div className="grid grid-cols-2 gap-3">
-                <F label="Serviço"><Input name="service" placeholder="ex: Troca de óleo" defaultValue={preset?.name} /></F>
+                <F label="Serviço">
+                  <Input
+                    name="service"
+                    placeholder="ex: Troca de óleo"
+                    value={service}
+                    onChange={(e) => setService(e.target.value)}
+                  />
+                </F>
                 <F label="Produto"><Input name="product" placeholder="10W40" /></F>
               </div>
               <F label="Marca do produto"><Input name="brand_used" placeholder="Motul" /></F>
             </>
           )}
 
-          {(type === "usage") && (
-            <F label="Local"><Input name="location" placeholder="Serra da Cantareira" /></F>
+          {type === "usage" && (
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <F label="Tipo de uso">
+                  <Select name="usage_kind" defaultValue="trilha">
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {USAGE_KINDS.map((k) => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </F>
+                <F label="Participantes"><Input name="riders" type="number" min="1" placeholder="1" /></F>
+              </div>
+              <F label="Local"><Input name="location" placeholder="Serra da Cantareira" /></F>
+              <F label="Condições"><Input name="conditions" placeholder="ex: chuva, lama, seco" /></F>
+            </>
           )}
 
           {type === "incident" && (
-            <F label="Tipo de ocorrência">
-              <Select name="incident_type" defaultValue="minor_fall">
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {INCIDENT_TYPES.map((i) => <SelectItem key={i.value} value={i.value}>{i.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <F label="Ocorrência">
+                  <Select name="incident_type" defaultValue="minor_fall">
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {INCIDENT_TYPES.map((i) => <SelectItem key={i.value} value={i.value}>{i.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </F>
+                <F label="Gravidade">
+                  <Select name="incident_severity" defaultValue="low">
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {INCIDENT_SEVERITY.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </F>
+              </div>
+              <F label="Local"><Input name="location" placeholder="ex: Trilha do Pico" /></F>
+              <div className="flex items-start gap-2 rounded-xl border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-300">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <label className="flex-1 cursor-pointer space-y-1">
+                  <span className="block font-medium">Ciência LGPD</span>
+                  <span className="block text-[11px] opacity-80">
+                    Registrar sinistro impacta o histórico da moto e pode compor o certificado público. Só descreva dados pessoais estritamente necessários.
+                  </span>
+                  <span className="flex items-center gap-2 pt-1">
+                    <input type="checkbox" name="lgpd_consent" className="h-3.5 w-3.5" />
+                    <span>Confirmo ciência e desejo registrar.</span>
+                  </span>
+                </label>
+              </div>
+            </>
+          )}
+
+          {(type === "accessory" || type === "warranty" || type === "recall" || type === "purchase" || type === "sale" || type === "note") && (
+            <F label={type === "note" ? "Título" : "Descrição breve"}>
+              <Input name="title" placeholder={EVENT_TYPE_LABEL[type]} />
             </F>
           )}
 
