@@ -19,7 +19,6 @@ import {
   Lock,
   Sparkles,
   ArrowRight,
-  Menu as MenuIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
