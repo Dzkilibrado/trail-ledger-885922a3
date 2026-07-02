@@ -828,6 +828,132 @@ function FAQ() {
 /*  FINAL CTA                                                    */
 /* ============================================================ */
 
+/* ============================================================ */
+/*  BRAND STORY — Construído por quem vive o off-road            */
+/* ============================================================ */
+
+function BrandStory() {
+  return (
+    <section className="border-y border-border/60 bg-elevated/40">
+      <div className="container mx-auto px-4 py-16 sm:px-6 sm:py-24">
+        <div className="mx-auto max-w-3xl text-center">
+          <span className="mb-3 inline-flex items-center gap-2 rounded-full border border-border bg-card/60 px-3 py-1 text-[10px] font-semibold uppercase tracking-widest text-primary sm:text-xs">
+            Nossa história
+          </span>
+          <h2 className="font-display text-2xl font-bold leading-tight tracking-tight sm:text-4xl">
+            Construído por quem <span className="text-gradient-primary">vive o off-road</span>.
+          </h2>
+          <div className="mt-6 space-y-4 text-left text-sm text-muted-foreground sm:text-base">
+            <p>
+              O TrailBook nasceu da necessidade de organizar, preservar e
+              valorizar a história das motocicletas off-road.
+            </p>
+            <p>
+              Quem anda de trilha sabe como é fácil perder documentos, esquecer
+              manutenções ou não conseguir comprovar os cuidados realizados ao
+              longo dos anos.
+            </p>
+            <p>
+              Criamos uma plataforma pensada para acompanhar toda a vida da
+              motocicleta — desde sua compra até sua próxima negociação.
+            </p>
+            <p>
+              Cada funcionalidade foi desenvolvida pensando na realidade de
+              trilheiros, pilotos de enduro, motocross, oficinas especializadas
+              e apaixonados pelo universo off-road.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================ */
+/*  MISSION + VISION                                             */
+/* ============================================================ */
+
+function MissionVision() {
+  return (
+    <section className="container mx-auto px-4 py-16 sm:px-6 sm:py-24">
+      <div className="grid gap-5 lg:grid-cols-2">
+        <div className="surface-elevated rounded-2xl p-6 sm:p-8">
+          <div className="mb-4 grid h-11 w-11 place-items-center rounded-xl bg-primary/15 text-primary">
+            <Target className="h-5 w-5" />
+          </div>
+          <div className="text-[10px] font-semibold uppercase tracking-widest text-primary">
+            Nossa missão
+          </div>
+          <h3 className="mt-1 font-display text-xl font-bold sm:text-2xl">
+            Preservar a história de cada motocicleta.
+          </h3>
+          <p className="mt-3 text-sm text-muted-foreground sm:text-base">
+            Preservar a história das motocicletas off-road, facilitar sua
+            manutenção e aumentar a confiança entre proprietários, oficinas e
+            compradores.
+          </p>
+        </div>
+        <div className="surface-elevated rounded-2xl p-6 sm:p-8">
+          <div className="mb-4 grid h-11 w-11 place-items-center rounded-xl bg-primary/15 text-primary">
+            <Eye className="h-5 w-5" />
+          </div>
+          <div className="text-[10px] font-semibold uppercase tracking-widest text-primary">
+            Nossa visão
+          </div>
+          <h3 className="mt-1 font-display text-xl font-bold sm:text-2xl">
+            O histórico como patrimônio.
+          </h3>
+          <p className="mt-3 text-sm text-muted-foreground sm:text-base">
+            Ser a principal plataforma brasileira de gestão do ciclo de vida de
+            motocicletas off-road, tornando o histórico de cada motocicleta um
+            patrimônio tão importante quanto a própria máquina.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================ */
+/*  BRAND VALUES                                                 */
+/* ============================================================ */
+
+const BRAND_VALUES = [
+  { icon: Heart, title: "Paixão pelo off-road", desc: "Construímos soluções para quem realmente vive esse universo." },
+  { icon: Lock, title: "Confiança", desc: "Seus dados pertencem a você." },
+  { icon: FileCheck2, title: "Transparência", desc: "Históricos confiáveis geram melhores negociações." },
+  { icon: Sparkles, title: "Evolução contínua", desc: "A plataforma está em constante evolução." },
+  { icon: Handshake, title: "Comunidade", desc: "Queremos fortalecer todo o ecossistema off-road." },
+];
+
+function BrandValues() {
+  return (
+    <section className="border-y border-border/60 bg-elevated/40">
+      <div className="container mx-auto px-4 py-16 sm:px-6 sm:py-24">
+        <SectionHeader
+          eyebrow="Nossos valores"
+          title={<>Os princípios que <span className="text-gradient-primary">movem o TrailBook</span>.</>}
+        />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {BRAND_VALUES.map((v) => (
+            <div key={v.title} className="surface-elevated rounded-2xl p-5 sm:p-6">
+              <div className="mb-4 grid h-11 w-11 place-items-center rounded-xl bg-primary/15 text-primary">
+                <v.icon className="h-5 w-5" />
+              </div>
+              <h3 className="font-display text-lg font-bold leading-tight">{v.title}</h3>
+              <p className="mt-2 text-sm text-muted-foreground">{v.desc}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ============================================================ */
+/*  FINAL CTA (component below)                                  */
+/* ============================================================ */
+
 function FinalCTA() {
   return (
     <section className="container mx-auto px-4 pb-16 sm:px-6 sm:pb-24">
