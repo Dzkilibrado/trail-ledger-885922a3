@@ -2,8 +2,9 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
-import { FileText, Bike, ChevronRight, ShieldCheck } from "lucide-react";
+import { FileText, Bike, ChevronRight, ShieldCheck, AlertCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { RECOMMENDED_DOC_TYPES, DOC_TYPE_LABEL } from "@/lib/motorcycle-documents";
 
 export const Route = createFileRoute("/_authenticated/documents")({
   head: () => ({ meta: [{ title: "Documentos da Moto — TrailBook" }] }),
@@ -23,16 +24,21 @@ function DocumentsHub() {
         motorcycle_id: string; doc_type: string; is_current: boolean;
         deleted_at: string | null; updated_at: string;
       }>;
-      const byMoto: Record<string, { total: number; hasInvoice: boolean; last: string | null }> = {};
+      const byMoto: Record<string, { total: number; hasInvoice: boolean; last: string | null; types: Set<string> }> = {};
       for (const d of rows) {
         if (!d.is_current || d.deleted_at) continue;
-        const e = (byMoto[d.motorcycle_id] ??= { total: 0, hasInvoice: false, last: null });
+        const e = (byMoto[d.motorcycle_id] ??= { total: 0, hasInvoice: false, last: null, types: new Set() });
         e.total++;
+        e.types.add(d.doc_type);
         if (d.doc_type === "invoice") e.hasInvoice = true;
         if (!e.last || d.updated_at > e.last) e.last = d.updated_at;
       }
       const list = (motos ?? []) as Array<{ id: string; brand: string | null; model: string | null; year_model: number | null; nickname: string | null; trailbook_id: string | null }>;
-      return list.map((m) => ({ ...m, stats: byMoto[m.id] ?? { total: 0, hasInvoice: false, last: null } }));
+      return list.map((m) => {
+        const s = byMoto[m.id] ?? { total: 0, hasInvoice: false, last: null, types: new Set<string>() };
+        const missing = RECOMMENDED_DOC_TYPES.filter((t) => !s.types.has(t));
+        return { ...m, stats: { total: s.total, hasInvoice: s.hasInvoice, last: s.last, missing } };
+      });
     },
   });
 
@@ -67,9 +73,14 @@ function DocumentsHub() {
                 <div className="text-[11px] text-muted-foreground">
                   <span className="font-mono">{m.trailbook_id ?? "—"}</span>
                 </div>
-                <div className="mt-1 flex items-center gap-2 text-[11px]">
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-[11px]">
                   <span className="rounded-md bg-muted px-1.5 py-0.5 font-bold">{m.stats.total} docs</span>
                   {m.stats.hasInvoice && <span className="flex items-center gap-1 text-emerald-400"><ShieldCheck className="h-3 w-3" /> NF</span>}
+                  {m.stats.missing.length > 0 && (
+                    <span className="flex items-center gap-1 text-amber-400" title={`Pendentes: ${m.stats.missing.map((t) => DOC_TYPE_LABEL[t as never]).join(", ")}`}>
+                      <AlertCircle className="h-3 w-3" /> {m.stats.missing.length} pendente{m.stats.missing.length > 1 ? "s" : ""}
+                    </span>
+                  )}
                   {m.stats.last && <span className="text-muted-foreground">· atualizado em {new Date(m.stats.last).toLocaleDateString("pt-BR")}</span>}
                 </div>
               </div>

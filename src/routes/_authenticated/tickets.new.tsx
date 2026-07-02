@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "sonner";
 import { TICKET_MODULES, TICKET_PRIORITIES, TICKET_TYPES } from "@/lib/tickets";
+import { Paperclip } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/tickets/new")({
   head: () => ({ meta: [{ title: "Novo chamado — TrailBook" }] }),
@@ -25,6 +26,7 @@ function NewTicketPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [saving, setSaving] = useState(false);
+  const [files, setFiles] = useState<File[]>([]);
 
   const motos = useQuery({
     queryKey: ["my-motos-min"],
@@ -46,8 +48,21 @@ function NewTicketPage() {
       motorcycle_id: motoId !== "none" ? motoId : null,
       title: title.trim(), description: description.trim(),
     }).select("id").single();
+    if (error) { setSaving(false); return toast.error(error.message); }
+    // Upload de anexos, se houver
+    for (const f of files) {
+      if (f.size > 10 * 1024 * 1024) { toast.error(`${f.name}: máx 10 MB`); continue; }
+      const ext = f.name.split(".").pop() ?? "bin";
+      const path = `${u.user.id}/${data.id}/${crypto.randomUUID()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from("ticket-attachments").upload(path, f);
+      if (upErr) { toast.error(upErr.message); continue; }
+      await supabase.from("ticket_attachments").insert({
+        ticket_id: data.id, uploaded_by: u.user.id,
+        bucket: "ticket-attachments", storage_path: path,
+        file_name: f.name, mime_type: f.type || null, size_bytes: f.size,
+      });
+    }
     setSaving(false);
-    if (error) return toast.error(error.message);
     toast.success("Chamado aberto! Nossa equipe entrará em contato por aqui.");
     navigate({ to: "/tickets/$id", params: { id: data.id } });
   }
@@ -80,6 +95,21 @@ function NewTicketPage() {
         <div className="space-y-2">
           <Label>Descrição</Label>
           <Textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={6} placeholder="Descreva o problema, quando aconteceu e o que já tentou." />
+        </div>
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2"><Paperclip className="h-4 w-4" /> Anexos (opcional)</Label>
+          <Input
+            type="file"
+            multiple
+            accept="image/*,application/pdf"
+            onChange={(e) => setFiles(Array.from(e.target.files ?? []))}
+          />
+          {files.length > 0 && (
+            <ul className="text-xs text-muted-foreground">
+              {files.map((f, i) => <li key={i}>• {f.name} ({(f.size/1024/1024).toFixed(2)} MB)</li>)}
+            </ul>
+          )}
+          <p className="text-[11px] text-muted-foreground">Imagens ou PDFs até 10 MB cada.</p>
         </div>
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={() => navigate({ to: "/tickets" })}>Cancelar</Button>
