@@ -64,6 +64,16 @@ function PublicCert() {
         const { data: signed } = await sb.storage.from("motorcycle-photos").createSignedUrl(photo, 3600);
         if (active) setPhotoUrl(signed?.signedUrl ?? null);
       }
+      // Log access — best-effort, silent on failure.
+      try {
+        await sb.rpc("log_certificate_access", {
+          _token: token,
+          _ip: null,
+          _user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 512) : null,
+          _referer: typeof document !== "undefined" ? (document.referrer || null) : null,
+          _country: null,
+        });
+      } catch { /* ignore */ }
     })();
     QRCode.toDataURL(publicUrl, { margin: 1, width: 320, color: { dark: "#111113", light: "#FFFFFF" } }).then((u) => active && setQrUrl(u));
     return () => { active = false; };
