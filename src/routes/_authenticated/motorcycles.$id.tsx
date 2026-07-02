@@ -28,6 +28,7 @@ import { OwnershipTimeline } from "@/components/OwnershipTimeline";
 import { MotorcycleDocuments } from "@/components/MotorcycleDocuments";
 import { MotorcyclePhotos } from "@/components/MotorcyclePhotos";
 import { InspectionDialog } from "@/components/InspectionDialog";
+import { PlanCatalogSyncDialog } from "@/components/PlanCatalogSyncDialog";
 import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id")({
@@ -206,6 +207,14 @@ function MotoDetail() {
                   <Wand2 className="h-4 w-4" /> Plano sugerido
                 </Link>
               </Button>
+              <PlanCatalogSyncDialog
+                moto={m}
+                trigger={
+                  <Button variant="outline">
+                    <Wand2 className="h-4 w-4" /> Atualizar plano com catálogo
+                  </Button>
+                }
+              />
               <CertificateSettingsDialog
                 motorcycleId={m.id}
                 trigger={<Button variant="outline" onClick={checkCertLimit}><QrCode className="h-4 w-4" /> Gerar certificado</Button>}
