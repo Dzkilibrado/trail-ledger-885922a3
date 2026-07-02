@@ -68,10 +68,10 @@ function PublicCert() {
       try {
         await sb.rpc("log_certificate_access", {
           _token: token,
-          _ip: null,
-          _user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 512) : null,
-          _referer: typeof document !== "undefined" ? (document.referrer || null) : null,
-          _country: null,
+          _ip: undefined,
+          _user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 512) : undefined,
+          _referer: typeof document !== "undefined" ? (document.referrer || undefined) : undefined,
+          _country: undefined,
         });
       } catch { /* ignore */ }
     })();
