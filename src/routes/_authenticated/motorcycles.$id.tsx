@@ -30,6 +30,7 @@ import { MotorcyclePhotos } from "@/components/MotorcyclePhotos";
 import { InspectionDialog } from "@/components/InspectionDialog";
 import { PlanCatalogSyncDialog } from "@/components/PlanCatalogSyncDialog";
 import { Link } from "@tanstack/react-router";
+import { Eye } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id")({
   head: () => ({ meta: [{ title: "Moto — TrailBook" }] }),
@@ -43,6 +44,10 @@ function MotoDetail() {
   const { plan } = usePlan();
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [inspectTarget, setInspectTarget] = useState<null | { id: string; name: string; category: string }>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
+  }, []);
 
   const moto = useQuery({
     queryKey: ["motorcycle", id],
@@ -128,6 +133,7 @@ function MotoDetail() {
   }
 
   const m = moto.data;
+  const isOwner = !!m && !!currentUserId && (m as any).owner_id === currentUserId;
   const totalCost = events.data?.reduce((s, e) => s + (Number(e.cost) || 0), 0) ?? 0;
 
   const statuses = (m && schedules.data && events.data)
@@ -200,39 +206,39 @@ function MotoDetail() {
               <Stat label="Investido" value={brl(totalCost)} />
             </div>
             <div className="flex flex-wrap gap-2">
-              <NewEventDialog moto={m} triggerLabel="Registrar atividade" />
+              {isOwner && <NewEventDialog moto={m} triggerLabel="Registrar atividade" />}
               <Button variant="outline" asChild className="btn-glow">
                 <Link to="/motorcycles/$id/passport" params={{ id: m.id }}>
                   <BadgeCheck className="h-4 w-4" /> Passaporte Digital
                 </Link>
               </Button>
-              <ScheduleManager motoId={m.id} />
-              <Button variant="outline" asChild>
+              {isOwner && <ScheduleManager motoId={m.id} />}
+              {isOwner && <Button variant="outline" asChild>
                 <Link to="/motorcycles/$id/plan" params={{ id: m.id }}>
                   <Wand2 className="h-4 w-4" /> Plano sugerido
                 </Link>
-              </Button>
-              <PlanCatalogSyncDialog
+              </Button>}
+              {isOwner && <PlanCatalogSyncDialog
                 moto={m}
                 trigger={
                   <Button variant="outline">
                     <Wand2 className="h-4 w-4" /> Atualizar plano com catálogo
                   </Button>
                 }
-              />
-              <CertificateSettingsDialog
+              />}
+              {isOwner && <CertificateSettingsDialog
                 motorcycleId={m.id}
                 trigger={<Button variant="outline" onClick={checkCertLimit}><QrCode className="h-4 w-4" /> Gerar certificado</Button>}
-              />
-              {pendingTransfer.data ? (
+              />}
+              {isOwner && (pendingTransfer.data ? (
                 <Button variant="outline" disabled className="text-amber-400"><ArrowRightLeft className="h-4 w-4" /> Transferência pendente</Button>
               ) : (
                 <TransferOwnershipDialog
                   motorcycleId={m.id}
                   trigger={<Button variant="outline"><ArrowRightLeft className="h-4 w-4" /> Transferir</Button>}
                 />
-              )}
-              <AlertDialog onOpenChange={(o) => !o && setDeleteConfirm("")}>
+              ))}
+              {isOwner && <AlertDialog onOpenChange={(o) => !o && setDeleteConfirm("")}>
                 <AlertDialogTrigger asChild>
                   <Button variant="ghost" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /> Excluir moto</Button>
                 </AlertDialogTrigger>
@@ -265,7 +271,12 @@ function MotoDetail() {
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
-              </AlertDialog>
+              </AlertDialog>}
+              {!isOwner && currentUserId && (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
+                  <Eye className="h-3.5 w-3.5" /> Modo somente leitura — você não é o proprietário desta moto
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -319,9 +330,9 @@ function MotoDetail() {
                           />
                         </div>
                         <div className="mt-2 flex justify-end">
-                          <Button size="sm" variant="ghost" onClick={() => setInspectTarget({ id: s.schedule.id, name: s.label, category: s.schedule.category })}>
+                          {isOwner && <Button size="sm" variant="ghost" onClick={() => setInspectTarget({ id: s.schedule.id, name: s.label, category: s.schedule.category })}>
                             <ClipboardCheck className="h-3.5 w-3.5" /> Inspecionar
-                          </Button>
+                          </Button>}
                         </div>
                       </div>
                     </div>
