@@ -9,7 +9,7 @@ import { HealthPanel } from "@/components/HealthPanel";
 import { ConservationCard } from "@/components/ConservationCard";
 import { brl, EVENT_TYPE_LABEL, formatDate } from "@/lib/trailbook";
 import { Button } from "@/components/ui/button";
-import { Trash2, QrCode, AlertTriangle, CheckCircle2, Clock, ArrowRightLeft, Copy } from "lucide-react";
+import { Trash2, QrCode, AlertTriangle, CheckCircle2, Clock, ArrowRightLeft, Copy, BadgeCheck } from "lucide-react";
 import { ClipboardCheck, Wand2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
@@ -201,6 +201,11 @@ function MotoDetail() {
             </div>
             <div className="flex flex-wrap gap-2">
               <NewEventDialog moto={m} triggerLabel="Registrar atividade" />
+              <Button variant="outline" asChild className="btn-glow">
+                <Link to="/motorcycles/$id/passport" params={{ id: m.id }}>
+                  <BadgeCheck className="h-4 w-4" /> Passaporte Digital
+                </Link>
+              </Button>
               <ScheduleManager motoId={m.id} />
               <Button variant="outline" asChild>
                 <Link to="/motorcycles/$id/plan" params={{ id: m.id }}>
