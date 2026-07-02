@@ -27,11 +27,14 @@ export const SSOT_REGISTRY = {
     consumers: [
       "motorcycles.$id.plan (aplica plano)",
       "NewEventDialog (Registrar atividade → seleção de item executado)",
+      "PlanCatalogSyncDialog (adiciona novos itens do catálogo a planos existentes)",
       "financial (agrega custos)",
       "dashboard (alertas de vencimento)",
     ],
     rule:
       "Não criar catálogo separado por tipo de evento. Expandir o mesmo catálogo com novas categorias. Toda leitura de catálogo passa por src/lib/maintenance-catalog.ts.",
+    linking:
+      "Schedules e maintenance_items carregam template_item_id (FK → maintenance_plan_items). Registrar atividade prefere esse vínculo; nome é apenas fallback. Isso torna o vínculo imune a renomeações do usuário.",
   },
   /** Tipos de eventos exibidos em Registrar atividade. */
   activityEventTypes: {
@@ -39,6 +42,8 @@ export const SSOT_REGISTRY = {
     consumers: ["NewEventDialog"],
     rule:
       "Documentos, fotos e vídeos NÃO fazem parte da lista de atividade. Vão para Documentação e Galeria.",
+    futureMigration:
+      "Metadados de sinistro (incident_type, severity) e uso (usage_kind, riders, conditions) ficam em events.description prefixados por tag ('Ocorrência: …'). Migração futura: promover para colunas dedicadas em events ou tabela event_metadata; código atual já isola a montagem dos meta[] no NewEventDialog para facilitar essa evolução.",
   },
   /** Tipos de documentos permanentes da moto. */
   documentTypes: {
