@@ -219,8 +219,11 @@ function PhotoTile({
   onSetPrimary: () => void; onMoveLeft: () => void; onMoveRight: () => void; onDelete: () => void;
 }) {
   const [url, setUrl] = useState<string | null>(null);
+  const [failed, setFailed] = useState(false);
   useEffect(() => {
     let active = true;
+    setFailed(false);
+    setUrl(null);
     signedUrl(photo.bucket, photo.storage_path).then((u) => { if (active) setUrl(u); });
     return () => { active = false; };
   }, [photo.bucket, photo.storage_path]);
@@ -228,11 +231,11 @@ function PhotoTile({
   return (
     <li className={`group relative overflow-hidden rounded-xl border ${photo.is_primary ? "border-primary" : "border-border"} bg-elevated`}>
       <div className="aspect-square w-full bg-muted">
-        {url ? (
-          <img src={url} alt={photo.caption ?? ""} className="h-full w-full object-cover" loading="lazy" />
+        {url && !failed ? (
+          <img src={url} alt={photo.caption ?? ""} className="h-full w-full object-cover" loading="lazy" onError={() => setFailed(true)} />
         ) : (
           <div className="grid h-full place-items-center text-muted-foreground">
-            <Loader2 className="h-5 w-5 animate-spin" />
+            {failed ? <Camera className="h-5 w-5 opacity-40" /> : <Loader2 className="h-5 w-5 animate-spin" />}
           </div>
         )}
       </div>

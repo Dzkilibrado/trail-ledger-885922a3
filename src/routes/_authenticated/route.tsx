@@ -37,8 +37,8 @@ const NAV = [
 const ADMIN_NAV = [
   { to: "/admin", label: "Dashboard Admin", icon: LayoutDashboard },
   { to: "/admin/users", label: "Usuários", icon: Shield },
-  { to: "/admin/tickets", label: "Chamados", icon: LifeBuoy },
-  { to: "/admin/documents", label: "Documentos", icon: FolderOpen },
+  { to: "/admin/tickets", label: "Gestão de Chamados", icon: LifeBuoy },
+  { to: "/admin/documents", label: "Gestão de Documentos", icon: FolderOpen },
   { to: "/admin/modules", label: "Módulos", icon: Blocks },
 ] as const;
 

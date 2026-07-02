@@ -61,8 +61,13 @@ export const BRANDS = [
 
 export async function signedUrl(bucket: string, path: string, expires = 3600) {
   if (!path) return null;
-  const { data } = await supabase.storage.from(bucket).createSignedUrl(path, expires);
-  return data?.signedUrl ?? null;
+  try {
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expires);
+    if (error) return null;
+    return data?.signedUrl ?? null;
+  } catch {
+    return null;
+  }
 }
 
 export function brl(n: number | null | undefined) {
