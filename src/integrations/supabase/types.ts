@@ -994,6 +994,8 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          birth_date: string | null
+          cpf: string | null
           created_at: string
           email: string | null
           full_name: string | null
@@ -1007,6 +1009,8 @@ export type Database = {
         }
         Insert: {
           avatar_url?: string | null
+          birth_date?: string | null
+          cpf?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -1020,6 +1024,8 @@ export type Database = {
         }
         Update: {
           avatar_url?: string | null
+          birth_date?: string | null
+          cpf?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
@@ -1339,6 +1345,16 @@ export type Database = {
         Args: { _transfer_id: string }
         Returns: undefined
       }
+      complete_signup_cpf: {
+        Args: {
+          _birth_date: string
+          _cpf: string
+          _full_name?: string
+          _phone: string
+        }
+        Returns: undefined
+      }
+      get_email_by_cpf: { Args: { _cpf: string }; Returns: string }
       get_platform_modules: {
         Args: never
         Returns: {
@@ -1391,6 +1407,7 @@ export type Database = {
         Args: { _approve: boolean; _transfer_id: string }
         Returns: undefined
       }
+      validate_cpf: { Args: { _cpf: string }; Returns: boolean }
     }
     Enums: {
       app_role: "owner" | "mechanic" | "admin" | "USER_ADMIN"
