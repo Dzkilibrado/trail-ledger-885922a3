@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { EVENT_TYPE_LABEL, MAINT_CATEGORY_LABEL, uploadFile, type EventType, type Motorcycle } from "@/lib/trailbook";
+import { EVENT_TYPE_LABEL, MAINT_CATEGORY_LABEL, uploadFile, type EventType, type Motorcycle, ACTIVITY_EVENT_TYPES } from "@/lib/trailbook";
 import { Plus, Upload } from "lucide-react";
 import { INCIDENT_TYPES } from "@/lib/motorcycle-catalog";
 import { toast } from "sonner";
@@ -161,7 +161,7 @@ export function NewEventDialog({
             <Select value={type} onValueChange={(v) => setType(v as EventType)} disabled={!!preset}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {Object.entries(EVENT_TYPE_LABEL).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
+                {ACTIVITY_EVENT_TYPES.map((v) => <SelectItem key={v} value={v}>{EVENT_TYPE_LABEL[v]}</SelectItem>)}
               </SelectContent>
             </Select>
           </F>
@@ -207,7 +207,7 @@ export function NewEventDialog({
             <F label="Custo R$"><Input name="cost" type="number" step="0.01" placeholder="0,00" /></F>
           </div>
           <F label="Observações"><Textarea name="description" rows={3} /></F>
-          <F label="Anexos (fotos, vídeos, notas)">
+          <F label="Fotos e vídeos do serviço (opcional)">
             <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-border bg-card p-3 transition hover:border-primary/50">
               <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary">
                 <Upload className="h-4 w-4" />
@@ -215,9 +215,9 @@ export function NewEventDialog({
               <div className="min-w-0 flex-1 text-sm">
                 {files && files.length > 0
                   ? <span className="font-medium">{files.length} arquivo(s) selecionado(s)</span>
-                  : <span className="text-muted-foreground">Selecionar fotos, vídeos ou notas</span>}
+                  : <span className="text-muted-foreground">Selecionar imagens ou vídeos (documentos vão em Documentação)</span>}
               </div>
-              <input type="file" multiple accept="image/*,video/*,application/pdf" className="sr-only" onChange={(e) => setFiles(e.target.files)} />
+              <input type="file" multiple accept="image/*,video/*" className="sr-only" onChange={(e) => setFiles(e.target.files)} />
             </label>
           </F>
           <div className="flex gap-2">
