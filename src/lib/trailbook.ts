@@ -24,6 +24,25 @@ export const EVENT_TYPE_LABEL: Record<EventType, string> = {
   declaration: "Declaração do proprietário",
 };
 
+/**
+ * Tipos exibidos no seletor de "Registrar atividade".
+ * Excluímos `document`, `photo`, `video` — a partir da v1.0.2 esses conteúdos
+ * têm módulos próprios (Documentação da moto e Galeria de fotos).
+ * Os enums permanecem no banco para preservar eventos históricos.
+ */
+export const ACTIVITY_EVENT_TYPES: EventType[] = [
+  "usage",
+  "maintenance",
+  "revision",
+  "incident",
+  "accessory",
+  "warranty",
+  "recall",
+  "purchase",
+  "sale",
+  "note",
+];
+
 export const MAINT_CATEGORY_LABEL: Record<MaintenanceCategory, string> = {
   engine: "Motor",
   suspension: "Suspensão",

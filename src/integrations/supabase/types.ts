@@ -617,6 +617,56 @@ export type Database = {
           },
         ]
       }
+      motorcycle_photos: {
+        Row: {
+          bucket: string
+          caption: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          is_primary: boolean
+          kind: Database["public"]["Enums"]["media_kind"]
+          motorcycle_id: string
+          position: number
+          storage_path: string
+          updated_at: string
+        }
+        Insert: {
+          bucket?: string
+          caption?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_primary?: boolean
+          kind?: Database["public"]["Enums"]["media_kind"]
+          motorcycle_id: string
+          position?: number
+          storage_path: string
+          updated_at?: string
+        }
+        Update: {
+          bucket?: string
+          caption?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_primary?: boolean
+          kind?: Database["public"]["Enums"]["media_kind"]
+          motorcycle_id?: string
+          position?: number
+          storage_path?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "motorcycle_photos_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       motorcycles: {
         Row: {
           brand: string
@@ -1298,6 +1348,7 @@ export type Database = {
         | "electrical"
         | "cooling"
         | "other"
+      media_kind: "photo" | "video"
       module_status: "active" | "maintenance" | "disabled" | "beta"
       motorcycle_document_type:
         | "invoice"
@@ -1523,6 +1574,7 @@ export const Constants = {
         "cooling",
         "other",
       ],
+      media_kind: ["photo", "video"],
       module_status: ["active", "maintenance", "disabled", "beta"],
       motorcycle_document_type: [
         "invoice",
