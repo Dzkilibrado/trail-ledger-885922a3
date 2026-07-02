@@ -7,13 +7,9 @@ export function useIsAdmin() {
     queryFn: async () => {
       const { data: u } = await supabase.auth.getUser();
       if (!u.user) return false;
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", u.user.id)
-        .maybeSingle();
+      const { data, error } = await supabase.rpc("is_user_admin" as any, { _user_id: u.user.id });
       if (error) throw error;
-      return data?.role === "admin";
+      return data === true;
     },
     staleTime: 60_000,
   });
