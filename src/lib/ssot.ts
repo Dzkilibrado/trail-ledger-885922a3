@@ -74,6 +74,29 @@ export const SSOT_REGISTRY = {
     rule:
       "Nunca condicionar admin por e-mail no código. O papel é sempre lido da tabela user_roles via has_role/is_user_admin.",
   },
+  /**
+   * Passaporte Digital da Motocicleta — agregador SSOT.
+   * Não persiste dados próprios: consome os módulos abaixo e devolve a
+   * visão consolidada (timeline, saúde, selo, pendências).
+   */
+  passport: {
+    owner: "src/lib/passport.ts (+ rota /motorcycles/$id/passport)",
+    consumers: ["motorcycles.$id.passport"],
+    sources: [
+      "motorcycles (identidade, foto principal, km/h)",
+      "events (histórico funcional)",
+      "motorcycle_documents (documentos permanentes)",
+      "motorcycle_photos (galeria)",
+      "ownership_history (proprietários)",
+      "certificates (compartilhamentos emitidos)",
+      "maintenance_schedules + priorityList (pendências críticas)",
+      "workshops (nomes para timeline)",
+    ],
+    rule:
+      "PROIBIDO criar tabelas paralelas para score/selo enquanto o cálculo puder ser derivado das fontes acima. Snapshots congelados (ex.: certificate emitido) podem persistir a tier em coluna dedicada em certificates, mas nunca substituem o cálculo em tempo real do passaporte.",
+    extensionPoints:
+      "Ver comentários EXT: no arquivo — TrailBook Score, valorização, IA, compartilhamento por audiência e log de acessos.",
+  },
 } as const;
 
 export type SsotDomain = keyof typeof SSOT_REGISTRY;
