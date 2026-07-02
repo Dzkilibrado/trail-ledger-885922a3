@@ -43,8 +43,32 @@ export async function fetchMaintenanceCatalog(
 export async function fetchMotorcycleSchedules(motorcycleId: string) {
   const { data } = await supabase
     .from("maintenance_schedules")
-    .select("id, name, category")
+    .select("id, name, category, template_item_id")
     .eq("motorcycle_id", motorcycleId)
     .eq("active", true);
   return data ?? [];
+}
+
+/**
+ * Localiza schedules candidatos para uma atividade.
+ *   1. Preferência: vínculo por ID do item do catálogo (template_item_id).
+ *   2. Fallback: nome idêntico ao "Item — Ação" ou item_name em substring.
+ * Isso torna o registro robusto mesmo que o usuário renomeie um schedule.
+ */
+export async function findSchedulesForCatalogItem(
+  motorcycleId: string,
+  opts: { templateItemId?: string | null; itemName?: string | null },
+): Promise<string[]> {
+  const schedules = await fetchMotorcycleSchedules(motorcycleId);
+  if (opts.templateItemId) {
+    const byId = schedules.filter((s) => s.template_item_id === opts.templateItemId);
+    if (byId.length > 0) return byId.map((s) => s.id);
+  }
+  if (opts.itemName) {
+    const name = opts.itemName;
+    return schedules
+      .filter((s) => s.name === name || s.name.startsWith(`${name} —`) || s.name.includes(name))
+      .map((s) => s.id);
+  }
+  return [];
 }
