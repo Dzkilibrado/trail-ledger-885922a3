@@ -88,14 +88,14 @@ export const SSOT_REGISTRY = {
       "motorcycle_documents (documentos permanentes)",
       "motorcycle_photos (galeria)",
       "ownership_history (proprietários)",
-      "certificates (compartilhamentos emitidos)",
+      "certificates + certificate_access_log (compartilhamentos emitidos + telemetria)",
       "maintenance_schedules + priorityList (pendências críticas)",
       "workshops (nomes para timeline)",
     ],
     rule:
       "PROIBIDO criar tabelas paralelas para score/selo enquanto o cálculo puder ser derivado das fontes acima. Snapshots congelados (ex.: certificate emitido) podem persistir a tier em coluna dedicada em certificates, mas nunca substituem o cálculo em tempo real do passaporte.",
     extensionPoints:
-      "Ver comentários EXT: no arquivo — TrailBook Score, valorização, IA, compartilhamento por audiência e log de acessos.",
+      "Compartilhamento por audiência (certificates.audience) e log de acessos (certificate_access_log via log_certificate_access) já implementados. Próximos: TrailBook Score próprio, valorização, resumos por IA — ver comentários EXT: em src/lib/passport.ts.",
   },
 } as const;
 
