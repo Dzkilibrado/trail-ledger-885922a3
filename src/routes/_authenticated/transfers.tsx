@@ -29,7 +29,8 @@ function TransfersPage() {
     queryKey: ["transfers"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("ownership_transfers")
+        // Use the masked view so recipients don't receive the sender-typed `to_email`.
+        .from("my_ownership_transfers" as never)
         .select("*, motorcycles(id, brand, model, nickname, trailbook_id)")
         .order("requested_at", { ascending: false });
       if (error) throw error;

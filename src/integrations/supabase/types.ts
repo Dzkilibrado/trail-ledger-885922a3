@@ -1261,7 +1261,59 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      my_ownership_transfers: {
+        Row: {
+          created_at: string | null
+          from_user_id: string | null
+          id: string | null
+          message: string | null
+          motorcycle_id: string | null
+          requested_at: string | null
+          resolved_at: string | null
+          resolved_by: string | null
+          status: Database["public"]["Enums"]["transfer_status"] | null
+          to_email: string | null
+          to_user_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          from_user_id?: string | null
+          id?: string | null
+          message?: string | null
+          motorcycle_id?: string | null
+          requested_at?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["transfer_status"] | null
+          to_email?: never
+          to_user_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          from_user_id?: string | null
+          id?: string | null
+          message?: string | null
+          motorcycle_id?: string | null
+          requested_at?: string | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          status?: Database["public"]["Enums"]["transfer_status"] | null
+          to_email?: never
+          to_user_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ownership_transfers_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       admin_dashboard_stats: { Args: never; Returns: Json }

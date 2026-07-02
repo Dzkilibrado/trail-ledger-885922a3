@@ -102,7 +102,13 @@ function MotoDetail() {
   const pendingTransfer = useQuery({
     queryKey: ["transfers-for-moto", id],
     queryFn: async () => {
-      const { data } = await supabase.from("ownership_transfers").select("*").eq("motorcycle_id", id).eq("status", "pending").maybeSingle();
+      // Read from the masked view so recipients don't receive `to_email`.
+      const { data } = await supabase
+        .from("my_ownership_transfers" as never)
+        .select("*")
+        .eq("motorcycle_id", id)
+        .eq("status", "pending")
+        .maybeSingle();
       return data;
     },
   });
