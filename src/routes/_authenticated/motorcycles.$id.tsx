@@ -10,6 +10,7 @@ import { ConservationCard } from "@/components/ConservationCard";
 import { brl, EVENT_TYPE_LABEL, formatDate } from "@/lib/trailbook";
 import { Button } from "@/components/ui/button";
 import { Trash2, QrCode, AlertTriangle, CheckCircle2, Clock, ArrowRightLeft, Copy } from "lucide-react";
+import { ClipboardCheck, Wand2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -25,6 +26,8 @@ import { CertificateSettingsDialog } from "@/components/CertificateSettingsDialo
 import { TransferOwnershipDialog } from "@/components/TransferOwnershipDialog";
 import { OwnershipTimeline } from "@/components/OwnershipTimeline";
 import { MotorcycleDocuments } from "@/components/MotorcycleDocuments";
+import { InspectionDialog } from "@/components/InspectionDialog";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id")({
   head: () => ({ meta: [{ title: "Moto — TrailBook" }] }),
@@ -37,6 +40,7 @@ function MotoDetail() {
   const navigate = useNavigate();
   const { plan } = usePlan();
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [inspectTarget, setInspectTarget] = useState<null | { id: string; name: string; category: string }>(null);
 
   const moto = useQuery({
     queryKey: ["motorcycle", id],
