@@ -13,9 +13,18 @@ import { ModuleGate } from "@/components/ModuleGate";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
-  beforeLoad: async () => {
+  beforeLoad: async ({ location }) => {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) throw redirect({ to: "/auth" });
+    // Force profile completion (CPF) before accessing anything else.
+    if (location.pathname !== "/complete-profile") {
+      const { data: p } = await supabase
+        .from("profiles")
+        .select("cpf")
+        .eq("id", data.user.id)
+        .maybeSingle();
+      if (!p?.cpf) throw redirect({ to: "/complete-profile" });
+    }
     return { user: data.user };
   },
   component: AuthedLayout,
