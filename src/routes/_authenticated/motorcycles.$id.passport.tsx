@@ -167,7 +167,7 @@ function Passport() {
         title="Passaporte Digital"
         crumbs={[
           { label: "Motos", to: "/motorcycles" },
-          { label: m.nickname || m.model, to: "/motorcycles/$id", params: { id: m.id } as any },
+          { label: m.nickname || m.model, to: `/motorcycles/${m.id}` },
           { label: "Passaporte" },
         ]}
         actions={
