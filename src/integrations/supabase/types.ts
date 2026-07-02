@@ -963,6 +963,10 @@ export type Database = {
         Args: { _plan: Database["public"]["Enums"]["plan_tier"]; _user: string }
         Returns: undefined
       }
+      admin_set_user_role: {
+        Args: { _is_admin: boolean; _user: string }
+        Returns: undefined
+      }
       admin_set_user_status: {
         Args: {
           _status: Database["public"]["Enums"]["user_status"]
@@ -1005,6 +1009,7 @@ export type Database = {
         Args: { _full_name: string; _phone: string; _user: string }
         Returns: undefined
       }
+      admin_user_details: { Args: { _user: string }; Returns: Json }
       cancel_ownership_transfer: {
         Args: { _transfer_id: string }
         Returns: undefined

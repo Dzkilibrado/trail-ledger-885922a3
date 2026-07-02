@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/trailbook";
@@ -73,6 +74,7 @@ function AdminUsers() {
   const [hasMoto, setHasMoto] = useState("any");
   const [hasTicket, setHasTicket] = useState("any");
   const [search, setSearch] = useState("");
+  const [detailsUser, setDetailsUser] = useState<string | null>(null);
 
   const filters = useMemo(() => ({ status, plan, period, hasMoto, hasTicket, search }), [status, plan, period, hasMoto, hasTicket, search]);
 
@@ -111,6 +113,13 @@ function AdminUsers() {
     qc.invalidateQueries({ queryKey: ["admin", "users"] });
   }
 
+  async function setUserRole(uid: string, isAdminNew: boolean) {
+    const { error } = await supabase.rpc("admin_set_user_role" as any, { _user: uid, _is_admin: isAdminNew });
+    if (error) return toast.error(error.message);
+    toast.success("Perfil atualizado");
+    qc.invalidateQueries({ queryKey: ["admin", "users"] });
+  }
+
   if (loading) return <div className="text-muted-foreground">Carregando…</div>;
   if (!isAdmin) return <AccessDenied />;
 
@@ -134,6 +143,7 @@ function AdminUsers() {
               <TableHead>Usuário</TableHead>
               <TableHead>Contato</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>Perfil</TableHead>
               <TableHead>Plano</TableHead>
               <TableHead className="text-right">Motos</TableHead>
               <TableHead className="text-right">Chamados</TableHead>
@@ -147,7 +157,7 @@ function AdminUsers() {
               return (
                 <TableRow key={u.id}>
                   <TableCell>
-                    <div className="font-medium">{u.full_name || "—"} {u.is_admin && <Badge className="ml-1 bg-primary/15 text-primary">Admin</Badge>}</div>
+                    <div className="font-medium">{u.full_name || "—"} {u.is_admin && <Badge className="ml-1 bg-primary/15 text-primary">Administrador</Badge>}</div>
                     <div className="font-mono text-xs text-muted-foreground">{u.id.slice(0, 8)}…</div>
                   </TableCell>
                   <TableCell className="text-xs">
@@ -155,6 +165,19 @@ function AdminUsers() {
                     <div className="text-muted-foreground">{u.phone || "—"}</div>
                   </TableCell>
                   <TableCell><Badge className={STATUS_TONE[u.status]}>{u.status}</Badge></TableCell>
+                  <TableCell>
+                    <Select
+                      value={u.is_admin ? "admin" : "user"}
+                      onValueChange={(v) => setUserRole(u.id, v === "admin")}
+                      disabled={isSelf && u.is_admin}
+                    >
+                      <SelectTrigger className="h-8 w-36"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="user">Usuário</SelectItem>
+                        <SelectItem value="admin">Administrador</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
                   <TableCell>
                     <Select value={u.plan} onValueChange={(v) => setUserPlan(u.id, v)}>
                       <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
@@ -170,6 +193,7 @@ function AdminUsers() {
                   <TableCell className="text-xs">{formatDate(u.created_at)}</TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
+                      <Button size="sm" variant="ghost" onClick={() => setDetailsUser(u.id)}>Detalhes</Button>
                       {u.status !== "active" && <Button size="sm" variant="outline" onClick={() => setUserStatus(u.id, "active")}>Reativar</Button>}
                       {u.status === "active" && !isSelf && (
                         <ConfirmAction
@@ -194,11 +218,13 @@ function AdminUsers() {
               );
             })}
             {!users.isLoading && !users.data?.length && (
-              <TableRow><TableCell colSpan={8} className="py-8 text-center text-muted-foreground">Nenhum usuário encontrado com os filtros atuais.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={9} className="py-8 text-center text-muted-foreground">Nenhum usuário encontrado com os filtros atuais.</TableCell></TableRow>
             )}
           </TableBody>
         </Table>
       </div>
+
+      <UserDetailsDialog userId={detailsUser} onClose={() => setDetailsUser(null)} />
     </div>
   );
 }
@@ -226,4 +252,74 @@ function ConfirmAction({ label, title, description, onConfirm, variant = "outlin
       </AlertDialogContent>
     </AlertDialog>
   );
+}
+
+function UserDetailsDialog({ userId, onClose }: { userId: string | null; onClose: () => void }) {
+  const details = useQuery({
+    queryKey: ["admin", "user-details", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("admin_user_details" as any, { _user: userId });
+      if (error) throw error;
+      return data as any;
+    },
+  });
+  const d = details.data;
+  const profile = d?.profile;
+  return (
+    <Dialog open={!!userId} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{profile?.full_name || "Usuário"}</DialogTitle>
+          <DialogDescription>
+            {profile?.email || "—"} · Perfil: {d?.is_admin ? "Administrador" : "Usuário"}
+          </DialogDescription>
+        </DialogHeader>
+        {details.isLoading && <div className="text-sm text-muted-foreground">Carregando…</div>}
+        {d && (
+          <div className="space-y-6">
+            <Section title={`Motocicletas (${d.motorcycles?.length ?? 0})`}>
+              {d.motorcycles?.length ? d.motorcycles.map((m: any) => (
+                <Row key={m.id} left={`${m.brand} ${m.model} ${m.year ?? ""}`} right={m.trailbook_id} />
+              )) : <Empty />}
+            </Section>
+            <Section title={`Documentos (${d.documents?.length ?? 0})`}>
+              {d.documents?.length ? d.documents.map((x: any) => (
+                <Row key={x.id} left={`${x.doc_type} — ${x.file_name ?? "arquivo"}`} right={formatDate(x.created_at)} />
+              )) : <Empty />}
+            </Section>
+            <Section title={`Certificados (${d.certificates?.length ?? 0})`}>
+              {d.certificates?.length ? d.certificates.map((c: any) => (
+                <Row key={c.id} left={`Status: ${c.status}`} right={formatDate(c.created_at)} />
+              )) : <Empty />}
+            </Section>
+            <Section title={`Chamados (${d.tickets?.length ?? 0})`}>
+              {d.tickets?.length ? d.tickets.map((t: any) => (
+                <Row key={t.id} left={`${t.code} — ${t.subject}`} right={t.status} />
+              )) : <Empty />}
+            </Section>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{title}</div>
+      <div className="rounded-lg border border-border divide-y divide-border">{children}</div>
+    </div>
+  );
+}
+function Row({ left, right }: { left: string; right?: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+      <div className="truncate">{left}</div>
+      <div className="text-xs text-muted-foreground shrink-0">{right}</div>
+    </div>
+  );
+}
+function Empty() {
+  return <div className="px-3 py-4 text-center text-xs text-muted-foreground">Nenhum registro.</div>;
 }
