@@ -23,7 +23,7 @@ export const SSOT_REGISTRY = {
   },
   /** Catálogo de itens/serviços de manutenção (categorias, periodicidades). */
   maintenanceCatalog: {
-    owner: "supabase: maintenance_plan_templates + maintenance_plan_items",
+    owner: "supabase: maintenance_plan_templates + maintenance_plan_items (lido via src/lib/maintenance-catalog.ts)",
     consumers: [
       "motorcycles.$id.plan (aplica plano)",
       "NewEventDialog (Registrar atividade → seleção de item executado)",
@@ -31,7 +31,7 @@ export const SSOT_REGISTRY = {
       "dashboard (alertas de vencimento)",
     ],
     rule:
-      "Não criar catálogo separado por tipo de evento. Expandir o mesmo catálogo com novas categorias.",
+      "Não criar catálogo separado por tipo de evento. Expandir o mesmo catálogo com novas categorias. Toda leitura de catálogo passa por src/lib/maintenance-catalog.ts.",
   },
   /** Tipos de eventos exibidos em Registrar atividade. */
   activityEventTypes: {
