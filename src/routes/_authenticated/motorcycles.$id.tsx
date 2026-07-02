@@ -358,6 +358,17 @@ function MotoDetail() {
       <section className="space-y-3">
         <AuditSummary rows={(audit.data ?? []) as any} />
       </section>
+
+      {inspectTarget && (
+        <InspectionDialog
+          open={!!inspectTarget}
+          onOpenChange={(o) => !o && setInspectTarget(null)}
+          motoId={m.id}
+          schedule={inspectTarget}
+          currentHours={Number(m.hours_total) || 0}
+          currentKm={Number(m.km_total) || 0}
+        />
+      )}
     </div>
   );
 }
