@@ -89,7 +89,7 @@ function Financial() {
     { key: "type", label: "Tipo", value: (e) => EVENT_TYPE_LABEL[e.type as keyof typeof EVENT_TYPE_LABEL] || e.type },
     { key: "title", label: "Título", value: (e) => e.title || "" },
     { key: "workshop", label: "Oficina", value: (e) => e.workshops?.name || "" },
-    { key: "km", label: "KM", value: (e) => (e.odometer_km ?? "") as any, align: "right" },
+    { key: "km", label: "KM", value: (e) => (e.km_at_event ?? "") as any, align: "right" },
     { key: "cost", label: "Valor (R$)", value: (e) => Number(e.cost).toFixed(2), align: "right" },
   ];
 
@@ -261,7 +261,7 @@ function Financial() {
                   <td className="px-4 py-2 text-xs">{EVENT_TYPE_LABEL[e.type as keyof typeof EVENT_TYPE_LABEL] || e.type}</td>
                   <td className="px-4 py-2">{e.title || "—"}</td>
                   <td className="px-4 py-2 text-muted-foreground">{(e.workshops as any)?.name || "—"}</td>
-                  <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">{e.odometer_km ?? "—"}</td>
+                  <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">{e.km_at_event ?? "—"}</td>
                   <td className="px-4 py-2 text-right font-semibold text-primary tabular-nums">{brl(Number(e.cost))}</td>
                 </tr>
               ))}
