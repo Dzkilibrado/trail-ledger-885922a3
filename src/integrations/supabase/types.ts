@@ -50,9 +50,48 @@ export type Database = {
         }
         Relationships: []
       }
+      certificate_access_log: {
+        Row: {
+          accessed_at: string
+          certificate_id: string
+          country: string | null
+          id: string
+          ip: string | null
+          referer: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          accessed_at?: string
+          certificate_id: string
+          country?: string | null
+          id?: string
+          ip?: string | null
+          referer?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          accessed_at?: string
+          certificate_id?: string
+          country?: string | null
+          id?: string
+          ip?: string | null
+          referer?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "certificate_access_log_certificate_id_fkey"
+            columns: ["certificate_id"]
+            isOneToOne: false
+            referencedRelation: "certificates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       certificates: {
         Row: {
           allowed_sections: Json
+          audience: string | null
           created_at: string
           expires_at: string | null
           id: string
@@ -62,6 +101,7 @@ export type Database = {
         }
         Insert: {
           allowed_sections?: Json
+          audience?: string | null
           created_at?: string
           expires_at?: string | null
           id?: string
@@ -71,6 +111,7 @@ export type Database = {
         }
         Update: {
           allowed_sections?: Json
+          audience?: string | null
           created_at?: string
           expires_at?: string | null
           id?: string
@@ -1332,6 +1373,16 @@ export type Database = {
       }
       is_moto_owner: { Args: { _moto_id: string }; Returns: boolean }
       is_user_admin: { Args: { _user_id: string }; Returns: boolean }
+      log_certificate_access: {
+        Args: {
+          _country?: string
+          _ip?: string
+          _referer?: string
+          _token: string
+          _user_agent?: string
+        }
+        Returns: undefined
+      }
       request_ownership_transfer: {
         Args: { _message: string; _moto_id: string; _to_email: string }
         Returns: string
