@@ -1251,6 +1251,7 @@ export type Database = {
         Returns: boolean
       }
       is_moto_owner: { Args: { _moto_id: string }; Returns: boolean }
+      is_user_admin: { Args: { _user_id: string }; Returns: boolean }
       request_ownership_transfer: {
         Args: { _message: string; _moto_id: string; _to_email: string }
         Returns: string
