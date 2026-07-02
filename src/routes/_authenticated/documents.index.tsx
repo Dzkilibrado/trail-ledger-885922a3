@@ -6,7 +6,7 @@ import { FileText, Bike, ChevronRight, ShieldCheck, AlertCircle } from "lucide-r
 import { Skeleton } from "@/components/ui/skeleton";
 import { RECOMMENDED_DOC_TYPES, DOC_TYPE_LABEL } from "@/lib/motorcycle-documents";
 
-export const Route = createFileRoute("/_authenticated/documents")({
+export const Route = createFileRoute("/_authenticated/documents/")({
   head: () => ({ meta: [{ title: "Documentos da Moto — TrailBook" }] }),
   component: DocumentsHub,
 });
