@@ -107,6 +107,9 @@ function PlanWizard() {
         interval_hours: r.interval_hours,
         interval_km: r.interval_km,
         interval_days: r.interval_days,
+        // Vínculo estruturado ao item do catálogo. Rows customizadas
+        // (key === "custom-*") não têm origem no template.
+        template_item_id: r.key.startsWith("custom-") ? null : r.key,
       }));
       const { error } = await supabase.from("maintenance_schedules").insert(payload as never);
       if (error) throw error;
