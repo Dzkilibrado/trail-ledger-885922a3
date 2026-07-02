@@ -301,6 +301,11 @@ function MotoDetail() {
                             style={{ width: `${Math.min(100, s.progress * 100)}%` }}
                           />
                         </div>
+                        <div className="mt-2 flex justify-end">
+                          <Button size="sm" variant="ghost" onClick={() => setInspectTarget({ id: s.schedule.id, name: s.label, category: s.schedule.category })}>
+                            <ClipboardCheck className="h-3.5 w-3.5" /> Inspecionar
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </li>
