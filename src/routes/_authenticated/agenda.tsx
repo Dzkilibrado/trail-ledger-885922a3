@@ -171,7 +171,12 @@ function Agenda() {
       {completeFor && (
         <NewEventDialog
           moto={completeFor.moto}
-          preset={{ scheduleId: completeFor.schedule.id, name: completeFor.schedule.name, category: completeFor.schedule.category }}
+          preset={{
+            scheduleId: completeFor.schedule.id,
+            name: completeFor.schedule.name,
+            category: completeFor.schedule.category,
+            templateItemId: (completeFor.schedule as any).template_item_id ?? null,
+          }}
           open={!!completeFor}
           onOpenChange={(v) => !v && setCompleteFor(null)}
         />
