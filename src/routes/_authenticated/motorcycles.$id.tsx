@@ -26,6 +26,7 @@ import { CertificateSettingsDialog } from "@/components/CertificateSettingsDialo
 import { TransferOwnershipDialog } from "@/components/TransferOwnershipDialog";
 import { OwnershipTimeline } from "@/components/OwnershipTimeline";
 import { MotorcycleDocuments } from "@/components/MotorcycleDocuments";
+import { MotorcyclePhotos } from "@/components/MotorcyclePhotos";
 import { InspectionDialog } from "@/components/InspectionDialog";
 import { Link } from "@tanstack/react-router";
 
@@ -260,6 +261,8 @@ function MotoDetail() {
         <h2 className="font-display text-lg font-bold">Histórico de proprietários</h2>
         <OwnershipTimeline entries={ownership.data ?? []} />
       </section>
+
+      <MotorcyclePhotos motorcycleId={m.id} />
 
       <MotorcycleDocuments motorcycleId={m.id} />
 
