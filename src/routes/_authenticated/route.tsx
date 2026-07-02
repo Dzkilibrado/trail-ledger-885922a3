@@ -35,7 +35,7 @@ const NAV = [
 ] as const;
 
 const ADMIN_NAV = [
-  { to: "/admin", label: "Painel", icon: LayoutDashboard },
+  { to: "/admin", label: "Dashboard Admin", icon: LayoutDashboard },
   { to: "/admin/users", label: "Usuários", icon: Shield },
   { to: "/admin/tickets", label: "Chamados", icon: LifeBuoy },
   { to: "/admin/documents", label: "Documentos", icon: FolderOpen },
@@ -176,9 +176,9 @@ function SidebarBody({ pathname, onSignOut, onClose }: { pathname: string; onSig
           <>
             <div className="mt-4 px-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Administração</div>
             {ADMIN_NAV.map((item) => {
-              const active = pathname === item.to || pathname.startsWith(item.to + "/");
+              const active = item.to === "/admin" ? pathname === "/admin" : pathname === item.to || pathname.startsWith(item.to + "/");
               return (
-                <Link key={item.to} to={item.to} className={cn(
+                <Link key={item.to} to={item.to} onClick={onClose} className={cn(
                   "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
                   active ? "bg-primary/15 text-primary" : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 )}>

@@ -1251,6 +1251,7 @@ export type Database = {
         Returns: boolean
       }
       is_moto_owner: { Args: { _moto_id: string }; Returns: boolean }
+      is_user_admin: { Args: { _user_id: string }; Returns: boolean }
       request_ownership_transfer: {
         Args: { _message: string; _moto_id: string; _to_email: string }
         Returns: string
@@ -1261,7 +1262,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "owner" | "mechanic" | "admin"
+      app_role: "owner" | "mechanic" | "admin" | "USER_ADMIN"
       attachment_kind: "photo" | "video" | "document" | "invoice"
       audit_action: "insert" | "update" | "delete"
       control_type: "hours" | "km" | "both"
@@ -1483,7 +1484,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["owner", "mechanic", "admin"],
+      app_role: ["owner", "mechanic", "admin", "USER_ADMIN"],
       attachment_kind: ["photo", "video", "document", "invoice"],
       audit_action: ["insert", "update", "delete"],
       control_type: ["hours", "km", "both"],

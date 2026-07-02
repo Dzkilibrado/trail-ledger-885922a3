@@ -24,6 +24,7 @@ import { Route as AuthenticatedCertificatesRouteImport } from './routes/_authent
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated/agenda'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedMotorcyclesIndexRouteImport } from './routes/_authenticated/motorcycles.index'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedTicketsNewRouteImport } from './routes/_authenticated/tickets.new'
 import { Route as AuthenticatedTicketsIdRouteImport } from './routes/_authenticated/tickets.$id'
 import { Route as AuthenticatedMotorcyclesNewRouteImport } from './routes/_authenticated/motorcycles.new'
@@ -111,6 +112,11 @@ const AuthenticatedMotorcyclesIndexRoute =
     path: '/motorcycles/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
 const AuthenticatedTicketsNewRoute = AuthenticatedTicketsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -192,13 +198,13 @@ export interface FileRoutesByFullPath {
   '/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
   '/tickets/$id': typeof AuthenticatedTicketsIdRoute
   '/tickets/new': typeof AuthenticatedTicketsNewRoute
+  '/admin/': typeof AuthenticatedAdminIndexRoute
   '/motorcycles/': typeof AuthenticatedMotorcyclesIndexRoute
   '/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
-  '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/agenda': typeof AuthenticatedAgendaRoute
   '/certificates': typeof AuthenticatedCertificatesRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
@@ -218,6 +224,7 @@ export interface FileRoutesByTo {
   '/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
   '/tickets/$id': typeof AuthenticatedTicketsIdRoute
   '/tickets/new': typeof AuthenticatedTicketsNewRoute
+  '/admin': typeof AuthenticatedAdminIndexRoute
   '/motorcycles': typeof AuthenticatedMotorcyclesIndexRoute
   '/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
 }
@@ -246,6 +253,7 @@ export interface FileRoutesById {
   '/_authenticated/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
   '/_authenticated/tickets/$id': typeof AuthenticatedTicketsIdRoute
   '/_authenticated/tickets/new': typeof AuthenticatedTicketsNewRoute
+  '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/motorcycles/': typeof AuthenticatedMotorcyclesIndexRoute
   '/_authenticated/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
 }
@@ -274,13 +282,13 @@ export interface FileRouteTypes {
     | '/motorcycles/new'
     | '/tickets/$id'
     | '/tickets/new'
+    | '/admin/'
     | '/motorcycles/'
     | '/motorcycles/$id/plan'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/auth'
-    | '/admin'
     | '/agenda'
     | '/certificates'
     | '/dashboard'
@@ -300,6 +308,7 @@ export interface FileRouteTypes {
     | '/motorcycles/new'
     | '/tickets/$id'
     | '/tickets/new'
+    | '/admin'
     | '/motorcycles'
     | '/motorcycles/$id/plan'
   id:
@@ -327,6 +336,7 @@ export interface FileRouteTypes {
     | '/_authenticated/motorcycles/new'
     | '/_authenticated/tickets/$id'
     | '/_authenticated/tickets/new'
+    | '/_authenticated/admin/'
     | '/_authenticated/motorcycles/'
     | '/_authenticated/motorcycles/$id/plan'
   fileRoutesById: FileRoutesById
@@ -445,6 +455,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMotorcyclesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/tickets/new': {
       id: '/_authenticated/tickets/new'
       path: '/new'
@@ -523,6 +540,7 @@ interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminModulesRoute: typeof AuthenticatedAdminModulesRoute
   AuthenticatedAdminTicketsRoute: typeof AuthenticatedAdminTicketsRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
+  AuthenticatedAdminIndexRoute: typeof AuthenticatedAdminIndexRoute
 }
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
@@ -530,6 +548,7 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminModulesRoute: AuthenticatedAdminModulesRoute,
   AuthenticatedAdminTicketsRoute: AuthenticatedAdminTicketsRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
+  AuthenticatedAdminIndexRoute: AuthenticatedAdminIndexRoute,
 }
 
 const AuthenticatedAdminRouteWithChildren =
