@@ -123,10 +123,21 @@ function SidebarBody({ pathname, onSignOut, onClose }: { pathname: string; onSig
           <button onClick={onClose} aria-label="Fechar menu"><X className="h-5 w-5" /></button>
         )}
       </div>
-      <Link to="/plans" className="mx-3 mt-3 flex items-center justify-between rounded-lg border border-sidebar-border bg-sidebar-accent/40 px-3 py-2 text-xs hover:border-primary/50">
-        <span className="text-muted-foreground">Plano</span>
-        <span className="font-bold uppercase tracking-widest text-primary">{plan.label}</span>
-      </Link>
+      <div className="mx-3 mt-3 space-y-1.5">
+        <div className="flex items-center justify-between rounded-lg border border-sidebar-border bg-sidebar-accent/40 px-3 py-2 text-xs">
+          <span className="text-muted-foreground">Perfil</span>
+          <span className={cn(
+            "font-bold uppercase tracking-widest",
+            isAdmin ? "text-emerald-400" : "text-foreground/80",
+          )}>
+            {isAdmin ? "Administrador" : "Usuário"}
+          </span>
+        </div>
+        <Link to="/plans" className="flex items-center justify-between rounded-lg border border-sidebar-border bg-sidebar-accent/40 px-3 py-2 text-xs hover:border-primary/50">
+          <span className="text-muted-foreground">Plano</span>
+          <span className="font-bold uppercase tracking-widest text-primary">{plan.label}</span>
+        </Link>
+      </div>
       <nav className="flex-1 space-y-1 px-3 py-4">
         {NAV.map((item) => {
           const active = pathname === item.to || pathname.startsWith(item.to + "/");
