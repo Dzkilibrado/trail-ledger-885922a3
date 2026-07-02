@@ -127,7 +127,7 @@ function PlanWizard() {
         title="Plano de manutenção sugerido"
         crumbs={[
           { label: "Motos", to: "/motorcycles" },
-          { label: (moto.data as any)?.nickname || (moto.data as any)?.model || "Moto", to: "/motorcycles/$id", params: { id } },
+          { label: (moto.data as any)?.nickname || (moto.data as any)?.model || "Moto" },
           { label: "Plano" },
         ]}
         description={first
