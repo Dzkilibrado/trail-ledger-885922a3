@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Building2, ShieldCheck, Phone, MapPin, Search, X, Wrench } from "lucide-react";
+import { Plus, Building2, ShieldCheck, MapPin, Search, X, Wrench } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/PageHeader";
@@ -25,7 +25,13 @@ function Workshops() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const { data, isLoading } = useQuery({
     queryKey: ["workshops"],
-    queryFn: async () => (await supabase.from("workshops").select("*").order("name")).data ?? [],
+    queryFn: async () =>
+      (
+        await supabase
+          .from("workshops")
+          .select("id, name, city, state, owner_user_id, verified, verified_at, verified_label, created_at, updated_at")
+          .order("name")
+      ).data ?? [],
   });
 
   const events = useQuery({
@@ -51,7 +57,7 @@ function Workshops() {
     const q = search.trim().toLowerCase();
     if (!q) return allStats;
     return allStats.filter(({ workshop: w }) =>
-      [w.name, w.city, w.state, w.cnpj, w.phone].filter(Boolean).some((v) => String(v).toLowerCase().includes(q)),
+      [w.name, w.city, w.state].filter(Boolean).some((v) => String(v).toLowerCase().includes(q)),
     );
   }, [allStats, search]);
 
@@ -63,8 +69,6 @@ function Workshops() {
   const exportColumns: ExportColumn<any>[] = [
     { key: "name", label: "Oficina", value: (s) => s.workshop.name },
     { key: "city", label: "Cidade", value: (s) => [s.workshop.city, s.workshop.state].filter(Boolean).join(" / ") },
-    { key: "phone", label: "Telefone", value: (s) => s.workshop.phone || "" },
-    { key: "cnpj", label: "CNPJ", value: (s) => s.workshop.cnpj || "" },
     { key: "services", label: "Serviços", value: (s) => s.services, align: "right" },
     { key: "bikes", label: "Motos", value: (s) => s.bikes, align: "right" },
     { key: "revenue", label: "Movimento (R$)", value: (s) => Number(s.revenue).toFixed(2), align: "right" },
@@ -166,8 +170,6 @@ function Workshops() {
                     {(w.city || w.state) && (
                       <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {[w.city, w.state].filter(Boolean).join(" · ")}</span>
                     )}
-                    {w.phone && <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" /> {w.phone}</span>}
-                    {w.cnpj && <span>CNPJ {w.cnpj}</span>}
                   </div>
                 </div>
               </div>
@@ -212,8 +214,6 @@ function Workshops() {
                 {(detailWorkshop.city || detailWorkshop.state) && (
                   <span className="inline-flex items-center gap-1"><MapPin className="h-3 w-3" /> {[detailWorkshop.city, detailWorkshop.state].filter(Boolean).join(" · ")}</span>
                 )}
-                {detailWorkshop.phone && <span className="inline-flex items-center gap-1"><Phone className="h-3 w-3" /> {detailWorkshop.phone}</span>}
-                {detailWorkshop.cnpj && <span>CNPJ {detailWorkshop.cnpj}</span>}
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <Stat label="Serviços" value={String(detailEvents.length)} />
