@@ -86,7 +86,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "TrailBook" },
       { property: "og:description", content: "Prontuário digital para motos off-road." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
+      { property: "og:image", content: "https://trail-ledger.lovable.app/og-image.jpg" },
+      { property: "og:image:width", content: "1200" },
+      { property: "og:image:height", content: "630" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { name: "twitter:image", content: "https://trail-ledger.lovable.app/social/twitter-card.jpg" },
+      { name: "twitter:title", content: "TrailBook" },
+      { name: "twitter:description", content: "O histórico da sua moto. A confiança da sua próxima negociação." },
     ],
     links: [
       {
