@@ -207,6 +207,70 @@ export type Database = {
           },
         ]
       }
+      maintenance_inspections: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          decision: Database["public"]["Enums"]["inspection_decision"]
+          event_id: string | null
+          hours_at: number | null
+          id: string
+          km_at: number | null
+          motorcycle_id: string
+          notes: string | null
+          schedule_id: string | null
+          signs: Json
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          decision: Database["public"]["Enums"]["inspection_decision"]
+          event_id?: string | null
+          hours_at?: number | null
+          id?: string
+          km_at?: number | null
+          motorcycle_id: string
+          notes?: string | null
+          schedule_id?: string | null
+          signs?: Json
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          decision?: Database["public"]["Enums"]["inspection_decision"]
+          event_id?: string | null
+          hours_at?: number | null
+          id?: string
+          km_at?: number | null
+          motorcycle_id?: string
+          notes?: string | null
+          schedule_id?: string | null
+          signs?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_inspections_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_inspections_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_inspections_schedule_id_fkey"
+            columns: ["schedule_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_schedules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       maintenance_items: {
         Row: {
           brand: string | null
@@ -253,6 +317,113 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      maintenance_plan_items: {
+        Row: {
+          action: Database["public"]["Enums"]["plan_item_action"]
+          category: Database["public"]["Enums"]["maintenance_category"]
+          created_at: string
+          id: string
+          interval_days: number | null
+          interval_hours: number | null
+          interval_km: number | null
+          item_name: string
+          notes: string | null
+          replace_days: number | null
+          replace_hours: number | null
+          replace_km: number | null
+          severity: Database["public"]["Enums"]["plan_severity"]
+          sort_order: number
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          action?: Database["public"]["Enums"]["plan_item_action"]
+          category: Database["public"]["Enums"]["maintenance_category"]
+          created_at?: string
+          id?: string
+          interval_days?: number | null
+          interval_hours?: number | null
+          interval_km?: number | null
+          item_name: string
+          notes?: string | null
+          replace_days?: number | null
+          replace_hours?: number | null
+          replace_km?: number | null
+          severity?: Database["public"]["Enums"]["plan_severity"]
+          sort_order?: number
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          action?: Database["public"]["Enums"]["plan_item_action"]
+          category?: Database["public"]["Enums"]["maintenance_category"]
+          created_at?: string
+          id?: string
+          interval_days?: number | null
+          interval_hours?: number | null
+          interval_km?: number | null
+          item_name?: string
+          notes?: string | null
+          replace_days?: number | null
+          replace_hours?: number | null
+          replace_km?: number | null
+          severity?: Database["public"]["Enums"]["plan_severity"]
+          sort_order?: number
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_plan_items_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "maintenance_plan_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_plan_templates: {
+        Row: {
+          active: boolean
+          brand: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_default: boolean
+          model: string | null
+          name: string
+          updated_at: string
+          year_from: number | null
+          year_to: number | null
+        }
+        Insert: {
+          active?: boolean
+          brand?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          model?: string | null
+          name: string
+          updated_at?: string
+          year_from?: number | null
+          year_to?: number | null
+        }
+        Update: {
+          active?: boolean
+          brand?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_default?: boolean
+          model?: string | null
+          name?: string
+          updated_at?: string
+          year_from?: number | null
+          year_to?: number | null
+        }
+        Relationships: []
       }
       maintenance_schedules: {
         Row: {
@@ -325,6 +496,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      maintenance_wear_signs: {
+        Row: {
+          category: Database["public"]["Enums"]["maintenance_category"]
+          created_at: string
+          id: string
+          item_name: string | null
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          category: Database["public"]["Enums"]["maintenance_category"]
+          created_at?: string
+          id?: string
+          item_name?: string | null
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["maintenance_category"]
+          created_at?: string
+          id?: string
+          item_name?: string | null
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
       }
       motorcycle_documents: {
         Row: {
@@ -440,6 +638,8 @@ export type Database = {
           renavam: string | null
           trailbook_id: string
           updated_at: string
+          use_profile: Database["public"]["Enums"]["use_profile"] | null
+          use_profile_note: string | null
           year_make: number | null
           year_model: number | null
         }
@@ -463,6 +663,8 @@ export type Database = {
           renavam?: string | null
           trailbook_id: string
           updated_at?: string
+          use_profile?: Database["public"]["Enums"]["use_profile"] | null
+          use_profile_note?: string | null
           year_make?: number | null
           year_model?: number | null
         }
@@ -486,6 +688,8 @@ export type Database = {
           renavam?: string | null
           trailbook_id?: string
           updated_at?: string
+          use_profile?: Database["public"]["Enums"]["use_profile"] | null
+          use_profile_note?: string | null
           year_make?: number | null
           year_model?: number | null
         }
@@ -1077,6 +1281,13 @@ export type Database = {
         | "note"
         | "incident"
         | "declaration"
+      inspection_decision:
+        | "good"
+        | "attention"
+        | "replace_recommended"
+        | "replaced"
+        | "postpone"
+        | "ignore"
       maintenance_category:
         | "engine"
         | "suspension"
@@ -1095,6 +1306,14 @@ export type Database = {
         | "contract"
         | "other"
       ownership_method: "creation" | "transfer" | "import"
+      plan_item_action:
+        | "inspect"
+        | "replace"
+        | "lubricate"
+        | "adjust"
+        | "clean"
+        | "check_level"
+      plan_severity: "low" | "medium" | "high" | "critical"
       plan_tier: "free" | "premium" | "workshop"
       schedule_status: "active" | "snoozed" | "ignored" | "done"
       ticket_module:
@@ -1128,6 +1347,14 @@ export type Database = {
         | "admin_request"
         | "other"
       transfer_status: "pending" | "approved" | "rejected" | "cancelled"
+      use_profile:
+        | "light"
+        | "normal"
+        | "severe"
+        | "motocross"
+        | "competition"
+        | "sand_mud"
+        | "other"
       user_status: "active" | "pending" | "blocked" | "inactive"
     }
     CompositeTypes: {
@@ -1277,6 +1504,14 @@ export const Constants = {
         "incident",
         "declaration",
       ],
+      inspection_decision: [
+        "good",
+        "attention",
+        "replace_recommended",
+        "replaced",
+        "postpone",
+        "ignore",
+      ],
       maintenance_category: [
         "engine",
         "suspension",
@@ -1297,6 +1532,15 @@ export const Constants = {
         "other",
       ],
       ownership_method: ["creation", "transfer", "import"],
+      plan_item_action: [
+        "inspect",
+        "replace",
+        "lubricate",
+        "adjust",
+        "clean",
+        "check_level",
+      ],
+      plan_severity: ["low", "medium", "high", "critical"],
       plan_tier: ["free", "premium", "workshop"],
       schedule_status: ["active", "snoozed", "ignored", "done"],
       ticket_module: [
@@ -1333,6 +1577,15 @@ export const Constants = {
         "other",
       ],
       transfer_status: ["pending", "approved", "rejected", "cancelled"],
+      use_profile: [
+        "light",
+        "normal",
+        "severe",
+        "motocross",
+        "competition",
+        "sand_mud",
+        "other",
+      ],
       user_status: ["active", "pending", "blocked", "inactive"],
     },
   },

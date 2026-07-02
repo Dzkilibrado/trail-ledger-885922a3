@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { BRANDS, uploadFile } from "@/lib/trailbook";
 import { MODELS_BY_BRAND, DISPLACEMENTS, MOTO_TYPES, CONTROL_TYPES, OTHER, yearOptions, INCIDENT_DECLARATION_TEXT } from "@/lib/motorcycle-catalog";
+import { USE_PROFILES, type UseProfile } from "@/lib/plan-templates";
 import { PhotoPicker } from "@/components/PhotoPicker";
 import { PageHeader } from "@/components/PageHeader";
 import { toast } from "sonner";
@@ -51,6 +52,9 @@ function NewMotorcycle() {
   const [motoType, setMotoType] = useState("trail_light");
   const [controlType, setControlType] = useState("hours");
   const [incident, setIncident] = useState<"yes" | "no" | "unknown">("unknown");
+  const [useProfile, setUseProfile] = useState<UseProfile>("normal");
+  const [useProfileNote, setUseProfileNote] = useState("");
+  const [applyPlan, setApplyPlan] = useState<"review" | "auto" | "skip">("review");
   const { plan } = usePlan();
   const years = useMemo(() => yearOptions(), []);
   const availableModels = MODELS_BY_BRAND[brand] ?? [];
@@ -100,6 +104,8 @@ function NewMotorcycle() {
         owner_id: uid,
         main_photo_url,
         incident_declaration: incidentDeclaration,
+        use_profile: useProfile,
+        use_profile_note: useProfile === "other" ? (useProfileNote.trim() || null) : null,
       } as never).select("id").single();
       if (error) throw error;
       // Registra declaração inicial na linha do tempo
@@ -114,7 +120,11 @@ function NewMotorcycle() {
         } as never);
       }
       toast.success("Moto cadastrada!");
-      navigate({ to: "/motorcycles/$id", params: { id: data.id } });
+      if (applyPlan === "skip") {
+        navigate({ to: "/motorcycles/$id", params: { id: data.id } });
+      } else {
+        navigate({ to: "/motorcycles/$id/plan", params: { id: data.id }, search: { first: true } });
+      }
     } catch (err: any) {
       toast.error(err.message ?? "Erro ao cadastrar");
     } finally { setLoading(false); }
@@ -245,6 +255,48 @@ function NewMotorcycle() {
                   Após criar a moto, registre cada ocorrência usando <strong>Registrar atividade → Sinistro</strong> para compor o histórico.
                 </p>
               )}
+            </div>
+          </div>
+        </div>
+
+        {/* Perfil de uso */}
+        <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 space-y-3">
+          <div>
+            <div className="text-sm font-semibold">Perfil de uso</div>
+            <div className="text-xs text-muted-foreground">Ajusta os intervalos sugeridos do plano de manutenção.</div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Tipo de uso">
+              <Select value={useProfile} onValueChange={(v) => setUseProfile(v as UseProfile)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {USE_PROFILES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </Field>
+            {useProfile === "other" && (
+              <Field label="Descreva o uso" required>
+                <Input value={useProfileNote} onChange={(e) => setUseProfileNote(e.target.value)} placeholder="ex: uso comercial em fazenda" />
+              </Field>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">Plano de manutenção</Label>
+            <div className="flex flex-wrap gap-2">
+              {([
+                { v: "review", label: "Revisar antes de aplicar" },
+                { v: "auto", label: "Aplicar plano recomendado" },
+                { v: "skip", label: "Configurar manualmente" },
+              ] as const).map((o) => (
+                <button
+                  key={o.v}
+                  type="button"
+                  onClick={() => setApplyPlan(o.v)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${applyPlan === o.v ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
+                >
+                  {o.label}
+                </button>
+              ))}
             </div>
           </div>
         </div>

@@ -10,6 +10,7 @@ import { ConservationCard } from "@/components/ConservationCard";
 import { brl, EVENT_TYPE_LABEL, formatDate } from "@/lib/trailbook";
 import { Button } from "@/components/ui/button";
 import { Trash2, QrCode, AlertTriangle, CheckCircle2, Clock, ArrowRightLeft, Copy } from "lucide-react";
+import { ClipboardCheck, Wand2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { useState } from "react";
@@ -25,6 +26,8 @@ import { CertificateSettingsDialog } from "@/components/CertificateSettingsDialo
 import { TransferOwnershipDialog } from "@/components/TransferOwnershipDialog";
 import { OwnershipTimeline } from "@/components/OwnershipTimeline";
 import { MotorcycleDocuments } from "@/components/MotorcycleDocuments";
+import { InspectionDialog } from "@/components/InspectionDialog";
+import { Link } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id")({
   head: () => ({ meta: [{ title: "Moto — TrailBook" }] }),
@@ -37,6 +40,7 @@ function MotoDetail() {
   const navigate = useNavigate();
   const { plan } = usePlan();
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [inspectTarget, setInspectTarget] = useState<null | { id: string; name: string; category: string }>(null);
 
   const moto = useQuery({
     queryKey: ["motorcycle", id],
@@ -196,6 +200,11 @@ function MotoDetail() {
             <div className="flex flex-wrap gap-2">
               <NewEventDialog moto={m} triggerLabel="Registrar atividade" />
               <ScheduleManager motoId={m.id} />
+              <Button variant="outline" asChild>
+                <Link to="/motorcycles/$id/plan" params={{ id: m.id }}>
+                  <Wand2 className="h-4 w-4" /> Plano sugerido
+                </Link>
+              </Button>
               <CertificateSettingsDialog
                 motorcycleId={m.id}
                 trigger={<Button variant="outline" onClick={checkCertLimit}><QrCode className="h-4 w-4" /> Gerar certificado</Button>}
@@ -292,6 +301,11 @@ function MotoDetail() {
                             style={{ width: `${Math.min(100, s.progress * 100)}%` }}
                           />
                         </div>
+                        <div className="mt-2 flex justify-end">
+                          <Button size="sm" variant="ghost" onClick={() => setInspectTarget({ id: s.schedule.id, name: s.label, category: s.schedule.category })}>
+                            <ClipboardCheck className="h-3.5 w-3.5" /> Inspecionar
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </li>
@@ -344,6 +358,17 @@ function MotoDetail() {
       <section className="space-y-3">
         <AuditSummary rows={(audit.data ?? []) as any} />
       </section>
+
+      {inspectTarget && (
+        <InspectionDialog
+          open={!!inspectTarget}
+          onOpenChange={(o) => !o && setInspectTarget(null)}
+          motoId={m.id}
+          schedule={inspectTarget}
+          currentHours={Number(m.hours_total) || 0}
+          currentKm={Number(m.km_total) || 0}
+        />
+      )}
     </div>
   );
 }
