@@ -13,7 +13,8 @@ import { toast } from "sonner";
 import { formatDate } from "@/lib/trailbook";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { labelFor, PRIORITY_TONE, STATUS_TONE, TICKET_MODULES, TICKET_PRIORITIES, TICKET_STATUSES, TICKET_TYPES } from "@/lib/tickets";
-import { Shield, Send } from "lucide-react";
+import { Shield, Send, CheckCircle2, RotateCcw, XCircle } from "lucide-react";
+import { TicketAttachments } from "@/components/TicketAttachments";
 
 export const Route = createFileRoute("/_authenticated/tickets/$id")({
   head: () => ({ meta: [{ title: "Chamado — TrailBook" }] }),
@@ -82,6 +83,13 @@ function TicketDetail() {
     qc.invalidateQueries({ queryKey: ["ticket", id] });
   }
 
+  async function userUpdateStatus(next: "resolved" | "open" | "cancelled") {
+    const { error } = await supabase.from("tickets").update({ status: next } as any).eq("id", id);
+    if (error) return toast.error(error.message);
+    toast.success(next === "resolved" ? "Marcado como resolvido" : next === "cancelled" ? "Chamado cancelado" : "Chamado reaberto");
+    qc.invalidateQueries({ queryKey: ["ticket", id] });
+  }
+
   if (ticket.isLoading) return <div className="text-muted-foreground">Carregando…</div>;
   const t = ticket.data as any;
   if (!t) return <div className="text-muted-foreground">Chamado não encontrado.</div>;
@@ -108,6 +116,29 @@ function TicketDetail() {
         <div className="text-xs uppercase tracking-widest text-muted-foreground">Descrição</div>
         <p className="mt-2 whitespace-pre-wrap text-sm">{t.description}</p>
       </div>
+
+      <TicketAttachments ticketId={id} />
+
+      {!isAdmin && (
+        <div className="flex flex-wrap gap-2">
+          {(t.status === "resolved" || t.status === "closed") ? (
+            <Button variant="outline" size="sm" onClick={() => userUpdateStatus("open")}>
+              <RotateCcw className="h-4 w-4" /> Reabrir chamado
+            </Button>
+          ) : (
+            <>
+              <Button variant="outline" size="sm" onClick={() => userUpdateStatus("resolved")}>
+                <CheckCircle2 className="h-4 w-4" /> Marcar como resolvido
+              </Button>
+              {t.status === "open" && (
+                <Button variant="ghost" size="sm" onClick={() => userUpdateStatus("cancelled")}>
+                  <XCircle className="h-4 w-4" /> Cancelar chamado
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {isAdmin && (
         <div className="rounded-xl border border-primary/30 bg-primary/5 p-5">
