@@ -200,6 +200,11 @@ function MotoDetail() {
             <div className="flex flex-wrap gap-2">
               <NewEventDialog moto={m} triggerLabel="Registrar atividade" />
               <ScheduleManager motoId={m.id} />
+              <Button variant="outline" asChild>
+                <Link to="/motorcycles/$id/plan" params={{ id: m.id }}>
+                  <Wand2 className="h-4 w-4" /> Plano sugerido
+                </Link>
+              </Button>
               <CertificateSettingsDialog
                 motorcycleId={m.id}
                 trigger={<Button variant="outline" onClick={checkCertLimit}><QrCode className="h-4 w-4" /> Gerar certificado</Button>}
