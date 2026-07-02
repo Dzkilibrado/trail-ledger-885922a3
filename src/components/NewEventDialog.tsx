@@ -10,13 +10,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EVENT_TYPE_LABEL, MAINT_CATEGORY_LABEL, uploadFile, type EventType, type Motorcycle, ACTIVITY_EVENT_TYPES } from "@/lib/trailbook";
 import { Plus, Upload, AlertTriangle } from "lucide-react";
 import { INCIDENT_TYPES } from "@/lib/motorcycle-catalog";
-import { fetchMaintenanceCatalog, fetchMotorcycleSchedules, type CatalogEntry } from "@/lib/maintenance-catalog";
+import { fetchMaintenanceCatalog, findSchedulesForCatalogItem, type CatalogEntry } from "@/lib/maintenance-catalog";
 import { toast } from "sonner";
 
 type SchedulePreset = {
   scheduleId: string;
   name: string;
   category: string;
+  templateItemId?: string | null;
 };
 
 const USAGE_KINDS = [
@@ -155,27 +156,34 @@ export function NewEventDialog({
         const svc = service || String(fd.get("service") || title);
         const product = String(fd.get("product") || "") || null;
         const brand = String(fd.get("brand_used") || "") || null;
+
+        // Vínculo estruturado: preferimos template_item_id (imune a rename).
+        const templateItemId = selectedCatalogId || preset?.templateItemId || null;
+
+        // Integração automática: atualiza a programação vinculada.
+        //   1) Preset → usa ID direto do schedule.
+        //   2) Catálogo escolhido → casa por template_item_id.
+        //   3) Fallback → casa por nome/substring.
+        const targetIds: string[] = [];
+        if (preset) targetIds.push(preset.scheduleId);
+        else {
+          const ids = await findSchedulesForCatalogItem(moto.id, {
+            templateItemId,
+            itemName: svc,
+          });
+          targetIds.push(...ids);
+        }
+
         await supabase.from("maintenance_items").insert({
           event_id: ev.id,
           category: cat as any,
           service: svc,
           product,
           brand,
-        });
+          template_item_id: templateItemId,
+          schedule_id: targetIds[0] ?? null,
+        } as never);
 
-        // Integração automática: atualiza a programação vinculada.
-        // 1) Se veio de um preset (clique em "registrar" no plano), usa o ID direto.
-        // 2) Senão, casa pelo nome do serviço (item do catálogo SSOT).
-        const targetIds: string[] = [];
-        if (preset) targetIds.push(preset.scheduleId);
-        else {
-          const schedules = await fetchMotorcycleSchedules(moto.id);
-          // Casa pelo prefixo (ex: "Óleo do motor — Troca prevista") ou por nome do item.
-          const matched = schedules.filter((s) =>
-            s.name === svc || s.name.startsWith(`${svc} —`) || s.name.includes(svc),
-          );
-          for (const m of matched) targetIds.push(m.id);
-        }
         if (targetIds.length > 0) {
           await supabase
             .from("maintenance_schedules")
@@ -335,13 +343,13 @@ export function NewEventDialog({
               <div className="flex items-start gap-2 rounded-xl border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-300">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <label className="flex-1 cursor-pointer space-y-1">
-                  <span className="block font-medium">Ciência LGPD</span>
+                  <span className="block font-medium">Confirmação necessária</span>
                   <span className="block text-[11px] opacity-80">
-                    Registrar sinistro impacta o histórico da moto e pode compor o certificado público. Só descreva dados pessoais estritamente necessários.
+                    Este registro fica no histórico da moto e pode aparecer no certificado que você compartilhar. Não inclua dados pessoais de terceiros (nome, CPF, telefone).
                   </span>
                   <span className="flex items-center gap-2 pt-1">
                     <input type="checkbox" name="lgpd_consent" className="h-3.5 w-3.5" />
-                    <span>Confirmo ciência e desejo registrar.</span>
+                    <span>Entendi e quero registrar este sinistro.</span>
                   </span>
                 </label>
               </div>
