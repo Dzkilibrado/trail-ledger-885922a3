@@ -1,64 +1,107 @@
-# Fase 1 — Acesso, Autenticação e Recuperação
+# TrailBook v1.0.1 — Central de Comunicação e Mensageria Interna
 
-Vou entregar toda a experiência de acesso, deixando administração e polimento para as fases 2 e 3.
+Objetivo: entregar uma Central de Mensagens interna funcional (Admin ↔ Usuário) e deixar a arquitetura pronta para ligar e-mail real depois, sem custo agora.
 
-## 1. Entregabilidade de e-mails (custom domain)
+## 1. Modelo de dados (uma migração)
 
-Melhor entregabilidade exige domínio próprio (SPF/DKIM/DMARC gerenciados). Vou configurar Lovable Emails no subdomínio `notify.trailbook.com.br` e depois personalizar os templates de autenticação (signup, recovery, magic link) com a identidade visual do TrailBook.
+**Enums novos**
+- `message_channel`: `internal`, `email`, `whatsapp`, `push`, `sms`
+- `message_type`: `system_notice`, `support`, `access`, `documentation`, `certificate`, `maintenance`, `financial`, `homologation`, `security`, `system_update`, `other`
+- `message_subject_key`: `signup_confirmation`, `password_recovery`, `cpf_duplicate`, `email_not_confirmed`, `account_blocked`, `profile_update`, `document_pending`, `certificate`, `ticket`, `homologation`, `important_notice`, `other`
+- `message_priority`: `low`, `medium`, `high`, `critical`
+- `message_status`: `draft`, `sent`, `read`, `replied`, `archived`, `cancelled`
+- `message_audience`: `single_user`, `by_status`, `by_role`, `homologation_users`, `open_tickets`, `email_unconfirmed`, `blocked_users`, `all_users`
+- `delivery_status`: `pending`, `sent`, `simulated`, `skipped_disabled`, `failed`
 
-Ação necessária de você: concluir o setup de DNS via diálogo abaixo. Enquanto o DNS propaga, o restante da Fase 1 já fica pronto e os e-mails passam a sair pelo domínio próprio automaticamente após verificação.
+**Tabelas**
+- `public.comm_settings` — singleton (`id=1`): flags `email_enabled` (default `false`), `internal_enabled` (`true`), `whatsapp_enabled` (`false`), `push_enabled` (`false`), `sms_enabled` (`false`), `homologation_mode` (`true`), `email_from`, `email_provider`, `email_test_redirect`. Somente admin lê/escreve.
+- `public.messages` — cabeçalho da mensagem/thread: `code` (`TB-M-YYYY-NNNNNN`), `sender_id` (nullable = sistema), `type`, `subject_key`, `subject_other`, `subject_text` (derivado), `body`, `priority`, `status`, `audience`, `audience_filter` (jsonb), `is_automatic`, `related_ticket_id`, `parent_message_id` (para respostas), `allow_reply` (bool), timestamps.
+- `public.message_recipients` — 1 linha por destinatário: `message_id`, `user_id`, `status` (`sent`/`read`/`replied`/`archived`), `read_at`, `replied_at`, `archived_at`. PK `(message_id, user_id)`.
+- `public.message_deliveries` — tentativa por canal por destinatário: `message_id`, `user_id`, `channel`, `status` (delivery_status), `simulated` (bool), `payload` (jsonb, para "envio simulado"), `error`, `created_at`. Para e-mail em homologação grava `simulated=true` com payload completo.
+- `public.comm_audit` — auditoria dedicada: `actor_id`, `action` (`message_created|sent|read|replied|archived|email_simulated|email_sent|settings_changed`), `message_id`, `channel`, `recipient_id`, `subject_text`, `type`, `status`, `metadata` (jsonb).
 
-## 2. Tela de Auth — melhorias de UX
+**RLS**
+- Usuário lê apenas suas linhas em `message_recipients` e a `messages` correspondente; escreve `read/replied/archived` apenas na própria linha.
+- Admin (`has_role admin`) tem full read; escreve via RPCs abaixo.
+- `comm_settings`, `message_deliveries`, `comm_audit` — SELECT/UPDATE só admin (via RPC). GRANTs completos por role.
 
-- **Botão "Reenviar e-mail de confirmação"** disponível após cadastro e no login quando o e-mail não está confirmado.
-- **Mensagem pós-cadastro** clara: "Enviamos um e-mail de confirmação para X. Verifique também a caixa de SPAM/lixo eletrônico."
-- **Mensagem específica** quando o login falha por e-mail não confirmado, com botão de reenvio inline.
-- **Link "Preciso de ajuda para acessar minha conta"** abaixo do formulário de login → abre a rota pública de chamado.
+**RPCs (SECURITY DEFINER)**
+- `admin_get_comm_settings()`, `admin_update_comm_settings(_json jsonb)`
+- `admin_send_message(_type, _subject_key, _subject_other, _body, _priority, _audience, _filter jsonb, _allow_reply, _related_ticket_id, _channels text[])` → expande audiência, cria `messages`, `message_recipients`, gera `message_deliveries` (e-mail sempre `simulated` enquanto `email_enabled=false` ou `homologation_mode=true`), grava auditoria.
+- `admin_reply_message(_parent uuid, _body)` — cria mensagem filha para o mesmo usuário.
+- `user_reply_message(_parent uuid, _body)` — respeita `allow_reply`, cria mensagem com `sender_id = auth.uid()` endereçada ao admin remetente original (ou grupo `USER_ADMIN`).
+- `user_mark_message(_id uuid, _action text)` — `read|archived`.
+- `user_open_ticket_from_message(_id uuid, _subject, _body, _priority)` — cria ticket vinculado, popula `related_ticket_id`.
+- `emit_system_message(_event text, _user uuid, _payload jsonb)` — usado por triggers/eventos automáticos (cadastro, CPF duplicado, chamado aberto, certificado emitido, etc.). Cria mensagem `is_automatic=true` no canal `internal`; se `email_enabled` gera `pending` para e-mail (mas não envia — apenas registra).
 
-## 3. Fluxo de CPF já existente
+## 2. Fase 1 do envio de e-mail (arquitetura, sem enviar)
 
-- No cadastro tradicional: mensagem clara `Este CPF já possui uma conta cadastrada no TrailBook.` + 3 ações: Recuperar acesso · Abrir chamado · Voltar ao login.
-- No `complete-profile` (após login Google): mesma mensagem e mesmas 3 ações, sem gravar duplicidade. O usuário Google recém-criado pode fazer sign-out e voltar ao login tradicional/Google original.
+Enquanto `comm_settings.email_enabled = false`:
+- Toda mensagem que teria e-mail gera `message_deliveries` com `status='skipped_disabled'` **ou**, se `homologation_mode=true`, `status='simulated'` com o payload (`to`, `from`, `subject`, `html_preview`) — visível no painel admin.
+- Nenhuma chamada a provedor externo, nenhum custo.
+- Ponto único (`internal:sendEmail(delivery)`) fica stub retornando "disabled". Quando um dia ligarmos Lovable Emails, trocamos o stub.
 
-## 4. Rota pública de chamado — `/help`
+## 3. Frontend
 
-Nova rota pública `/help` (SSR-on, sem auth) com formulário:
+**Usuário — `/messages` (novo, sob `_authenticated`)**
+- Lista de mensagens recebidas com filtros por tipo, prioridade, lida/não lida, período.
+- Detalhe: assunto, remetente, prioridade badge, corpo, timeline de respostas.
+- Ações: marcar como lida (auto ao abrir), responder (quando `allow_reply`), arquivar, "Abrir chamado a partir desta mensagem".
+- Empty state: "Nenhuma mensagem recebida."
+- Ícone com contador de não-lidas no topbar (usa `message_recipients` do usuário).
 
-Campos obrigatórios: Nome completo, Data de nascimento, CPF, WhatsApp, E-mail de contato, Tipo de problema (select), Descrição. Se tipo = "Outro" → detalhamento obrigatório.
+**Admin — `/admin/messages` (novo)**
+- Aba **Enviar**: form com selects (tipo, assunto, prioridade, audiência, filtros por status/perfil/homologação/etc.), textarea corpo, checkbox "Permitir resposta", vínculo opcional a chamado, checkboxes de canais (internal sempre; e-mail desabilitado com tooltip explicando).
+- Aba **Gestão**: tabela filtrada por usuário, perfil, status, tipo, assunto, prioridade, período, lida/não-lida, automática/manual, homologação. Busca textual: nome/e-mail/CPF/conteúdo.
+- Aba **Envios simulados**: lista `message_deliveries` com `simulated=true` — mostra "e-mail que seria enviado" (destinatário, assunto, corpo).
+- Aba **Configurações**: toggles de canais, modo homologação, remetente, provedor, e-mail de teste. Salva via `admin_update_comm_settings`.
 
-Tipos: Esqueci meu acesso · CPF já cadastrado · Não recebi e-mail de confirmação · Troquei de e-mail · Troquei de telefone · Problema com login Google · Conta bloqueada · Outro.
+**Feedback (toast)**
+- "Mensagem enviada com sucesso."
+- "Mensagem registrada internamente. O envio por e-mail está desabilitado no momento." (quando canal e-mail marcado mas desabilitado)
 
-## 5. Banco de dados
+## 4. Eventos automáticos ligados agora
 
-Migração criando:
+Via `emit_system_message` chamado a partir de triggers/RPCs existentes:
+- cadastro criado, e-mail pendente, CPF duplicado (já sabemos no `handle_new_user`)
+- chamado aberto/respondido (extend `tickets_workflow` e `ticket_message_notify`)
+- certificado emitido, documento anexado
+- conta bloqueada/reativada (`admin_set_user_status`)
+- manutenção vencida, plano aplicado
 
-- Tabela `public.help_requests` (chamados pré-login) com RLS: INSERT permitido a `anon` via SECURITY DEFINER `submit_help_request(...)` que valida e insere; SELECT somente para admins. Grava IP e user_agent, gera código `TB-H-YYYY-NNNNNN`.
-- RPC `resend_confirmation_email(_email)` (SECURITY DEFINER) que apenas re-dispara `auth.users` invite/confirm quando existe conta sem confirmar — na prática usaremos `supabase.auth.resend()` do lado do cliente (não precisa de tabela nova aqui).
-- Índice case-insensitive já existe em `profiles.email` (feito em v1.0).
+Mantém `public.notifications` atual para o sininho de topbar; a Central é o inbox rico.
 
-## 6. Recuperação de acesso
+## 5. Integração com chamados
 
-Já existe `/reset-password` e o fluxo `resetPasswordForEmail`. Vou:
-- Adicionar um card "Recuperar acesso" reutilizável na tela de auth (abre por deep-link vindo de qualquer mensagem "CPF já existe").
-- Melhorar a mensagem de sucesso e a orientação de SPAM.
+- Botão "Abrir chamado a partir desta mensagem" pré-preenche assunto/corpo e grava `related_ticket_id` na mensagem original.
+- Ao responder um chamado, gerar mensagem automática vinculada (`type=support`, `related_ticket_id`) para o usuário.
+- Detalhe do chamado passa a mostrar mensagens vinculadas em uma seção "Comunicação relacionada".
 
-## 7. Personalização dos e-mails de auth (Lovable Emails)
+## 6. Auditoria
 
-Após o domínio ficar `active`, aplicar templates React Email com marca TrailBook (cores da identidade, logo, tom claro e profissional) para: `signup`, `recovery`, `magic-link`, `email-change`. Assuntos amigáveis em pt-BR.
+Toda ação (`admin_send_message`, marcar lida, responder, arquivar, envio simulado, mudança de configuração) grava em `comm_audit`. Tela admin de auditoria filtrável — reaproveita padrão do `AuditDialog` existente.
 
-## Arquivos afetados
+## 7. Arquivos afetados
 
-- `supabase/migrations/…_help_requests.sql` (nova tabela + RPC + policies + grants + trigger de código).
-- `src/routes/auth.tsx` (mensagens, reenvio, link de ajuda, tratamento de erro CPF).
-- `src/routes/help.tsx` (nova rota pública de chamado).
-- `src/routes/_authenticated/complete-profile.tsx` (fluxo CPF duplicado com 3 ações + sign-out).
-- `src/components/CpfConflictDialog.tsx` (novo, reutilizado nos 2 pontos).
-- `src/components/ResendConfirmationButton.tsx` (novo).
-- `.lovable/plan.md` atualizado com status da Fase 1.
-- Após DNS verificar: templates em `supabase/functions/_shared/email-templates/*.tsx` via `scaffold_auth_email_templates`.
+**Novos**
+- `supabase/migrations/…_comm_center.sql` (enums, 5 tabelas, RLS, GRANTs, RPCs, triggers de código/updated_at, seed do `comm_settings`).
+- `src/routes/_authenticated/messages.tsx` (inbox do usuário)
+- `src/routes/_authenticated/messages.$id.tsx` (detalhe/resposta)
+- `src/routes/_authenticated/admin.messages.tsx` (abas Enviar/Gestão/Simulados/Configurações)
+- `src/lib/comm.ts` (labels, tones, tipos, helpers)
+- `src/components/MessageComposer.tsx`, `MessageList.tsx`, `MessageDetail.tsx`, `CommSettingsPanel.tsx`, `SimulatedDeliveriesPanel.tsx`
+- `src/hooks/useUnreadMessages.ts`
 
-## Fora do escopo (Fases 2 e 3)
+**Editados**
+- `src/routes/__root.tsx` — ícone/contador de mensagens não lidas no topbar (se houver topbar).
+- `src/routes/_authenticated/tickets.$id.tsx` — seção "Comunicação relacionada" + gerar mensagem ao responder.
+- `src/routes/_authenticated/admin.tickets.tsx` — botão "Enviar mensagem ao usuário".
+- `src/routes/_authenticated/admin.users.tsx` — ação "Enviar mensagem" no drawer.
 
-Admin drawer, edição de usuários, reset de senha via admin, bloqueio/reativação, exclusão de homologação, filtros avançados, integração chamados↔usuários, respostas do admin em chamados, notificações por e-mail para chamados, WhatsApp.
+## 8. Fora do escopo desta entrega
 
-Ao final da Fase 1: relatório de homologação com checklist para você validar antes de eu abrir a Fase 2.
+Envio real de e-mail (fica atrás do flag `email_enabled`), WhatsApp, Push, SMS, templates React Email — a estrutura fica pronta e é ligada em uma próxima entrega quando o provedor for contratado.
+
+## Entrega
+
+Migração + código na mesma leva. Depois, relatório curto de homologação com checklist: enviar como admin, receber como usuário, responder, arquivar, abrir chamado da mensagem, alternar `email_enabled` e ver simulados, auditoria populada.
