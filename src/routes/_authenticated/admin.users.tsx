@@ -303,11 +303,25 @@ function UserDetailsSheet({ userId, onClose, currentAdminId }: { userId: string 
             {profile?.is_homologation && <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30">🧪 Homologação</Badge>}
             {!profile?.is_homologation && <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">Produtivo</Badge>}
           </SheetTitle>
-          <SheetDescription>{profile?.email || "—"} · {profile?.phone || "sem telefone"}</SheetDescription>
+          <SheetDescription>{profile?.email || "—"} · {profile?.phone || "Telefone não informado"}</SheetDescription>
         </SheetHeader>
 
-        {details.isLoading || !profile ? (
-          <div className="mt-6 text-sm text-muted-foreground">Carregando…</div>
+        {details.isLoading ? (
+          <div className="mt-6 text-sm text-muted-foreground">Carregando dados do usuário…</div>
+        ) : details.isError ? (
+          <div className="mt-6 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm">
+            <p className="text-destructive">
+              Não foi possível carregar os detalhes deste usuário.
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {(details.error as any)?.message || "Erro desconhecido"}
+            </p>
+            <Button size="sm" variant="outline" className="mt-3" onClick={() => details.refetch()}>
+              Tentar novamente
+            </Button>
+          </div>
+        ) : !profile ? (
+          <div className="mt-6 text-sm text-muted-foreground">Nenhum dado encontrado para este usuário.</div>
         ) : (
           <Tabs defaultValue="dados" className="mt-4">
             <TabsList className="grid grid-cols-5">
