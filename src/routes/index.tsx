@@ -92,7 +92,7 @@ function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
       <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-3 sm:px-6 sm:py-4">
-        <Link to="/" className="flex items-center gap-2">
+        <Link to="/" className="flex min-w-0 items-center gap-2">
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground btn-glow">
             <Bike className="h-5 w-5" />
           </div>
@@ -100,12 +100,23 @@ function SiteHeader() {
             TrailBook
           </span>
         </Link>
-        <nav className="flex items-center gap-1 sm:gap-2">
-          <Link to="/auth" className="hidden sm:inline-flex">
-            <Button variant="ghost" size="sm">Entrar</Button>
+        <nav className="flex items-center gap-2 sm:gap-3">
+          <Link to="/auth">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-sm font-medium hover:text-foreground sm:px-4"
+            >
+              Entrar
+            </Button>
           </Link>
           <Link to="/auth">
-            <Button size="sm" className="btn-glow">Criar conta</Button>
+            <Button
+              size="sm"
+              className="btn-glow whitespace-nowrap sm:text-sm"
+            >
+              Criar conta
+            </Button>
           </Link>
         </nav>
       </div>
