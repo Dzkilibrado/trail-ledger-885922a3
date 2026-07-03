@@ -149,17 +149,21 @@ function Hero() {
             <span className="font-semibold text-foreground">TrailBook Certified</span>.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
-            <Link to="/auth">
+            <Link to="/auth" className="w-full sm:w-auto">
               <Button size="lg" className="btn-glow w-full sm:w-auto">
-                Começar gratuitamente
+                Criar conta grátis
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </Link>
-            <a href="#funcionalidades" className="w-full sm:w-auto">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                Conhecer funcionalidades
+            <Link to="/auth" className="w-full sm:w-auto">
+              <Button
+                size="lg"
+                variant="outline"
+                className="w-full sm:w-auto"
+              >
+                Entrar
               </Button>
-            </a>
+            </Link>
           </div>
           <p className="text-sm italic text-muted-foreground">
             “O histórico da sua moto. A confiança da sua próxima negociação.”
