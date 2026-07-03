@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { isValidCPF, maskCPF, maskPhone, onlyDigits } from "@/lib/br-validators";
+import { CpfConflictDialog } from "@/components/CpfConflictDialog";
 
 export const Route = createFileRoute("/_authenticated/complete-profile")({
   head: () => ({ meta: [{ title: "Completar cadastro — TrailBook" }] }),
@@ -17,6 +18,7 @@ function CompleteProfilePage() {
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
   const [full, setFull] = useState({ fullName: "", cpf: "", birthDate: "", phone: "" });
+  const [cpfConflict, setCpfConflict] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -46,7 +48,13 @@ function CompleteProfilePage() {
       _full_name: full.fullName.trim(),
     });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      if (/CPF já cadastrado/i.test(error.message)) {
+        setCpfConflict(true);
+        return;
+      }
+      return toast.error(error.message);
+    }
     toast.success("Cadastro concluído!");
     navigate({ to: "/dashboard" as string });
   }
@@ -82,6 +90,32 @@ function CompleteProfilePage() {
         </div>
         <Button disabled={loading} type="submit" className="w-full btn-glow">Concluir cadastro</Button>
       </form>
+      <p className="text-xs text-muted-foreground text-center mt-4">
+        Problemas para concluir?{" "}
+        <Link to="/help" className="text-primary hover:underline">Preciso de ajuda</Link>
+      </p>
+      <CpfConflictDialog
+        open={cpfConflict}
+        onOpenChange={setCpfConflict}
+        title="Este CPF já está vinculado a outra conta"
+        description="Você entrou com o Google, mas o CPF informado já pertence a uma conta existente do TrailBook. Recupere o acesso da conta original ou abra um chamado."
+        onRecover={async () => {
+          setCpfConflict(false);
+          await supabase.auth.signOut();
+          navigate({ to: "/auth" });
+          toast.info("Use \"Esqueci minha senha?\" com o e-mail da conta original.");
+        }}
+        onOpenHelp={async () => {
+          setCpfConflict(false);
+          await supabase.auth.signOut();
+          navigate({ to: "/help" });
+        }}
+        onBackToLogin={async () => {
+          setCpfConflict(false);
+          await supabase.auth.signOut();
+          navigate({ to: "/auth" });
+        }}
+      />
     </div>
   );
 }

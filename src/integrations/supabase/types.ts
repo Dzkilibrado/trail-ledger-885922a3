@@ -248,6 +248,69 @@ export type Database = {
           },
         ]
       }
+      help_requests: {
+        Row: {
+          admin_notes: string | null
+          birth_date: string | null
+          code: string | null
+          cpf: string | null
+          created_at: string
+          description: string
+          email: string
+          full_name: string
+          id: string
+          ip: string | null
+          linked_user_id: string | null
+          phone: string
+          problem_other: string | null
+          problem_type: Database["public"]["Enums"]["help_request_type"]
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["help_request_status"]
+          updated_at: string
+          user_agent: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          birth_date?: string | null
+          code?: string | null
+          cpf?: string | null
+          created_at?: string
+          description: string
+          email: string
+          full_name: string
+          id?: string
+          ip?: string | null
+          linked_user_id?: string | null
+          phone: string
+          problem_other?: string | null
+          problem_type: Database["public"]["Enums"]["help_request_type"]
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["help_request_status"]
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          birth_date?: string | null
+          code?: string | null
+          cpf?: string | null
+          created_at?: string
+          description?: string
+          email?: string
+          full_name?: string
+          id?: string
+          ip?: string | null
+          linked_user_id?: string | null
+          phone?: string
+          problem_other?: string | null
+          problem_type?: Database["public"]["Enums"]["help_request_type"]
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["help_request_status"]
+          updated_at?: string
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       maintenance_inspections: {
         Row: {
           created_at: string
@@ -1317,6 +1380,35 @@ export type Database = {
     }
     Functions: {
       admin_dashboard_stats: { Args: never; Returns: Json }
+      admin_list_help_requests: {
+        Args: { _limit?: number; _search?: string; _status?: string }
+        Returns: {
+          admin_notes: string | null
+          birth_date: string | null
+          code: string | null
+          cpf: string | null
+          created_at: string
+          description: string
+          email: string
+          full_name: string
+          id: string
+          ip: string | null
+          linked_user_id: string | null
+          phone: string
+          problem_other: string | null
+          problem_type: Database["public"]["Enums"]["help_request_type"]
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["help_request_status"]
+          updated_at: string
+          user_agent: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "help_requests"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       admin_list_users: {
         Args: {
           _from?: string
@@ -1355,6 +1447,10 @@ export type Database = {
           _status: Database["public"]["Enums"]["user_status"]
           _user: string
         }
+        Returns: undefined
+      }
+      admin_update_help_request: {
+        Args: { _id: string; _notes?: string; _status: string }
         Returns: undefined
       }
       admin_update_module: {
@@ -1459,6 +1555,21 @@ export type Database = {
         Args: { _approve: boolean; _transfer_id: string }
         Returns: undefined
       }
+      submit_help_request: {
+        Args: {
+          _birth_date: string
+          _cpf: string
+          _description: string
+          _email: string
+          _full_name: string
+          _ip?: string
+          _phone: string
+          _problem_other?: string
+          _problem_type: string
+          _user_agent?: string
+        }
+        Returns: string
+      }
       validate_cpf: { Args: { _cpf: string }; Returns: boolean }
     }
     Enums: {
@@ -1482,6 +1593,22 @@ export type Database = {
         | "note"
         | "incident"
         | "declaration"
+      help_request_status:
+        | "open"
+        | "in_analysis"
+        | "waiting_user"
+        | "resolved"
+        | "closed"
+        | "cancelled"
+      help_request_type:
+        | "forgot_access"
+        | "cpf_exists"
+        | "no_confirmation_email"
+        | "changed_email"
+        | "changed_phone"
+        | "google_login_issue"
+        | "account_blocked"
+        | "other"
       inspection_decision:
         | "good"
         | "attention"
@@ -1705,6 +1832,24 @@ export const Constants = {
         "note",
         "incident",
         "declaration",
+      ],
+      help_request_status: [
+        "open",
+        "in_analysis",
+        "waiting_user",
+        "resolved",
+        "closed",
+        "cancelled",
+      ],
+      help_request_type: [
+        "forgot_access",
+        "cpf_exists",
+        "no_confirmation_email",
+        "changed_email",
+        "changed_phone",
+        "google_login_issue",
+        "account_blocked",
+        "other",
       ],
       inspection_decision: [
         "good",
