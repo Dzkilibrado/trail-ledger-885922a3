@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect, Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, LayoutDashboard, Calendar, DollarSign, QrCode, Building2, LogOut, Plus, Menu, X, Crown, ArrowRightLeft, LifeBuoy, Shield, Bell, FolderOpen, Blocks, Wrench, Lock } from "lucide-react";
+import { Bike, LayoutDashboard, Calendar, DollarSign, QrCode, Building2, LogOut, Plus, Menu, X, Crown, ArrowRightLeft, LifeBuoy, Shield, Bell, FolderOpen, Blocks, Wrench, Lock, Mail, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -40,6 +40,7 @@ const NAV = [
   { to: "/certificates", label: "Certificados", icon: QrCode },
   { to: "/transfers", label: "Transferências", icon: ArrowRightLeft },
   { to: "/tickets", label: "Chamados", icon: LifeBuoy },
+  { to: "/messages", label: "Mensagens", icon: Mail },
   { to: "/plans", label: "Planos", icon: Crown },
 ] as const;
 
@@ -47,6 +48,7 @@ const ADMIN_NAV = [
   { to: "/admin", label: "Dashboard Admin", icon: LayoutDashboard },
   { to: "/admin/users", label: "Usuários", icon: Shield },
   { to: "/admin/tickets", label: "Gestão de Chamados", icon: LifeBuoy },
+  { to: "/admin/messages", label: "Central de Mensagens", icon: MessageSquare },
   { to: "/admin/documents", label: "Gestão de Documentos", icon: FolderOpen },
   { to: "/admin/modules", label: "Módulos", icon: Blocks },
 ] as const;
@@ -93,6 +95,7 @@ function AuthedLayout() {
           </div>
           <div className="flex items-center gap-2">
             <NotificationsBell />
+            <MessagesBell />
             <Link to="/motorcycles/new">
               <Button size="sm" className="btn-glow"><Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nova</span> moto</Button>
             </Link>
@@ -223,6 +226,29 @@ function NotificationsBell() {
   return (
     <Link to="/tickets" aria-label="Notificações" className="relative rounded-md p-2 hover:bg-muted">
       <Bell className="h-4 w-4" />
+      {count > 0 && (
+        <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
+          {count > 9 ? "9+" : count}
+        </span>
+      )}
+    </Link>
+  );
+}
+
+function MessagesBell() {
+  const { data } = useQuery({
+    queryKey: ["messages", "unread-count"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("user_unread_count" as any);
+      if (error) return 0;
+      return Number(data ?? 0);
+    },
+    refetchInterval: 30_000,
+  });
+  const count = data ?? 0;
+  return (
+    <Link to="/messages" aria-label="Mensagens" className="relative rounded-md p-2 hover:bg-muted">
+      <Mail className="h-4 w-4" />
       {count > 0 && (
         <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
           {count > 9 ? "9+" : count}

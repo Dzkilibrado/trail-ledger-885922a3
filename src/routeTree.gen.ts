@@ -19,6 +19,7 @@ import { Route as AuthenticatedWorkshopsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedTransfersRouteImport } from './routes/_authenticated/transfers'
 import { Route as AuthenticatedTicketsRouteImport } from './routes/_authenticated/tickets'
 import { Route as AuthenticatedPlansRouteImport } from './routes/_authenticated/plans'
+import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated/messages'
 import { Route as AuthenticatedFinancialRouteImport } from './routes/_authenticated/financial'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCompleteProfileRouteImport } from './routes/_authenticated/complete-profile'
@@ -36,6 +37,7 @@ import { Route as AuthenticatedDocumentsIdRouteImport } from './routes/_authenti
 import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
 import { Route as AuthenticatedAdminTicketsRouteImport } from './routes/_authenticated/admin.tickets'
 import { Route as AuthenticatedAdminModulesRouteImport } from './routes/_authenticated/admin.modules'
+import { Route as AuthenticatedAdminMessagesRouteImport } from './routes/_authenticated/admin.messages'
 import { Route as AuthenticatedAdminDocumentsRouteImport } from './routes/_authenticated/admin.documents'
 import { Route as AuthenticatedMotorcyclesIdPlanRouteImport } from './routes/_authenticated/motorcycles.$id.plan'
 import { Route as AuthenticatedMotorcyclesIdPassportRouteImport } from './routes/_authenticated/motorcycles.$id.passport'
@@ -87,6 +89,11 @@ const AuthenticatedTicketsRoute = AuthenticatedTicketsRouteImport.update({
 const AuthenticatedPlansRoute = AuthenticatedPlansRouteImport.update({
   id: '/plans',
   path: '/plans',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMessagesRoute = AuthenticatedMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedFinancialRoute = AuthenticatedFinancialRouteImport.update({
@@ -183,6 +190,12 @@ const AuthenticatedAdminModulesRoute =
     path: '/modules',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminMessagesRoute =
+  AuthenticatedAdminMessagesRouteImport.update({
+    id: '/messages',
+    path: '/messages',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminDocumentsRoute =
   AuthenticatedAdminDocumentsRouteImport.update({
     id: '/documents',
@@ -213,12 +226,14 @@ export interface FileRoutesByFullPath {
   '/complete-profile': typeof AuthenticatedCompleteProfileRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/financial': typeof AuthenticatedFinancialRoute
+  '/messages': typeof AuthenticatedMessagesRoute
   '/plans': typeof AuthenticatedPlansRoute
   '/tickets': typeof AuthenticatedTicketsRouteWithChildren
   '/transfers': typeof AuthenticatedTransfersRoute
   '/workshops': typeof AuthenticatedWorkshopsRoute
   '/c/$token': typeof CTokenRoute
   '/admin/documents': typeof AuthenticatedAdminDocumentsRoute
+  '/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/admin/modules': typeof AuthenticatedAdminModulesRoute
   '/admin/tickets': typeof AuthenticatedAdminTicketsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -243,12 +258,14 @@ export interface FileRoutesByTo {
   '/complete-profile': typeof AuthenticatedCompleteProfileRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/financial': typeof AuthenticatedFinancialRoute
+  '/messages': typeof AuthenticatedMessagesRoute
   '/plans': typeof AuthenticatedPlansRoute
   '/tickets': typeof AuthenticatedTicketsRouteWithChildren
   '/transfers': typeof AuthenticatedTransfersRoute
   '/workshops': typeof AuthenticatedWorkshopsRoute
   '/c/$token': typeof CTokenRoute
   '/admin/documents': typeof AuthenticatedAdminDocumentsRoute
+  '/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/admin/modules': typeof AuthenticatedAdminModulesRoute
   '/admin/tickets': typeof AuthenticatedAdminTicketsRoute
   '/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -276,12 +293,14 @@ export interface FileRoutesById {
   '/_authenticated/complete-profile': typeof AuthenticatedCompleteProfileRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/financial': typeof AuthenticatedFinancialRoute
+  '/_authenticated/messages': typeof AuthenticatedMessagesRoute
   '/_authenticated/plans': typeof AuthenticatedPlansRoute
   '/_authenticated/tickets': typeof AuthenticatedTicketsRouteWithChildren
   '/_authenticated/transfers': typeof AuthenticatedTransfersRoute
   '/_authenticated/workshops': typeof AuthenticatedWorkshopsRoute
   '/c/$token': typeof CTokenRoute
   '/_authenticated/admin/documents': typeof AuthenticatedAdminDocumentsRoute
+  '/_authenticated/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/_authenticated/admin/modules': typeof AuthenticatedAdminModulesRoute
   '/_authenticated/admin/tickets': typeof AuthenticatedAdminTicketsRoute
   '/_authenticated/admin/users': typeof AuthenticatedAdminUsersRoute
@@ -309,12 +328,14 @@ export interface FileRouteTypes {
     | '/complete-profile'
     | '/dashboard'
     | '/financial'
+    | '/messages'
     | '/plans'
     | '/tickets'
     | '/transfers'
     | '/workshops'
     | '/c/$token'
     | '/admin/documents'
+    | '/admin/messages'
     | '/admin/modules'
     | '/admin/tickets'
     | '/admin/users'
@@ -339,12 +360,14 @@ export interface FileRouteTypes {
     | '/complete-profile'
     | '/dashboard'
     | '/financial'
+    | '/messages'
     | '/plans'
     | '/tickets'
     | '/transfers'
     | '/workshops'
     | '/c/$token'
     | '/admin/documents'
+    | '/admin/messages'
     | '/admin/modules'
     | '/admin/tickets'
     | '/admin/users'
@@ -371,12 +394,14 @@ export interface FileRouteTypes {
     | '/_authenticated/complete-profile'
     | '/_authenticated/dashboard'
     | '/_authenticated/financial'
+    | '/_authenticated/messages'
     | '/_authenticated/plans'
     | '/_authenticated/tickets'
     | '/_authenticated/transfers'
     | '/_authenticated/workshops'
     | '/c/$token'
     | '/_authenticated/admin/documents'
+    | '/_authenticated/admin/messages'
     | '/_authenticated/admin/modules'
     | '/_authenticated/admin/tickets'
     | '/_authenticated/admin/users'
@@ -471,6 +496,13 @@ declare module '@tanstack/react-router' {
       path: '/plans'
       fullPath: '/plans'
       preLoaderRoute: typeof AuthenticatedPlansRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/messages': {
+      id: '/_authenticated/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof AuthenticatedMessagesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/financial': {
@@ -592,6 +624,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminModulesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/messages': {
+      id: '/_authenticated/admin/messages'
+      path: '/messages'
+      fullPath: '/admin/messages'
+      preLoaderRoute: typeof AuthenticatedAdminMessagesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/documents': {
       id: '/_authenticated/admin/documents'
       path: '/documents'
@@ -618,6 +657,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminDocumentsRoute: typeof AuthenticatedAdminDocumentsRoute
+  AuthenticatedAdminMessagesRoute: typeof AuthenticatedAdminMessagesRoute
   AuthenticatedAdminModulesRoute: typeof AuthenticatedAdminModulesRoute
   AuthenticatedAdminTicketsRoute: typeof AuthenticatedAdminTicketsRoute
   AuthenticatedAdminUsersRoute: typeof AuthenticatedAdminUsersRoute
@@ -626,6 +666,7 @@ interface AuthenticatedAdminRouteChildren {
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminDocumentsRoute: AuthenticatedAdminDocumentsRoute,
+  AuthenticatedAdminMessagesRoute: AuthenticatedAdminMessagesRoute,
   AuthenticatedAdminModulesRoute: AuthenticatedAdminModulesRoute,
   AuthenticatedAdminTicketsRoute: AuthenticatedAdminTicketsRoute,
   AuthenticatedAdminUsersRoute: AuthenticatedAdminUsersRoute,
@@ -672,6 +713,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCompleteProfileRoute: typeof AuthenticatedCompleteProfileRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFinancialRoute: typeof AuthenticatedFinancialRoute
+  AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
   AuthenticatedPlansRoute: typeof AuthenticatedPlansRoute
   AuthenticatedTicketsRoute: typeof AuthenticatedTicketsRouteWithChildren
   AuthenticatedTransfersRoute: typeof AuthenticatedTransfersRoute
@@ -690,6 +732,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCompleteProfileRoute: AuthenticatedCompleteProfileRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFinancialRoute: AuthenticatedFinancialRoute,
+  AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
   AuthenticatedPlansRoute: AuthenticatedPlansRoute,
   AuthenticatedTicketsRoute: AuthenticatedTicketsRouteWithChildren,
   AuthenticatedTransfersRoute: AuthenticatedTransfersRoute,

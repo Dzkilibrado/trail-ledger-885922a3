@@ -129,6 +129,93 @@ export type Database = {
           },
         ]
       }
+      comm_audit: {
+        Row: {
+          action: string
+          actor_id: string | null
+          channel: Database["public"]["Enums"]["message_channel"] | null
+          created_at: string
+          id: string
+          message_id: string | null
+          metadata: Json
+          recipient_id: string | null
+          status: string | null
+          subject_text: string | null
+          type: Database["public"]["Enums"]["message_type"] | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          channel?: Database["public"]["Enums"]["message_channel"] | null
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          metadata?: Json
+          recipient_id?: string | null
+          status?: string | null
+          subject_text?: string | null
+          type?: Database["public"]["Enums"]["message_type"] | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          channel?: Database["public"]["Enums"]["message_channel"] | null
+          created_at?: string
+          id?: string
+          message_id?: string | null
+          metadata?: Json
+          recipient_id?: string | null
+          status?: string | null
+          subject_text?: string | null
+          type?: Database["public"]["Enums"]["message_type"] | null
+        }
+        Relationships: []
+      }
+      comm_settings: {
+        Row: {
+          email_enabled: boolean
+          email_from: string | null
+          email_provider: string | null
+          email_test_redirect: string | null
+          homologation_mode: boolean
+          id: number
+          internal_enabled: boolean
+          push_enabled: boolean
+          sms_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+          whatsapp_enabled: boolean
+        }
+        Insert: {
+          email_enabled?: boolean
+          email_from?: string | null
+          email_provider?: string | null
+          email_test_redirect?: string | null
+          homologation_mode?: boolean
+          id?: number
+          internal_enabled?: boolean
+          push_enabled?: boolean
+          sms_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp_enabled?: boolean
+        }
+        Update: {
+          email_enabled?: boolean
+          email_from?: string | null
+          email_provider?: string | null
+          email_test_redirect?: string | null
+          homologation_mode?: boolean
+          id?: number
+          internal_enabled?: boolean
+          push_enabled?: boolean
+          sms_enabled?: boolean
+          updated_at?: string
+          updated_by?: string | null
+          whatsapp_enabled?: boolean
+        }
+        Relationships: []
+      }
       event_attachments: {
         Row: {
           bucket: string
@@ -657,6 +744,166 @@ export type Database = {
           sort_order?: number
         }
         Relationships: []
+      }
+      message_deliveries: {
+        Row: {
+          channel: Database["public"]["Enums"]["message_channel"]
+          created_at: string
+          error: string | null
+          id: string
+          message_id: string
+          payload: Json
+          simulated: boolean
+          status: Database["public"]["Enums"]["delivery_status"]
+          user_id: string | null
+        }
+        Insert: {
+          channel: Database["public"]["Enums"]["message_channel"]
+          created_at?: string
+          error?: string | null
+          id?: string
+          message_id: string
+          payload?: Json
+          simulated?: boolean
+          status?: Database["public"]["Enums"]["delivery_status"]
+          user_id?: string | null
+        }
+        Update: {
+          channel?: Database["public"]["Enums"]["message_channel"]
+          created_at?: string
+          error?: string | null
+          id?: string
+          message_id?: string
+          payload?: Json
+          simulated?: boolean
+          status?: Database["public"]["Enums"]["delivery_status"]
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_deliveries_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_recipients: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          message_id: string
+          read_at: string | null
+          replied_at: string | null
+          status: Database["public"]["Enums"]["recipient_status"]
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          message_id: string
+          read_at?: string | null
+          replied_at?: string | null
+          status?: Database["public"]["Enums"]["recipient_status"]
+          user_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          message_id?: string
+          read_at?: string | null
+          replied_at?: string | null
+          status?: Database["public"]["Enums"]["recipient_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_recipients_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      messages: {
+        Row: {
+          allow_reply: boolean
+          audience: Database["public"]["Enums"]["message_audience"]
+          audience_filter: Json
+          body: string
+          code: string | null
+          created_at: string
+          id: string
+          is_automatic: boolean
+          parent_message_id: string | null
+          priority: Database["public"]["Enums"]["message_priority"]
+          related_ticket_id: string | null
+          sender_id: string | null
+          status: Database["public"]["Enums"]["message_status"]
+          subject_key: Database["public"]["Enums"]["message_subject_key"]
+          subject_other: string | null
+          subject_text: string
+          type: Database["public"]["Enums"]["message_type"]
+          updated_at: string
+        }
+        Insert: {
+          allow_reply?: boolean
+          audience?: Database["public"]["Enums"]["message_audience"]
+          audience_filter?: Json
+          body: string
+          code?: string | null
+          created_at?: string
+          id?: string
+          is_automatic?: boolean
+          parent_message_id?: string | null
+          priority?: Database["public"]["Enums"]["message_priority"]
+          related_ticket_id?: string | null
+          sender_id?: string | null
+          status?: Database["public"]["Enums"]["message_status"]
+          subject_key?: Database["public"]["Enums"]["message_subject_key"]
+          subject_other?: string | null
+          subject_text: string
+          type?: Database["public"]["Enums"]["message_type"]
+          updated_at?: string
+        }
+        Update: {
+          allow_reply?: boolean
+          audience?: Database["public"]["Enums"]["message_audience"]
+          audience_filter?: Json
+          body?: string
+          code?: string | null
+          created_at?: string
+          id?: string
+          is_automatic?: boolean
+          parent_message_id?: string | null
+          priority?: Database["public"]["Enums"]["message_priority"]
+          related_ticket_id?: string | null
+          sender_id?: string | null
+          status?: Database["public"]["Enums"]["message_status"]
+          subject_key?: Database["public"]["Enums"]["message_subject_key"]
+          subject_other?: string | null
+          subject_text?: string
+          type?: Database["public"]["Enums"]["message_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_parent_message_id_fkey"
+            columns: ["parent_message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_related_ticket_id_fkey"
+            columns: ["related_ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       motorcycle_documents: {
         Row: {
@@ -1380,6 +1627,46 @@ export type Database = {
     }
     Functions: {
       admin_dashboard_stats: { Args: never; Returns: Json }
+      admin_get_comm_settings: {
+        Args: never
+        Returns: {
+          email_enabled: boolean
+          email_from: string | null
+          email_provider: string | null
+          email_test_redirect: string | null
+          homologation_mode: boolean
+          id: number
+          internal_enabled: boolean
+          push_enabled: boolean
+          sms_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+          whatsapp_enabled: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "comm_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_list_deliveries: {
+        Args: { _limit?: number; _only_simulated?: boolean }
+        Returns: {
+          channel: Database["public"]["Enums"]["message_channel"]
+          code: string
+          created_at: string
+          id: string
+          message_id: string
+          payload: Json
+          simulated: boolean
+          status: Database["public"]["Enums"]["delivery_status"]
+          subject_text: string
+          user_email: string
+          user_id: string
+          user_name: string
+        }[]
+      }
       admin_list_help_requests: {
         Args: { _limit?: number; _search?: string; _status?: string }
         Returns: {
@@ -1409,6 +1696,34 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      admin_list_messages: {
+        Args: {
+          _automatic?: string
+          _from?: string
+          _limit?: number
+          _priority?: string
+          _search?: string
+          _to?: string
+          _type?: string
+        }
+        Returns: {
+          audience: Database["public"]["Enums"]["message_audience"]
+          body: string
+          code: string
+          created_at: string
+          id: string
+          is_automatic: boolean
+          priority: Database["public"]["Enums"]["message_priority"]
+          read_count: number
+          recipients_count: number
+          related_ticket_id: string
+          sender_id: string
+          sender_name: string
+          status: Database["public"]["Enums"]["message_status"]
+          subject_text: string
+          type: Database["public"]["Enums"]["message_type"]
+        }[]
+      }
       admin_list_users: {
         Args: {
           _from?: string
@@ -1434,6 +1749,26 @@ export type Database = {
           status: Database["public"]["Enums"]["user_status"]
         }[]
       }
+      admin_message_thread: { Args: { _id: string }; Returns: Json }
+      admin_reply_message: {
+        Args: { _body: string; _parent: string }
+        Returns: string
+      }
+      admin_send_message: {
+        Args: {
+          _allow_reply: boolean
+          _audience: Database["public"]["Enums"]["message_audience"]
+          _body: string
+          _channels: string[]
+          _filter: Json
+          _priority: Database["public"]["Enums"]["message_priority"]
+          _related_ticket_id: string
+          _subject_key: Database["public"]["Enums"]["message_subject_key"]
+          _subject_other: string
+          _type: Database["public"]["Enums"]["message_type"]
+        }
+        Returns: string
+      }
       admin_set_user_plan: {
         Args: { _plan: Database["public"]["Enums"]["plan_tier"]; _user: string }
         Returns: undefined
@@ -1448,6 +1783,29 @@ export type Database = {
           _user: string
         }
         Returns: undefined
+      }
+      admin_update_comm_settings: {
+        Args: { _json: Json }
+        Returns: {
+          email_enabled: boolean
+          email_from: string | null
+          email_provider: string | null
+          email_test_redirect: string | null
+          homologation_mode: boolean
+          id: number
+          internal_enabled: boolean
+          push_enabled: boolean
+          sms_enabled: boolean
+          updated_at: string
+          updated_by: string | null
+          whatsapp_enabled: boolean
+        }
+        SetofOptions: {
+          from: "*"
+          to: "comm_settings"
+          isOneToOne: true
+          isSetofReturn: false
+        }
       }
       admin_update_help_request: {
         Args: { _id: string; _notes?: string; _status: string }
@@ -1493,6 +1851,22 @@ export type Database = {
         Args: { _transfer_id: string }
         Returns: undefined
       }
+      comm_expand_audience: {
+        Args: {
+          _audience: Database["public"]["Enums"]["message_audience"]
+          _filter: Json
+        }
+        Returns: {
+          user_id: string
+        }[]
+      }
+      comm_subject_default: {
+        Args: {
+          _key: Database["public"]["Enums"]["message_subject_key"]
+          _other: string
+        }
+        Returns: string
+      }
       complete_signup_cpf: {
         Args: {
           _birth_date: string
@@ -1501,6 +1875,18 @@ export type Database = {
           _phone: string
         }
         Returns: undefined
+      }
+      emit_system_message: {
+        Args: {
+          _body: string
+          _priority?: Database["public"]["Enums"]["message_priority"]
+          _related_ticket?: string
+          _subject_key: Database["public"]["Enums"]["message_subject_key"]
+          _subject_other: string
+          _type: Database["public"]["Enums"]["message_type"]
+          _user: string
+        }
+        Returns: string
       }
       get_email_by_cpf: { Args: { _cpf: string }; Returns: string }
       get_platform_modules: {
@@ -1570,6 +1956,43 @@ export type Database = {
         }
         Returns: string
       }
+      user_list_messages: {
+        Args: { _filter?: string }
+        Returns: {
+          allow_reply: boolean
+          body: string
+          code: string
+          created_at: string
+          is_automatic: boolean
+          message_id: string
+          priority: Database["public"]["Enums"]["message_priority"]
+          read_at: string
+          related_ticket_id: string
+          sender_id: string
+          sender_name: string
+          status: Database["public"]["Enums"]["recipient_status"]
+          subject_text: string
+          type: Database["public"]["Enums"]["message_type"]
+        }[]
+      }
+      user_mark_message: {
+        Args: { _action: string; _id: string }
+        Returns: undefined
+      }
+      user_open_ticket_from_message: {
+        Args: {
+          _body: string
+          _id: string
+          _priority: string
+          _subject: string
+        }
+        Returns: string
+      }
+      user_reply_message: {
+        Args: { _body: string; _parent: string }
+        Returns: string
+      }
+      user_unread_count: { Args: never; Returns: number }
       validate_cpf: { Args: { _cpf: string }; Returns: boolean }
     }
     Enums: {
@@ -1577,6 +2000,12 @@ export type Database = {
       attachment_kind: "photo" | "video" | "document" | "invoice"
       audit_action: "insert" | "update" | "delete"
       control_type: "hours" | "km" | "both"
+      delivery_status:
+        | "pending"
+        | "sent"
+        | "simulated"
+        | "skipped_disabled"
+        | "failed"
       event_type:
         | "usage"
         | "maintenance"
@@ -1626,6 +2055,49 @@ export type Database = {
         | "cooling"
         | "other"
       media_kind: "photo" | "video"
+      message_audience:
+        | "single_user"
+        | "by_status"
+        | "by_role"
+        | "homologation_users"
+        | "open_tickets"
+        | "email_unconfirmed"
+        | "blocked_users"
+        | "all_users"
+      message_channel: "internal" | "email" | "whatsapp" | "push" | "sms"
+      message_priority: "low" | "medium" | "high" | "critical"
+      message_status:
+        | "draft"
+        | "sent"
+        | "read"
+        | "replied"
+        | "archived"
+        | "cancelled"
+      message_subject_key:
+        | "signup_confirmation"
+        | "password_recovery"
+        | "cpf_duplicate"
+        | "email_not_confirmed"
+        | "account_blocked"
+        | "profile_update"
+        | "document_pending"
+        | "certificate"
+        | "ticket"
+        | "homologation"
+        | "important_notice"
+        | "other"
+      message_type:
+        | "system_notice"
+        | "support"
+        | "access"
+        | "documentation"
+        | "certificate"
+        | "maintenance"
+        | "financial"
+        | "homologation"
+        | "security"
+        | "system_update"
+        | "other"
       module_status: "active" | "maintenance" | "disabled" | "beta"
       motorcycle_document_type:
         | "invoice"
@@ -1644,6 +2116,7 @@ export type Database = {
         | "check_level"
       plan_severity: "low" | "medium" | "high" | "critical"
       plan_tier: "free" | "premium" | "workshop"
+      recipient_status: "sent" | "read" | "replied" | "archived"
       schedule_status: "active" | "snoozed" | "ignored" | "done"
       ticket_module:
         | "dashboard"
@@ -1816,6 +2289,13 @@ export const Constants = {
       attachment_kind: ["photo", "video", "document", "invoice"],
       audit_action: ["insert", "update", "delete"],
       control_type: ["hours", "km", "both"],
+      delivery_status: [
+        "pending",
+        "sent",
+        "simulated",
+        "skipped_disabled",
+        "failed",
+      ],
       event_type: [
         "usage",
         "maintenance",
@@ -1870,6 +2350,53 @@ export const Constants = {
         "other",
       ],
       media_kind: ["photo", "video"],
+      message_audience: [
+        "single_user",
+        "by_status",
+        "by_role",
+        "homologation_users",
+        "open_tickets",
+        "email_unconfirmed",
+        "blocked_users",
+        "all_users",
+      ],
+      message_channel: ["internal", "email", "whatsapp", "push", "sms"],
+      message_priority: ["low", "medium", "high", "critical"],
+      message_status: [
+        "draft",
+        "sent",
+        "read",
+        "replied",
+        "archived",
+        "cancelled",
+      ],
+      message_subject_key: [
+        "signup_confirmation",
+        "password_recovery",
+        "cpf_duplicate",
+        "email_not_confirmed",
+        "account_blocked",
+        "profile_update",
+        "document_pending",
+        "certificate",
+        "ticket",
+        "homologation",
+        "important_notice",
+        "other",
+      ],
+      message_type: [
+        "system_notice",
+        "support",
+        "access",
+        "documentation",
+        "certificate",
+        "maintenance",
+        "financial",
+        "homologation",
+        "security",
+        "system_update",
+        "other",
+      ],
       module_status: ["active", "maintenance", "disabled", "beta"],
       motorcycle_document_type: [
         "invoice",
@@ -1890,6 +2417,7 @@ export const Constants = {
       ],
       plan_severity: ["low", "medium", "high", "critical"],
       plan_tier: ["free", "premium", "workshop"],
+      recipient_status: ["sent", "read", "replied", "archived"],
       schedule_status: ["active", "snoozed", "ignored", "done"],
       ticket_module: [
         "dashboard",
