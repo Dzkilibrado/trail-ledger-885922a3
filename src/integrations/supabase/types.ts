@@ -14,6 +14,57 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_user_events: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          field: string | null
+          id: string
+          ip: string | null
+          metadata: Json
+          new_value: Json | null
+          notes: string | null
+          old_value: Json | null
+          reason: string | null
+          target_snapshot: Json | null
+          target_user_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          field?: string | null
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          new_value?: Json | null
+          notes?: string | null
+          old_value?: Json | null
+          reason?: string | null
+          target_snapshot?: Json | null
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          field?: string | null
+          id?: string
+          ip?: string | null
+          metadata?: Json
+          new_value?: Json | null
+          notes?: string | null
+          old_value?: Json | null
+          reason?: string | null
+          target_snapshot?: Json | null
+          target_user_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: []
+      }
       audit_log: {
         Row: {
           action: Database["public"]["Enums"]["audit_action"]
@@ -1305,12 +1356,20 @@ export type Database = {
         Row: {
           avatar_url: string | null
           birth_date: string | null
+          blocked_at: string | null
+          blocked_notes: string | null
+          blocked_reason: string | null
           cpf: string | null
           created_at: string
           email: string | null
           full_name: string | null
           id: string
+          inactive_at: string | null
+          inactive_notes: string | null
+          inactive_reason: string | null
+          is_homologation: boolean
           last_seen_at: string | null
+          login_provider: string | null
           phone: string | null
           plan: Database["public"]["Enums"]["plan_tier"]
           plan_since: string
@@ -1320,12 +1379,20 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           birth_date?: string | null
+          blocked_at?: string | null
+          blocked_notes?: string | null
+          blocked_reason?: string | null
           cpf?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id: string
+          inactive_at?: string | null
+          inactive_notes?: string | null
+          inactive_reason?: string | null
+          is_homologation?: boolean
           last_seen_at?: string | null
+          login_provider?: string | null
           phone?: string | null
           plan?: Database["public"]["Enums"]["plan_tier"]
           plan_since?: string
@@ -1335,12 +1402,20 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           birth_date?: string | null
+          blocked_at?: string | null
+          blocked_notes?: string | null
+          blocked_reason?: string | null
           cpf?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
+          inactive_at?: string | null
+          inactive_notes?: string | null
+          inactive_reason?: string | null
+          is_homologation?: boolean
           last_seen_at?: string | null
+          login_provider?: string | null
           phone?: string | null
           plan?: Database["public"]["Enums"]["plan_tier"]
           plan_since?: string
@@ -1626,7 +1701,15 @@ export type Database = {
       }
     }
     Functions: {
+      admin_block_user: {
+        Args: { _notes?: string; _reason: string; _user: string }
+        Returns: undefined
+      }
       admin_dashboard_stats: { Args: never; Returns: Json }
+      admin_deactivate_user: {
+        Args: { _notes?: string; _reason: string; _user: string }
+        Returns: undefined
+      }
       admin_get_comm_settings: {
         Args: never
         Returns: {
@@ -1727,29 +1810,62 @@ export type Database = {
       admin_list_users: {
         Args: {
           _from?: string
+          _has_documents?: boolean
           _has_moto?: boolean
           _has_ticket?: boolean
+          _is_homologation?: boolean
           _limit?: number
+          _login_provider?: string
           _plan?: string
+          _role?: string
           _search?: string
           _status?: string
           _to?: string
         }
         Returns: {
+          certificates_count: number
+          cpf: string
           created_at: string
+          documents_count: number
           email: string
           full_name: string
           id: string
           is_admin: boolean
+          is_homologation: boolean
           last_seen_at: string
+          login_provider: string
           motorcycles_count: number
           open_tickets: number
           phone: string
           plan: Database["public"]["Enums"]["plan_tier"]
           status: Database["public"]["Enums"]["user_status"]
+          tickets_count: number
         }[]
       }
+      admin_log_event: {
+        Args: {
+          _action: string
+          _field?: string
+          _metadata?: Json
+          _new?: Json
+          _notes?: string
+          _old?: Json
+          _reason?: string
+          _snapshot?: Json
+          _target: string
+        }
+        Returns: undefined
+      }
       admin_message_thread: { Args: { _id: string }; Returns: Json }
+      admin_prepare_homolog_deletion: {
+        Args: { _confirmation: string; _reason: string; _user: string }
+        Returns: Json
+      }
+      admin_profile_snapshot: { Args: { _user: string }; Returns: Json }
+      admin_reactivate_user: {
+        Args: { _notes?: string; _user: string }
+        Returns: undefined
+      }
       admin_reply_message: {
         Args: { _body: string; _parent: string }
         Returns: string
@@ -1846,6 +1962,46 @@ export type Database = {
         Args: { _full_name: string; _phone: string; _user: string }
         Returns: undefined
       }
+      admin_update_user: {
+        Args: {
+          _birth_date?: string
+          _email?: string
+          _full_name?: string
+          _is_admin?: boolean
+          _is_homologation?: boolean
+          _phone?: string
+          _plan?: string
+          _reason?: string
+          _status?: string
+          _user: string
+        }
+        Returns: undefined
+      }
+      admin_user_audit: {
+        Args: { _limit?: number; _user: string }
+        Returns: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          field: string | null
+          id: string
+          ip: string | null
+          metadata: Json
+          new_value: Json | null
+          notes: string | null
+          old_value: Json | null
+          reason: string | null
+          target_snapshot: Json | null
+          target_user_id: string | null
+          user_agent: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "admin_user_events"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       admin_user_details: { Args: { _user: string }; Returns: Json }
       cancel_ownership_transfer: {
         Args: { _transfer_id: string }
@@ -1876,6 +2032,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      count_active_admins: { Args: never; Returns: number }
       emit_system_message: {
         Args: {
           _body: string
@@ -1933,6 +2090,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      me_access_status: { Args: never; Returns: Json }
       request_ownership_transfer: {
         Args: { _message: string; _moto_id: string; _to_email: string }
         Returns: string
