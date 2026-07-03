@@ -68,7 +68,7 @@ function HelpPage() {
       _email: form.email.trim(),
       _problem_type: form.problemType,
       _description: form.description.trim(),
-      _problem_other: form.problemOther?.trim() || null,
+      _problem_other: form.problemOther?.trim() || undefined,
       _user_agent: navigator.userAgent.slice(0, 512),
     });
     setLoading(false);
