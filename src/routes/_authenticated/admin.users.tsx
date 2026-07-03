@@ -15,11 +15,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Eye, KeyRound, ShieldAlert, ShieldCheck, Trash2, UserX, Pencil } from "lucide-react";
+import { Bike, Clock, Eye, FileText, KeyRound, Pencil, ScrollText, ShieldAlert, ShieldCheck, Ticket, Trash2, UserX } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/trailbook";
 import { adminSendPasswordReset, adminDeleteHomologUser } from "@/lib/admin-users.functions";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
   head: () => ({ meta: [{ title: "Usuários — Admin TrailBook" }] }),
