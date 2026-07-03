@@ -55,6 +55,7 @@ function armEphemeralSession() {
 function AuthPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [blockedNotice, setBlockedNotice] = useState<{ status: string; reason: string } | null>(null);
   // Sign-in state
   const [identifier, setIdentifier] = useState(""); // email OR CPF
   const [password, setPassword] = useState("");
@@ -77,6 +78,13 @@ function AuthPage() {
     supabase.auth.getSession().then(({ data }) => {
       if (data.session) navigate({ to: "/dashboard" as string });
     });
+    try {
+      const p = new URLSearchParams(window.location.search);
+      const b = p.get("blocked");
+      if (b === "blocked" || b === "inactive") {
+        setBlockedNotice({ status: b, reason: p.get("reason") || "" });
+      }
+    } catch {}
   }, [navigate]);
 
   async function resolveEmail(input: string): Promise<string | null> {
@@ -177,6 +185,15 @@ function AuthPage() {
           <span className="font-display text-xl font-bold">TrailBook</span>
         </Link>
         <div className="surface-elevated rounded-2xl p-6">
+          {blockedNotice && (
+            <div className="mb-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+              <strong>
+                {blockedNotice.status === "blocked" ? "Seu acesso está bloqueado." : "Sua conta está inativa."}
+              </strong>{" "}
+              Entre em contato com o suporte.
+              {blockedNotice.reason && <div className="mt-1 opacity-80">Motivo: {blockedNotice.reason}</div>}
+            </div>
+          )}
           {signupSent ? (
             <div className="text-center py-4">
               <h2 className="font-display text-xl font-bold">Confirme seu e-mail</h2>
