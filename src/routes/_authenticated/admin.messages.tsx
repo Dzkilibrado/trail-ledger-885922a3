@@ -32,7 +32,7 @@ function Page() {
   if (!isAdmin) return <AccessDenied />;
   return (
     <div className="space-y-5">
-      <PageHeader title="Central de Mensagens" subtitle="Comunicação interna entre administração e usuários." />
+      <PageHeader title="Central de Mensagens" description="Comunicação interna entre administração e usuários." />
       <Tabs defaultValue="send">
         <TabsList>
           <TabsTrigger value="send">Enviar</TabsTrigger>
