@@ -48,8 +48,13 @@ function CompleteProfilePage() {
       _full_name: full.fullName.trim(),
     });
     setLoading(false);
-    if (error) return toast.error(error.message);
-    if (error) return;
+    if (error) {
+      if (/CPF já cadastrado/i.test(error.message)) {
+        setCpfConflict(true);
+        return;
+      }
+      return toast.error(error.message);
+    }
     toast.success("Cadastro concluído!");
     navigate({ to: "/dashboard" as string });
   }
@@ -85,6 +90,32 @@ function CompleteProfilePage() {
         </div>
         <Button disabled={loading} type="submit" className="w-full btn-glow">Concluir cadastro</Button>
       </form>
+      <p className="text-xs text-muted-foreground text-center mt-4">
+        Problemas para concluir?{" "}
+        <Link to="/help" className="text-primary hover:underline">Preciso de ajuda</Link>
+      </p>
+      <CpfConflictDialog
+        open={cpfConflict}
+        onOpenChange={setCpfConflict}
+        title="Este CPF já está vinculado a outra conta"
+        description="Você entrou com o Google, mas o CPF informado já pertence a uma conta existente do TrailBook. Recupere o acesso da conta original ou abra um chamado."
+        onRecover={async () => {
+          setCpfConflict(false);
+          await supabase.auth.signOut();
+          navigate({ to: "/auth" });
+          toast.info("Use \"Esqueci minha senha?\" com o e-mail da conta original.");
+        }}
+        onOpenHelp={async () => {
+          setCpfConflict(false);
+          await supabase.auth.signOut();
+          navigate({ to: "/help" });
+        }}
+        onBackToLogin={async () => {
+          setCpfConflict(false);
+          await supabase.auth.signOut();
+          navigate({ to: "/auth" });
+        }}
+      />
     </div>
   );
 }
