@@ -86,10 +86,33 @@ export const adminDeleteHomologUser = createServerFn({ method: "POST" })
 
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
+    // Nullify FK references that don't cascade/SET NULL automatically so
+    // auth.admin.deleteUser doesn't fail with a foreign key violation.
+    // These columns are created_by-style audit fields — safe to null out.
+    await supabaseAdmin
+      .from("maintenance_inspections")
+      .update({ created_by: null })
+      .eq("created_by", data.userId);
+    await supabaseAdmin
+      .from("motorcycle_documents")
+      .update({ created_by: null })
+      .eq("created_by", data.userId);
+    await supabaseAdmin
+      .from("motorcycle_photos")
+      .update({ created_by: null })
+      .eq("created_by", data.userId);
+
     // Delete the auth user. Application tables reference auth.users via ON DELETE
     // CASCADE on public.profiles (id), so cascading removes user-owned data.
     const { error: eDel } = await supabaseAdmin.auth.admin.deleteUser(data.userId);
-    if (eDel) throw new Error(eDel.message);
+    if (eDel) {
+      const msg =
+        (eDel as any)?.message ||
+        (typeof eDel === "string" ? eDel : "") ||
+        JSON.stringify(eDel) ||
+        "Falha ao excluir usuário no provedor de autenticação";
+      throw new Error(msg);
+    }
 
     await supabaseAdmin.from("admin_user_events").insert({
       actor_id: context.userId,
