@@ -684,8 +684,8 @@ function EditForm({ profile, row, isSelf, isAdmin, onSaved }: { profile: any; ro
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="col-span-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="sm:col-span-2">
           <Label className="text-xs">Nome completo</Label>
           <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
         </div>
@@ -697,7 +697,7 @@ function EditForm({ profile, row, isSelf, isAdmin, onSaved }: { profile: any; ro
           <Label className="text-xs">WhatsApp</Label>
           <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
         </div>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <Label className="text-xs">E-mail</Label>
           <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         </div>
@@ -724,7 +724,7 @@ function EditForm({ profile, row, isSelf, isAdmin, onSaved }: { profile: any; ro
             </SelectContent>
           </Select>
         </div>
-        <div className="col-span-2 flex items-center gap-3 rounded-md border border-border p-2">
+        <div className="flex items-center gap-3 rounded-md border border-border p-2 sm:col-span-2">
           <Switch
             checked={form.is_admin}
             disabled={isSelf && isAdmin}
@@ -732,12 +732,12 @@ function EditForm({ profile, row, isSelf, isAdmin, onSaved }: { profile: any; ro
           />
           <Label className="text-xs">Perfil de Administrador {isSelf && isAdmin && "(você não pode se auto-rebaixar)"}</Label>
         </div>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <Label className="text-xs">Motivo / Observação (opcional)</Label>
           <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} />
         </div>
         {emailChanged && (
-          <div className="col-span-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-xs">
+          <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-xs sm:col-span-2">
             <label className="flex items-start gap-2 cursor-pointer">
               <input type="checkbox" checked={confirmEmail} onChange={(e) => setConfirmEmail(e.target.checked)} className="mt-0.5"/>
               <span>Confirmo a alteração de e-mail (isso impacta login e comunicação com o usuário).</span>
@@ -745,11 +745,11 @@ function EditForm({ profile, row, isSelf, isAdmin, onSaved }: { profile: any; ro
           </div>
         )}
       </div>
-      <div className="flex items-center justify-between gap-2 pt-2">
+      <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-xs text-muted-foreground">
           {changes.length ? <>Alterações: <strong>{changes.join(", ")}</strong></> : "Sem alterações"}
         </div>
-        <Button size="sm" onClick={save} disabled={saving || changes.length === 0}>
+        <Button size="sm" className="w-full sm:w-auto" onClick={save} disabled={saving || changes.length === 0}>
           <Pencil className="mr-1 h-4 w-4"/>Salvar alterações
         </Button>
       </div>
@@ -786,7 +786,7 @@ function ReasonDialog({
   }
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <span onClick={() => setOpen(true)}>{trigger}</span>
+      <span onClick={(e) => { if (!(e.target as HTMLElement).closest("button")?.hasAttribute("disabled")) setOpen(true); }}>{trigger}</span>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
@@ -832,7 +832,7 @@ function ConfirmDialog({ trigger, title, description, confirmLabel, onConfirm }:
   const [busy, setBusy] = useState(false);
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <span onClick={() => setOpen(true)}>{trigger}</span>
+      <span onClick={(e) => { if (!(e.target as HTMLElement).closest("button")?.hasAttribute("disabled")) setOpen(true); }}>{trigger}</span>
       <AlertDialogContent>
         <AlertDialogHeader><AlertDialogTitle>{title}</AlertDialogTitle><AlertDialogDescription>{description}</AlertDialogDescription></AlertDialogHeader>
         <AlertDialogFooter>
