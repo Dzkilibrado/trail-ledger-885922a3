@@ -15,11 +15,12 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Eye, KeyRound, ShieldAlert, ShieldCheck, Trash2, UserX, Pencil } from "lucide-react";
+import { Bike, Clock, Eye, FileText, KeyRound, Pencil, ScrollText, ShieldAlert, ShieldCheck, Ticket, Trash2, UserX } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/trailbook";
 import { adminSendPasswordReset, adminDeleteHomologUser } from "@/lib/admin-users.functions";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export const Route = createFileRoute("/_authenticated/admin/users")({
   head: () => ({ meta: [{ title: "Usuários — Admin TrailBook" }] }),
@@ -250,6 +251,52 @@ function SelectBox({ value, onChange, options }: { value: string; onChange: (v: 
   );
 }
 
+const STATUS_LABELS: Record<string, string> = {
+  active: "Ativo",
+  pending: "Pendente",
+  blocked: "Bloqueado",
+  inactive: "Inativo",
+};
+const PLAN_LABELS: Record<string, string> = { free: "Free", premium: "Premium", workshop: "Oficina" };
+const TICKET_OPEN_STATUSES = new Set(["open", "in_analysis", "in_progress", "awaiting_user"]);
+
+function initials(name?: string | null, email?: string | null) {
+  const source = (name?.trim() || email?.split("@")[0] || "Usuário").trim();
+  const parts = source.split(/\s+/).filter(Boolean);
+  return (parts.length > 1 ? `${parts[0][0]}${parts[parts.length - 1][0]}` : source.slice(0, 2)).toUpperCase();
+}
+
+function formatPhone(phone?: string | null) {
+  const digits = (phone ?? "").replace(/\D/g, "");
+  if (!digits) return "Telefone não informado";
+  if (digits.length === 11) return `(${digits.slice(0, 2)}) ${digits.slice(2, 7)}-${digits.slice(7)}`;
+  if (digits.length === 10) return `(${digits.slice(0, 2)}) ${digits.slice(2, 6)}-${digits.slice(6)}`;
+  return phone;
+}
+
+function formatMotorcycleName(m: any) {
+  const name = [m.nickname, m.brand, m.model].filter(Boolean).join(" · ");
+  const year = [m.year_make, m.year_model].filter(Boolean).join("/");
+  return `${name || "Motocicleta"}${year ? ` · ${year}` : ""}`;
+}
+
+function SectionTitle({ title, description }: { title: string; description?: string }) {
+  return (
+    <div className="space-y-1">
+      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      {description && <p className="text-xs text-muted-foreground">{description}</p>}
+    </div>
+  );
+}
+
+function EmptyState({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border border-dashed border-border bg-muted/30 p-5 text-center text-sm text-muted-foreground">
+      {children}
+    </div>
+  );
+}
+
 function UserDetailsSheet({ userId, onClose, currentAdminId }: { userId: string | null; onClose: () => void; currentAdminId?: string }) {
   const qc = useQueryClient();
   const details = useQuery({
@@ -289,64 +336,128 @@ function UserDetailsSheet({ userId, onClose, currentAdminId }: { userId: string 
 
   const d = details.data;
   const row = list.data;
-  const profile = d?.profile;
+  const profile = d?.profile ?? row;
   const isSelf = currentAdminId && userId === currentAdminId;
+  const motorcycles = (d?.motorcycles ?? []) as any[];
+  const documents = (d?.documents ?? []) as any[];
+  const certificates = (d?.certificates ?? []) as any[];
+  const tickets = (d?.tickets ?? []) as any[];
+  const openTickets = tickets.filter((t) => TICKET_OPEN_STATUSES.has(String(t.status))).length;
+  const isAdminProfile = !!(d?.is_admin ?? row?.is_admin);
+  const statusLabel = STATUS_LABELS[profile?.status] ?? profile?.status ?? "—";
+  const planLabel = PLAN_LABELS[profile?.plan] ?? profile?.plan ?? "—";
 
   return (
     <Sheet open={!!userId} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
-        <SheetHeader>
-          <SheetTitle className="flex flex-wrap items-center gap-2">
-            {profile?.full_name || "Usuário"}
-            <Badge className={STATUS_TONE[profile?.status ?? "pending"]}>{profile?.status}</Badge>
-            {d?.is_admin && <Badge className="bg-primary/15 text-primary border-primary/30">🛡 Admin</Badge>}
-            {profile?.is_homologation && <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30">🧪 Homologação</Badge>}
-            {!profile?.is_homologation && <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">Produtivo</Badge>}
-          </SheetTitle>
-          <SheetDescription>{profile?.email || "—"} · {profile?.phone || "Telefone não informado"}</SheetDescription>
-        </SheetHeader>
+      <SheetContent side="right" className="flex w-full flex-col overflow-hidden p-0 sm:max-w-3xl">
+        <div className="border-b border-border p-4 sm:p-6">
+          <SheetHeader className="space-y-4 text-left">
+            <div className="flex items-start gap-4 pr-8">
+              <Avatar className="h-14 w-14 rounded-xl border border-border">
+                <AvatarImage src={profile?.avatar_url ?? undefined} alt={profile?.full_name || "Usuário"} />
+                <AvatarFallback className="rounded-xl text-base font-semibold">{initials(profile?.full_name, profile?.email)}</AvatarFallback>
+              </Avatar>
+              <div className="min-w-0 flex-1 space-y-2">
+                <div>
+                  <SheetTitle className="break-words text-xl leading-tight">{profile?.full_name || "Usuário"}</SheetTitle>
+                  <SheetDescription className="mt-1 break-words">
+                    {profile?.email || "E-mail não informado"}<br />
+                    {formatPhone(profile?.phone)}
+                  </SheetDescription>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <Badge className={STATUS_TONE[profile?.status ?? "pending"]}>{statusLabel}</Badge>
+                  <Badge variant="outline">{isAdminProfile ? "Administrador" : "Usuário"}</Badge>
+                  <Badge variant="outline">{planLabel}</Badge>
+                  <Badge className={profile?.is_homologation ? "bg-amber-500/15 text-amber-400 border-amber-500/30" : "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"}>
+                    {profile?.is_homologation ? "Homologação" : "Produtivo"}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+          </SheetHeader>
 
+          {!details.isError && profile && (
+            <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-5">
+              <SummaryCard icon={<Bike />} label="Motos" value={row?.motorcycles_count ?? motorcycles.length ?? 0} />
+              <SummaryCard icon={<FileText />} label="Documentos" value={row?.documents_count ?? documents.length ?? 0} />
+              <SummaryCard icon={<ScrollText />} label="Certificados" value={row?.certificates_count ?? certificates.length ?? 0} />
+              <SummaryCard icon={<Ticket />} label="Chamados" value={`${row?.open_tickets ?? openTickets ?? 0} aberto(s)`} />
+              <SummaryCard icon={<Clock />} label="Último acesso" value={profile?.last_seen_at ? formatDate(profile.last_seen_at) : "Sem registro"} />
+            </div>
+          )}
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-4 sm:p-6">
         {details.isLoading ? (
-          <div className="mt-6 text-sm text-muted-foreground">Carregando dados do usuário…</div>
+          <div className="rounded-lg border border-border bg-muted/30 p-5 text-sm text-muted-foreground">Carregando dados do usuário…</div>
         ) : details.isError ? (
-          <div className="mt-6 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm">
-            <p className="text-destructive">
-              Não foi possível carregar os detalhes deste usuário.
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {(details.error as any)?.message || "Erro desconhecido"}
-            </p>
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm">
+            <p className="font-medium text-destructive">Não foi possível carregar os detalhes deste usuário.</p>
             <Button size="sm" variant="outline" className="mt-3" onClick={() => details.refetch()}>
               Tentar novamente
             </Button>
           </div>
         ) : !profile ? (
-          <div className="mt-6 text-sm text-muted-foreground">Nenhum dado encontrado para este usuário.</div>
+          <EmptyState>Nenhum dado encontrado para este usuário.</EmptyState>
         ) : (
-          <Tabs defaultValue="dados" className="mt-4">
-            <TabsList className="grid grid-cols-5">
+          <Tabs defaultValue="dados" className="space-y-4">
+            <div className="overflow-x-auto pb-1">
+            <TabsList className="inline-flex w-max min-w-full justify-start">
               <TabsTrigger value="dados">Dados</TabsTrigger>
-              <TabsTrigger value="acesso">Acesso</TabsTrigger>
+              <TabsTrigger value="motos">Motos</TabsTrigger>
+              <TabsTrigger value="documentos">Documentos</TabsTrigger>
+              <TabsTrigger value="certificados">Certificados</TabsTrigger>
+              <TabsTrigger value="chamados">Chamados</TabsTrigger>
               <TabsTrigger value="seguranca">Segurança</TabsTrigger>
-              <TabsTrigger value="homolog">Homolog.</TabsTrigger>
               <TabsTrigger value="audit">Auditoria</TabsTrigger>
             </TabsList>
+            </div>
 
-            <TabsContent value="dados" className="mt-4">
-              <EditForm profile={profile} row={row} isSelf={!!isSelf} isAdmin={!!d?.is_admin} onSaved={refetchAll} />
-              <div className="mt-6 grid grid-cols-2 gap-3 text-xs">
+            <TabsContent value="dados" className="space-y-5">
+              <SectionTitle title="Dados cadastrais" description="Informações principais da conta e do acesso." />
+              <div className="grid grid-cols-1 gap-3 text-xs sm:grid-cols-2">
                 <Info label="CPF">{profile.cpf || "—"}</Info>
                 <Info label="Tipo de login">{row?.login_provider || "—"}</Info>
                 <Info label="Data de cadastro">{formatDate(profile.created_at)}</Info>
                 <Info label="Último acesso">{profile.last_seen_at ? formatDate(profile.last_seen_at) : "—"}</Info>
-                <Info label="Motos">{row?.motorcycles_count ?? 0}</Info>
-                <Info label="Documentos">{row?.documents_count ?? 0}</Info>
-                <Info label="Certificados">{row?.certificates_count ?? 0}</Info>
-                <Info label="Chamados">{row?.tickets_count ?? 0}</Info>
+              </div>
+              <div className="space-y-3 rounded-lg border border-border p-4">
+                <SectionTitle title="Ações administrativas" description="Dados, perfil e plano. Alterações relevantes geram auditoria." />
+                <EditForm profile={profile} row={row} isSelf={!!isSelf} isAdmin={isAdminProfile} onSaved={refetchAll} />
               </div>
             </TabsContent>
 
-            <TabsContent value="acesso" className="mt-4 space-y-4">
+            <TabsContent value="motos" className="space-y-4">
+              <SectionTitle title="Motos vinculadas" description="Motocicletas cadastradas pelo usuário." />
+              {motorcycles.length === 0 ? <EmptyState>Este usuário ainda não cadastrou nenhuma motocicleta.</EmptyState> : (
+                <div className="space-y-2">{motorcycles.map((m) => <ListItem key={m.id} title={formatMotorcycleName(m)} meta={`${m.trailbook_id || "Sem TrailBook ID"}${m.plate ? ` · Placa ${m.plate}` : ""}`} />)}</div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="documentos" className="space-y-4">
+              <SectionTitle title="Documentos" description="Arquivos e registros documentais das motos do usuário." />
+              {documents.length === 0 ? <EmptyState>Nenhum documento cadastrado.</EmptyState> : (
+                <div className="space-y-2">{documents.map((doc) => <ListItem key={doc.id} title={doc.file_name || doc.doc_type || "Documento"} meta={`${doc.motorcycle_label || "Moto"} · ${doc.doc_date ? formatDate(doc.doc_date) : formatDate(doc.created_at)}${doc.deleted_at ? " · Excluído" : ""}`} />)}</div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="certificados" className="space-y-4">
+              <SectionTitle title="Certificados" description="Certificados públicos emitidos a partir das motos do usuário." />
+              {certificates.length === 0 ? <EmptyState>Nenhum certificado emitido.</EmptyState> : (
+                <div className="space-y-2">{certificates.map((cert) => <ListItem key={cert.id} title={cert.public_token || "Certificado"} meta={`${cert.motorcycle_label || "Moto"} · ${cert.status || "status indefinido"} · ${formatDate(cert.created_at)}`} />)}</div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="chamados" className="space-y-4">
+              <SectionTitle title="Chamados" description="Solicitações de suporte associadas a este usuário." />
+              {tickets.length === 0 ? <EmptyState>Nenhum chamado aberto.</EmptyState> : (
+                <div className="space-y-2">{tickets.map((ticket) => <ListItem key={ticket.id} title={`${ticket.code || "Chamado"} · ${ticket.title || ticket.subject || "Sem título"}`} meta={`${ticket.status || "status indefinido"} · ${ticket.priority || "prioridade não informada"} · ${formatDate(ticket.created_at)}`} />)}</div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="seguranca" className="space-y-5">
+              <SectionTitle title="Ações administrativas" description="Acesso, recuperação de senha, homologação e controles sensíveis." />
               {profile.status === "blocked" && (
                 <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs">
                   <strong>Bloqueado.</strong> Motivo: {profile.blocked_reason || "—"}
@@ -359,118 +470,115 @@ function UserDetailsSheet({ userId, onClose, currentAdminId }: { userId: string 
                   {profile.inactive_notes && <div className="mt-1 opacity-80">Obs.: {profile.inactive_notes}</div>}
                 </div>
               )}
-              <div className="flex flex-wrap gap-2">
-                {profile.status !== "blocked" && (
-                  <ReasonDialog
-                    trigger={<Button variant="outline" size="sm" disabled={!!isSelf}><ShieldAlert className="mr-1 h-4 w-4"/>Bloquear</Button>}
-                    title="Bloquear acesso"
-                    description="O usuário perderá acesso imediatamente. O histórico é preservado."
-                    reasons={BLOCK_REASONS}
-                    submitLabel="Bloquear"
-                    submitVariant="destructive"
-                    onSubmit={async (reason, notes) => {
-                      const { error } = await supabase.rpc("admin_block_user" as any, { _user: userId, _reason: reason, _notes: notes });
-                      if (error) throw error;
-                      toast.success("Usuário bloqueado");
-                      refetchAll();
+              <div className="space-y-3 rounded-lg border border-border p-4">
+                <SectionTitle title="Acesso" />
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <ConfirmDialog
+                    trigger={<Button variant="outline" className="w-full justify-start"><KeyRound className="mr-1 h-4 w-4"/>Enviar link de redefinição de senha</Button>}
+                    title="Enviar link de redefinição?"
+                    description="Um link seguro será gerado com validade limitada. Se o envio de e-mail estiver desabilitado, a operação ficará registrada como envio simulado na Central de Comunicação."
+                    confirmLabel="Enviar link"
+                    onConfirm={async () => {
+                      try {
+                        await adminSendPasswordReset({ data: { userId: userId! } });
+                        toast.success("Link de redefinição enviado (ou registrado como simulado).");
+                        refetchAll();
+                      } catch (e: any) {
+                        toast.error(e?.message || "Falha ao enviar link");
+                      }
                     }}
                   />
-                )}
-                {profile.status !== "active" && (
-                  <ReasonDialog
-                    trigger={<Button variant="outline" size="sm"><ShieldCheck className="mr-1 h-4 w-4"/>Reativar</Button>}
-                    title="Reativar usuário"
-                    description="O usuário voltará a ter acesso ao TrailBook."
-                    reasons={null}
-                    submitLabel="Reativar"
-                    onSubmit={async (_r, notes) => {
-                      const { error } = await supabase.rpc("admin_reactivate_user" as any, { _user: userId, _notes: notes });
-                      if (error) throw error;
-                      toast.success("Usuário reativado");
-                      refetchAll();
-                    }}
-                  />
-                )}
-                {profile.status !== "inactive" && (
-                  <ReasonDialog
-                    trigger={<Button variant="outline" size="sm" disabled={!!isSelf}><UserX className="mr-1 h-4 w-4"/>Desativar</Button>}
-                    title="Desativar usuário"
-                    description="O acesso é bloqueado, mas moto, documentos, eventos, certificados e chamados permanecem preservados."
-                    reasons={DEACTIVATE_REASONS}
-                    submitLabel="Desativar"
-                    submitVariant="destructive"
-                    onSubmit={async (reason, notes) => {
-                      const { error } = await supabase.rpc("admin_deactivate_user" as any, { _user: userId, _reason: reason, _notes: notes });
-                      if (error) throw error;
-                      toast.success("Usuário desativado");
-                      refetchAll();
-                    }}
-                  />
-                )}
-              </div>
-            </TabsContent>
-
-            <TabsContent value="seguranca" className="mt-4 space-y-4">
-              <div className="rounded-lg border border-border bg-card p-3 text-xs text-muted-foreground">
-                O Administrador nunca visualiza a senha do usuário. Ao enviar o link de redefinição, o usuário poderá cadastrar uma nova senha por conta própria.
-              </div>
-              <ConfirmDialog
-                trigger={<Button variant="outline" size="sm"><KeyRound className="mr-1 h-4 w-4"/>Enviar link de redefinição de senha</Button>}
-                title="Enviar link de redefinição?"
-                description="Um link seguro será gerado com validade limitada. Se o envio de e-mail estiver desabilitado, a operação ficará registrada como envio simulado na Central de Comunicação."
-                confirmLabel="Enviar link"
-                onConfirm={async () => {
-                  try {
-                    await adminSendPasswordReset({ data: { userId: userId! } });
-                    toast.success("Link de redefinição enviado (ou registrado como simulado).");
-                    refetchAll();
-                  } catch (e: any) {
-                    toast.error(e?.message || "Falha ao enviar link");
-                  }
-                }}
-              />
-            </TabsContent>
-
-            <TabsContent value="homolog" className="mt-4 space-y-4">
-              <div className="rounded-lg border border-border bg-card p-3 text-xs">
-                Marque este usuário como <strong>Homologação</strong> para permitir limpeza controlada de testes. Somente usuários de homologação podem ser excluídos fisicamente.
-              </div>
-              <div className="flex items-center gap-3">
-                <Switch
-                  checked={!!profile.is_homologation}
-                  onCheckedChange={async (v) => {
-                    const { error } = await supabase.rpc("admin_update_user" as any, { _user: userId, _is_homologation: v, _reason: "Alteração de flag de homologação" });
-                    if (error) return toast.error(error.message);
-                    toast.success(v ? "Marcado como homologação" : "Removida flag de homologação");
-                    refetchAll();
-                  }}
-                />
-                <Label className="text-sm">Usuário de homologação</Label>
-              </div>
-              {profile.is_homologation && !d?.is_admin && !isSelf && (
-                <DeleteHomologDialog
-                  userId={userId!}
-                  profile={profile}
-                  counts={{
-                    motos: row?.motorcycles_count ?? 0,
-                    docs: row?.documents_count ?? 0,
-                    certs: row?.certificates_count ?? 0,
-                    tickets: row?.tickets_count ?? 0,
-                  }}
-                  onDone={() => { refetchAll(); onClose(); }}
-                />
-              )}
-              {(d?.is_admin || isSelf) && (
-                <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
-                  {isSelf ? "Você não pode excluir a si mesmo." : "Administradores não podem ser excluídos."}
+                  {profile.status !== "blocked" && (
+                    <ReasonDialog
+                      trigger={<Button variant="outline" className="w-full justify-start" disabled={!!isSelf}><ShieldAlert className="mr-1 h-4 w-4"/>Bloquear usuário</Button>}
+                      title="Bloquear acesso"
+                      description="O usuário perderá acesso imediatamente. O histórico é preservado."
+                      reasons={BLOCK_REASONS}
+                      submitLabel="Bloquear"
+                      submitVariant="destructive"
+                      onSubmit={async (reason, notes) => {
+                        const { error } = await supabase.rpc("admin_block_user" as any, { _user: userId, _reason: reason, _notes: notes });
+                        if (error) throw error;
+                        toast.success("Usuário bloqueado");
+                        refetchAll();
+                      }}
+                    />
+                  )}
+                  {profile.status !== "active" && (
+                    <ReasonDialog
+                      trigger={<Button variant="outline" className="w-full justify-start"><ShieldCheck className="mr-1 h-4 w-4"/>Reativar usuário</Button>}
+                      title="Reativar usuário"
+                      description="O usuário voltará a ter acesso ao TrailBook."
+                      reasons={null}
+                      submitLabel="Reativar"
+                      onSubmit={async (_r, notes) => {
+                        const { error } = await supabase.rpc("admin_reactivate_user" as any, { _user: userId, _notes: notes });
+                        if (error) throw error;
+                        toast.success("Usuário reativado");
+                        refetchAll();
+                      }}
+                    />
+                  )}
+                  {profile.status !== "inactive" && (
+                    <ReasonDialog
+                      trigger={<Button variant="outline" className="w-full justify-start" disabled={!!isSelf}><UserX className="mr-1 h-4 w-4"/>Desativar usuário</Button>}
+                      title="Desativar usuário"
+                      description="O acesso é bloqueado, mas moto, documentos, eventos, certificados e chamados permanecem preservados."
+                      reasons={DEACTIVATE_REASONS}
+                      submitLabel="Desativar"
+                      submitVariant="destructive"
+                      onSubmit={async (reason, notes) => {
+                        const { error } = await supabase.rpc("admin_deactivate_user" as any, { _user: userId, _reason: reason, _notes: notes });
+                        if (error) throw error;
+                        toast.success("Usuário desativado");
+                        refetchAll();
+                      }}
+                    />
+                  )}
                 </div>
-              )}
+              </div>
+
+              <div className="space-y-3 rounded-lg border border-border p-4">
+                <SectionTitle title="Homologação" description="Limpeza controlada de contas de teste." />
+                <div className="flex items-center gap-3 rounded-md border border-border p-3">
+                  <Switch
+                    checked={!!profile.is_homologation}
+                    onCheckedChange={async (v) => {
+                      const { error } = await supabase.rpc("admin_update_user" as any, { _user: userId, _is_homologation: v, _reason: "Alteração de flag de homologação" });
+                      if (error) return toast.error(error.message);
+                      toast.success(v ? "Marcado como homologação" : "Removida flag de homologação");
+                      refetchAll();
+                    }}
+                  />
+                  <Label className="text-sm">Marcar como usuário de homologação</Label>
+                </div>
+                {profile.is_homologation && !isAdminProfile && !isSelf && (
+                  <DeleteHomologDialog
+                    userId={userId!}
+                    profile={profile}
+                    counts={{
+                      motos: row?.motorcycles_count ?? motorcycles.length,
+                      docs: row?.documents_count ?? documents.length,
+                      certs: row?.certificates_count ?? certificates.length,
+                      tickets: row?.tickets_count ?? tickets.length,
+                    }}
+                    onDone={() => { refetchAll(); onClose(); }}
+                  />
+                )}
+                {(isAdminProfile || isSelf) && (
+                  <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+                    {isSelf ? "Você não pode excluir a si mesmo." : "Administradores não podem ser excluídos."}
+                  </div>
+                )}
+              </div>
             </TabsContent>
 
-            <TabsContent value="audit" className="mt-4">
-              <div className="rounded-lg border border-border divide-y divide-border max-h-[400px] overflow-y-auto">
-                {(audit.data ?? []).length === 0 && (
-                  <div className="p-4 text-center text-xs text-muted-foreground">Sem eventos administrativos.</div>
+            <TabsContent value="audit" className="space-y-4">
+              <SectionTitle title="Auditoria" description="Histórico de ações administrativas registradas." />
+              <div className="max-h-[420px] overflow-y-auto rounded-lg border border-border divide-y divide-border">
+                {audit.isLoading && <div className="p-4 text-center text-xs text-muted-foreground">Carregando auditoria…</div>}
+                {!audit.isLoading && (audit.data ?? []).length === 0 && (
+                  <div className="p-4 text-center text-xs text-muted-foreground">Nenhuma ação administrativa registrada.</div>
                 )}
                 {(audit.data ?? []).map((e) => (
                   <div key={e.id} className="p-3 text-xs">
@@ -491,8 +599,27 @@ function UserDetailsSheet({ userId, onClose, currentAdminId }: { userId: string 
             </TabsContent>
           </Tabs>
         )}
+        </div>
       </SheetContent>
     </Sheet>
+  );
+}
+
+function SummaryCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: React.ReactNode }) {
+  return (
+    <div className="rounded-lg border border-border bg-muted/30 p-3">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground [&_svg]:h-4 [&_svg]:w-4">{icon}<span>{label}</span></div>
+      <div className="mt-1 break-words text-sm font-semibold text-foreground">{value}</div>
+    </div>
+  );
+}
+
+function ListItem({ title, meta }: { title: string; meta: string }) {
+  return (
+    <div className="rounded-lg border border-border p-3">
+      <div className="break-words text-sm font-medium text-foreground">{title}</div>
+      <div className="mt-1 break-words text-xs text-muted-foreground">{meta}</div>
+    </div>
   );
 }
 
@@ -557,8 +684,8 @@ function EditForm({ profile, row, isSelf, isAdmin, onSaved }: { profile: any; ro
 
   return (
     <div className="space-y-3">
-      <div className="grid grid-cols-2 gap-3">
-        <div className="col-span-2">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <div className="sm:col-span-2">
           <Label className="text-xs">Nome completo</Label>
           <Input value={form.full_name} onChange={(e) => setForm({ ...form, full_name: e.target.value })} />
         </div>
@@ -570,7 +697,7 @@ function EditForm({ profile, row, isSelf, isAdmin, onSaved }: { profile: any; ro
           <Label className="text-xs">WhatsApp</Label>
           <Input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} />
         </div>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <Label className="text-xs">E-mail</Label>
           <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
         </div>
@@ -597,7 +724,7 @@ function EditForm({ profile, row, isSelf, isAdmin, onSaved }: { profile: any; ro
             </SelectContent>
           </Select>
         </div>
-        <div className="col-span-2 flex items-center gap-3 rounded-md border border-border p-2">
+        <div className="flex items-center gap-3 rounded-md border border-border p-2 sm:col-span-2">
           <Switch
             checked={form.is_admin}
             disabled={isSelf && isAdmin}
@@ -605,12 +732,12 @@ function EditForm({ profile, row, isSelf, isAdmin, onSaved }: { profile: any; ro
           />
           <Label className="text-xs">Perfil de Administrador {isSelf && isAdmin && "(você não pode se auto-rebaixar)"}</Label>
         </div>
-        <div className="col-span-2">
+        <div className="sm:col-span-2">
           <Label className="text-xs">Motivo / Observação (opcional)</Label>
           <Textarea value={reason} onChange={(e) => setReason(e.target.value)} rows={2} />
         </div>
         {emailChanged && (
-          <div className="col-span-2 rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-xs">
+          <div className="rounded-md border border-amber-500/30 bg-amber-500/10 p-2 text-xs sm:col-span-2">
             <label className="flex items-start gap-2 cursor-pointer">
               <input type="checkbox" checked={confirmEmail} onChange={(e) => setConfirmEmail(e.target.checked)} className="mt-0.5"/>
               <span>Confirmo a alteração de e-mail (isso impacta login e comunicação com o usuário).</span>
@@ -618,11 +745,11 @@ function EditForm({ profile, row, isSelf, isAdmin, onSaved }: { profile: any; ro
           </div>
         )}
       </div>
-      <div className="flex items-center justify-between gap-2 pt-2">
+      <div className="flex flex-col gap-2 pt-2 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-xs text-muted-foreground">
           {changes.length ? <>Alterações: <strong>{changes.join(", ")}</strong></> : "Sem alterações"}
         </div>
-        <Button size="sm" onClick={save} disabled={saving || changes.length === 0}>
+        <Button size="sm" className="w-full sm:w-auto" onClick={save} disabled={saving || changes.length === 0}>
           <Pencil className="mr-1 h-4 w-4"/>Salvar alterações
         </Button>
       </div>
@@ -659,7 +786,7 @@ function ReasonDialog({
   }
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <span onClick={() => setOpen(true)}>{trigger}</span>
+      <span onClick={(e) => { if (!(e.target as HTMLElement).closest("button")?.hasAttribute("disabled")) setOpen(true); }}>{trigger}</span>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{title}</AlertDialogTitle>
@@ -705,7 +832,7 @@ function ConfirmDialog({ trigger, title, description, confirmLabel, onConfirm }:
   const [busy, setBusy] = useState(false);
   return (
     <AlertDialog open={open} onOpenChange={setOpen}>
-      <span onClick={() => setOpen(true)}>{trigger}</span>
+      <span onClick={(e) => { if (!(e.target as HTMLElement).closest("button")?.hasAttribute("disabled")) setOpen(true); }}>{trigger}</span>
       <AlertDialogContent>
         <AlertDialogHeader><AlertDialogTitle>{title}</AlertDialogTitle><AlertDialogDescription>{description}</AlertDialogDescription></AlertDialogHeader>
         <AlertDialogFooter>
