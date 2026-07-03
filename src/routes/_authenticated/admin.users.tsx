@@ -303,7 +303,7 @@ function UserDetailsSheet({ userId, onClose, currentAdminId }: { userId: string 
             {profile?.is_homologation && <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/30">🧪 Homologação</Badge>}
             {!profile?.is_homologation && <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/30">Produtivo</Badge>}
           </SheetTitle>
-          <SheetDescription>{profile?.email || "—"} · {profile?.phone || "sem telefone"}</SheetDescription>
+          <SheetDescription>{profile?.email || "—"} · {profile?.phone || "Telefone não informado"}</SheetDescription>
         </SheetHeader>
 
         {details.isLoading ? (
