@@ -73,7 +73,7 @@ function HelpPage() {
     });
     setLoading(false);
     if (error) return toast.error(error.message);
-    setTicketCode(data as string);
+    setTicketCode((data as string | null) ?? "—");
     toast.success("Chamado registrado. Nossa equipe entrará em contato.");
   }
 
