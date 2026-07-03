@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { isValidCPF, maskCPF, maskPhone, onlyDigits } from "@/lib/br-validators";
+import { CpfConflictDialog } from "@/components/CpfConflictDialog";
 
 export const Route = createFileRoute("/_authenticated/complete-profile")({
   head: () => ({ meta: [{ title: "Completar cadastro — TrailBook" }] }),
@@ -17,6 +18,7 @@ function CompleteProfilePage() {
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
   const [full, setFull] = useState({ fullName: "", cpf: "", birthDate: "", phone: "" });
+  const [cpfConflict, setCpfConflict] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -47,6 +49,7 @@ function CompleteProfilePage() {
     });
     setLoading(false);
     if (error) return toast.error(error.message);
+    if (error) return;
     toast.success("Cadastro concluído!");
     navigate({ to: "/dashboard" as string });
   }
