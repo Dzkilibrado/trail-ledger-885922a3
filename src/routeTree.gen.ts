@@ -19,6 +19,7 @@ import { Route as AuthenticatedWorkshopsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedTransfersRouteImport } from './routes/_authenticated/transfers'
 import { Route as AuthenticatedTicketsRouteImport } from './routes/_authenticated/tickets'
 import { Route as AuthenticatedPlansRouteImport } from './routes/_authenticated/plans'
+import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated/messages'
 import { Route as AuthenticatedFinancialRouteImport } from './routes/_authenticated/financial'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedCompleteProfileRouteImport } from './routes/_authenticated/complete-profile'
@@ -87,6 +88,11 @@ const AuthenticatedTicketsRoute = AuthenticatedTicketsRouteImport.update({
 const AuthenticatedPlansRoute = AuthenticatedPlansRouteImport.update({
   id: '/plans',
   path: '/plans',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedMessagesRoute = AuthenticatedMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedFinancialRoute = AuthenticatedFinancialRouteImport.update({
@@ -213,6 +219,7 @@ export interface FileRoutesByFullPath {
   '/complete-profile': typeof AuthenticatedCompleteProfileRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/financial': typeof AuthenticatedFinancialRoute
+  '/messages': typeof AuthenticatedMessagesRoute
   '/plans': typeof AuthenticatedPlansRoute
   '/tickets': typeof AuthenticatedTicketsRouteWithChildren
   '/transfers': typeof AuthenticatedTransfersRoute
@@ -243,6 +250,7 @@ export interface FileRoutesByTo {
   '/complete-profile': typeof AuthenticatedCompleteProfileRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/financial': typeof AuthenticatedFinancialRoute
+  '/messages': typeof AuthenticatedMessagesRoute
   '/plans': typeof AuthenticatedPlansRoute
   '/tickets': typeof AuthenticatedTicketsRouteWithChildren
   '/transfers': typeof AuthenticatedTransfersRoute
@@ -276,6 +284,7 @@ export interface FileRoutesById {
   '/_authenticated/complete-profile': typeof AuthenticatedCompleteProfileRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/financial': typeof AuthenticatedFinancialRoute
+  '/_authenticated/messages': typeof AuthenticatedMessagesRoute
   '/_authenticated/plans': typeof AuthenticatedPlansRoute
   '/_authenticated/tickets': typeof AuthenticatedTicketsRouteWithChildren
   '/_authenticated/transfers': typeof AuthenticatedTransfersRoute
@@ -309,6 +318,7 @@ export interface FileRouteTypes {
     | '/complete-profile'
     | '/dashboard'
     | '/financial'
+    | '/messages'
     | '/plans'
     | '/tickets'
     | '/transfers'
@@ -339,6 +349,7 @@ export interface FileRouteTypes {
     | '/complete-profile'
     | '/dashboard'
     | '/financial'
+    | '/messages'
     | '/plans'
     | '/tickets'
     | '/transfers'
@@ -371,6 +382,7 @@ export interface FileRouteTypes {
     | '/_authenticated/complete-profile'
     | '/_authenticated/dashboard'
     | '/_authenticated/financial'
+    | '/_authenticated/messages'
     | '/_authenticated/plans'
     | '/_authenticated/tickets'
     | '/_authenticated/transfers'
@@ -471,6 +483,13 @@ declare module '@tanstack/react-router' {
       path: '/plans'
       fullPath: '/plans'
       preLoaderRoute: typeof AuthenticatedPlansRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/messages': {
+      id: '/_authenticated/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof AuthenticatedMessagesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/financial': {
@@ -672,6 +691,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedCompleteProfileRoute: typeof AuthenticatedCompleteProfileRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedFinancialRoute: typeof AuthenticatedFinancialRoute
+  AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
   AuthenticatedPlansRoute: typeof AuthenticatedPlansRoute
   AuthenticatedTicketsRoute: typeof AuthenticatedTicketsRouteWithChildren
   AuthenticatedTransfersRoute: typeof AuthenticatedTransfersRoute
@@ -690,6 +710,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedCompleteProfileRoute: AuthenticatedCompleteProfileRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedFinancialRoute: AuthenticatedFinancialRoute,
+  AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
   AuthenticatedPlansRoute: AuthenticatedPlansRoute,
   AuthenticatedTicketsRoute: AuthenticatedTicketsRouteWithChildren,
   AuthenticatedTransfersRoute: AuthenticatedTransfersRoute,
