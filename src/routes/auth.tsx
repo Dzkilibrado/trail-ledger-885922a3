@@ -11,6 +11,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { isValidCPF, maskCPF, onlyDigits, maskPhone } from "@/lib/br-validators";
+import { ResendConfirmationButton } from "@/components/ResendConfirmationButton";
+import { CpfConflictDialog } from "@/components/CpfConflictDialog";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
@@ -57,6 +59,7 @@ function AuthPage() {
   const [identifier, setIdentifier] = useState(""); // email OR CPF
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
+  const [unconfirmedEmail, setUnconfirmedEmail] = useState<string | null>(null);
   // Sign-up state
   const [su, setSu] = useState({
     fullName: "", cpf: "", birthDate: "", phone: "",
@@ -65,6 +68,10 @@ function AuthPage() {
   // Forgot-password state
   const [forgotOpen, setForgotOpen] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
+  // Post-signup confirmation state
+  const [signupSent, setSignupSent] = useState<string | null>(null);
+  // CPF conflict dialog
+  const [cpfConflict, setCpfConflict] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -87,12 +94,20 @@ function AuthPage() {
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+    setUnconfirmedEmail(null);
     const email = await resolveEmail(identifier);
     if (!email) { setLoading(false); return; }
     if (password.length < 6) { setLoading(false); return toast.error("Informe sua senha"); }
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     setLoading(false);
-    if (error) return toast.error(error.message);
+    if (error) {
+      // Supabase returns "Email not confirmed" for unverified accounts.
+      if (/confirm/i.test(error.message) || /not confirmed/i.test(error.message)) {
+        setUnconfirmedEmail(email);
+        return toast.error("Seu e-mail ainda não foi confirmado. Verifique sua caixa de entrada e SPAM.");
+      }
+      return toast.error(error.message);
+    }
     if (!remember) armEphemeralSession();
     navigate({ to: "/dashboard" as string });
   }
@@ -117,13 +132,17 @@ function AuthPage() {
     });
     setLoading(false);
     if (error) {
+      if (/CPF já cadastrado/i.test(error.message)) {
+        setCpfConflict(true);
+        return;
+      }
       const msg = /cpf/i.test(error.message)
         ? error.message.replace(/^.*CPF/i, "CPF")
         : error.message;
       return toast.error(msg);
     }
-    toast.success("Conta criada! Verifique seu e-mail se a confirmação estiver ativa.");
-    navigate({ to: "/dashboard" as string });
+    setSignupSent(su.email.trim());
+    toast.success("Conta criada! Enviamos um e-mail de confirmação.");
   }
 
   async function handleGoogle() {
@@ -158,6 +177,23 @@ function AuthPage() {
           <span className="font-display text-xl font-bold">TrailBook</span>
         </Link>
         <div className="surface-elevated rounded-2xl p-6">
+          {signupSent ? (
+            <div className="text-center py-4">
+              <h2 className="font-display text-xl font-bold">Confirme seu e-mail</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Enviamos um link de confirmação para <strong>{signupSent}</strong>.
+                Clique no link para ativar sua conta.
+              </p>
+              <p className="mt-2 text-xs text-muted-foreground">
+                Não recebeu? Aguarde 1–2 minutos e verifique a caixa de <strong>SPAM/lixo eletrônico</strong>.
+              </p>
+              <div className="mt-5 flex flex-col gap-2">
+                <ResendConfirmationButton email={signupSent} variant="default" className="btn-glow" />
+                <Button variant="ghost" size="sm" onClick={() => setSignupSent(null)}>Voltar ao login</Button>
+                <Link to="/help" className="text-xs text-primary hover:underline mt-1">Preciso de ajuda</Link>
+              </div>
+            </div>
+          ) : (
           <Tabs defaultValue="signin">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Entrar</TabsTrigger>
@@ -210,6 +246,20 @@ function AuthPage() {
                     </button>
                   </div>
                   <Button disabled={loading} type="submit" className="w-full btn-glow">Entrar</Button>
+                  {unconfirmedEmail && (
+                    <div className="rounded-lg border border-border/60 bg-muted/30 p-3 text-xs space-y-2">
+                      <p className="text-muted-foreground">
+                        Seu e-mail <strong>{unconfirmedEmail}</strong> ainda não foi confirmado.
+                        Verifique sua caixa de entrada e a pasta de SPAM.
+                      </p>
+                      <ResendConfirmationButton email={unconfirmedEmail} />
+                    </div>
+                  )}
+                  <div className="text-center pt-1">
+                    <Link to="/help" className="text-xs text-muted-foreground hover:text-primary hover:underline">
+                      Preciso de ajuda para acessar minha conta
+                    </Link>
+                  </div>
                 </form>
               )}
             </TabsContent>
@@ -256,6 +306,7 @@ function AuthPage() {
               </form>
             </TabsContent>
           </Tabs>
+          )}
 
           <div className="my-5 flex items-center gap-3 text-xs uppercase tracking-widest text-muted-foreground">
             <div className="h-px flex-1 bg-border" /> ou <div className="h-px flex-1 bg-border" />
@@ -265,6 +316,17 @@ function AuthPage() {
           </Button>
         </div>
       </div>
+      <CpfConflictDialog
+        open={cpfConflict}
+        onOpenChange={setCpfConflict}
+        onRecover={() => {
+          setCpfConflict(false);
+          setForgotEmail(su.email || "");
+          setForgotOpen(true);
+        }}
+        onOpenHelp={() => { setCpfConflict(false); navigate({ to: "/help" }); }}
+        onBackToLogin={() => { setCpfConflict(false); }}
+      />
     </div>
   );
 }
