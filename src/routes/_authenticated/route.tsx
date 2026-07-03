@@ -20,10 +20,20 @@ export const Route = createFileRoute("/_authenticated")({
     if (location.pathname !== "/complete-profile") {
       const { data: p } = await supabase
         .from("profiles")
-        .select("cpf")
+        .select("cpf,status,blocked_reason,inactive_reason")
         .eq("id", data.user.id)
         .maybeSingle();
       if (!p?.cpf) throw redirect({ to: "/complete-profile" });
+      if (p.status === "blocked" || p.status === "inactive") {
+        await supabase.auth.signOut();
+        throw redirect({
+          to: "/auth",
+          search: {
+            blocked: p.status,
+            reason: (p.status === "blocked" ? p.blocked_reason : p.inactive_reason) ?? "",
+          } as any,
+        });
+      }
     }
     return { user: data.user };
   },
