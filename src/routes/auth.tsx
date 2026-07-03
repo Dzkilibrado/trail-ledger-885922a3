@@ -163,7 +163,7 @@ function AuthPage() {
     });
     setLoading(false);
     if (error) return toast.error(error.message);
-    toast.success("Se o e-mail existir, enviaremos um link de redefinição.");
+    toast.success("Se este e-mail existir, enviamos um link de redefinição. Verifique a caixa de entrada e a pasta de SPAM.");
     setForgotOpen(false);
   }
 
