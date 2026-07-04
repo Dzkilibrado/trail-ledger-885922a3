@@ -143,10 +143,30 @@ export function MotorcycleDocuments({ motorcycleId }: { motorcycleId: string }) 
   }
 
   async function openFile(doc: Doc, download = false) {
-    const opts = download ? { download: doc.file_name ?? "documento" } : undefined;
-    const { data, error } = await supabase.storage.from(doc.bucket).createSignedUrl(doc.storage_path, 300, opts as never);
-    if (error || !data) { toast.error("Não foi possível gerar o link"); return; }
-    window.open(data.signedUrl, "_blank");
+    if (!doc.storage_path || !doc.bucket) {
+      toast.error("Arquivo indisponível", { description: "Este documento não possui arquivo associado." });
+      return;
+    }
+    try {
+      const opts = download ? { download: doc.file_name ?? "documento" } : undefined;
+      const { data, error } = await supabase.storage.from(doc.bucket).createSignedUrl(doc.storage_path, 300, opts as never);
+      if (error || !data?.signedUrl) {
+        const msg = error?.message ?? "";
+        const missing = /not found|Object not found|404/i.test(msg);
+        toast.error(missing ? "Arquivo não encontrado no cofre" : "Não foi possível abrir este documento", {
+          description: missing
+            ? "O arquivo original pode ter sido removido do storage. Tente novamente ou reenvie o documento."
+            : "Tente novamente em instantes. Se persistir, use a opção Substituir para reenviar o arquivo.",
+          action: !download ? { label: "Baixar", onClick: () => openFile(doc, true) } : undefined,
+        });
+        return;
+      }
+      window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+    } catch (e: any) {
+      toast.error("Não foi possível abrir este documento", {
+        description: e?.message ?? "Erro inesperado ao acessar o arquivo.",
+      });
+    }
   }
 
   async function softDelete(doc: Doc) {
