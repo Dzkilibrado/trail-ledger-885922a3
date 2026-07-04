@@ -1101,6 +1101,9 @@ export type Database = {
       }
       motorcycles: {
         Row: {
+          archive_reason: string | null
+          archived_at: string | null
+          archived_by: string | null
           brand: string
           chassis: string | null
           conservation_score: number
@@ -1118,6 +1121,7 @@ export type Database = {
           owner_id: string
           plate: string | null
           renavam: string | null
+          status: string
           trailbook_id: string
           updated_at: string
           use_profile: Database["public"]["Enums"]["use_profile"] | null
@@ -1126,6 +1130,9 @@ export type Database = {
           year_model: number | null
         }
         Insert: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           brand: string
           chassis?: string | null
           conservation_score?: number
@@ -1143,6 +1150,7 @@ export type Database = {
           owner_id: string
           plate?: string | null
           renavam?: string | null
+          status?: string
           trailbook_id: string
           updated_at?: string
           use_profile?: Database["public"]["Enums"]["use_profile"] | null
@@ -1151,6 +1159,9 @@ export type Database = {
           year_model?: number | null
         }
         Update: {
+          archive_reason?: string | null
+          archived_at?: string | null
+          archived_by?: string | null
           brand?: string
           chassis?: string | null
           conservation_score?: number
@@ -1168,6 +1179,7 @@ export type Database = {
           owner_id?: string
           plate?: string | null
           renavam?: string | null
+          status?: string
           trailbook_id?: string
           updated_at?: string
           use_profile?: Database["public"]["Enums"]["use_profile"] | null
@@ -2003,6 +2015,10 @@ export type Database = {
         }
       }
       admin_user_details: { Args: { _user: string }; Returns: Json }
+      archive_motorcycle: {
+        Args: { _moto_id: string; _reason?: string }
+        Returns: Json
+      }
       cancel_ownership_transfer: {
         Args: { _transfer_id: string }
         Returns: undefined
@@ -2114,6 +2130,7 @@ export type Database = {
         }
         Returns: string
       }
+      unarchive_motorcycle: { Args: { _moto_id: string }; Returns: Json }
       user_list_messages: {
         Args: { _filter?: string }
         Returns: {
