@@ -16,7 +16,7 @@ function Dashboard() {
   const motos = useQuery({
     queryKey: ["motorcycles"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("motorcycles").select("*").order("created_at", { ascending: false });
+      const { data, error } = await supabase.from("motorcycles").select("*").eq("status" as never, "active" as never).order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
