@@ -3,11 +3,17 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { Users, Bike, LifeBuoy, AlertTriangle, Hourglass } from "lucide-react";
+import {
+  Users, Bike, LifeBuoy, AlertTriangle, Hourglass, FileText, BadgeCheck,
+  MessageSquare, Wrench, Activity, ArrowRight, ShieldCheck, Archive, UserX,
+} from "lucide-react";
 import { formatDate } from "@/lib/trailbook";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { labelFor, STATUS_TONE, TICKET_STATUSES, PRIORITY_TONE, TICKET_PRIORITIES } from "@/lib/tickets";
 import { AccessDenied } from "./admin";
+import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   head: () => ({ meta: [{ title: "Painel administrativo — TrailBook" }] }),
@@ -48,24 +54,83 @@ function AdminHome() {
   if (loading) return <div className="text-muted-foreground">Carregando…</div>;
   if (!isAdmin) return <AccessDenied />;
 
-  const s = stats.data ?? {};
-  return (
-    <div className="space-y-8">
-      <PageHeader title="Painel administrativo" description="Visão geral de usuários, motos e chamados." />
+  const s = (stats.data ?? {}) as Record<string, number | undefined>;
+  const env = (import.meta.env.MODE === "production" ? "Produção" : "Desenvolvimento");
+  const attentionItems = [
+    { n: s.tickets_critical, label: "Chamados críticos", to: "/admin/tickets", tone: "text-destructive", icon: AlertTriangle },
+    { n: s.tickets_waiting, label: "Aguardando usuário", to: "/admin/tickets", tone: "text-amber-400", icon: Hourglass },
+    { n: s.users_blocked, label: "Usuários bloqueados", to: "/admin/users", tone: "text-rose-400", icon: UserX },
+    { n: s.modules_maintenance, label: "Módulos em manutenção", to: "/admin/modules", tone: "text-sky-400", icon: Wrench },
+  ].filter((i) => (i.n ?? 0) > 0);
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat icon={Users} label="Usuários ativos" value={s.users_active} total={s.users_total} tone="text-emerald-400" />
-        <Stat icon={Hourglass} label="Pendentes" value={s.users_pending} tone="text-amber-400" />
-        <Stat icon={Bike} label="Motos cadastradas" value={s.motorcycles_total} tone="text-primary" />
-        <Stat icon={LifeBuoy} label="Chamados abertos" value={s.tickets_open} tone="text-sky-400" />
-        <Stat icon={AlertTriangle} label="Chamados críticos" value={s.tickets_critical} tone="text-destructive" />
-        <Stat icon={Hourglass} label="Aguardando usuário" value={s.tickets_waiting} tone="text-amber-400" />
+  return (
+    <div className="space-y-6">
+      <PageHeader title="Painel administrativo" description="Visão geral da plataforma TrailBook." />
+
+      {/* Ambiente + Status */}
+      <div className="surface-elevated flex flex-wrap items-center justify-between gap-3 rounded-2xl p-4">
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-1 font-semibold text-emerald-300">
+            <ShieldCheck className="h-3.5 w-3.5" /> Sistema operando
+          </span>
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-2.5 py-1 text-muted-foreground">
+            Ambiente · <strong className="text-foreground">{env}</strong>
+          </span>
+          <span className="text-muted-foreground">Atualizado agora</span>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <QuickAction to="/admin/users" icon={Users} label="Usuários" />
+          <QuickAction to="/admin/tickets" icon={LifeBuoy} label="Chamados" />
+          <QuickAction to="/admin/documents" icon={FileText} label="Documentos" />
+          <QuickAction to="/admin/modules" icon={Wrench} label="Módulos" />
+          <QuickAction to="/admin/messages" icon={MessageSquare} label="Mensagens" />
+        </div>
       </div>
 
+      {/* Cards principais */}
+      {stats.isLoading ? (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
+        </div>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <MetricCard icon={Users} label="Usuários" value={s.users_total} sub={`${s.users_active ?? 0} ativos · ${s.users_pending ?? 0} pendentes`} tone="from-emerald-500/20 to-emerald-500/5" to="/admin/users" />
+          <MetricCard icon={UserX} label="Bloqueados" value={s.users_blocked} sub="sem acesso à plataforma" tone="from-rose-500/20 to-rose-500/5" to="/admin/users" />
+          <MetricCard icon={Bike} label="Motos" value={s.motorcycles_total} sub={`${s.motorcycles_active ?? 0} ativas · ${s.motorcycles_archived ?? 0} arquivadas`} tone="from-primary/25 to-primary/5" />
+          <MetricCard icon={FileText} label="Documentos" value={s.documents_total} sub="no cofre digital" tone="from-sky-500/20 to-sky-500/5" to="/admin/documents" />
+          <MetricCard icon={BadgeCheck} label="Certificados" value={s.certificates_total} sub="ativos e públicos" tone="from-indigo-500/20 to-indigo-500/5" />
+          <MetricCard icon={LifeBuoy} label="Chamados abertos" value={s.tickets_open} sub={`${s.tickets_critical ?? 0} críticos · ${s.tickets_waiting ?? 0} aguardando`} tone="from-amber-500/20 to-amber-500/5" to="/admin/tickets" />
+          <MetricCard icon={Wrench} label="Módulos em manutenção" value={s.modules_maintenance} sub="atenção operacional" tone="from-orange-500/20 to-orange-500/5" to="/admin/modules" />
+          <MetricCard icon={MessageSquare} label="Mensagens (7d)" value={s.messages_recent} sub="comunicação interna" tone="from-violet-500/20 to-violet-500/5" to="/admin/messages" />
+        </div>
+      )}
+
+      {/* Atenção */}
+      {attentionItems.length > 0 && (
+        <div className="surface-elevated rounded-2xl p-5">
+          <div className="mb-3 flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-400" />
+            <h3 className="font-display font-semibold">Itens que precisam de atenção</h3>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {attentionItems.map((a) => (
+              <Link key={a.label} to={a.to} className="flex items-center justify-between gap-3 rounded-xl border border-border bg-card p-3 transition hover:border-primary/50">
+                <div className="flex items-center gap-2">
+                  <a.icon className={cn("h-4 w-4", a.tone)} />
+                  <span className="text-sm">{a.label}</span>
+                </div>
+                <span className={cn("font-display text-lg font-bold", a.tone)}>{a.n}</span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recentes */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <div className="rounded-xl border border-border bg-card p-5">
+        <div className="surface-elevated rounded-2xl p-5">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="font-display font-semibold">Últimos chamados</h3>
+            <h3 className="font-display font-semibold flex items-center gap-2"><LifeBuoy className="h-4 w-4 text-sky-400" /> Últimos chamados</h3>
             <Link to="/admin/tickets" className="text-xs text-primary hover:underline">Ver todos</Link>
           </div>
           <div className="space-y-2">
@@ -75,29 +140,31 @@ function AdminHome() {
                   <div className="text-xs font-mono text-primary">{t.code}</div>
                   <div className="truncate text-sm">{t.title}</div>
                 </div>
-                <div className="flex gap-1">
+                <div className="flex shrink-0 gap-1">
                   <Badge className={PRIORITY_TONE[t.priority]}>{labelFor(TICKET_PRIORITIES, t.priority)}</Badge>
                   <Badge className={STATUS_TONE[t.status]}>{labelFor(TICKET_STATUSES, t.status)}</Badge>
                 </div>
               </Link>
             ))}
-            {!recentTickets.data?.length && <p className="text-sm text-muted-foreground">Nenhum chamado ainda.</p>}
+            {!recentTickets.data?.length && !recentTickets.isLoading && <EmptyLine text="Nenhum chamado ainda." />}
+            {recentTickets.isLoading && <Skeleton className="h-16 rounded-lg" />}
           </div>
         </div>
 
-        <div className="rounded-xl border border-border bg-card p-5">
-          <h3 className="mb-3 font-display font-semibold">Últimas ações administrativas</h3>
+        <div className="surface-elevated rounded-2xl p-5">
+          <h3 className="mb-3 font-display font-semibold flex items-center gap-2"><Activity className="h-4 w-4 text-primary" /> Atividades recentes</h3>
           <div className="space-y-2 text-sm">
             {(recentAudit.data ?? []).map((a: any) => (
               <div key={a.id} className="flex items-center justify-between rounded-lg border border-border p-3">
-                <div>
+                <div className="min-w-0">
                   <div className="text-xs uppercase tracking-widest text-muted-foreground">{a.table_name} · {a.action}</div>
                   <div className="font-mono text-xs">{a.record_id?.slice(0, 8)}…</div>
                 </div>
-                <div className="text-xs text-muted-foreground">{formatDate(a.created_at)}</div>
+                <div className="shrink-0 text-xs text-muted-foreground">{formatDate(a.created_at)}</div>
               </div>
             ))}
-            {!recentAudit.data?.length && <p className="text-muted-foreground">Sem eventos recentes.</p>}
+            {!recentAudit.data?.length && !recentAudit.isLoading && <EmptyLine text="Sem eventos recentes." />}
+            {recentAudit.isLoading && <Skeleton className="h-16 rounded-lg" />}
           </div>
         </div>
       </div>
@@ -105,16 +172,29 @@ function AdminHome() {
   );
 }
 
-function Stat({ icon: Icon, label, value, total, tone }: any) {
-  return (
-    <div className="rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center justify-between">
-        <div className="text-xs uppercase tracking-widest text-muted-foreground">{label}</div>
-        <Icon className={`h-4 w-4 ${tone}`} />
+function MetricCard({ icon: Icon, label, value, sub, tone, to }: { icon: any; label: string; value?: number; sub?: string; tone: string; to?: string }) {
+  const inner = (
+    <div className={cn("group relative overflow-hidden rounded-xl border border-border bg-gradient-to-br p-4 transition", tone, to && "hover:border-primary/50")}>
+      <div className="flex items-start justify-between">
+        <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">{label}</div>
+        <Icon className="h-4 w-4 text-foreground/70" />
       </div>
-      <div className="mt-2 font-display text-3xl font-bold">
-        {value ?? "—"}{total != null && <span className="ml-1 text-sm text-muted-foreground">/ {total}</span>}
-      </div>
+      <div className="mt-2 font-display text-3xl font-black">{value ?? 0}</div>
+      {sub && <div className="mt-1 text-[11px] text-muted-foreground">{sub}</div>}
+      {to && <ArrowRight className="absolute bottom-3 right-3 h-3.5 w-3.5 text-muted-foreground opacity-0 transition group-hover:opacity-100" />}
     </div>
   );
+  return to ? <Link to={to}>{inner}</Link> : inner;
+}
+
+function QuickAction({ to, icon: Icon, label }: { to: string; icon: any; label: string }) {
+  return (
+    <Link to={to}>
+      <Button variant="outline" size="sm"><Icon className="h-3.5 w-3.5" /> {label}</Button>
+    </Link>
+  );
+}
+
+function EmptyLine({ text }: { text: string }) {
+  return <p className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">{text}</p>;
 }
