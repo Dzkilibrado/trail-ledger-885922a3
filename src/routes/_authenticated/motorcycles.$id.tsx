@@ -9,7 +9,7 @@ import { HealthPanel } from "@/components/HealthPanel";
 import { ConservationCard } from "@/components/ConservationCard";
 import { brl, EVENT_TYPE_LABEL, formatDate } from "@/lib/trailbook";
 import { Button } from "@/components/ui/button";
-import { Trash2, QrCode, AlertTriangle, CheckCircle2, Clock, ArrowRightLeft, Copy, BadgeCheck } from "lucide-react";
+import { Trash2, QrCode, AlertTriangle, CheckCircle2, Clock, ArrowRightLeft, Copy, BadgeCheck, Archive, RotateCcw } from "lucide-react";
 import { ClipboardCheck, Wand2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
@@ -43,6 +43,7 @@ function MotoDetail() {
   const navigate = useNavigate();
   const { plan } = usePlan();
   const [deleteConfirm, setDeleteConfirm] = useState("");
+  const [archiveReason, setArchiveReason] = useState("");
   const [inspectTarget, setInspectTarget] = useState<null | { id: string; name: string; category: string }>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   useEffect(() => {
@@ -131,15 +132,23 @@ function MotoDetail() {
     }
   }
 
-  async function removeMoto() {
-    const { error } = await supabase.from("motorcycles").delete().eq("id", id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Moto removida");
+  async function archiveMoto() {
+    const { error } = await supabase.rpc("archive_motorcycle" as never, { _moto_id: id, _reason: archiveReason || null } as never);
+    if (error) { toast.error(error.message || "Falha ao arquivar"); return; }
+    toast.success("Moto arquivada. Histórico preservado para auditoria.");
+    qc.invalidateQueries();
     navigate({ to: "/motorcycles" });
+  }
+  async function unarchiveMoto() {
+    const { error } = await supabase.rpc("unarchive_motorcycle" as never, { _moto_id: id } as never);
+    if (error) { toast.error(error.message || "Falha ao reativar"); return; }
+    toast.success("Moto reativada na sua garagem.");
+    qc.invalidateQueries();
   }
 
   const m = moto.data;
   const isOwner = !!m && !!currentUserId && (m as any).owner_id === currentUserId;
+  const isArchived = (m as any)?.status === "archived";
   const totalCost = events.data?.reduce((s, e) => s + (Number(e.cost) || 0), 0) ?? 0;
 
   const statuses = (m && schedules.data && events.data)
@@ -206,6 +215,19 @@ function MotoDetail() {
               </div>
               <div className="rounded-full bg-primary/15 px-4 py-1.5 text-sm font-semibold text-primary">{conservation.score}/100 · Nota {conservation.grade}</div>
             </div>
+            {isArchived && (
+              <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
+                <div className="flex items-center gap-2 font-semibold"><Archive className="h-4 w-4" /> Motocicleta arquivada</div>
+                <p className="mt-1 text-amber-100/80">
+                  Fora da garagem ativa. Histórico e auditoria preservados. Certificados públicos foram revogados.
+                </p>
+                {isOwner && (
+                  <Button size="sm" variant="outline" className="mt-2" onClick={unarchiveMoto}>
+                    <RotateCcw className="h-4 w-4" /> Reativar moto
+                  </Button>
+                )}
+              </div>
+            )}
             <div className="grid grid-cols-3 gap-3">
               <Stat label="Horas" value={`${Number(m.hours_total).toFixed(1)} h`} />
               <Stat label="Km" value={Number(m.km_total).toFixed(0)} />
@@ -244,36 +266,37 @@ function MotoDetail() {
                   trigger={<Button variant="outline"><ArrowRightLeft className="h-4 w-4" /> Transferir</Button>}
                 />
               ))}
-              {isOwner && <AlertDialog onOpenChange={(o) => !o && setDeleteConfirm("")}>
+              {isOwner && !isArchived && <AlertDialog onOpenChange={(o) => !o && (setDeleteConfirm(""), setArchiveReason(""))}>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /> Excluir moto</Button>
+                  <Button variant="ghost" className="text-destructive hover:text-destructive"><Archive className="h-4 w-4" /> Arquivar moto</Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-                      <AlertTriangle className="h-5 w-5" /> Excluir esta motocicleta?
+                      <AlertTriangle className="h-5 w-5" /> Arquivar esta motocicleta?
                     </AlertDialogTitle>
                     <AlertDialogDescription className="space-y-2">
                       <span className="block">
-                        Esta ação <strong>remove permanentemente</strong> a moto <strong>{m.nickname || m.model}</strong> e todo o seu histórico:
-                        eventos, manutenções, anexos, programações, certificados e auditoria.
+                        Você está prestes a arquivar <strong>{m.nickname || m.model}</strong>. Ela sairá da sua garagem ativa,
+                        os <strong>certificados públicos serão revogados</strong> e o histórico permanecerá preservado para segurança e auditoria.
                       </span>
                       <span className="block">
-                        O TrailBook ID <code className="font-mono">{(m as any).trailbook_id}</code> também será descontinuado.
-                        Se você está vendendo a moto, prefira <strong>Transferir</strong>.
+                        O TrailBook ID <code className="font-mono">{(m as any).trailbook_id}</code> será descontinuado — não é reutilizado.
+                        Se você está <strong>vendendo</strong> a moto, prefira <strong>Transferir Propriedade</strong>.
                       </span>
                       <span className="mt-2 block font-medium text-foreground">Digite <code className="font-mono">EXCLUIR</code> para confirmar:</span>
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <Input value={deleteConfirm} onChange={(e) => setDeleteConfirm(e.target.value)} placeholder="EXCLUIR" autoFocus />
+                  <Input value={archiveReason} onChange={(e) => setArchiveReason(e.target.value)} placeholder="Motivo (opcional)" />
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
                     <AlertDialogAction
                       disabled={deleteConfirm !== "EXCLUIR"}
-                      onClick={removeMoto}
+                      onClick={archiveMoto}
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-40"
                     >
-                      Excluir motocicleta
+                      Arquivar motocicleta
                     </AlertDialogAction>
                   </AlertDialogFooter>
                 </AlertDialogContent>
