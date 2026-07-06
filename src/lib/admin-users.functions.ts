@@ -61,6 +61,81 @@ export const adminSendPasswordReset = createServerFn({ method: "POST" })
   });
 
 /**
+ * Physically deletes a HOMOLOGATION motorcycle and all related rows (FKs
+ * cascade), plus best-effort removal of files in Storage. Requires an admin
+ * caller and a motorcycle explicitly marked as `is_homologation = true`.
+ */
+export const adminDeleteHomologMotorcycle = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (data: unknown) => data as { motorcycleId: string; reason: string; confirmation: string },
+  )
+  .handler(async ({ data, context }) => {
+    const { data: isAdmin, error: eAdmin } = await context.supabase.rpc(
+      "is_user_admin" as any,
+      { _user_id: context.userId },
+    );
+    if (eAdmin) throw new Error(eAdmin.message);
+    if (isAdmin !== true) throw new Error("Forbidden");
+
+    // Validate + snapshot + retire trailbook_id (throws on any rule violation)
+    const { data: snapshot, error: ePrep } = await context.supabase.rpc(
+      "admin_prepare_homolog_moto_deletion" as any,
+      { _moto: data.motorcycleId, _reason: data.reason, _confirmation: data.confirmation },
+    );
+    if (ePrep) throw new Error(ePrep.message);
+
+    const paths = (snapshot as any)?.storage_paths ?? {};
+    const groups: Array<{ bucket: string; path: string }> = [
+      ...((paths.documents as any[]) ?? []),
+      ...((paths.photos as any[]) ?? []),
+      ...((paths.event_attachments as any[]) ?? []),
+    ].filter((r) => r && r.bucket && r.path);
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const byBucket = new Map<string, string[]>();
+    for (const r of groups) {
+      const list = byBucket.get(r.bucket) ?? [];
+      list.push(r.path);
+      byBucket.set(r.bucket, list);
+    }
+
+    const removed: string[] = [];
+    const missing: string[] = [];
+    for (const [bucket, list] of byBucket) {
+      // best-effort — never break the transaction on storage errors
+      try {
+        const { data: rem, error } = await supabaseAdmin.storage.from(bucket).remove(list);
+        if (error) {
+          missing.push(...list.map((p) => `${bucket}/${p}`));
+        } else {
+          removed.push(...(rem ?? []).map((f: any) => `${bucket}/${f.name ?? f.path ?? ""}`));
+          const removedSet = new Set((rem ?? []).map((f: any) => f.name ?? f.path));
+          for (const p of list) if (!removedSet.has(p)) missing.push(`${bucket}/${p}`);
+        }
+      } catch {
+        missing.push(...list.map((p) => `${bucket}/${p}`));
+      }
+    }
+
+    const storageReport = {
+      removed_count: removed.length,
+      missing_count: missing.length,
+      removed,
+      missing,
+    };
+
+    const { data: result, error: eDel } = await context.supabase.rpc(
+      "admin_execute_homolog_moto_deletion" as any,
+      { _moto: data.motorcycleId, _reason: data.reason, _storage_report: storageReport as any },
+    );
+    if (eDel) throw new Error(eDel.message);
+
+    return { ok: true, storage: storageReport, result };
+  });
+
+/**
  * Physically deletes a HOMOLOGATION user. Requires admin_prepare_homolog_deletion
  * to have been called (which validates and stores a snapshot).
  */
