@@ -1,8 +1,12 @@
 import { createFileRoute, Outlet, redirect, Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, LayoutDashboard, Calendar, DollarSign, QrCode, Building2, LogOut, Plus, Menu, X, Crown, ArrowRightLeft, LifeBuoy, Shield, Bell, FolderOpen, Blocks, Wrench, Lock, Mail, MessageSquare } from "lucide-react";
+import { Bike, LayoutDashboard, Calendar, DollarSign, QrCode, Building2, LogOut, Plus, Menu, X, Crown, ArrowRightLeft, LifeBuoy, Shield, Bell, FolderOpen, Blocks, Wrench, Lock, Mail, MessageSquare, User, Settings, HelpCircle, Compass, UserCircle2, DoorOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { usePlan } from "@/hooks/usePlan";
@@ -42,16 +46,22 @@ export const Route = createFileRoute("/_authenticated")({
 
 const NAV = [
   { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/motorcycles", label: "Motos", icon: Bike },
+  { to: "/motorcycles", label: "Minhas Motos", icon: Bike },
   { to: "/documents", label: "Documentos da Moto", icon: FolderOpen },
   { to: "/agenda", label: "Agenda", icon: Calendar },
-  { to: "/workshops", label: "Oficinas", icon: Building2 },
-  { to: "/financial", label: "Financeiro", icon: DollarSign },
   { to: "/certificates", label: "Certificados", icon: QrCode },
-  { to: "/transfers", label: "Transferências", icon: ArrowRightLeft },
   { to: "/tickets", label: "Chamados", icon: LifeBuoy },
   { to: "/messages", label: "Mensagens", icon: Mail },
-  { to: "/plans", label: "Planos", icon: Crown },
+  { to: "/workshops", label: "Oficinas", icon: Building2 },
+  { to: "/financial", label: "Financeiro", icon: DollarSign },
+  { to: "/transfers", label: "Transferências", icon: ArrowRightLeft },
+] as const;
+
+const ACCOUNT_NAV = [
+  { to: "/profile", label: "Perfil", icon: User },
+  { to: "/settings", label: "Configurações", icon: Settings },
+  { to: "/plans", label: "Plano", icon: Crown },
+  { to: "/help", label: "Ajuda", icon: HelpCircle },
 ] as const;
 
 const ADMIN_NAV = [
@@ -68,6 +78,7 @@ function AuthedLayout() {
   const qc = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [signOutOpen, setSignOutOpen] = useState(false);
 
   useEffect(() => setMobileOpen(false), [pathname]);
 
@@ -78,19 +89,21 @@ function AuthedLayout() {
     navigate({ to: "/auth", replace: true });
   }
 
+  const askSignOut = () => setSignOutOpen(true);
+
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
       {/* Sidebar desktop */}
-      <aside className="hidden w-60 shrink-0 flex-col border-r border-border bg-sidebar md:flex">
-        <SidebarBody pathname={pathname} onSignOut={signOut} />
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-sidebar md:flex">
+        <SidebarBody pathname={pathname} onSignOut={askSignOut} />
       </aside>
 
       {/* Sidebar mobile */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
-          <aside className="absolute left-0 top-0 flex h-full w-72 flex-col border-r border-border bg-sidebar">
-            <SidebarBody pathname={pathname} onSignOut={signOut} onClose={() => setMobileOpen(false)} />
+          <aside className="absolute left-0 top-0 flex h-full w-[86%] max-w-sm flex-col border-r border-border bg-sidebar">
+            <SidebarBody pathname={pathname} onSignOut={askSignOut} onClose={() => setMobileOpen(false)} />
           </aside>
         </div>
       )}
@@ -117,6 +130,22 @@ function AuthedLayout() {
           </RoutedModuleGate>
         </main>
       </div>
+      <AlertDialog open={signOutOpen} onOpenChange={setSignOutOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <DoorOpen className="h-5 w-5" /> Encerrar sessão
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja realmente sair do TrailBook?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={signOut}>Sair</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
