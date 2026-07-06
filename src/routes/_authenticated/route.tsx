@@ -161,10 +161,72 @@ function SidebarBody({ pathname, onSignOut, onClose }: { pathname: string; onSig
   const { isAdmin } = useIsAdmin();
   const modulesQ = useModules();
   const moduleByKey = new Map((modulesQ.data ?? []).map((m) => [m.key, m]));
+
+  const meQ = useQuery({
+    queryKey: ["sidebar", "me"],
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, avatar_url, email")
+        .eq("id", u.user.id)
+        .maybeSingle();
+      return data;
+    },
+    staleTime: 60_000,
+  });
+
+  const activeMotoQ = useQuery({
+    queryKey: ["sidebar", "active-moto"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("motorcycles")
+        .select("id, brand, model, nickname, main_photo_url, status")
+        .neq("status", "archived")
+        .order("updated_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return data;
+    },
+    staleTime: 60_000,
+  });
+
+  const fullName = meQ.data?.full_name || meQ.data?.email || "Usuário";
+  const initials = fullName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s: string) => s[0]?.toUpperCase() ?? "")
+    .join("") || "?";
+  const roleLabel = isAdmin ? "Administrador" : "Usuário";
+  const moto = activeMotoQ.data;
+  const motoLabel = moto ? (moto.nickname || `${moto.brand ?? ""} ${moto.model ?? ""}`.trim() || "Moto ativa") : null;
+
+  function NavLink({ to, label, icon: Icon, activeStrict }: { to: string; label: string; icon: any; activeStrict?: boolean }) {
+    const active = activeStrict ? pathname === to : (pathname === to || pathname.startsWith(to + "/"));
+    return (
+      <Link
+        to={to}
+        onClick={onClose}
+        className={cn(
+          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+          active
+            ? "bg-sidebar-accent text-sidebar-primary"
+            : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        )}
+      >
+        <Icon className="h-4 w-4 shrink-0" />
+        <span className="min-w-0 flex-1 truncate">{label}</span>
+      </Link>
+    );
+  }
+
   return (
     <>
+      {/* Header + logo */}
       <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
-        <Link to="/dashboard" className="flex items-center gap-2">
+        <Link to="/dashboard" onClick={onClose} className="flex items-center gap-2">
           <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground btn-glow">
             <Bike className="h-4 w-4" />
           </div>
@@ -174,74 +236,116 @@ function SidebarBody({ pathname, onSignOut, onClose }: { pathname: string; onSig
           <button onClick={onClose} aria-label="Fechar menu"><X className="h-5 w-5" /></button>
         )}
       </div>
-      <div className="mx-3 mt-3 space-y-1.5">
-        <div className="flex items-center justify-between rounded-lg border border-sidebar-border bg-sidebar-accent/40 px-3 py-2 text-xs">
-          <span className="text-muted-foreground">Perfil</span>
-          <span className={cn(
-            "font-bold uppercase tracking-widest",
-            isAdmin ? "text-emerald-400" : "text-foreground/80",
-          )}>
-            {isAdmin ? "Administrador" : "Usuário"}
-          </span>
+
+      {/* User card */}
+      <Link
+        to="/profile"
+        onClick={onClose}
+        className="mx-3 mt-3 block rounded-xl border border-sidebar-border bg-sidebar-accent/50 p-3 transition-colors hover:border-primary/50"
+      >
+        <div className="flex items-center gap-3">
+          {meQ.data?.avatar_url ? (
+            <img src={meQ.data.avatar_url} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-primary/30" />
+          ) : (
+            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary/15 text-sm font-bold text-primary ring-2 ring-primary/30">
+              {initials}
+            </div>
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-sm font-semibold text-foreground">{fullName}</div>
+            <div className="mt-0.5 flex flex-wrap items-center gap-1">
+              <span className={cn(
+                "rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest",
+                isAdmin ? "bg-emerald-500/15 text-emerald-400" : "bg-foreground/10 text-foreground/70",
+              )}>{roleLabel}</span>
+              <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary">
+                {plan.label}
+              </span>
+            </div>
+          </div>
         </div>
-        <Link to="/plans" className="flex items-center justify-between rounded-lg border border-sidebar-border bg-sidebar-accent/40 px-3 py-2 text-xs hover:border-primary/50">
-          <span className="text-muted-foreground">Plano</span>
-          <span className="font-bold uppercase tracking-widest text-primary">{plan.label}</span>
-        </Link>
-      </div>
-      <nav className="flex-1 space-y-1 px-3 py-4">
-        {NAV.map((item) => {
-          const active = pathname === item.to || pathname.startsWith(item.to + "/");
-          const modKey = ROUTE_TO_MODULE[item.to];
-          const mod = modKey ? moduleByKey.get(modKey) : undefined;
-          if (!isAdmin && mod) {
-            if (mod.status === "disabled" && mod.hide_when_disabled) return null;
-          }
-          const disabled = !isAdmin && mod?.status === "disabled";
-          const inMaint = !isAdmin && mod?.status === "maintenance";
-          if (disabled) {
-            return (
-              <div key={item.to} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground/60 cursor-not-allowed" title="Módulo indisponível">
-                <Lock className="h-4 w-4" /> {item.label}
-              </div>
-            );
-          }
-          return (
-            <Link
-              key={item.to}
-              to={item.to}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                active
-                  ? "bg-sidebar-accent text-sidebar-primary"
-                  : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-              )}
-            >
-              <item.icon className="h-4 w-4" />
-              <span className="flex-1">{item.label}</span>
-              {inMaint && <Wrench className="h-3 w-3 text-amber-400" />}
-            </Link>
-          );
-        })}
-        {isAdmin && (
-          <>
-            <div className="mt-4 px-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Administração</div>
-            {ADMIN_NAV.map((item) => {
-              const active = item.to === "/admin" ? pathname === "/admin" : pathname === item.to || pathname.startsWith(item.to + "/");
-              return (
-                <Link key={item.to} to={item.to} onClick={onClose} className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
-                  active ? "bg-primary/15 text-primary" : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                )}>
-                  <item.icon className="h-4 w-4" />{item.label}
-                </Link>
-              );
-            })}
-          </>
+        {motoLabel && (
+          <div className="mt-3 flex items-center gap-2 rounded-lg bg-background/40 px-2.5 py-1.5 text-xs">
+            <Bike className="h-3.5 w-3.5 shrink-0 text-primary" />
+            <div className="min-w-0">
+              <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Moto ativa</div>
+              <div className="truncate font-semibold text-foreground">{motoLabel}</div>
+            </div>
+          </div>
         )}
-      </nav>
-      <div className="border-t border-sidebar-border p-3">
-        <Button variant="ghost" className="w-full justify-start gap-3 text-sidebar-foreground/80" onClick={onSignOut}>
+      </Link>
+
+      {/* Scrollable groups */}
+      <div className="flex-1 overflow-y-auto px-3 py-4">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2 px-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            <Compass className="h-3 w-3" /> Navegação
+          </div>
+          {NAV.map((item) => {
+            const modKey = ROUTE_TO_MODULE[item.to];
+            const mod = modKey ? moduleByKey.get(modKey) : undefined;
+            if (!isAdmin && mod && mod.status === "disabled" && mod.hide_when_disabled) return null;
+            const disabled = !isAdmin && mod?.status === "disabled";
+            const inMaint = !isAdmin && mod?.status === "maintenance";
+            if (disabled) {
+              return (
+                <div key={item.to} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground/60" title="Módulo indisponível">
+                  <Lock className="h-4 w-4 shrink-0" /> <span className="truncate">{item.label}</span>
+                </div>
+              );
+            }
+            const active = pathname === item.to || pathname.startsWith(item.to + "/");
+            return (
+              <Link
+                key={item.to}
+                to={item.to}
+                onClick={onClose}
+                className={cn(
+                  "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+                  active
+                    ? "bg-sidebar-accent text-sidebar-primary"
+                    : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                )}
+              >
+                <item.icon className="h-4 w-4 shrink-0" />
+                <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                {inMaint && <Wrench className="h-3 w-3 shrink-0 text-amber-400" />}
+              </Link>
+            );
+          })}
+        </div>
+
+        {isAdmin && (
+          <div className="mt-5 space-y-1">
+            <div className="flex items-center gap-2 px-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              <Shield className="h-3 w-3" /> Administração
+            </div>
+            {ADMIN_NAV.map((item) => (
+              <NavLink key={item.to} to={item.to} label={item.label} icon={item.icon} activeStrict={item.to === "/admin"} />
+            ))}
+          </div>
+        )}
+
+        <div className="mt-5 space-y-1">
+          <div className="flex items-center gap-2 px-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            <UserCircle2 className="h-3 w-3" /> Minha Conta
+          </div>
+          {ACCOUNT_NAV.map((item) => (
+            <NavLink key={item.to} to={item.to} label={item.label} icon={item.icon} />
+          ))}
+        </div>
+      </div>
+
+      {/* Sessão — fixed bottom */}
+      <div className="border-t border-sidebar-border bg-sidebar p-3">
+        <div className="flex items-center gap-2 px-1 pb-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+          <DoorOpen className="h-3 w-3" /> Sessão
+        </div>
+        <Button
+          variant="ghost"
+          className="w-full justify-start gap-3 text-sidebar-foreground/90 hover:bg-destructive/10 hover:text-destructive"
+          onClick={onSignOut}
+        >
           <LogOut className="h-4 w-4" /> Sair
         </Button>
       </div>
