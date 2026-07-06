@@ -31,6 +31,8 @@ import { InspectionDialog } from "@/components/InspectionDialog";
 import { PlanCatalogSyncDialog } from "@/components/PlanCatalogSyncDialog";
 import { Link } from "@tanstack/react-router";
 import { Eye } from "lucide-react";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { AdminMotoDangerZone } from "@/components/AdminMotoDangerZone";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id")({
   head: () => ({ meta: [{ title: "Moto — TrailBook" }] }),
@@ -42,6 +44,7 @@ function MotoDetail() {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { plan } = usePlan();
+  const { isAdmin } = useIsAdmin();
   const [deleteConfirm, setDeleteConfirm] = useState("");
   const [archiveReason, setArchiveReason] = useState("");
   const [inspectTarget, setInspectTarget] = useState<null | { id: string; name: string; category: string }>(null);
@@ -415,6 +418,14 @@ function MotoDetail() {
       <section className="space-y-3">
         <AuditSummary rows={(audit.data ?? []) as any} />
       </section>
+
+      {isAdmin && (
+        <AdminMotoDangerZone
+          motoId={m.id}
+          isHomologation={!!(m as any).is_homologation}
+          label={m.nickname || m.model}
+        />
+      )}
 
       {inspectTarget && (
         <InspectionDialog

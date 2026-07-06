@@ -1114,6 +1114,7 @@ export type Database = {
           hours_total: number
           id: string
           incident_declaration: Json | null
+          is_homologation: boolean
           km_total: number
           main_photo_url: string | null
           model: string
@@ -1143,6 +1144,7 @@ export type Database = {
           hours_total?: number
           id?: string
           incident_declaration?: Json | null
+          is_homologation?: boolean
           km_total?: number
           main_photo_url?: string | null
           model: string
@@ -1172,6 +1174,7 @@ export type Database = {
           hours_total?: number
           id?: string
           incident_declaration?: Json | null
+          is_homologation?: boolean
           km_total?: number
           main_photo_url?: string | null
           model?: string
@@ -1433,6 +1436,33 @@ export type Database = {
           plan_since?: string
           status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
+        }
+        Relationships: []
+      }
+      retired_trailbook_ids: {
+        Row: {
+          moto_id: string | null
+          reason: string | null
+          retired_at: string
+          retired_by: string | null
+          snapshot: Json
+          trailbook_id: string
+        }
+        Insert: {
+          moto_id?: string | null
+          reason?: string | null
+          retired_at?: string
+          retired_by?: string | null
+          snapshot: Json
+          trailbook_id: string
+        }
+        Update: {
+          moto_id?: string | null
+          reason?: string | null
+          retired_at?: string
+          retired_by?: string | null
+          snapshot?: Json
+          trailbook_id?: string
         }
         Relationships: []
       }
@@ -1722,6 +1752,10 @@ export type Database = {
         Args: { _notes?: string; _reason: string; _user: string }
         Returns: undefined
       }
+      admin_execute_homolog_moto_deletion: {
+        Args: { _moto: string; _reason: string; _storage_report?: Json }
+        Returns: Json
+      }
       admin_get_comm_settings: {
         Args: never
         Returns: {
@@ -1869,8 +1903,13 @@ export type Database = {
         Returns: undefined
       }
       admin_message_thread: { Args: { _id: string }; Returns: Json }
+      admin_motorcycle_impact: { Args: { _moto: string }; Returns: Json }
       admin_prepare_homolog_deletion: {
         Args: { _confirmation: string; _reason: string; _user: string }
+        Returns: Json
+      }
+      admin_prepare_homolog_moto_deletion: {
+        Args: { _confirmation: string; _moto: string; _reason: string }
         Returns: Json
       }
       admin_profile_snapshot: { Args: { _user: string }; Returns: Json }
@@ -1896,6 +1935,10 @@ export type Database = {
           _type: Database["public"]["Enums"]["message_type"]
         }
         Returns: string
+      }
+      admin_set_motorcycle_homologation: {
+        Args: { _flag: boolean; _moto: string; _reason?: string }
+        Returns: undefined
       }
       admin_set_user_plan: {
         Args: { _plan: Database["public"]["Enums"]["plan_tier"]; _user: string }
