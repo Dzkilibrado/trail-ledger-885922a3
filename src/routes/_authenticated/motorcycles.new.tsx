@@ -243,7 +243,16 @@ function NewMotorcycle() {
             <Kv k="Cilindrada" v={finalDispLabel ? `${finalDispLabel} cc` : "—"} />
             <Kv k="Ano fabricação" v={draft.year_make ? String(draft.year_make) : "—"} />
             <Kv k="Ano modelo" v={draft.year_model ? String(draft.year_model) : "—"} />
-            <Kv k="Tipo de moto" v={MOTO_TYPES.find((t) => t.value === motoType)?.label ?? "—"} />
+            <Kv
+              k="Tipo de moto"
+              v={
+                (catTypes.data ?? []).find((t) => t.code === motoType)?.label
+                ?? MOTO_TYPES.find((t) => t.value === motoType)?.label
+                ?? motoType
+                ?? "—"
+              }
+            />
+            <Kv k="Estado" v={draft.condition === "new" ? "Nova" : "Usada / Seminova"} />
             <Kv k="Controle" v={CONTROL_TYPES.find((c) => c.value === controlType)?.label ?? "—"} />
             <Kv k="Chassi" v={draft.chassis || "—"} />
             <Kv k="Nº motor" v={draft.engine_number || "—"} />
