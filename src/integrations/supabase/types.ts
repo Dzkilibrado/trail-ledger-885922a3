@@ -1902,6 +1902,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      admin_log_view_as_user: {
+        Args: { _action: string; _metadata?: Json }
+        Returns: undefined
+      }
       admin_message_thread: { Args: { _id: string }; Returns: Json }
       admin_motorcycle_impact: { Args: { _moto: string }; Returns: Json }
       admin_prepare_homolog_deletion: {
