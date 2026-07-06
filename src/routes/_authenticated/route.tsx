@@ -184,10 +184,26 @@ function RoutedModuleGate({ pathname, children }: { pathname: string; children: 
   return <ModuleGate moduleKey={entry[1]}>{children}</ModuleGate>;
 }
 
-function SidebarBody({ pathname, onSignOut, onClose }: { pathname: string; onSignOut: () => void; onClose?: () => void }) {
+function SidebarBody({
+  pathname,
+  onSignOut,
+  onClose,
+  isAdmin,
+  realIsAdmin,
+  viewingAsUser,
+  viewAs,
+}: {
+  pathname: string;
+  onSignOut: () => void;
+  onClose?: () => void;
+  isAdmin: boolean;
+  realIsAdmin: boolean;
+  viewingAsUser: boolean;
+  viewAs: { enter: () => Promise<void>; exit: () => Promise<void> };
+}) {
   const { plan } = usePlan();
-  const { isAdmin } = useIsAdmin();
   const modulesQ = useModules();
+  const [enterOpen, setEnterOpen] = useState(false);
   const moduleByKey = new Map((modulesQ.data ?? []).map((m) => [m.key, m]));
 
   const meQ = useQuery({
@@ -303,6 +319,31 @@ function SidebarBody({ pathname, onSignOut, onClose }: { pathname: string; onSig
         )}
       </Link>
 
+      {/* View-as-user toggle (admins only) */}
+      {realIsAdmin && (
+        <div className="mx-3 mt-2">
+          {viewingAsUser ? (
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full justify-start gap-2 border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 hover:text-amber-200"
+              onClick={() => viewAs.exit()}
+            >
+              <ShieldCheck className="h-4 w-4" /> Voltar ao modo Administrador
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              variant="outline"
+              className="w-full justify-start gap-2"
+              onClick={() => setEnterOpen(true)}
+            >
+              <Eye className="h-4 w-4" /> Visualizar como Usuário
+            </Button>
+          )}
+        </div>
+      )}
+
       {/* Scrollable groups */}
       <div className="flex-1 overflow-y-auto px-3 py-4">
         <div className="space-y-1">
@@ -377,6 +418,40 @@ function SidebarBody({ pathname, onSignOut, onClose }: { pathname: string; onSig
           <LogOut className="h-4 w-4" /> Sair
         </Button>
       </div>
+
+      <AlertDialog open={enterOpen} onOpenChange={setEnterOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5" /> Modo de Visualização
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2 text-left">
+              <span className="block">
+                Você continuará autenticado como Administrador.
+              </span>
+              <span className="block">
+                O TrailBook ocultará temporariamente todas as funcionalidades administrativas
+                para que você visualize exatamente a experiência de um usuário comum.
+              </span>
+              <span className="block font-medium">
+                Nenhuma permissão será alterada permanentemente.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                setEnterOpen(false);
+                onClose?.();
+                await viewAs.enter();
+              }}
+            >
+              Entrar no modo Usuário
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
