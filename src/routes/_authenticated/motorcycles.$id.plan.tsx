@@ -17,7 +17,8 @@ import {
   type ProposedSchedule, type UseProfile, type PlanAction, type PlanSeverity,
 } from "@/lib/plan-templates";
 import { toast } from "sonner";
-import { Plus, Trash2, Wand2, Sparkles } from "lucide-react";
+import { Plus, Trash2, Wand2, Sparkles, CheckCircle2, Info } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
 
 const searchSchema = z.object({ first: z.coerce.boolean().optional() });
 
@@ -31,6 +32,7 @@ function PlanWizard() {
   const { id } = Route.useParams();
   const { first } = Route.useSearch();
   const nav = useNavigate();
+  const qc = useQueryClient();
 
   const moto = useQuery({
     queryKey: ["motorcycle", id],
@@ -98,6 +100,8 @@ function PlanWizard() {
       await supabase.from("motorcycles").update({
         use_profile: profile,
         use_profile_note: profile === "other" ? profileNote.trim() || null : null,
+        // Após confirmar o plano, a revisão passa a "reviewed" — silencia o banner.
+        plan_review_status: "reviewed",
       } as never).eq("id", id);
 
       const payload = active.map((r) => ({
@@ -114,10 +118,25 @@ function PlanWizard() {
       const { error } = await supabase.from("maintenance_schedules").insert(payload as never);
       if (error) throw error;
       toast.success("Plano de manutenção aplicado.");
+      qc.invalidateQueries({ queryKey: ["motorcycle", id] });
       nav({ to: "/motorcycles/$id", params: { id } });
     } catch (e: any) {
       toast.error(e.message ?? "Falha ao salvar plano.");
     } finally { setSaving(false); }
+  }
+
+  async function markReviewed() {
+    try {
+      const { error } = await supabase.from("motorcycles").update({
+        plan_review_status: "reviewed",
+      } as never).eq("id", id);
+      if (error) throw error;
+      toast.success("Revisão concluída. O banner será removido.");
+      qc.invalidateQueries({ queryKey: ["motorcycle", id] });
+      nav({ to: "/motorcycles/$id", params: { id } });
+    } catch (e: any) {
+      toast.error(e.message ?? "Falha ao marcar revisão.");
+    }
   }
 
   const totals = useMemo(() => ({
@@ -137,6 +156,25 @@ function PlanWizard() {
           ? "Revise os intervalos sugeridos para começar. Você pode ajustar antes de confirmar."
           : "Aplique um novo cronograma padrão a esta moto."}
       />
+
+      {(moto.data as any)?.condition === "used" && (moto.data as any)?.plan_review_status === "pending" && (
+        <div className="surface-elevated rounded-2xl border border-amber-500/40 bg-amber-500/5 p-4 text-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex items-start gap-2">
+              <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
+              <div>
+                <div className="font-semibold text-amber-200">Revisão inicial pendente</div>
+                <p className="text-xs text-amber-100/80">
+                  Como esta moto já possui uso anterior, revise os itens de manutenção antes de ativar os alertas. Ao confirmar o plano, a revisão é concluída automaticamente.
+                </p>
+              </div>
+            </div>
+            <Button size="sm" variant="outline" onClick={markReviewed}>
+              <CheckCircle2 className="h-4 w-4" /> Marcar revisão concluída
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Perfil de uso */}
       <section className="surface-elevated rounded-2xl p-5 space-y-4">

@@ -956,6 +956,33 @@ export type Database = {
           },
         ]
       }
+      motorcycle_brands: {
+        Row: {
+          active: boolean
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       motorcycle_documents: {
         Row: {
           amount: number | null
@@ -1049,6 +1076,159 @@ export type Database = {
           },
         ]
       }
+      motorcycle_model_defaults: {
+        Row: {
+          model_id: string
+          notes: string | null
+          suggested_control_type:
+            | Database["public"]["Enums"]["control_type"]
+            | null
+          updated_at: string
+        }
+        Insert: {
+          model_id: string
+          notes?: string | null
+          suggested_control_type?:
+            | Database["public"]["Enums"]["control_type"]
+            | null
+          updated_at?: string
+        }
+        Update: {
+          model_id?: string
+          notes?: string | null
+          suggested_control_type?:
+            | Database["public"]["Enums"]["control_type"]
+            | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "motorcycle_model_defaults_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: true
+            referencedRelation: "motorcycle_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      motorcycle_model_engines: {
+        Row: {
+          active: boolean
+          created_at: string
+          displacement: number
+          id: string
+          model_id: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          displacement: number
+          id?: string
+          model_id: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          displacement?: number
+          id?: string
+          model_id?: string
+          sort_order?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "motorcycle_model_engines_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycle_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      motorcycle_model_years: {
+        Row: {
+          created_at: string
+          id: string
+          model_id: string
+          year_make: number
+          year_model: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          model_id: string
+          year_make: number
+          year_model: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          model_id?: string
+          year_make?: number
+          year_model?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "motorcycle_model_years_model_id_fkey"
+            columns: ["model_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycle_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      motorcycle_models: {
+        Row: {
+          active: boolean
+          brand_id: string
+          created_at: string
+          id: string
+          name: string
+          notes: string | null
+          sort_order: number
+          type_code: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          brand_id: string
+          created_at?: string
+          id?: string
+          name: string
+          notes?: string | null
+          sort_order?: number
+          type_code: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          brand_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          sort_order?: number
+          type_code?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "motorcycle_models_brand_id_fkey"
+            columns: ["brand_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycle_brands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "motorcycle_models_type_code_fkey"
+            columns: ["type_code"]
+            isOneToOne: false
+            referencedRelation: "motorcycle_types_ref"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
       motorcycle_photos: {
         Row: {
           bucket: string
@@ -1099,13 +1279,39 @@ export type Database = {
           },
         ]
       }
+      motorcycle_types_ref: {
+        Row: {
+          active: boolean
+          code: string
+          created_at: string
+          label: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          code: string
+          created_at?: string
+          label: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          code?: string
+          created_at?: string
+          label?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       motorcycles: {
         Row: {
           archive_reason: string | null
           archived_at: string | null
           archived_by: string | null
           brand: string
+          catalog_model_id: string | null
           chassis: string | null
+          condition: string
           conservation_score: number
           control_type: Database["public"]["Enums"]["control_type"]
           created_at: string
@@ -1120,6 +1326,7 @@ export type Database = {
           model: string
           nickname: string | null
           owner_id: string
+          plan_review_status: string
           plate: string | null
           renavam: string | null
           status: string
@@ -1135,7 +1342,9 @@ export type Database = {
           archived_at?: string | null
           archived_by?: string | null
           brand: string
+          catalog_model_id?: string | null
           chassis?: string | null
+          condition?: string
           conservation_score?: number
           control_type?: Database["public"]["Enums"]["control_type"]
           created_at?: string
@@ -1150,6 +1359,7 @@ export type Database = {
           model: string
           nickname?: string | null
           owner_id: string
+          plan_review_status?: string
           plate?: string | null
           renavam?: string | null
           status?: string
@@ -1165,7 +1375,9 @@ export type Database = {
           archived_at?: string | null
           archived_by?: string | null
           brand?: string
+          catalog_model_id?: string | null
           chassis?: string | null
+          condition?: string
           conservation_score?: number
           control_type?: Database["public"]["Enums"]["control_type"]
           created_at?: string
@@ -1180,6 +1392,7 @@ export type Database = {
           model?: string
           nickname?: string | null
           owner_id?: string
+          plan_review_status?: string
           plate?: string | null
           renavam?: string | null
           status?: string
@@ -1190,7 +1403,15 @@ export type Database = {
           year_make?: number | null
           year_model?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "motorcycles_catalog_model_id_fkey"
+            columns: ["catalog_model_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycle_models"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notifications: {
         Row: {
