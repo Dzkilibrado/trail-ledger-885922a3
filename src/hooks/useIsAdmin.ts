@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useSyncExternalStore } from "react";
+import { isViewingAsUser, subscribeViewAsUser } from "@/hooks/useViewAsUser";
 
 export function useIsAdmin() {
   const q = useQuery({
@@ -13,5 +15,16 @@ export function useIsAdmin() {
     },
     staleTime: 60_000,
   });
-  return { isAdmin: !!q.data, loading: q.isLoading };
+  const viewingAsUser = useSyncExternalStore(
+    subscribeViewAsUser,
+    () => isViewingAsUser(),
+    () => false,
+  );
+  const realIsAdmin = !!q.data;
+  return {
+    isAdmin: realIsAdmin && !viewingAsUser,
+    realIsAdmin,
+    viewingAsUser,
+    loading: q.isLoading,
+  };
 }
