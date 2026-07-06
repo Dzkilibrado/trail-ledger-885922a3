@@ -8,7 +8,11 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { BRANDS, uploadFile } from "@/lib/trailbook";
-import { MODELS_BY_BRAND, DISPLACEMENTS, MOTO_TYPES, CONTROL_TYPES, OTHER, yearOptions, INCIDENT_DECLARATION_TEXT } from "@/lib/motorcycle-catalog";
+import {
+  MODELS_BY_BRAND, DISPLACEMENTS, MOTO_TYPES, CONTROL_TYPES, OTHER,
+  yearOptions, INCIDENT_DECLARATION_TEXT,
+  useCatalogBrands, useCatalogTypes, useCatalogModels, useCatalogEngines, useCatalogModelDefaults,
+} from "@/lib/motorcycle-catalog";
 import { USE_PROFILES, type UseProfile } from "@/lib/plan-templates";
 import { PhotoPicker } from "@/components/PhotoPicker";
 import { PageHeader } from "@/components/PageHeader";
@@ -16,7 +20,7 @@ import { toast } from "sonner";
 import { usePlan } from "@/hooks/usePlan";
 import { canCreateMotorcycle } from "@/lib/plans";
 import { useQuery } from "@tanstack/react-query";
-import { Crown, ShieldAlert, CheckCircle2, Pencil } from "lucide-react";
+import { Crown, ShieldAlert, CheckCircle2, Pencil, Info } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/new")({
   head: () => ({ meta: [{ title: "Nova moto — TrailBook" }] }),
@@ -37,21 +41,29 @@ const schema = z.object({
   renavam: z.string().max(20).optional(),
   hours_total: z.coerce.number().min(0).default(0),
   km_total: z.coerce.number().min(0).default(0),
+  condition: z.enum(["new", "used"]),
+  catalog_model_id: z.string().uuid().nullable().optional(),
 });
 
 function NewMotorcycle() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
+  const [motoType, setMotoType] = useState<string>("");
   const [brand, setBrand] = useState("");
+  const [brandId, setBrandId] = useState<string | null>(null);
+  const [customBrand, setCustomBrand] = useState("");
   const [model, setModel] = useState("");
+  const [modelId, setModelId] = useState<string | null>(null);
   const [customModel, setCustomModel] = useState("");
   const [displacement, setDisplacement] = useState("");
   const [customDisplacement, setCustomDisplacement] = useState("");
   const [yearMake, setYearMake] = useState("");
   const [yearModel, setYearModel] = useState("");
-  const [motoType, setMotoType] = useState("trail_light");
   const [controlType, setControlType] = useState("hours");
+  const [condition, setCondition] = useState<"new" | "used">("used");
+  const [hoursTotal, setHoursTotal] = useState<string>("0");
+  const [kmTotal, setKmTotal] = useState<string>("0");
   const [incident, setIncident] = useState<"yes" | "no" | "unknown">("unknown");
   const [useProfile, setUseProfile] = useState<UseProfile>("normal");
   const [useProfileNote, setUseProfileNote] = useState("");
@@ -61,7 +73,27 @@ function NewMotorcycle() {
   const [draft, setDraft] = useState<z.infer<typeof schema> | null>(null);
   const { plan } = usePlan();
   const years = useMemo(() => yearOptions(), []);
-  const availableModels = MODELS_BY_BRAND[brand] ?? [];
+
+  // Catálogo mestre
+  const catTypes = useCatalogTypes();
+  const catBrands = useCatalogBrands();
+  const catModels = useCatalogModels(brandId, motoType || null);
+  const catEngines = useCatalogEngines(modelId);
+  const catDefaults = useCatalogModelDefaults(modelId);
+
+  // Fallback quando catálogo vazio: usa lista legada por marca
+  const legacyModels = MODELS_BY_BRAND[brand] ?? [];
+  const showModelFallback = !!brand && !brandId && legacyModels.length > 0;
+
+  // Aplica sugestão de tipo de controle vinda do catálogo
+  const suggested = catDefaults.data?.suggested_control_type;
+  const suggestionApplied = useMemo(() => ({ modelId, suggested }), [modelId, suggested]);
+  useMemo(() => {
+    if (suggestionApplied.suggested && suggestionApplied.modelId) {
+      setControlType(suggestionApplied.suggested);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suggestionApplied.modelId, suggestionApplied.suggested]);
 
   const motoCount = useQuery({
     queryKey: ["motorcycles", "count"],
@@ -76,16 +108,36 @@ function NewMotorcycle() {
     e.preventDefault();
     if (blocked) { toast.error("Limite do plano atingido. Faça upgrade para cadastrar mais motos."); return; }
     const fd = new FormData(e.currentTarget);
+    const finalBrand = brand === OTHER ? customBrand.trim() : brand;
     const finalModel = model === OTHER ? customModel.trim() : model;
     const finalDisp = displacement === OTHER ? customDisplacement.trim() : displacement;
+    if (!motoType) { toast.error("Selecione o tipo da moto."); return; }
+    if (!finalBrand) { toast.error("Selecione a marca."); return; }
+    if (!finalModel) { toast.error("Informe o modelo."); return; }
+    // Nova → força zeros; Usada → exige leitura conforme controle
+    const isNew = condition === "new";
+    const parsedHours = isNew ? 0 : Number(hoursTotal || 0);
+    const parsedKm = isNew ? 0 : Number(kmTotal || 0);
+    if (!isNew) {
+      if ((controlType === "hours" || controlType === "both") && !(parsedHours > 0)) {
+        toast.error("Informe o horímetro atual da moto usada."); return;
+      }
+      if ((controlType === "km" || controlType === "both") && !(parsedKm > 0)) {
+        toast.error("Informe o KM atual da moto usada."); return;
+      }
+    }
     const raw = {
       ...Object.fromEntries(fd),
-      brand,
+      brand: finalBrand,
       model: finalModel,
       displacement: finalDisp || undefined,
       year_make: yearMake || undefined,
       year_model: yearModel || undefined,
       control_type: controlType,
+      condition,
+      catalog_model_id: modelId,
+      hours_total: parsedHours,
+      km_total: parsedKm,
     };
     const parsed = schema.safeParse(raw);
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
@@ -121,6 +173,9 @@ function NewMotorcycle() {
         incident_declaration: incidentDeclaration,
         use_profile: useProfile,
         use_profile_note: useProfile === "other" ? (useProfileNote.trim() || null) : null,
+        // Moto nova: revisão marcada como skipped (não precisa revisar plano);
+        // Moto usada: pending — dispara banner de revisão no dashboard da moto.
+        plan_review_status: draft.condition === "new" ? "skipped" : "pending",
       } as never).select("id").single();
       if (error) throw error;
       // Se subiu foto principal no cadastro, registra na galeria
