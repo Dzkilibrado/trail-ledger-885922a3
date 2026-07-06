@@ -231,6 +231,23 @@ function MotoDetail() {
                 )}
               </div>
             )}
+            {isOwner && (m as any).condition === "used" && (m as any).plan_review_status === "pending" && !isArchived && (
+              <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <div className="font-semibold text-amber-200">Ajuste o plano de manutenção desta moto</div>
+                    <p className="mt-1 text-amber-100/80">
+                      Como esta moto já possui uso anterior, revise o estado atual dos itens antes de ativar os alertas.
+                    </p>
+                  </div>
+                  <Button size="sm" asChild className="btn-glow">
+                    <Link to="/motorcycles/$id/plan" params={{ id: m.id }} search={{ first: true }}>
+                      <Wand2 className="h-4 w-4" /> Ajustar plano de manutenção
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-3 gap-3">
               <Stat label="Horas" value={`${Number(m.hours_total).toFixed(1)} h`} />
               <Stat label="Km" value={Number(m.km_total).toFixed(0)} />
