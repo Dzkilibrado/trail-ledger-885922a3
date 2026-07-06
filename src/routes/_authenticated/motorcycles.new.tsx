@@ -324,73 +324,216 @@ function NewMotorcycle() {
         </div>
       )}
       <form onSubmit={goReview} className="surface-elevated space-y-5 rounded-2xl p-6">
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Marca" required>
-            <Select value={brand} onValueChange={(v) => { setBrand(v); setModel(""); }}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>{BRANDS.map((b) => <SelectItem key={b} value={b}>{b}</SelectItem>)}</SelectContent>
-            </Select>
-          </Field>
-          <Field label="Modelo" required>
-            {availableModels.length > 0 ? (
-              <Select value={model} onValueChange={setModel}>
+        {/* Identificação — fluxo guiado pelo Catálogo Mestre */}
+        <div className="rounded-2xl border border-border/60 bg-background/30 p-4 space-y-4">
+          <div>
+            <div className="text-sm font-semibold">Identificação da moto</div>
+            <div className="text-xs text-muted-foreground">
+              Selecione tipo, marca e modelo. Os campos seguintes são filtrados automaticamente. Use <em>Outro</em> quando não encontrar.
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Tipo da moto" required>
+              <Select value={motoType} onValueChange={(v) => { setMotoType(v); setModel(""); setModelId(null); setDisplacement(""); }}>
                 <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                 <SelectContent>
-                  {availableModels.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
-                  <SelectItem value={OTHER}>Outro modelo…</SelectItem>
+                  {(catTypes.data ?? []).map((t) => (
+                    <SelectItem key={t.code} value={t.code}>{t.label}</SelectItem>
+                  ))}
+                  {/* fallback offline */}
+                  {(catTypes.data ?? []).length === 0 && MOTO_TYPES.map((t) => (
+                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
-            ) : (
-              <Input placeholder="ex: CRF 250F" value={customModel} onChange={(e) => { setCustomModel(e.target.value); setModel(OTHER); }} />
-            )}
-            {model === OTHER && availableModels.length > 0 && (
-              <Input className="mt-2" placeholder="Informe o modelo" value={customModel} onChange={(e) => setCustomModel(e.target.value)} />
-            )}
-          </Field>
-          <Field label="Apelido"><Input name="nickname" placeholder="ex: A vermelhinha" /></Field>
-          <Field label="Cilindrada (cc)">
-            <Select value={displacement} onValueChange={setDisplacement}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>
-                {DISPLACEMENTS.map((d) => <SelectItem key={d} value={d}>{d} cc</SelectItem>)}
-                <SelectItem value={OTHER}>Outra…</SelectItem>
-              </SelectContent>
-            </Select>
-            {displacement === OTHER && (
-              <Input className="mt-2" type="number" placeholder="Informe a cilindrada em cc" value={customDisplacement} onChange={(e) => setCustomDisplacement(e.target.value)} />
-            )}
-          </Field>
-          <Field label="Ano de fabricação">
-            <Select value={yearMake} onValueChange={setYearMake}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
-            </Select>
-          </Field>
-          <Field label="Ano modelo">
-            <Select value={yearModel} onValueChange={setYearModel}>
-              <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-              <SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
-            </Select>
-          </Field>
-          <Field label="Tipo de moto">
-            <Select value={motoType} onValueChange={setMotoType}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{MOTO_TYPES.map((t) => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectContent>
-            </Select>
-          </Field>
+            </Field>
+            <Field label="Marca" required>
+              <Select
+                value={brand}
+                onValueChange={(v) => {
+                  if (v === OTHER) { setBrand(OTHER); setBrandId(null); }
+                  else {
+                    setBrand(v);
+                    const found = (catBrands.data ?? []).find((b) => b.name === v);
+                    setBrandId(found?.id ?? null);
+                  }
+                  setModel(""); setModelId(null); setDisplacement("");
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  {(catBrands.data ?? []).map((b) => (
+                    <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>
+                  ))}
+                  {(catBrands.data ?? []).length === 0 && BRANDS.map((b) => (
+                    <SelectItem key={b} value={b}>{b}</SelectItem>
+                  ))}
+                  <SelectItem value={OTHER}>Outra marca…</SelectItem>
+                </SelectContent>
+              </Select>
+              {brand === OTHER && (
+                <Input className="mt-2" placeholder="Informe a marca" value={customBrand} onChange={(e) => setCustomBrand(e.target.value)} />
+              )}
+            </Field>
+            <Field label="Modelo" required>
+              {brandId && motoType ? (
+                <>
+                  <Select
+                    value={model}
+                    onValueChange={(v) => {
+                      if (v === OTHER) { setModel(OTHER); setModelId(null); setDisplacement(""); return; }
+                      setModel(v);
+                      const found = (catModels.data ?? []).find((m) => m.name === v);
+                      setModelId(found?.id ?? null);
+                      setDisplacement("");
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={catModels.isLoading ? "Carregando…" : (catModels.data ?? []).length === 0 ? "Nenhum modelo — use Outro" : "Selecione"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {(catModels.data ?? []).map((m) => (
+                        <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>
+                      ))}
+                      <SelectItem value={OTHER}>Outro modelo…</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {model === OTHER && (
+                    <Input className="mt-2" placeholder="Informe o modelo" value={customModel} onChange={(e) => setCustomModel(e.target.value)} />
+                  )}
+                </>
+              ) : showModelFallback ? (
+                <>
+                  <Select value={model} onValueChange={(v) => { setModel(v); setModelId(null); }}>
+                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                    <SelectContent>
+                      {legacyModels.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                      <SelectItem value={OTHER}>Outro modelo…</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {model === OTHER && (
+                    <Input className="mt-2" placeholder="Informe o modelo" value={customModel} onChange={(e) => setCustomModel(e.target.value)} />
+                  )}
+                </>
+              ) : (
+                <Input
+                  placeholder={motoType && brand ? "ex: CRF 250F" : "Selecione tipo e marca primeiro"}
+                  disabled={!brand || !motoType}
+                  value={customModel}
+                  onChange={(e) => { setCustomModel(e.target.value); setModel(OTHER); }}
+                />
+              )}
+            </Field>
+            <Field label="Cilindrada (cc)">
+              {modelId && (catEngines.data ?? []).length > 0 ? (
+                <Select value={displacement} onValueChange={setDisplacement}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {(catEngines.data ?? []).map((d) => (
+                      <SelectItem key={d} value={String(d)}>{d} cc</SelectItem>
+                    ))}
+                    <SelectItem value={OTHER}>Outra…</SelectItem>
+                  </SelectContent>
+                </Select>
+              ) : (
+                <Select value={displacement} onValueChange={setDisplacement}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {DISPLACEMENTS.map((d) => <SelectItem key={d} value={d}>{d} cc</SelectItem>)}
+                    <SelectItem value={OTHER}>Outra…</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+              {displacement === OTHER && (
+                <Input className="mt-2" type="number" placeholder="Informe a cilindrada em cc" value={customDisplacement} onChange={(e) => setCustomDisplacement(e.target.value)} />
+              )}
+            </Field>
+            <Field label="Ano de fabricação">
+              <Select value={yearMake} onValueChange={setYearMake}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+              </Select>
+            </Field>
+            <Field label="Ano modelo">
+              <Select value={yearModel} onValueChange={setYearModel}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+              </Select>
+            </Field>
+            <Field label="Apelido"><Input name="nickname" placeholder="ex: A vermelhinha" /></Field>
+          </div>
+        </div>
+
+        {/* Estado da moto */}
+        <div className="rounded-2xl border border-border/60 bg-background/30 p-4 space-y-3">
+          <div>
+            <div className="text-sm font-semibold">Estado da moto</div>
+            <div className="text-xs text-muted-foreground">Define a leitura inicial e o fluxo de revisão do plano.</div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {([
+              { v: "new", label: "Nova (zero km/h)" },
+              { v: "used", label: "Usada / Seminova" },
+            ] as const).map((o) => (
+              <button
+                key={o.v}
+                type="button"
+                onClick={() => setCondition(o.v)}
+                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${condition === o.v ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
+              >
+                {o.label}
+              </button>
+            ))}
+          </div>
+          {condition === "used" ? (
+            <>
+              <div className="grid gap-4 sm:grid-cols-2">
+                {(controlType === "hours" || controlType === "both") && (
+                  <Field label="Horímetro atual (h)" required>
+                    <Input type="number" step="0.1" value={hoursTotal} onChange={(e) => setHoursTotal(e.target.value)} />
+                  </Field>
+                )}
+                {(controlType === "km" || controlType === "both") && (
+                  <Field label="KM atual" required>
+                    <Input type="number" step="1" value={kmTotal} onChange={(e) => setKmTotal(e.target.value)} />
+                  </Field>
+                )}
+              </div>
+              <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-200">
+                <div className="flex items-start gap-2">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                  <span>Como esta moto já possui uso anterior, revise o estado atual dos itens de manutenção antes de ativar os alertas.</span>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-emerald-200">
+              Horímetro e KM começam em zero. O plano de manutenção inicia zerado.
+            </div>
+          )}
+        </div>
+
+        {/* Tipo de controle (sugerido pelo catálogo quando disponível) */}
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Tipo de controle">
             <Select value={controlType} onValueChange={setControlType}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>{CONTROL_TYPES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
             </Select>
+            {suggested && (
+              <p className="mt-1 text-[11px] text-muted-foreground">Sugestão do catálogo aplicada. Você pode alterar se preferir.</p>
+            )}
           </Field>
+        </div>
+
+        {/* Dados opcionais */}
+        <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Chassi"><Input name="chassis" /></Field>
           <Field label="Nº motor"><Input name="engine_number" /></Field>
           <Field label="Placa"><Input name="plate" /></Field>
           <Field label="RENAVAM"><Input name="renavam" /></Field>
-          <Field label="Horas atuais"><Input name="hours_total" type="number" step="0.1" defaultValue={0} /></Field>
-          <Field label="Km atuais"><Input name="km_total" type="number" step="1" defaultValue={0} /></Field>
         </div>
+
         <Field label="Foto principal">
           <PhotoPicker value={photo} onChange={setPhoto} label="Selecionar foto principal" hint="JPG ou PNG. Aparece no certificado público." />
         </Field>
