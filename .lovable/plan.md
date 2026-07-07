@@ -1,199 +1,104 @@
-# Fase 1 — Catálogo Mestre + Cadastro Inteligente da Moto
+# Fase 3 (v1.2) — TrailBook Cockpit + TrailBook Intelligence Layer (TIL)
 
-Escopo restrito e seguro. Não altera lógica de manutenção existente (isso vem em fases seguintes). Foco em: base de dados de modelos, novo fluxo guiado de cadastro, estado (nova/usada), revisão obrigatória antes de salvar, e preparação da base para o Plano por modelo.
+Filosofia gravada em `mem://index.md` (Core) e ADR 0002 registrada. Este plano executa a nova arquitetura respeitando: mobile-first, Regra dos 30s, telas não calculam, personalização mínima.
 
-## 1. Migração de banco (uma migração)
+## 1. Escopo desta entrega
 
-Criar tabelas do catálogo mestre em `public`, todas com RLS + GRANTs.
+- Criar a **TIL** (`src/lib/til/`) como fonte única de cálculos.
+- Substituir a tela de detalhe da moto pelo **Cockpit** enxuto.
+- Mover o conteúdo detalhado atual para o **Centro de Controle** (tabs internas: Saúde, Manutenção, Agenda, Histórico, Documentação, Custos, Alertas).
+- Personalização mínima: fixar favoritos, ocultar painel, restaurar padrão.
+- Homologação (checklist da mensagem).
 
+Fora de escopo: novos widgets (Oficina, Eventos, Seguro, IA), IA preditiva, push notifications.
+
+## 2. Arquitetura
+
+### 2.1 TIL — `src/lib/til/`
+
+```text
+src/lib/til/
+  index.ts          getCockpit(motoId) → CockpitSnapshot
+  types.ts          CockpitSnapshot, HealthStatus, NextAction, Alert, ...
+  health.ts         computeHealth(moto, schedules, events) → { score, label }
+  schedule.ts       computeSchedule(...)  → { next, upcoming, overdue }
+  alerts.ts         computeAlerts(...)    → Alert[] priorizados
+  usage.ts          computeUsage(...)     → { hoursTotal, kmTotal, lastEvent }
+  costs.ts          computeCosts(...)     → { total, byCategory, byPeriod }
+  suggestions.ts    computeNextAction(...) → NextAction | null
 ```
-motorcycle_brands(id, name UNIQUE, slug, active, sort_order)
-motorcycle_types_ref(code PK, label, sort_order)   -- trail, enduro, motocross, rally, adventure, big_trail, other
-motorcycle_models(id, brand_id FK, type_code FK, name, active, sort_order, UNIQUE(brand_id,type_code,name))
-motorcycle_model_engines(id, model_id FK, displacement INT, active, UNIQUE(model_id,displacement))
-motorcycle_model_years(id, model_id FK, year_make INT, year_model INT, UNIQUE(model_id,year_make,year_model))
-motorcycle_usage_types(code PK, label, multiplier NUMERIC)  -- light, normal, severe, competition, sand_mud, other (mapeia ao use_profile atual)
-motorcycle_model_defaults(model_id PK FK, control_type control_type_enum, notes)  -- horímetro/hodômetro/ambos/não_informado
+
+- Funções **puras**: recebem dados já carregados, retornam snapshot tipado.
+- `getCockpit(motoId)` orquestra queries via TanStack Query (loader) e retorna o snapshot completo. Componentes só leem.
+- 100% testável isoladamente.
+
+### 2.2 Cockpit — `src/components/cockpit/`
+
+```text
+src/components/cockpit/
+  Cockpit.tsx                    layout principal
+  ControlCenter.tsx              tabs: Saúde/Manutenção/Agenda/Histórico/Doc/Custos/Alertas
+  registry.ts                    registro de widgets
+  widgets/
+    HealthHeroWidget.tsx         cartão-herói: saúde + próxima manutenção + CTA
+    QuickStatsWidget.tsx         última atividade · horímetro · KM · próximo alerta
+    NextActionWidget.tsx         CTA contextual (aparece só se houver ação)
 ```
 
-Manutenção: reusar `maintenance_plan_templates` e `maintenance_plan_items` já existentes; apenas garantir que `template` pode referenciar `model_id` opcionalmente (adicionar coluna nullable `model_id`).
+- Widget = `(snapshot) => JSX`. Sem fetch, sem cálculo.
+- Mobile-first (375px): stack vertical, tipografia grande, áreas de toque ≥ 48px.
+- Desktop: container centralizado max-w-2xl — sem virar dashboard largo.
 
-Extensões em `motorcycles`:
-- `condition` ENUM (`new`,`used`) NOT NULL DEFAULT `used`
-- `catalog_model_id` UUID NULL (link para o catálogo quando escolhido; NULL quando "Outro")
-- `plan_review_status` ENUM (`pending`,`reviewed`,`skipped`) DEFAULT `pending` — usado só quando `condition='used'`
+### 2.3 Rotas
 
-Todas RLS: leitura pública anon nos catálogos (`motorcycle_brands`, `_types_ref`, `_models`, `_engines`, `_years`, `_usage_types`, `_defaults`), escrita apenas admin. GRANTs corretos.
+- `/_authenticated/motorcycles/$id` → **Cockpit** (novo padrão).
+- `/_authenticated/motorcycles/$id/control` → Centro de Controle (tabs).
+- Rotas antigas de plano/etc migram para tabs do Centro de Controle preservando URLs quando possível.
 
-Seed enxuto e conservador:
-- Marcas: Honda, Yamaha, KTM, Kawasaki, Suzuki, Husqvarna, Sherco, GasGas
-- Modelos representativos por tipo (ex.: CRF 250F/230F/450X trilha/enduro; YZ 250F/450F motocross; KTM 300 XC-W enduro; Ténéré 700 adventure; XRE 300 big trail; etc.) — sem inventar cilindradas incertas
-- Cilindradas apenas quando conhecidas
-- Sem plano de manutenção específico por modelo agora (deixa em branco — usa o template default existente)
+## 3. Passos de implementação
 
-## 2. Camada de dados (frontend)
+1. **TIL base**: criar `src/lib/til/*` com tipos e funções puras. Reutilizar `activity-recalc` e `maintenance-catalog` já existentes. Retornar snapshot.
+2. **Loader/hook**: `useCockpit(motoId)` via TanStack Query + `ensureQueryData` no loader.
+3. **HealthHeroWidget**: hierarquia visual clara (score grande, frase única, CTA único).
+4. **QuickStatsWidget**: 4 métricas em linha (mobile: 2x2, desktop: 1x4).
+5. **NextActionWidget**: renderiza apenas se `snapshot.nextAction` existir.
+6. **Cockpit.tsx**: compõe os 3 widgets acima, sem mais nada.
+7. **ControlCenter.tsx**: tabs internas (shadcn Tabs) preservando conteúdo atual da tela de detalhe.
+8. **Migração da rota** `/motorcycles/$id`: passa a renderizar `Cockpit`. Conteúdo antigo vai para `.../control`.
+9. **Personalização mínima**: menu com "Fixar favorito", "Ocultar painel", "Restaurar padrão" persistido em `localStorage` por moto.
+10. **Homologação**: rodar `tsgo`, verificar console, Playwright em 375px e desktop, validar checklist.
 
-`src/lib/motorcycle-catalog.ts` já existe — estender/refatorar para expor:
-- `useBrands()`, `useTypes()`, `useModels({brand,type})`, `useEngines({model})`, `useYears({model})`
-- `useModelDefaults(modelId)` — retorna control_type sugerido
-- Cada consulta com fallback à opção "Outro" quando resultado vazio
+## 4. Design tokens
 
-## 3. Novo fluxo de cadastro (`/motorcycles/new`)
+- Nenhuma cor nova hardcoded. Usar semantic tokens já existentes (`--primary`, `--muted`, etc.).
+- Muito espaço em branco: padding generoso, hierarquia por tamanho de fonte, não por cor.
+- Máximo 1 cor de destaque por tela (o CTA principal).
 
-Wizard em 4 passos com barra de progresso, mobile-first:
+## 5. Homologação (checklist oficial)
 
-**Passo 1 — Identificação**
-1. Tipo da moto (Select)
-2. Marca (Select filtrado)
-3. Modelo (Select filtrado por marca+tipo)
-4. Cilindrada (Select filtrado por modelo)
-5. Ano fabricação / Ano modelo (Selects filtrados)
-6. Apelido (input opcional)
+- ✓ Interface continua simples (≤ 3 blocos no Cockpit).
+- ✓ Poucos elementos visuais.
+- ✓ Nenhuma informação duplicada entre Cockpit e Centro de Controle.
+- ✓ Mobile confortável (375px, áreas de toque ≥ 48px, sem scroll horizontal).
+- ✓ Desktop organizado (container centrado, sem virar dashboard).
+- ✓ Performance preservada (snapshot memoizado via TanStack Query).
+- ✓ Console limpo.
+- ✓ `tsgo --noEmit` limpo.
+- ✓ Regra dos 30s validada num cenário real.
 
-Cada Select mostra "Outro" ao final. "Outro" abre input de texto obrigatório e desativa filtros dependentes (usuário completa manual).
+## 6. Riscos / mitigações
 
-**Passo 2 — Estado da moto**
-- Radio: Nova / Usada-Seminova
-- Se Nova: horímetro=0 e KM=0 são fixados e ocultos
-- Se Usada: campos obrigatórios conforme `control_type` sugerido; mostra aviso amarelo:  
-  "Como esta moto já possui uso anterior, revise o estado atual dos itens de manutenção antes de ativar os alertas."
+- **Regressão de informação**: Centro de Controle preserva 100% do detalhe atual.
+- **Tentação de reintroduzir cards**: filtro obrigatório "isso simplifica?" antes de qualquer adição.
+- **Custo de cálculo**: TIL memoizada por moto; recomposição já é O(n) em eventos.
 
-**Passo 3 — Tipo de controle**
-- Sugestão do catálogo pré-selecionada; usuário pode alterar
-- Opções: Horímetro / Hodômetro / Ambos / Não informado
+## 7. Entregáveis
 
-**Passo 4 — Revisão**
-- Card de resumo com todos os dados
-- Botões: "Editar" (volta ao passo), "Confirmar cadastro"
-- Só ao confirmar o `INSERT` acontece
+- `src/lib/til/*` (7 arquivos).
+- `src/components/cockpit/*` + widgets (5 arquivos).
+- Rota `.../control` com tabs.
+- Rota `$id` renderizando o Cockpit.
+- Atualização de `.lovable/plan.md` com Fase 3.
+- Homologação registrada.
 
-## 4. Pós-cadastro (moto usada)
-
-Se `condition='used'` e `plan_review_status='pending'`:
-- No dashboard da moto (`/motorcycles/$id`): banner amarelo persistente:
-  > "Ajuste o plano de manutenção desta moto para refletir o estado atual."
-  > Botão: **Ajustar plano de manutenção**
-- Botão leva a `/motorcycles/$id/plan` (já existe) com callout no topo. Após revisão o usuário marca "Concluir revisão" → status vira `reviewed` e banner some.
-- (Fase 2 detalhará o wizard de revisão item-a-item; por ora, ao entrar na página já existente, aparece o callout com botão "Marcar revisão concluída".)
-
-## 5. UX e componentes
-
-- Reusar `Select`, `RadioGroup`, `Input` do shadcn
-- Wizard: componente simples com passos + validação zod por passo
-- Nenhuma cor hardcoded — usar tokens semânticos
-- Textos de apoio conforme diretrizes (Português, tom TrailBook)
-- Mobile-first: Selects grandes, botões largos, sem rolagem excessiva
-
-## 6. Auditoria
-
-Cadastro já é auditado via `write_audit()` na tabela `motorcycles`. Sem alteração.
-
-Adicionar log de "plan_review_completed" via `admin_log_event`-equivalente para o próprio usuário — ou registrar direto em `audit_log` (mais simples).
-
-## 7. Fora do escopo desta fase (documentar para próximas)
-
-- Fase 2: Registro de atividade (horas+minutos, leitura atual, editar/excluir com recálculo, integridade por item)
-- Fase 3: Saúde da Moto gerenciável (cards fixar/ocultar/reordenar) + Dashboard da moto reformulado
-- Fase 4: Wizard detalhado de revisão do plano item-a-item para moto usada
-- Fase 5: Admin CRUD do catálogo mestre (adicionar marcas/modelos via UI)
-
-## 8. Homologação da Fase 1 — APROVADA
-
-1. Cadastro nova moto — horímetro/KM fixados em 0 ✅
-2. Cadastro moto usada — exige leituras atuais ✅
-3. Selects encadeados filtram corretamente ✅
-4. Opção "Outro" libera texto livre em cada nível ✅
-5. Tipo de controle sugerido automaticamente ✅
-6. Passo Revisão só grava ao confirmar ✅
-7. Banner de revisão aparece em moto usada ✅
-8. Banner some após "revisão concluída" ✅
-9. Console limpo, typecheck limpo, mobile ok ✅
-10. Auditoria registra criação e conclusão de revisão ✅
-
-Pendência menor resolvida na Fase 2: adicionado valor `not_informed` ao enum `control_type`.
-
-## Arquivos previstos
-
-- `supabase/migrations/<timestamp>_catalog_mestre.sql` (nova)
-- `src/lib/motorcycle-catalog.ts` (estender)
-- `src/lib/motorcycle-catalog.functions.ts` (nova — server fns se necessário; provavelmente reads client-side com policies anon)
-- `src/routes/_authenticated/motorcycles.new.tsx` (refatorar para wizard)
-- `src/components/motorcycle-wizard/*` (novos: StepIdentification, StepCondition, StepControl, StepReview, WizardShell)
-- `src/routes/_authenticated/motorcycles.$id.tsx` (adicionar banner de revisão)
-- `src/routes/_authenticated/motorcycles.$id.plan.tsx` (adicionar callout + botão "Concluir revisão")
-- `src/integrations/supabase/types.ts` (regenerado após migração)
-
----
-
-# Fase 2 — Registro de Atividades + Integridade
-
-## 1. Correção da pendência da Fase 1
-
-- Adicionado valor `not_informed` ao enum `control_type`.
-- Opção "Não informado" exibida no cadastro e revisão da moto.
-- Sem impacto retroativo nos dados existentes.
-
-## 2. Escopo entregue
-
-- Registro de atividade por leitura atual de horímetro.
-- Registro de atividade por leitura atual de KM.
-- Registro de atividade com horímetro + KM simultâneos.
-- Registro de atividade usando horas + minutos.
-- Registro de atividade por delta direto (fallback).
-- Edição de atividade com recomposição cronológica.
-- Exclusão de atividade com confirmação e recomposição cronológica.
-- Auditoria de todas as operações (insert, update, delete) em `audit_log`.
-- Recálculo correto de horímetro total e KM total da moto.
-- Manutenção atualizando apenas o item correspondente (correção de matching por substring).
-- Agenda refletindo apenas o item alterado.
-- Saúde da moto e índice de conservação recalculados corretamente.
-- Mobile e desktop validados.
-- Console limpo, typecheck limpo.
-
-## 3. Correção principal
-
-Substituição do recálculo best-effort por **recomposição cronológica exata da timeline da motocicleta**.
-
-A função `recomposeTimeline(motoId)`:
-
-- Lê todos os eventos da moto em ordem cronológica (`occurred_at ASC`, `created_at ASC` como desempate).
-- Reescreve `hours_at_event` e `km_at_event` de cada evento como soma acumulada dos deltas até aquele ponto.
-- Atualiza `motorcycles.hours_total` e `motorcycles.km_total` com os totais finais.
-- Recalcula `last_done_hours`, `last_done_km` e `last_done_at` de cada item de agenda a partir do evento mais recente que o tocou.
-- Garante integridade histórica mesmo quando atividades são inseridas fora de ordem, editadas ou excluídas.
-
-## 4. Arquivos entregues
-
-- `src/lib/activity-recalc.ts` — motor de recomposição cronológica.
-- `src/lib/maintenance-catalog.ts` — matching estrito entre evento e item de manutenção.
-- `src/components/NewEventDialog.tsx` — registro com leitura atual, horas+minutos, fallback por delta.
-- `src/components/EventActionsMenu.tsx` — editar/excluir atividade com confirmação.
-- `src/routes/_authenticated/motorcycles.$id.tsx` — integração do menu de ações na timeline.
-- `src/routes/_authenticated/motorcycles.new.tsx` — opção "Não informado" no tipo de controle.
-- `supabase/migrations/20260707004026_50d36c5d-03eb-4862-85ee-c144d341d02d.sql` — migração do enum `control_type`.
-- `src/integrations/supabase/types.ts` — regenerado após migração.
-
-## 5. Homologação da Fase 2 — APROVADA v1.1
-
-| Item | Status |
-|------|--------|
-| Registrar atividade por leitura atual de horímetro | ✅ |
-| Registrar atividade por leitura atual de KM | ✅ |
-| Registrar atividade com horímetro + KM | ✅ |
-| Registrar atividade usando horas + minutos | ✅ |
-| Registrar atividade usando fallback por delta | ✅ |
-| Atividades editáveis | ✅ |
-| Atividades excluíveis com confirmação | ✅ |
-| Auditoria registra insert/update/delete | ✅ |
-| Recálculo de horímetro/KM após mutação | ✅ |
-| Manutenção atualiza apenas o item correspondente | ✅ |
-| Agenda reflete apenas o item alterado | ✅ |
-| Saúde da moto e conservação recalculadas | ✅ |
-| Integridade histórica por recomposição cronológica | ✅ |
-| Mobile funcionando | ✅ |
-| Desktop funcionando | ✅ |
-| Console sem erros | ✅ |
-| Typecheck limpo | ✅ |
-
-Conclusão: **Fase 2 homologada e aprovada para v1.1.**
-
+Confirmar para eu iniciar a implementação exatamente nesta ordem.
