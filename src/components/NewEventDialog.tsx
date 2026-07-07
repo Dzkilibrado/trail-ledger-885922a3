@@ -534,15 +534,15 @@ export function NewEventDialog({
             </div>
             {readingMode === "current" ? (
               <>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="mb-2 text-[11px] leading-relaxed text-muted-foreground">
                   Informe o horímetro e/ou KM atual da moto. O TrailBook calcula automaticamente
                   quanto rodou desde o último registro
                   <span className="ml-1 opacity-70">
                     (atual: {Number(moto.hours_total).toFixed(1)}h · {Number(moto.km_total).toFixed(0)}km).
                   </span>
                 </p>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                  <F label="Horímetro atual (h)">
+                <div className="grid grid-cols-2 items-end gap-x-3 gap-y-3 sm:grid-cols-4">
+                  <F label="Horímetro (h)">
                     <Input type="number" step="1" min="0" placeholder="0"
                       value={currentHours} onChange={(e) => setCurrentHours(e.target.value)} />
                   </F>
@@ -561,10 +561,10 @@ export function NewEventDialog({
               </>
             ) : (
               <>
-                <p className="text-[11px] text-muted-foreground">
+                <p className="mb-2 text-[11px] leading-relaxed text-muted-foreground">
                   Modo alternativo — use quando não souber a leitura atual do horímetro/hodômetro.
                 </p>
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                <div className="grid grid-cols-2 items-end gap-x-3 gap-y-3 sm:grid-cols-4">
                   <F label="+ Horas">
                     <Input type="number" step="1" min="0" placeholder="0"
                       value={deltaHours} onChange={(e) => setDeltaHours(e.target.value)} />
@@ -609,9 +609,16 @@ export function NewEventDialog({
 }
 
 function F({ label, children }: { label: string; children: React.ReactNode }) {
+  // Padrão TrailBook Design System — linha de campos:
+  // • label uppercase, single-line (whitespace-nowrap) para nunca quebrar
+  //   e desalinhar inputs vizinhos;
+  // • min-h reserva altura consistente entre labels;
+  // • space-y controla a distância label ↔ input de forma uniforme.
   return (
-    <div className="space-y-1.5">
-      <Label className="text-xs uppercase tracking-widest text-muted-foreground">{label}</Label>
+    <div className="flex min-w-0 flex-col gap-1.5">
+      <Label className="min-h-[1rem] truncate text-[11px] uppercase tracking-widest text-muted-foreground">
+        {label}
+      </Label>
       {children}
     </div>
   );
