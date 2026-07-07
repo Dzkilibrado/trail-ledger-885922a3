@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EVENT_TYPE_LABEL, MAINT_CATEGORY_LABEL, uploadFile, type EventType, type Motorcycle, ACTIVITY_EVENT_TYPES } from "@/lib/trailbook";
 import { Plus, Upload, AlertTriangle } from "lucide-react";
 import { INCIDENT_TYPES } from "@/lib/motorcycle-catalog";
-import { fetchMaintenanceCatalog, findSchedulesForCatalogItem, type CatalogEntry } from "@/lib/maintenance-catalog";
+import { fetchMaintenanceCatalog, type CatalogEntry } from "@/lib/maintenance-catalog";
 import { toDecimalHours, recomposeTimeline } from "@/lib/activity-recalc";
 import { toast } from "sonner";
 
