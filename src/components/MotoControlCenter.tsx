@@ -465,6 +465,14 @@ export function MotoControlCenter({ id }: { id: string }) {
           currentKm={Number(m.km_total) || 0}
         />
       )}
+
+      <InitialReviewSheet
+        motoId={m.id}
+        motoHours={Number(m.hours_total) || 0}
+        motoKm={Number(m.km_total) || 0}
+        open={reviewOpen}
+        onOpenChange={setReviewOpen}
+      />
     </div>
   );
 }
