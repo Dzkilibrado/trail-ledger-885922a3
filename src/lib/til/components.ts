@@ -4,6 +4,15 @@ import type { EventRow, Schedule } from "./types";
 
 export type ComponentTone = "critical" | "attention" | "ok" | "no_info" | "not_applicable";
 
+export type ComponentSeverity = "low" | "medium" | "high" | "critical";
+
+export const SEVERITY_LABEL: Record<ComponentSeverity, string> = {
+  low: "Normal",
+  medium: "Atenção",
+  high: "Alta",
+  critical: "Crítica",
+};
+
 export interface ComponentHistoryEntry {
   eventId: string;
   occurredAt: string;
@@ -36,6 +45,8 @@ export interface ComponentView {
   pinned: boolean;
   hidden: boolean;
   rawStatus: string;               // schedule_status
+  severity: ComponentSeverity;
+  isCustom: boolean;
 }
 
 function labelFromStatus(s: ScheduleStatus): { tone: ComponentTone; label: string } {
@@ -153,6 +164,8 @@ export function computeComponentViews(
       pinned: !!(sch as any).pinned,
       hidden: !!(sch as any).hidden,
       rawStatus: status,
+      severity: ((sch as any).severity as ComponentSeverity) ?? "medium",
+      isCustom: !!(sch as any).is_custom,
     };
   });
 
