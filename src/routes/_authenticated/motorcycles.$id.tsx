@@ -1,12 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { Cockpit } from "@/components/cockpit/Cockpit";
+import { Outlet, createFileRoute } from "@tanstack/react-router";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id")({
-  head: () => ({ meta: [{ title: "Moto — TrailBook" }] }),
-  component: MotoCockpitPage,
+  component: () => <Outlet />,
 });
-
-function MotoCockpitPage() {
-  const { id } = Route.useParams();
-  return <Cockpit motoId={id} />;
-}
