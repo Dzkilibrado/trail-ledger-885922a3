@@ -34,7 +34,7 @@ const schema = z.object({
   year_make: z.coerce.number().int().min(1950).max(2100).optional(),
   year_model: z.coerce.number().int().min(1950).max(2100).optional(),
   displacement: z.coerce.number().int().min(50).max(2000).optional(),
-  control_type: z.enum(["hours", "km", "both"]),
+  control_type: z.enum(["hours", "km", "both", "not_informed"]),
   chassis: z.string().max(60).optional(),
   engine_number: z.string().max(60).optional(),
   plate: z.string().max(10).optional(),
