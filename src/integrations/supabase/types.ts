@@ -697,6 +697,7 @@ export type Database = {
           interval_days: number | null
           interval_hours: number | null
           interval_km: number | null
+          is_custom: boolean
           last_completed_event_id: string | null
           last_done_at: string | null
           last_done_hours: number | null
@@ -722,6 +723,7 @@ export type Database = {
           interval_days?: number | null
           interval_hours?: number | null
           interval_km?: number | null
+          is_custom?: boolean
           last_completed_event_id?: string | null
           last_done_at?: string | null
           last_done_hours?: number | null
@@ -747,6 +749,7 @@ export type Database = {
           interval_days?: number | null
           interval_hours?: number | null
           interval_km?: number | null
+          is_custom?: boolean
           last_completed_event_id?: string | null
           last_done_at?: string | null
           last_done_hours?: number | null
