@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { StoragePhoto } from "@/components/StoragePhoto";
 import { EventTypeIcon } from "@/components/EventTypeIcon";
 import { NewEventDialog } from "@/components/NewEventDialog";
-import { ScheduleManager } from "@/components/ScheduleManager";
+import { ComponentsList } from "@/components/components/ComponentsList";
+import { InitialReviewSheet } from "@/components/onboarding/InitialReviewSheet";
 import { HealthPanel } from "@/components/HealthPanel";
 import { ConservationCard } from "@/components/ConservationCard";
 import { brl, EVENT_TYPE_LABEL, formatDate } from "@/lib/trailbook";
@@ -44,6 +45,7 @@ export function MotoControlCenter({ id }: { id: string }) {
   const [archiveReason, setArchiveReason] = useState("");
   const [inspectTarget, setInspectTarget] = useState<null | { id: string; name: string; category: string }>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
   }, []);
@@ -230,15 +232,13 @@ export function MotoControlCenter({ id }: { id: string }) {
               <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <div className="font-semibold text-amber-200">Ajuste o plano de manutenção desta moto</div>
+                    <div className="font-semibold text-amber-200">Você comprou uma moto usada?</div>
                     <p className="mt-1 text-amber-100/80">
-                      Como esta moto já possui uso anterior, revise o estado atual dos itens antes de ativar os alertas.
+                      Vamos entender rapidamente o estado de cada componente. Uma pergunta por vez.
                     </p>
                   </div>
-                  <Button size="sm" asChild className="btn-glow">
-                    <Link to="/motorcycles/$id/plan" params={{ id: m.id }} search={{ first: true }}>
-                      <Wand2 className="h-4 w-4" /> Ajustar plano de manutenção
-                    </Link>
+                  <Button size="sm" className="btn-glow" onClick={() => setReviewOpen(true)}>
+                    <Wand2 className="h-4 w-4" /> Iniciar revisão
                   </Button>
                 </div>
               </div>
@@ -255,10 +255,9 @@ export function MotoControlCenter({ id }: { id: string }) {
                   <BadgeCheck className="h-4 w-4" /> Passaporte Digital
                 </Link>
               </Button>
-              {isOwner && <ScheduleManager motoId={m.id} />}
               {isOwner && <Button variant="outline" asChild>
-                <Link to="/motorcycles/$id/plan" params={{ id: m.id }}>
-                  <Wand2 className="h-4 w-4" /> Plano sugerido
+                <Link to="/motorcycles/$id/components" params={{ id: m.id }}>
+                  <Wand2 className="h-4 w-4" /> Componentes
                 </Link>
               </Button>}
               {isOwner && <PlanCatalogSyncDialog
@@ -339,6 +338,18 @@ export function MotoControlCenter({ id }: { id: string }) {
         <h2 className="font-display text-lg font-bold">Painel de saúde</h2>
         <HealthPanel items={health} />
       </section>
+
+      {isOwner && (
+        <section className="space-y-3">
+          <div className="flex items-baseline justify-between">
+            <h2 className="font-display text-lg font-bold">Componentes</h2>
+            <Link to="/motorcycles/$id/components" params={{ id: m.id }} className="text-xs text-primary hover:underline">
+              Ver todos
+            </Link>
+          </div>
+          <ComponentsList moto={m as any} isOwner={isOwner} limitPerCategory={3} />
+        </section>
+      )}
 
       <section className="grid gap-6 lg:grid-cols-[1fr_1fr]">
         <div className="space-y-3">
@@ -454,6 +465,14 @@ export function MotoControlCenter({ id }: { id: string }) {
           currentKm={Number(m.km_total) || 0}
         />
       )}
+
+      <InitialReviewSheet
+        motoId={m.id}
+        motoHours={Number(m.hours_total) || 0}
+        motoKm={Number(m.km_total) || 0}
+        open={reviewOpen}
+        onOpenChange={setReviewOpen}
+      />
     </div>
   );
 }

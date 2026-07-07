@@ -1,4 +1,5 @@
 import type { Database } from "@/integrations/supabase/types";
+import type { ComponentView } from "./components";
 
 export type Moto = Database["public"]["Tables"]["motorcycles"]["Row"];
 export type EventRow = Database["public"]["Tables"]["events"]["Row"];
@@ -55,4 +56,5 @@ export interface CockpitSnapshot {
   stats: QuickStats;
   nextAlert: AlertSnapshot | null;
   nextAction: NextAction | null;
+  components: ComponentView[];
 }

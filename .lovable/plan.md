@@ -1,63 +1,139 @@
-# TrailBook v1.2.1 — Saúde da Moto + Plano Editável + Integridade por Item
 
-Escopo grande. Proponho dividir em 4 sub-fases sequenciais, cada uma homologável isoladamente. Isso reduz risco de regressão e mantém a filosofia de simplicidade (nenhuma tela nova cheia).
+# Sub-fase B — Plano de Manutenção Editável
 
----
+Aplicando as diretrizes que você acabou de aprovar. A palavra "plano" deixa de ser a porta de entrada: o usuário edita **componentes da moto**. O plano existe internamente, mas some do vocabulário da UX.
 
-## Sub-fase A — Fundação de dados e integridade (backend + TIL)
+## 1. Nova experiência: Componentes, não "itens do plano"
 
-**Objetivo:** garantir a regra crítica #8/#9/#10 antes de mexer em UI.
+Substituir o `ScheduleManager` (dialog "Plano de manutenção") por uma tela/aba **"Componentes"** dentro do Centro de Controle, agrupada por categoria.
 
-1. **Migration** em `maintenance_schedules`:
-   - Novos status: `no_info`, `not_applicable`, `custom` (além de `active/ignored/snoozed` já existentes).
-   - Colunas: `pinned boolean default false`, `sort_order int`, `hidden boolean default false`, `needs_review boolean default false`.
-   - `initial_review_done_at timestamptz` na `motorcycles` (para fluxo #7).
-2. **Migration** — trigger de auditoria em `maintenance_schedules` e `maintenance_items` gravando em `audit_log` (edição de intervalo, marcação de status, criação/remoção, vínculo/desvínculo de item).
-3. **`src/lib/maintenance-catalog.ts`:** remover o fallback por nome canônico em `findSchedulesForCatalogItem` — passar a exigir vínculo explícito (`template_item_id` ou `scheduleId` selecionado). Sem vínculo → retorna `[]` e nenhum schedule é tocado (regra #10).
-4. **`NewEventDialog`:** substituir "categoria + item do catálogo" por seleção obrigatória de **schedule(s) da moto** (multi-select "Adicionar outro item"). Se o item desejado não existe no plano, botão "Criar item personalizado agora" que insere um schedule antes de gravar.
-5. **`activity-recalc.recomposeTimeline`:** já correto — apenas garantir que `recalcScheduleFromHistory` usa `maintenance_items.schedule_id` (vínculo explícito), nunca nome.
+```text
+Motor
+  ├─ 🛢  Óleo do motor        [em dia · faltam 8h]
+  └─ 🌬  Filtro de ar          [atenção · faltam 200 km]
+Freios
+  └─ 🛑  Pastilhas dianteiras  [sem informação]
+Suspensão
+  └─ ⛓  Corrente               [vencido há 300 km]
+```
 
-## Sub-fase B — Plano de manutenção editável item a item
+- Cada linha é um **card de componente** com: ícone, nome, categoria, status (badge colorido), próxima ação (frase única vinda da TIL).
+- Toque no card abre o **ComponentSheet** (Sheet mobile-first).
+- Sem menções a "programação" ou "item do plano" na UI. Termos: **Componente**, **Manutenção**, **Histórico**.
 
-**Objetivo:** #5, #6, #7.
+## 2. ComponentSheet — identidade própria do componente
 
-1. **Novo componente `PlanItemEditor`** (Sheet mobile-first) — edita: nome, categoria, intervalos h/km/dias, última manutenção (data/h/km), severidade, observações, status. Ações: desativar / marcar sem informação / não aplicável / remover / duplicar.
-2. **`ScheduleManager`** (Plano de Manutenção): trocar lista atual por cards agrupados por categoria, cada um com badge de status, botão "Editar" abrindo o `PlanItemEditor` e botão "Registrar manutenção" (abre `NewEventDialog` já pré-selecionado nesse schedule).
-3. **Alerta moto usada** — Cockpit exibe widget "Revise o plano" quando `motorcycles.initial_review_done_at IS NULL` e `moto.hours_total > 0`. CTA abre um wizard leve (`InitialReviewSheet`) que percorre os schedules pedindo: última manutenção / sem info / novo / não aplicável.
+Um único Sheet (mobile-first, também usado no desktop) contendo:
 
-## Sub-fase C — Saúde por componente + personalização
+- Cabeçalho: ícone grande, nome, categoria, badge de status.
+- **Estado atual** (single-line phrase da TIL): "Faltam 8 h" / "Vencido há 300 km" / "Sem informação".
+- **Última manutenção**: data, horímetro/km, oficina/observação (se houver).
+- **Próxima prevista**: horas restantes, dias restantes, km restantes (o que se aplicar).
+- **Histórico** deste componente: lista dos `maintenance_items` vinculados via `schedule_id`, ordenados por `occurred_at`.
+- **Observações** (campo `notes` do schedule).
+- Ações:
+  - `Registrar manutenção` → abre `NewEventDialog` com o schedule já pré-selecionado.
+  - `Editar componente` → abre `ComponentEditor` (nome, categoria, intervalos, severidade, fixar, ocultar).
+  - `Marcar como não se aplica` / `Restaurar` (usa `status='not_applicable'`).
 
-**Objetivo:** #1, #2, #3, #4, #12.
+O ComponentEditor **é** o antigo "PlanItemEditor", mas nunca é apresentado como "editar plano".
 
-1. **TIL — `src/lib/til/component-health.ts`:** para cada schedule ativa da moto, snapshot `{scheduleId, name, category, status(traffic-light), remaining{h,km,d}, lastDoneAt, nextEstimatedAt, hasInfo}`. Fonte: `evaluateSchedule` já existente + flag `no_info`. Nenhum cálculo em componentes.
-2. **`computeCockpitSnapshot`:** incluir `componentHealth: ComponentHealthSnapshot[]` e `healthPhrase` (recomendação inteligente: "Item que mais merece atenção: X", "N itens sem informação", etc.).
-3. **Novo widget `ComponentHealthWidget`** no Cockpit: mostra 4 itens (fixados + top prioridade). Link "Ver todos" abre `MotoControlCenter` na aba **Saúde**.
-4. **Nova aba "Saúde"** no Control Center: lista completa por categoria com traffic-lights. Cada card: score/status, restante, última, próxima, ações rápidas (Registrar / Inspecionar / Editar plano / Ver histórico).
-5. **Personalização (#4):** `pinned`, `hidden`, `sort_order` persistidos em `maintenance_schedules`. UI: menu de contexto no card ("Fixar no cockpit / Ocultar / Restaurar padrão"). Reordenação apenas dos fixados (drag simples ou setas — mobile-first, setas ↑↓).
-6. **Detalhe do item (#12):** rota `motorcycles.$id.control.item.$scheduleId.tsx` — histórico do item lendo `maintenance_items` daquele schedule + eventos vinculados; botões Registrar manutenção / Editar plano.
+## 3. Arquitetura preparada para crescer (sem implementar agora)
 
-## Sub-fase D — Homologação completa
+O `ComponentSheet` já reserva slots visualmente vazios (não renderizados quando sem dados) para futuras seções: manual técnico, torque recomendado, capacidade de óleo, fotos, vídeos, dicas, observações do fabricante. A camada de dados fica pronta via campos JSON já existentes no schedule (`notes`) + futuros JSONs em `maintenance_plan_items`; nenhuma coluna nova nesta sub-fase.
 
-Executar via Playwright headless em mobile (390×844) e desktop, cobrindo os 22 itens da seção 16 do pedido. Retornar relatório item-a-item + evidências (screenshots) + typecheck.
+## 4. Wizard "Você comprou uma moto usada?" — formato entrevista
 
----
+Substituir a página `/motorcycles/$id/plan?first=true` por um **InitialReviewSheet** conversacional:
 
-## Detalhes técnicos-chave
+```text
+Passo 3 de 12
 
-- **Integridade por item (regra #8):** nenhuma manutenção grava em schedule sem `scheduleId` vindo de seleção explícita do usuário. `findSchedulesForCatalogItem` deixa de ser usada como fallback silencioso; passa a ser apenas helper de sugestão visível no UI ("encontramos programação: X — vincular?").
-- **Atividade geral (#11):** `type ∈ {usage, incident, note, inspection}` nunca toca schedules mesmo que o usuário informe horímetro/KM — só atualiza timeline via `recomposeTimeline`.
-- **Recomposição:** continua sendo o único caminho pós-mutação (ADR 0001). Nada muda aqui.
-- **Auditoria:** trigger em SQL grava em `audit_log` com `actor = auth.uid()`, `entity = 'maintenance_schedule'|'maintenance_item'`, `action`, `before/after jsonb`.
-- **Mobile-first:** todos os editores em `<Sheet>` (não `<Dialog>`), cards empilhados, botões ≥ 44px.
+🛢  Óleo do motor
 
-## Ordem de entrega e critérios de aprovação
+Você sabe quando foi trocado pela última vez?
 
-Executarei **Sub-fase A → B → C → D em sequência, sem parar entre elas**, mas cada uma commitada logicamente. Ao final entrego o relatório de homologação dos 22 itens.
+  [ Sei informar ]   [ Não sei ]   [ Não se aplica ]
+```
 
-Alternativa se preferir: parar após cada sub-fase para você validar. Diga se prefere entrega contínua ou por sub-fase.
+- **Sei informar** → mini-form (data, horímetro/km opcionais) → próximo componente.
+- **Não sei** → grava `status='no_info'`, sem alerta futuro.
+- **Não se aplica** → `status='not_applicable'`, some do cockpit.
+- Progresso visual no topo. Botão "Terminar depois" a qualquer momento.
+- No fim: atualiza `motorcycles.initial_review_done_at = now()`, dispara `recomposeTimeline`, some o banner "Ajuste o plano".
 
-## Perguntas para confirmar antes de codar
+Opt-in (banner persistente na Cockpit até concluído), conforme decidido.
 
-1. **Ordem/atomicidade:** entrega contínua (A→B→C→D em um turno) **ou** parar após cada sub-fase para validação?
-2. **Reordenação de fixados:** setas ↑↓ (simples, mobile-friendly) **ou** drag-and-drop (mais moderno, requer lib)? Recomendo setas.
-3. **Wizard de revisão de moto usada** — obrigatório (bloqueia alertas até concluir) **ou** opt-in (banner dispensável)? Recomendo opt-in com banner persistente.
+## 5. Facade TIL — nada calculado nas telas
+
+Adicionar em `src/lib/til/`:
+
+- `components.ts` — `computeComponentView(schedule, statuses, events)` retornando:
+  ```ts
+  { id, name, category, icon, statusTone, statusLabel,
+    lastMaintenance: { date, hours, km, note } | null,
+    nextPrevision: { hoursLeft, kmLeft, daysLeft } | null,
+    history: Array<{ eventId, date, hours, km, note }> }
+  ```
+- `computeCockpitSnapshot` ganha `components: ComponentView[]` já ordenado por prioridade: **críticos → próximos → em dia → sem informação → não se aplica**.
+- Nenhum componente de UI faz cálculo — só lê o snapshot.
+
+Sub-fase C só consumirá esses dados.
+
+## 6. Reordenação e personalização (mínima)
+
+Conforme sua diretriz, o `ComponentEditor` expõe apenas:
+
+- **Fixar componente** (`pinned=true`).
+- **Ocultar componente** (`hidden=true`).
+- **Restaurar padrão** (limpa `pinned/hidden/sort_order`).
+
+Ordenação dentro do card usa `pinned` primeiro, depois prioridade da TIL. Sem drag-and-drop, sem `↑↓` explícitos (fica automático pela criticidade).
+
+## 7. NewEventDialog
+
+Já ajustado na Sub-fase A. Nesta sub-fase apenas:
+
+- Aceita `defaultScheduleIds` (quando aberto a partir de um ComponentSheet).
+- Rótulo do bloco: **"Componentes afetados por esta manutenção"** (em vez de "itens do plano").
+
+## 8. Rotas e navegação
+
+- Nova aba/link no `MotoControlCenter`: **"Componentes"** (substitui o botão "Plano de manutenção" + "Plano sugerido"; ambos removidos do rodapé de ações).
+- Rota nova (opcional para deep-link): `/_authenticated/motorcycles.$id.components.tsx` — lista completa. Cockpit continua mostrando só os prioritários.
+- Rota `/_authenticated/motorcycles.$id.plan.tsx` fica só como redirect para `.../components` (compatibilidade).
+
+## 9. Arquivos a criar / alterar
+
+**Criar**
+- `src/lib/til/components.ts`
+- `src/components/components/ComponentCard.tsx`
+- `src/components/components/ComponentSheet.tsx`
+- `src/components/components/ComponentEditor.tsx`
+- `src/components/components/ComponentsList.tsx` (agrupamento por categoria)
+- `src/components/onboarding/InitialReviewSheet.tsx`
+- `src/routes/_authenticated/motorcycles.$id.components.tsx`
+
+**Alterar**
+- `src/lib/til/index.ts` + `types.ts` — expor `components`.
+- `src/components/MotoControlCenter.tsx` — trocar botões, embutir `<ComponentsList/>`, banner de moto usada abre `InitialReviewSheet`.
+- `src/components/cockpit/Cockpit.tsx` — link "Ver componentes" além de "Abrir Centro de Controle".
+- `src/components/NewEventDialog.tsx` — renomear rótulo + prop `defaultScheduleIds`.
+- `src/routes/_authenticated/motorcycles.$id.plan.tsx` — redirect.
+
+**Remover da UX**
+- `ScheduleManager` deixa de ser exposto (arquivo mantido temporariamente para não quebrar imports, mas sem trigger). Removido de vez na Sub-fase D após homologação.
+
+## 10. Regra permanente aplicada
+
+Toda label, badge e frase do `ComponentSheet` responde a "o que preciso fazer agora?": nada de intervalo bruto ("500h a cada"), sempre o restante em linguagem humana ("Faltam 8 h"), com CTA correspondente.
+
+## 11. Homologação (interna, antes da Sub-fase C)
+
+- Typecheck limpo.
+- Console limpo.
+- Fluxo mobile: abrir moto → ver componentes prioritários → tocar em óleo → registrar manutenção → estado atualiza.
+- Wizard entrevista: cobre todos os schedules, sem obrigar preenchimento, marca `initial_review_done_at` no fim.
+- Nenhum texto da UI menciona "plano" / "programação" / "item do plano".
+
+Ao aprovar este plano, executo tudo em sequência num único lote e devolvo o resumo.

@@ -45,6 +45,7 @@ import { Route as AuthenticatedMotorcyclesIdIndexRouteImport } from './routes/_a
 import { Route as AuthenticatedMotorcyclesIdPlanRouteImport } from './routes/_authenticated/motorcycles.$id.plan'
 import { Route as AuthenticatedMotorcyclesIdPassportRouteImport } from './routes/_authenticated/motorcycles.$id.passport'
 import { Route as AuthenticatedMotorcyclesIdControlRouteImport } from './routes/_authenticated/motorcycles.$id.control'
+import { Route as AuthenticatedMotorcyclesIdComponentsRouteImport } from './routes/_authenticated/motorcycles.$id.components'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -240,6 +241,12 @@ const AuthenticatedMotorcyclesIdControlRoute =
     path: '/control',
     getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
   } as any)
+const AuthenticatedMotorcyclesIdComponentsRoute =
+  AuthenticatedMotorcyclesIdComponentsRouteImport.update({
+    id: '/components',
+    path: '/components',
+    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -273,6 +280,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/documents/': typeof AuthenticatedDocumentsIndexRoute
   '/motorcycles/': typeof AuthenticatedMotorcyclesIndexRoute
+  '/motorcycles/$id/components': typeof AuthenticatedMotorcyclesIdComponentsRoute
   '/motorcycles/$id/control': typeof AuthenticatedMotorcyclesIdControlRoute
   '/motorcycles/$id/passport': typeof AuthenticatedMotorcyclesIdPassportRoute
   '/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
@@ -308,6 +316,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/documents': typeof AuthenticatedDocumentsIndexRoute
   '/motorcycles': typeof AuthenticatedMotorcyclesIndexRoute
+  '/motorcycles/$id/components': typeof AuthenticatedMotorcyclesIdComponentsRoute
   '/motorcycles/$id/control': typeof AuthenticatedMotorcyclesIdControlRoute
   '/motorcycles/$id/passport': typeof AuthenticatedMotorcyclesIdPassportRoute
   '/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
@@ -347,6 +356,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/documents/': typeof AuthenticatedDocumentsIndexRoute
   '/_authenticated/motorcycles/': typeof AuthenticatedMotorcyclesIndexRoute
+  '/_authenticated/motorcycles/$id/components': typeof AuthenticatedMotorcyclesIdComponentsRoute
   '/_authenticated/motorcycles/$id/control': typeof AuthenticatedMotorcyclesIdControlRoute
   '/_authenticated/motorcycles/$id/passport': typeof AuthenticatedMotorcyclesIdPassportRoute
   '/_authenticated/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
@@ -386,6 +396,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/documents/'
     | '/motorcycles/'
+    | '/motorcycles/$id/components'
     | '/motorcycles/$id/control'
     | '/motorcycles/$id/passport'
     | '/motorcycles/$id/plan'
@@ -421,6 +432,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/documents'
     | '/motorcycles'
+    | '/motorcycles/$id/components'
     | '/motorcycles/$id/control'
     | '/motorcycles/$id/passport'
     | '/motorcycles/$id/plan'
@@ -459,6 +471,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/documents/'
     | '/_authenticated/motorcycles/'
+    | '/_authenticated/motorcycles/$id/components'
     | '/_authenticated/motorcycles/$id/control'
     | '/_authenticated/motorcycles/$id/passport'
     | '/_authenticated/motorcycles/$id/plan'
@@ -728,6 +741,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMotorcyclesIdControlRouteImport
       parentRoute: typeof AuthenticatedMotorcyclesIdRoute
     }
+    '/_authenticated/motorcycles/$id/components': {
+      id: '/_authenticated/motorcycles/$id/components'
+      path: '/components'
+      fullPath: '/motorcycles/$id/components'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdComponentsRouteImport
+      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
+    }
   }
 }
 
@@ -766,6 +786,7 @@ const AuthenticatedTicketsRouteWithChildren =
   AuthenticatedTicketsRoute._addFileChildren(AuthenticatedTicketsRouteChildren)
 
 interface AuthenticatedMotorcyclesIdRouteChildren {
+  AuthenticatedMotorcyclesIdComponentsRoute: typeof AuthenticatedMotorcyclesIdComponentsRoute
   AuthenticatedMotorcyclesIdControlRoute: typeof AuthenticatedMotorcyclesIdControlRoute
   AuthenticatedMotorcyclesIdPassportRoute: typeof AuthenticatedMotorcyclesIdPassportRoute
   AuthenticatedMotorcyclesIdPlanRoute: typeof AuthenticatedMotorcyclesIdPlanRoute
@@ -774,6 +795,8 @@ interface AuthenticatedMotorcyclesIdRouteChildren {
 
 const AuthenticatedMotorcyclesIdRouteChildren: AuthenticatedMotorcyclesIdRouteChildren =
   {
+    AuthenticatedMotorcyclesIdComponentsRoute:
+      AuthenticatedMotorcyclesIdComponentsRoute,
     AuthenticatedMotorcyclesIdControlRoute:
       AuthenticatedMotorcyclesIdControlRoute,
     AuthenticatedMotorcyclesIdPassportRoute:
