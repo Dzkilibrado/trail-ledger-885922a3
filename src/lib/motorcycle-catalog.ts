@@ -51,6 +51,7 @@ export const CONTROL_TYPES = [
   { value: "hours", label: "Horímetro" },
   { value: "km", label: "Hodômetro (km)" },
   { value: "both", label: "Ambos" },
+  { value: "not_informed", label: "Não informado" },
 ] as const;
 
 /** Lista decrescente: do ano vigente +1 até 1990. */
