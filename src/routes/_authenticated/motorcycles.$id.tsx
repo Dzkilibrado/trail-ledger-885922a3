@@ -33,6 +33,7 @@ import { Link } from "@tanstack/react-router";
 import { Eye } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { AdminMotoDangerZone } from "@/components/AdminMotoDangerZone";
+import { EventActionsMenu } from "@/components/EventActionsMenu";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id")({
   head: () => ({ meta: [{ title: "Moto — TrailBook" }] }),
@@ -409,7 +410,12 @@ function MotoDetail() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-baseline justify-between gap-2">
                         <div className="font-semibold">{e.title}</div>
-                        <div className="text-xs text-muted-foreground">{formatDate(e.occurred_at)}</div>
+                        <div className="flex items-center gap-1">
+                          <div className="text-xs text-muted-foreground">{formatDate(e.occurred_at)}</div>
+                          {isOwner && !isArchived && (
+                            <EventActionsMenu event={e as any} />
+                          )}
+                        </div>
                       </div>
                       <div className="text-xs uppercase tracking-widest text-muted-foreground">{EVENT_TYPE_LABEL[e.type]}</div>
                       {e.description && <p className="mt-2 text-sm text-muted-foreground">{e.description}</p>}

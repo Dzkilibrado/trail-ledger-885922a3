@@ -2442,7 +2442,7 @@ export type Database = {
       app_role: "owner" | "mechanic" | "admin" | "USER_ADMIN"
       attachment_kind: "photo" | "video" | "document" | "invoice"
       audit_action: "insert" | "update" | "delete"
-      control_type: "hours" | "km" | "both"
+      control_type: "hours" | "km" | "both" | "not_informed"
       delivery_status:
         | "pending"
         | "sent"
@@ -2731,7 +2731,7 @@ export const Constants = {
       app_role: ["owner", "mechanic", "admin", "USER_ADMIN"],
       attachment_kind: ["photo", "video", "document", "invoice"],
       audit_action: ["insert", "update", "delete"],
-      control_type: ["hours", "km", "both"],
+      control_type: ["hours", "km", "both", "not_informed"],
       delivery_status: [
         "pending",
         "sent",
