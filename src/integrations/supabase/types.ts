@@ -692,6 +692,7 @@ export type Database = {
           active: boolean
           category: Database["public"]["Enums"]["maintenance_category"]
           created_at: string
+          hidden: boolean
           id: string
           interval_days: number | null
           interval_hours: number | null
@@ -702,7 +703,12 @@ export type Database = {
           last_done_km: number | null
           motorcycle_id: string
           name: string
+          needs_review: boolean
+          notes: string | null
+          pinned: boolean
+          severity: string | null
           snoozed_until: string | null
+          sort_order: number | null
           status: Database["public"]["Enums"]["schedule_status"]
           template_item_id: string | null
           updated_at: string
@@ -711,6 +717,7 @@ export type Database = {
           active?: boolean
           category: Database["public"]["Enums"]["maintenance_category"]
           created_at?: string
+          hidden?: boolean
           id?: string
           interval_days?: number | null
           interval_hours?: number | null
@@ -721,7 +728,12 @@ export type Database = {
           last_done_km?: number | null
           motorcycle_id: string
           name: string
+          needs_review?: boolean
+          notes?: string | null
+          pinned?: boolean
+          severity?: string | null
           snoozed_until?: string | null
+          sort_order?: number | null
           status?: Database["public"]["Enums"]["schedule_status"]
           template_item_id?: string | null
           updated_at?: string
@@ -730,6 +742,7 @@ export type Database = {
           active?: boolean
           category?: Database["public"]["Enums"]["maintenance_category"]
           created_at?: string
+          hidden?: boolean
           id?: string
           interval_days?: number | null
           interval_hours?: number | null
@@ -740,7 +753,12 @@ export type Database = {
           last_done_km?: number | null
           motorcycle_id?: string
           name?: string
+          needs_review?: boolean
+          notes?: string | null
+          pinned?: boolean
+          severity?: string | null
           snoozed_until?: string | null
+          sort_order?: number | null
           status?: Database["public"]["Enums"]["schedule_status"]
           template_item_id?: string | null
           updated_at?: string
@@ -1320,6 +1338,7 @@ export type Database = {
           hours_total: number
           id: string
           incident_declaration: Json | null
+          initial_review_done_at: string | null
           is_homologation: boolean
           km_total: number
           main_photo_url: string | null
@@ -1353,6 +1372,7 @@ export type Database = {
           hours_total?: number
           id?: string
           incident_declaration?: Json | null
+          initial_review_done_at?: string | null
           is_homologation?: boolean
           km_total?: number
           main_photo_url?: string | null
@@ -1386,6 +1406,7 @@ export type Database = {
           hours_total?: number
           id?: string
           incident_declaration?: Json | null
+          initial_review_done_at?: string | null
           is_homologation?: boolean
           km_total?: number
           main_photo_url?: string | null
@@ -2560,7 +2581,14 @@ export type Database = {
       plan_severity: "low" | "medium" | "high" | "critical"
       plan_tier: "free" | "premium" | "workshop"
       recipient_status: "sent" | "read" | "replied" | "archived"
-      schedule_status: "active" | "snoozed" | "ignored" | "done"
+      schedule_status:
+        | "active"
+        | "snoozed"
+        | "ignored"
+        | "done"
+        | "no_info"
+        | "not_applicable"
+        | "custom"
       ticket_module:
         | "dashboard"
         | "motorcycle"
@@ -2861,7 +2889,15 @@ export const Constants = {
       plan_severity: ["low", "medium", "high", "critical"],
       plan_tier: ["free", "premium", "workshop"],
       recipient_status: ["sent", "read", "replied", "archived"],
-      schedule_status: ["active", "snoozed", "ignored", "done"],
+      schedule_status: [
+        "active",
+        "snoozed",
+        "ignored",
+        "done",
+        "no_info",
+        "not_applicable",
+        "custom",
+      ],
       ticket_module: [
         "dashboard",
         "motorcycle",
