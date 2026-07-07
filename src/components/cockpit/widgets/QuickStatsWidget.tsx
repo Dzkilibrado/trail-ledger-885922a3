@@ -26,7 +26,7 @@ export function QuickStatsWidget({ snapshot }: { snapshot: CockpitSnapshot }) {
             {it.label}
           </div>
           <div
-            className={`mt-1 truncate font-display text-base font-semibold ${
+            className={`mt-1 font-display text-sm font-semibold leading-snug break-words ${
               "tone" in it && it.tone === "bad"
                 ? "text-destructive"
                 : "tone" in it && it.tone === "warn"
