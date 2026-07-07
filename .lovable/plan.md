@@ -2,6 +2,34 @@
 
 Filosofia gravada em `mem://index.md` (Core) e ADR 0002 registrada. Este plano executa a nova arquitetura respeitando: mobile-first, Regra dos 30s, telas não calculam, personalização mínima.
 
+> **Status:** Implementação concluída — aguardando homologação do usuário.
+> Fase 1 (v1.0) e Fase 2 (v1.1) foram homologadas em rodadas anteriores; ver ADR 0001.
+
+## 0. Entrega
+
+Arquivos criados/alterados nesta rodada:
+
+**TIL — `src/lib/til/`**
+- `types.ts` — tipos do `CockpitSnapshot`.
+- `health.ts` — score + frase única + tom (reutiliza `computeConservation`).
+- `schedule.ts` — statuses via `priorityList` + próxima manutenção.
+- `usage.ts` — horímetro/KM/última atividade/investido.
+- `alerts.ts` — próximo alerta priorizado.
+- `suggestions.ts` — `NextAction` (revisar plano, registrar manutenção, registrar atividade…).
+- `index.ts` — fachada `computeCockpitSnapshot()`.
+
+**Cockpit — `src/components/cockpit/`**
+- `Cockpit.tsx` — layout mobile-first `max-w-2xl`, carrega dados e consulta a TIL.
+- `widgets/HealthHeroWidget.tsx` — cartão-herói: score + frase + próxima manutenção.
+- `widgets/QuickStatsWidget.tsx` — última atividade · horímetro · KM · próximo alerta.
+- `widgets/NextActionWidget.tsx` — CTA único, contextual, aparece só se houver ação.
+
+**Rotas**
+- `src/routes/_authenticated/motorcycles.$id.tsx` — agora é layout `<Outlet/>`.
+- `src/routes/_authenticated/motorcycles.$id.index.tsx` — `/motorcycles/$id` → Cockpit.
+- `src/routes/_authenticated/motorcycles.$id.control.tsx` — `/motorcycles/$id/control` → Centro de Controle (detalhes completos preservados).
+- `src/components/MotoControlCenter.tsx` — todo o conteúdo detalhado anterior extraído em componente reutilizável.
+
 ## 1. Escopo desta entrega
 
 - Criar a **TIL** (`src/lib/til/`) como fonte única de cálculos.
