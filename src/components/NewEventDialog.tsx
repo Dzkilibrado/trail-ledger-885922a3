@@ -11,6 +11,7 @@ import { EVENT_TYPE_LABEL, MAINT_CATEGORY_LABEL, uploadFile, type EventType, typ
 import { Plus, Upload, AlertTriangle } from "lucide-react";
 import { INCIDENT_TYPES } from "@/lib/motorcycle-catalog";
 import { fetchMaintenanceCatalog, findSchedulesForCatalogItem, type CatalogEntry } from "@/lib/maintenance-catalog";
+import { toDecimalHours } from "@/lib/activity-recalc";
 import { toast } from "sonner";
 
 type SchedulePreset = {
@@ -58,6 +59,14 @@ export function NewEventDialog({
   const [selectedCatalogId, setSelectedCatalogId] = useState<string>("");
   const [category, setCategory] = useState<string>(preset?.category || "engine");
   const [service, setService] = useState<string>(preset?.name || "");
+  // Fase 2: leitura atual (padrão) vs delta manual (fallback).
+  const [readingMode, setReadingMode] = useState<"current" | "delta">("current");
+  const [currentHours, setCurrentHours] = useState<string>("");
+  const [currentMinutes, setCurrentMinutes] = useState<string>("");
+  const [currentKm, setCurrentKm] = useState<string>("");
+  const [deltaHours, setDeltaHours] = useState<string>("");
+  const [deltaMinutes, setDeltaMinutes] = useState<string>("");
+  const [deltaKm, setDeltaKm] = useState<string>("");
 
   // Catálogo SSOT: itens do plano padrão (marca/modelo → default).
   const catalog = useQuery({
@@ -100,8 +109,30 @@ export function NewEventDialog({
       const title = rawTitle || service || EVENT_TYPE_LABEL[type];
       let description = String(fd.get("description") || "").trim();
       const location = String(fd.get("location") || "") || null;
-      const hours_delta = fd.get("hours_delta") ? Number(fd.get("hours_delta")) : null;
-      const km_delta = fd.get("km_delta") ? Number(fd.get("km_delta")) : null;
+      // Fase 2: leitura atual é o padrão. TrailBook calcula o delta.
+      let hours_delta: number | null = null;
+      let km_delta: number | null = null;
+      if (readingMode === "current") {
+        const curH = currentHours || currentMinutes
+          ? toDecimalHours(Number(currentHours || 0), Number(currentMinutes || 0))
+          : null;
+        const curK = currentKm ? Number(currentKm) : null;
+        if (curH != null) {
+          const d = curH - Number(moto.hours_total);
+          if (d < 0) { setLoading(false); return toast.error("Horímetro atual não pode ser menor que o último registro."); }
+          hours_delta = d;
+        }
+        if (curK != null) {
+          const d = curK - Number(moto.km_total);
+          if (d < 0) { setLoading(false); return toast.error("KM atual não pode ser menor que o último registro."); }
+          km_delta = d;
+        }
+      } else {
+        hours_delta = (deltaHours || deltaMinutes)
+          ? toDecimalHours(Number(deltaHours || 0), Number(deltaMinutes || 0))
+          : null;
+        km_delta = deltaKm ? Number(deltaKm) : null;
+      }
       const cost = fd.get("cost") ? Number(fd.get("cost")) : null;
       const occurred_at = fd.get("occurred_at") ? new Date(String(fd.get("occurred_at"))).toISOString() : new Date().toISOString();
 
@@ -150,6 +181,19 @@ export function NewEventDialog({
       }).select("id").single();
       if (error) throw error;
 
+      // Auditoria: registro de criação da atividade
+      await supabase.from("audit_log").insert({
+        table_name: "events",
+        record_id: ev.id,
+        motorcycle_id: moto.id,
+        actor_id: uid,
+        action: "insert",
+        new_values: {
+          type, title, occurred_at, hours_delta, km_delta,
+          hours_at_event: newHours, km_at_event: newKm, cost,
+        },
+      } as never);
+
       // Maintenance item
       if (type === "maintenance" || type === "revision") {
         const cat = category || String(fd.get("category") || preset?.category || "other");
@@ -184,6 +228,9 @@ export function NewEventDialog({
           schedule_id: targetIds[0] ?? null,
         } as never);
 
+        // Só atualiza schedules quando houve vínculo estruturado
+        // (preset direto OU catálogo escolhido OU nome que casa exatamente).
+        // Sem vínculo → nada é atualizado (evita replicar em outros itens).
         if (targetIds.length > 0) {
           await supabase
             .from("maintenance_schedules")
