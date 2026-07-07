@@ -403,15 +403,15 @@ export function NewEventDialog({
                 <div className="space-y-2 rounded-2xl border border-primary/30 bg-primary/5 p-3">
                   <div className="flex items-center justify-between gap-2">
                     <div className="text-xs font-semibold uppercase tracking-widest text-primary">
-                      Item(ns) do plano afetados
+                      Componentes afetados por esta manutenção
                     </div>
                     <span className="text-[10px] text-muted-foreground">
                       {affectedScheduleIds.length} selecionado(s)
                     </span>
                   </div>
                   <p className="text-[11px] text-muted-foreground">
-                    Marque exatamente os itens do plano que esta manutenção atualiza.
-                    Nenhum outro item será tocado.
+                    Marque exatamente os componentes que esta manutenção atualiza.
+                    Nenhum outro componente será tocado.
                   </p>
                   <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg bg-background/50 p-2">
                     {(motoSchedules.data ?? []).length === 0 ? (
