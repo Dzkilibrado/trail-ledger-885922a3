@@ -32,7 +32,7 @@ function ComponentsPage() {
         title="Componentes"
         crumbs={[
           { label: "Motos", to: "/motorcycles" },
-          { label: m.nickname || m.model, to: "/motorcycles/$id", params: { id: m.id } },
+          { label: m.nickname || m.model, to: `/motorcycles/${m.id}` },
           { label: "Componentes" },
         ]}
         description="Toque em qualquer componente para ver o estado, histórico e registrar manutenção."
