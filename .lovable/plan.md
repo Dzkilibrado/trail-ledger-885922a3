@@ -1,158 +1,148 @@
-# TrailBook v1.2.1 — Plano de Manutenção Editável + Saúde da Moto
+# TrailBook Design System — v1.3.0
 
-Status: **Sub-fases A, B e C homologadas. Pronto para publicação.**
-
----
-
-## Sub-fase A — Fundação do Plano de Manutenção (HOMOLOGADA)
-
-- Fim definitivo do matching por nome/includes.
-- Vínculo apenas por `template_item_id`.
-- Histórico individual por `maintenance_items`.
-- Auditoria automática.
-- Preparação para revisão inicial de motos usadas.
-
-## Sub-fase B — Plano de Manutenção Editável (HOMOLOGADA)
-
-- Nova aba **Componentes** no Centro de Controle.
-- Cada componente aparece como item independente.
-- ComponentSheet com ações rápidas: registrar manutenção, editar, desativar, marcar não aplica.
-- Componentes personalizados por moto (`is_custom = true`).
-- Severidade individual (`Normal`, `Atenção`, `Alta`, `Crítica`).
-- Wizard de moto usada/seminova (`InitialReviewSheet`).
-- Estado vazio amigável com CTA para criar/aplicar plano.
-- Typecheck limpo. Console limpo. Sem bugs.
-
-## Sub-fase C — Saúde da Moto v1.2.1 (HOMOLOGADA)
-
-- Diagnóstico geral da moto: **Excelente, Boa, Atenção, Crítica**.
-- Saúde calculada por componente com base na TIL.
-- Buckets por status: **Vencidos, Atenção, Sem informação, Em dia**.
-- Bucket Vencidos expandido por padrão.
-- Integração 100% via TIL — nenhum cálculo duplicado nas telas.
-- ComponentSheet com ações rápidas mantido e reutilizado na tela de Saúde.
-- Cockpit exibe apenas o essencial: grade, score e item mais crítico.
-- Centro de Controle com check-up completo (`HealthOverview`).
-- Rota `/motorcycles/$id/health` funciona em mobile e desktop.
-- Link "Abrir check-up completo" funciona corretamente.
-- Severidade Crítica + status Atenção derruba a grade para Crítica.
-- Mobile sem textos cortados; desktop limpo.
-- Typecheck limpo. Console sem erros. Sem bugs encontrados.
-
-### Itens registrados no changelog
-
-- Saúde da Moto por componente.
-- Diagnóstico geral: Excelente, Boa, Atenção e Crítica.
-- Buckets por status.
-- Integração 100% via TIL.
-- ComponentSheet com ações rápidas.
-- Cockpit exibindo apenas o essencial.
-- Centro de Controle com check-up completo.
-- Typecheck limpo.
-- Sem bugs encontrados.
+Transformar a padronização de formulários em um Design System oficial e reutilizável, implantado de forma **incremental por área**, sem refatoração massiva. Objetivo: qualquer nova tela do TrailBook nasce usando os mesmos componentes, com identidade visual única e ergonomia Mobile Native First.
 
 ---
 
-## Status
+## Pilares
 
-**Pronto para publicação.**
-
----
-
-## Quality Gate Final — v1.2.1 (HOMOLOGADO)
-
-Auditoria de encerramento executada em 2026-07-07.
-
-### Arquitetura confirmada
-
-- Cockpit, TIL, Centro de Controle, Saúde, Componentes, Plano, Timeline,
-  Dashboard, Catálogo, Comunicação, Administração, Auditoria, Mensagens,
-  Chamados, Compartilhamentos, Certificados, Documentação, Agenda e Eventos
-  respeitam a filosofia oficial.
-- Nenhuma tela executa cálculos próprios — toda regra vem da TIL
-  (`src/lib/til/*`).
-- Nenhum widget depende de estado interno de outro widget.
-- Recomposição cronológica da timeline preservada (ADR 0001).
-- Matching estrito por `template_item_id` mantido em todo o fluxo de plano
-  (ADR 0003).
-
-### Limpeza aplicada
-
-- Removido: `src/components/ScheduleManager.tsx` (substituído pela aba
-  Componentes em `MotoControlCenter`).
-- Auditoria `knip` executada: demais itens sinalizados (componentes shadcn
-  não usados, exportações auxiliares) foram mantidos intencionalmente por
-  serem primitivos do design system reutilizáveis por telas futuras.
-
-### Segurança
-
-- RLS habilitada em todas as tabelas de dados do usuário.
-- Papéis geridos via `user_roles` + `has_role()` (nenhum papel em `profiles`).
-- Server functions sensíveis usam `requireSupabaseAuth`; escrita
-  administrativa passa por `supabaseAdmin` apenas em contexto server-only.
-- Auditoria automática de manutenção preservada.
-
-### Performance
-
-- Snapshot da TIL calculado uma única vez por moto por render.
-- Loaders usam `ensureQueryData` + `useSuspenseQuery` (padrão TanStack).
-- Lazy loading das rotas administrativas mantido via file-based routing.
-
-### Mobile Native First
-
-- ADR 0004 registrada como diretriz permanente.
-- Todas as rotas revisadas em viewport 390×844 (iPhone padrão).
-- Cockpit, Centro de Controle, Saúde, Componentes, Plano e Timeline
-  otimizados para uso com apenas o polegar.
-- Sheets/Drawers usados no lugar de Dialogs em telas de conteúdo.
-- Nenhuma tela depende de hover, clique direito ou teclado físico.
+1. **Mobile Native First** — todo componente nasce no viewport 390×844, depois escala.
+2. **TIL continua sendo a única fonte de lógica** — o DS é 100% presentational.
+3. **shadcn como base** — não recriar primitivos, apenas encapsular em padrões TrailBook.
+4. **Tokens semânticos** — nada de cores hardcoded; tudo via `src/styles.css`.
+5. **Um componente = um padrão** — proibido variação isolada em telas.
 
 ---
 
-## Roadmap
+## Estrutura de arquivos
 
-### ✅ Entregas homologadas (v1.0 → v1.2.1)
+```text
+src/design-system/
+├── tokens/                    # documentação viva dos tokens (MD)
+│   └── README.md              # espaçamentos, alturas, área de toque, tipografia
+├── primitives/                # blocos atômicos (envolvem shadcn)
+│   ├── TBButton.tsx
+│   ├── TBInput.tsx
+│   ├── TBSelect.tsx
+│   ├── TBTextarea.tsx
+│   ├── TBBadge.tsx
+│   ├── TBChip.tsx
+│   └── TBIcon.tsx
+├── inputs/                    # inputs especializados TrailBook
+│   ├── TBNumberInput.tsx
+│   ├── TBCurrencyInput.tsx
+│   ├── TBDateInput.tsx
+│   ├── TBHourmeterInput.tsx  # horímetro (H) c/ decimal
+│   ├── TBOdometerInput.tsx   # KM
+│   └── TBSearchInput.tsx
+├── forms/
+│   ├── TBFormField.tsx       # label + input + hint + erro (o "F" atual, oficial)
+│   ├── TBFormGrid.tsx        # grid 2/4 col mobile-first, items-end
+│   ├── TBFormSection.tsx     # título + descrição + slot
+│   └── TBFormActions.tsx     # rodapé sticky mobile c/ CTA principal
+├── layout/
+│   ├── TBPageHeader.tsx      # título, subtítulo, ações
+│   ├── TBSectionHeader.tsx
+│   ├── TBCard.tsx            # base
+│   ├── TBStatusCard.tsx      # com severidade (excelente/boa/atenção/crítica)
+│   ├── TBInfoCard.tsx
+│   ├── TBActionCard.tsx      # tap-target grande, mobile
+│   ├── TBKpiCard.tsx
+│   └── TBTimelineItem.tsx
+├── overlays/
+│   ├── TBDrawer.tsx          # side drawer desktop
+│   ├── TBBottomSheet.tsx     # mobile-first (usar em vez de Dialog no mobile)
+│   └── TBDialog.tsx          # apenas para confirmações curtas
+├── feedback/
+│   ├── TBEmptyState.tsx
+│   ├── TBLoadingState.tsx    # skeleton + spinner variants
+│   ├── TBErrorState.tsx
+│   ├── TBSuccessState.tsx
+│   ├── TBInfoState.tsx
+│   └── TBWarningState.tsx
+├── filters/
+│   ├── TBFilterBar.tsx
+│   └── TBFilterChip.tsx
+└── index.ts                   # barrel export único: import { TBFormField } from '@/design-system'
+```
 
-- v1.0 — Base do TrailBook, timeline, documentos, certificados.
-- v1.1 — Recomposição cronológica (ADR 0001).
-- v1.2 — Cockpit + TIL (ADR 0002).
-- v1.2.1 — Plano editável, Componentes, Saúde da Moto (ADR 0003) e
-  Mobile Native First (ADR 0004).
-
-### 🔜 Próximas versões (planejadas)
-
-- **Modo Demonstração**: permitir explorar o TrailBook sem cadastro
-  completo, com moto/dados fictícios reiniciados a cada sessão.
-  *Apenas documentado — não implementado nesta versão.*
-- Predição de próxima manutenção com base em uso real.
-- Receitas de manutenção compartilháveis entre motos do mesmo modelo.
-- Notificações push nativas (PWA).
-- Auditoria automatizada de viewport mobile em CI (Playwright).
-
-### 💡 Ideias em avaliação
-
-- Marketplace de oficinas parceiras.
-- Compartilhamento social de conquistas (km rodados, viagens).
-- Integração com dispositivos OBD/telemetria.
-
-### 🧹 Débito técnico conhecido
-
-- Componentes shadcn não utilizados podem ser removidos junto com suas
-  dependências quando houver certeza de não uso futuro.
-- Exportações auxiliares em `activity-recalc.ts`, `maintenance-catalog.ts`,
-  `plan-templates.ts` podem ser podadas na próxima refatoração de libs.
-- `AuditDialog` (nomeado) pode ser consolidado com `AuditSummary`.
+Regra: nenhuma tela importa de `src/components/ui/*` diretamente para os padrões acima — sempre via `@/design-system`.
 
 ---
 
-## Pilares Permanentes
+## Tokens oficiais (documentados em `tokens/README.md`)
 
-Toda evolução futura DEVE respeitar:
+- **Espaçamento base**: 4px. Escala: 4, 8, 12, 16, 20, 24, 32, 48.
+- **Grid formulário mobile**: `grid-cols-2 gap-x-3 gap-y-3 items-end`; desktop `sm:grid-cols-4`.
+- **Altura de campo**: 44px (mobile), 40px (desktop compacto).
+- **Altura mínima de botão**: 44px (área de toque iOS/Android).
+- **Área de toque mínima**: 44×44px.
+- **Label**: `text-[11px] uppercase tracking-widest text-muted-foreground`, `min-h-[1rem] truncate`.
+- **Título de página**: `text-2xl font-black`.
+- **Título de seção**: `text-lg font-semibold`.
+- **Subtítulo**: `text-sm text-muted-foreground leading-relaxed`.
+- **Radius**: `rounded-2xl` cards, `rounded-xl` inputs, `rounded-full` chips/badges.
+- **Cores**: 100% via tokens já definidos em `src/styles.css` (nenhum hardcode).
+- **Ícones**: lucide-react, tamanho padrão 20px em botões, 16px em chips, 24px em headers.
 
-1. **Simplicidade para o usuário** — mais funcionalidades = interface mais
-   simples.
-2. **Integridade dos dados** — recomposição cronológica e auditoria em toda
-   mutação.
-3. **Arquitetura escalável** — regra de negócio na TIL, telas apenas
-   consomem.
-4. **Mobile Native First** — smartphone primeiro, sempre (ADR 0004).
+Estados semânticos (badges/cards): `excelente`, `boa`, `atencao`, `critica`, `info`, `neutro` — mapeados 1:1 com a severidade da TIL.
+
+---
+
+## Fase 1 — Fundação (sem tocar telas)
+
+1. Criar árvore `src/design-system/` + `index.ts`.
+2. Extrair `F` (do `NewEventDialog`) como `TBFormField` oficial.
+3. Escrever `tokens/README.md` com os padrões acima.
+4. Criar primitivos e inputs especializados listados na árvore.
+5. Criar overlays (`TBBottomSheet` prioritário — mobile).
+6. Criar estados de feedback (`TBEmptyState`, `TBLoadingState`, `TBErrorState`).
+7. `tsgo` limpo; nenhum consumidor ainda.
+
+**Homologação**: revisão visual dos componentes em página de sandbox interna (não publicada).
+
+---
+
+## Fase 2 — Migração incremental (uma área por PR)
+
+Ordem por impacto de UX (do mais crítico ao menos):
+
+1. **NewEventDialog** (form principal — piloto da migração).
+2. **Cockpit** (headers, KPIs, StatusCards).
+3. **Saúde da Moto** + ComponentSheet.
+4. **Plano de manutenção** (formulários de edição).
+5. **Cadastro de moto** + edição.
+6. **Timeline / detalhes de atividade**.
+7. **Documentos, chamados**.
+8. **Admin** (menor prioridade UX).
+
+Para cada área: migrar → validar mobile 390 + desktop → homologar com o usuário → seguir.
+
+---
+
+## Fase 3 — Governança
+
+- ADR **0005 — Design System TrailBook**: registra pilares, tokens, regra "não importar shadcn direto".
+- `.lovable/plan.md`: adicionar seção "Design System v1.3.0" com status por área.
+- Memória do projeto: regra permanente "novas telas usam `@/design-system`".
+
+---
+
+## Fora de escopo
+
+- Não alterar lógica de negócio, TIL ou schema.
+- Não redesenhar identidade visual (cores, tipografia já aprovadas ficam).
+- Não migrar tudo em uma tacada — cada área é um passo aprovado.
+
+---
+
+## Entregável desta primeira rodada
+
+Apenas a **Fase 1 (Fundação)**. Ao final, retorno com:
+- árvore criada;
+- lista de componentes prontos;
+- link para `tokens/README.md`;
+- typecheck limpo;
+- proposta da primeira área para migrar na Fase 2 (sugestão: `NewEventDialog`).
+
+Confirma que posso iniciar pela Fase 1?
