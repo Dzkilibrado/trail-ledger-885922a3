@@ -28,7 +28,7 @@ export function NewComponentDialog({ motorcycleId, trigger }: { motorcycleId: st
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [category, setCategory] = useState<MaintenanceCategory>("accessory" as MaintenanceCategory);
+  const [category, setCategory] = useState<MaintenanceCategory>("other" as MaintenanceCategory);
   const [h, setH] = useState("");
   const [km, setKm] = useState("");
   const [d, setD] = useState("");
