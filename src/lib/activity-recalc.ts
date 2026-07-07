@@ -1,17 +1,54 @@
 import { supabase } from "@/integrations/supabase/client";
 
 /**
- * Recalcula estados dependentes após uma atividade ser editada/excluída.
+ * Recomposição cronológica exata da linha do tempo da moto.
  *
- * - `totalsFromEvents(motoId)` refaz `hours_total` / `km_total` da moto
- *   somando todos os deltas remanescentes.
- * - `recalcScheduleFromHistory(scheduleId)` reconstroi `last_done_*`
- *   do schedule a partir do último `maintenance_item` que o referencia.
- *   Se não houver mais nenhum, zera os campos (o schedule volta a aguardar
- *   a primeira execução).
- * - `recalcAllForMotorcycle(motoId)` faz ambos em sequência para todos os
- *   schedules da moto — usado após excluir/editar atividade.
+ * A cada criação/edição/exclusão de atividade, o TrailBook reprocessa
+ * TODOS os eventos da moto em ordem cronológica (occurred_at ASC,
+ * empatando por created_at) e reescreve `hours_at_event` / `km_at_event`
+ * como soma acumulada dos deltas até aquele ponto. Depois atualiza
+ * `hours_total` / `km_total` da moto e recomputa `last_done_*` de cada
+ * programação a partir do evento vinculado mais recente na nova timeline.
+ *
+ * Isso elimina o "best-effort" antigo que carimbava eventos históricos
+ * com os totais atuais e gerava inconsistência ao editar uma atividade
+ * do meio da linha do tempo.
  */
+
+export async function recomposeTimeline(motoId: string): Promise<{ hours: number; km: number }> {
+  const { data: evs } = await supabase
+    .from("events")
+    .select("id, occurred_at, created_at, hours_delta, km_delta")
+    .eq("motorcycle_id", motoId)
+    .order("occurred_at", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  let hours = 0;
+  let km = 0;
+  for (const e of evs ?? []) {
+    hours += Number((e as any).hours_delta) || 0;
+    km += Number((e as any).km_delta) || 0;
+    // Grava snapshot cronológico exato deste evento
+    await supabase
+      .from("events")
+      .update({ hours_at_event: hours, km_at_event: km } as never)
+      .eq("id", (e as any).id);
+  }
+  await supabase
+    .from("motorcycles")
+    .update({ hours_total: hours, km_total: km } as never)
+    .eq("id", motoId);
+
+  // Recomputa cada schedule a partir do histórico já normalizado.
+  const { data: schs } = await supabase
+    .from("maintenance_schedules")
+    .select("id")
+    .eq("motorcycle_id", motoId);
+  for (const s of schs ?? []) {
+    await recalcScheduleFromHistory((s as any).id);
+  }
+  return { hours, km };
+}
 
 export async function recalcTotals(motoId: string): Promise<{ hours: number; km: number }> {
   const { data: evs } = await supabase
@@ -63,14 +100,8 @@ export async function recalcScheduleFromHistory(scheduleId: string) {
 }
 
 export async function recalcAllForMotorcycle(motoId: string) {
-  await recalcTotals(motoId);
-  const { data: schs } = await supabase
-    .from("maintenance_schedules")
-    .select("id")
-    .eq("motorcycle_id", motoId);
-  for (const s of schs ?? []) {
-    await recalcScheduleFromHistory((s as any).id);
-  }
+  // Compat: agora sempre delega para a recomposição cronológica completa.
+  await recomposeTimeline(motoId);
 }
 
 /** Converte horas+minutos em decimal (1h 30min → 1.5). */
