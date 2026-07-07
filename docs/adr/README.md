@@ -26,3 +26,4 @@ preservando o racional das escolhas feitas.
 | ADR | Título | Status | Versão |
 | --- | --- | --- | --- |
 | [0001](./0001-recomposicao-cronologica-timeline.md) | Recomposição cronológica da timeline como padrão oficial | Aceita | v1.1 |
+| [0002](./0002-cockpit-e-til.md) | TrailBook Cockpit + Intelligence Layer (TIL) | Aceita | v1.2 |
