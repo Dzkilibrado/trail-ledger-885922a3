@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { recalcAllForMotorcycle, toDecimalHours } from "@/lib/activity-recalc";
+import { recomposeTimeline, toDecimalHours } from "@/lib/activity-recalc";
 
 type EventRow = {
   id: string;
@@ -85,18 +85,10 @@ export function EventActionsMenu({ event, onChanged }: { event: EventRow; onChan
         new_values: newValues,
       } as never);
 
-      // Recalcula totais da moto + last_done_* de cada schedule.
-      await recalcAllForMotorcycle(event.motorcycle_id);
-      // Como hours_at_event/km_at_event foram derivados na criação, recomputa
-      // a partir dos totais atualizados (best-effort) — apenas para este evento.
-      const { data: fresh } = await supabase.from("motorcycles")
-        .select("hours_total, km_total").eq("id", event.motorcycle_id).single();
-      if (fresh) {
-        await supabase.from("events").update({
-          hours_at_event: (fresh as any).hours_total,
-          km_at_event: (fresh as any).km_total,
-        } as never).eq("id", event.id);
-      }
+      // Recomposição cronológica exata: reescreve hours_at_event/km_at_event
+      // de todos os eventos em ordem, atualiza totais da moto e last_done_*
+      // de cada programação. Não há mais snapshot "best-effort".
+      await recomposeTimeline(event.motorcycle_id);
       toast.success("Atividade atualizada. Histórico e agenda recalculados.");
       setEditing(false);
       qc.invalidateQueries();
@@ -133,7 +125,7 @@ export function EventActionsMenu({ event, onChanged }: { event: EventRow; onChan
       const { error } = await supabase.from("events").delete().eq("id", event.id);
       if (error) throw error;
 
-      await recalcAllForMotorcycle(event.motorcycle_id);
+      await recomposeTimeline(event.motorcycle_id);
 
       toast.success("Atividade excluída. Histórico, agenda e saúde recalculados.");
       setConfirming(false);
