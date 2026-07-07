@@ -97,18 +97,20 @@ Adicionar log de "plan_review_completed" via `admin_log_event`-equivalente para 
 - Fase 4: Wizard detalhado de revisão do plano item-a-item para moto usada
 - Fase 5: Admin CRUD do catálogo mestre (adicionar marcas/modelos via UI)
 
-## 8. Homologação da Fase 1
+## 8. Homologação da Fase 1 — APROVADA
 
-1. Cadastro nova moto — horímetro/KM fixados em 0
-2. Cadastro moto usada — exige leituras atuais
-3. Selects encadeados filtram corretamente
-4. Opção "Outro" libera texto livre em cada nível
-5. Tipo de controle sugerido automaticamente
-6. Passo Revisão só grava ao confirmar
-7. Banner de revisão aparece em moto usada
-8. Banner some após "revisão concluída"
-9. Console limpo, typecheck limpo, mobile ok
-10. Auditoria registra criação e conclusão de revisão
+1. Cadastro nova moto — horímetro/KM fixados em 0 ✅
+2. Cadastro moto usada — exige leituras atuais ✅
+3. Selects encadeados filtram corretamente ✅
+4. Opção "Outro" libera texto livre em cada nível ✅
+5. Tipo de controle sugerido automaticamente ✅
+6. Passo Revisão só grava ao confirmar ✅
+7. Banner de revisão aparece em moto usada ✅
+8. Banner some após "revisão concluída" ✅
+9. Console limpo, typecheck limpo, mobile ok ✅
+10. Auditoria registra criação e conclusão de revisão ✅
+
+Pendência menor resolvida na Fase 2: adicionado valor `not_informed` ao enum `control_type`.
 
 ## Arquivos previstos
 
@@ -120,3 +122,78 @@ Adicionar log de "plan_review_completed" via `admin_log_event`-equivalente para 
 - `src/routes/_authenticated/motorcycles.$id.tsx` (adicionar banner de revisão)
 - `src/routes/_authenticated/motorcycles.$id.plan.tsx` (adicionar callout + botão "Concluir revisão")
 - `src/integrations/supabase/types.ts` (regenerado após migração)
+
+---
+
+# Fase 2 — Registro de Atividades + Integridade
+
+## 1. Correção da pendência da Fase 1
+
+- Adicionado valor `not_informed` ao enum `control_type`.
+- Opção "Não informado" exibida no cadastro e revisão da moto.
+- Sem impacto retroativo nos dados existentes.
+
+## 2. Escopo entregue
+
+- Registro de atividade por leitura atual de horímetro.
+- Registro de atividade por leitura atual de KM.
+- Registro de atividade com horímetro + KM simultâneos.
+- Registro de atividade usando horas + minutos.
+- Registro de atividade por delta direto (fallback).
+- Edição de atividade com recomposição cronológica.
+- Exclusão de atividade com confirmação e recomposição cronológica.
+- Auditoria de todas as operações (insert, update, delete) em `audit_log`.
+- Recálculo correto de horímetro total e KM total da moto.
+- Manutenção atualizando apenas o item correspondente (correção de matching por substring).
+- Agenda refletindo apenas o item alterado.
+- Saúde da moto e índice de conservação recalculados corretamente.
+- Mobile e desktop validados.
+- Console limpo, typecheck limpo.
+
+## 3. Correção principal
+
+Substituição do recálculo best-effort por **recomposição cronológica exata da timeline da motocicleta**.
+
+A função `recomposeTimeline(motoId)`:
+
+- Lê todos os eventos da moto em ordem cronológica (`occurred_at ASC`, `created_at ASC` como desempate).
+- Reescreve `hours_at_event` e `km_at_event` de cada evento como soma acumulada dos deltas até aquele ponto.
+- Atualiza `motorcycles.hours_total` e `motorcycles.km_total` com os totais finais.
+- Recalcula `last_done_hours`, `last_done_km` e `last_done_at` de cada item de agenda a partir do evento mais recente que o tocou.
+- Garante integridade histórica mesmo quando atividades são inseridas fora de ordem, editadas ou excluídas.
+
+## 4. Arquivos entregues
+
+- `src/lib/activity-recalc.ts` — motor de recomposição cronológica.
+- `src/lib/maintenance-catalog.ts` — matching estrito entre evento e item de manutenção.
+- `src/components/NewEventDialog.tsx` — registro com leitura atual, horas+minutos, fallback por delta.
+- `src/components/EventActionsMenu.tsx` — editar/excluir atividade com confirmação.
+- `src/routes/_authenticated/motorcycles.$id.tsx` — integração do menu de ações na timeline.
+- `src/routes/_authenticated/motorcycles.new.tsx` — opção "Não informado" no tipo de controle.
+- `supabase/migrations/20260707004026_50d36c5d-03eb-4862-85ee-c144d341d02d.sql` — migração do enum `control_type`.
+- `src/integrations/supabase/types.ts` — regenerado após migração.
+
+## 5. Homologação da Fase 2 — APROVADA v1.1
+
+| Item | Status |
+|------|--------|
+| Registrar atividade por leitura atual de horímetro | ✅ |
+| Registrar atividade por leitura atual de KM | ✅ |
+| Registrar atividade com horímetro + KM | ✅ |
+| Registrar atividade usando horas + minutos | ✅ |
+| Registrar atividade usando fallback por delta | ✅ |
+| Atividades editáveis | ✅ |
+| Atividades excluíveis com confirmação | ✅ |
+| Auditoria registra insert/update/delete | ✅ |
+| Recálculo de horímetro/KM após mutação | ✅ |
+| Manutenção atualiza apenas o item correspondente | ✅ |
+| Agenda reflete apenas o item alterado | ✅ |
+| Saúde da moto e conservação recalculadas | ✅ |
+| Integridade histórica por recomposição cronológica | ✅ |
+| Mobile funcionando | ✅ |
+| Desktop funcionando | ✅ |
+| Console sem erros | ✅ |
+| Typecheck limpo | ✅ |
+
+Conclusão: **Fase 2 homologada e aprovada para v1.1.**
+
