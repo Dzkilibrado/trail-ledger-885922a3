@@ -27,3 +27,5 @@ preservando o racional das escolhas feitas.
 | --- | --- | --- | --- |
 | [0001](./0001-recomposicao-cronologica-timeline.md) | Recomposição cronológica da timeline como padrão oficial | Aceita | v1.1 |
 | [0002](./0002-cockpit-e-til.md) | TrailBook Cockpit + Intelligence Layer (TIL) | Aceita | v1.2 |
+| [0003](./0003-plano-editavel-saude-componentes.md) | Plano Editável, Componentes e Saúde da Moto | Aceita | v1.2.1 |
+| [0004](./0004-mobile-native-first.md) | Mobile Native First | Aceita | v1.2.1 |
