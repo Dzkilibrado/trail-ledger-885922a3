@@ -339,6 +339,18 @@ export function MotoControlCenter({ id }: { id: string }) {
         <HealthPanel items={health} />
       </section>
 
+      {isOwner && (
+        <section className="space-y-3">
+          <div className="flex items-baseline justify-between">
+            <h2 className="font-display text-lg font-bold">Componentes</h2>
+            <Link to="/motorcycles/$id/components" params={{ id: m.id }} className="text-xs text-primary hover:underline">
+              Ver todos
+            </Link>
+          </div>
+          <ComponentsList moto={m as any} isOwner={isOwner} limitPerCategory={3} />
+        </section>
+      )}
+
       <section className="grid gap-6 lg:grid-cols-[1fr_1fr]">
         <div className="space-y-3">
           <h2 className="font-display text-lg font-bold">Próximas manutenções</h2>
