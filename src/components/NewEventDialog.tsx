@@ -11,7 +11,7 @@ import { EVENT_TYPE_LABEL, MAINT_CATEGORY_LABEL, uploadFile, type EventType, typ
 import { Plus, Upload, AlertTriangle } from "lucide-react";
 import { INCIDENT_TYPES } from "@/lib/motorcycle-catalog";
 import { fetchMaintenanceCatalog, findSchedulesForCatalogItem, type CatalogEntry } from "@/lib/maintenance-catalog";
-import { toDecimalHours } from "@/lib/activity-recalc";
+import { toDecimalHours, recomposeTimeline } from "@/lib/activity-recalc";
 import { toast } from "sonner";
 
 type SchedulePreset = {
@@ -256,9 +256,11 @@ export function NewEventDialog({
         await supabase.from("event_attachments").insert(uploads);
       }
 
-      // Update motorcycle totals
+      // Recomposição cronológica: se a atividade foi retro-datada,
+      // reescreve os snapshots de todos os eventos posteriores e recalcula
+      // schedules. Se for a última em ordem, o resultado equivale ao delta.
       if (hours_delta || km_delta) {
-        await supabase.from("motorcycles").update({ hours_total: newHours, km_total: newKm }).eq("id", moto.id);
+        await recomposeTimeline(moto.id);
       }
 
       // Integração cross-módulo: refresca dashboard, financeiro, plano,
