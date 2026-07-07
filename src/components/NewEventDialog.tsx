@@ -59,6 +59,11 @@ export function NewEventDialog({
   const [selectedCatalogId, setSelectedCatalogId] = useState<string>("");
   const [category, setCategory] = useState<string>(preset?.category || "engine");
   const [service, setService] = useState<string>(preset?.name || "");
+  // v1.2.1 — vínculo estrito: usuário escolhe explicitamente quais itens
+  // do plano da moto serão atualizados. Fonte única de verdade.
+  const [affectedScheduleIds, setAffectedScheduleIds] = useState<string[]>(
+    preset ? [preset.scheduleId] : [],
+  );
   // Fase 2: leitura atual (padrão) vs delta manual (fallback).
   const [readingMode, setReadingMode] = useState<"current" | "delta">("current");
   const [currentHours, setCurrentHours] = useState<string>("");
@@ -76,6 +81,21 @@ export function NewEventDialog({
     staleTime: 5 * 60_000,
   });
 
+  // Programações ativas da moto — a lista canônica de itens afetáveis.
+  const motoSchedules = useQuery({
+    queryKey: ["moto-schedules-for-event", moto.id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("maintenance_schedules")
+        .select("id, name, category, template_item_id, status, hidden")
+        .eq("motorcycle_id", moto.id)
+        .eq("active", true)
+        .order("name");
+      return (data ?? []).filter((s: any) => s.status !== "not_applicable" && !s.hidden);
+    },
+    enabled: open && (type === "maintenance" || type === "revision"),
+  });
+
   useEffect(() => {
     if (preset && open) setType("maintenance");
   }, [preset, open]);
@@ -86,6 +106,7 @@ export function NewEventDialog({
       setSelectedCatalogId("");
       setCategory("engine");
       setService("");
+      setAffectedScheduleIds([]);
     }
   }, [type, preset]);
 
@@ -95,7 +116,25 @@ export function NewEventDialog({
     if (item) {
       setCategory(item.category);
       setService(item.item_name);
+      // Sugere automaticamente o schedule vinculado por template_item_id,
+      // se existir na moto. Regra estrita: sem fallback por nome.
+      const linked = (motoSchedules.data ?? []).filter(
+        (s: any) => s.template_item_id === item.id,
+      );
+      if (linked.length > 0) {
+        setAffectedScheduleIds((prev) => {
+          const set = new Set(prev);
+          linked.forEach((s: any) => set.add(s.id));
+          return Array.from(set);
+        });
+      }
     }
+  }
+
+  function toggleAffected(id: string) {
+    setAffectedScheduleIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -204,29 +243,41 @@ export function NewEventDialog({
         // Vínculo estruturado: preferimos template_item_id (imune a rename).
         const templateItemId = selectedCatalogId || preset?.templateItemId || null;
 
-        // Integração automática: atualiza a programação vinculada.
-        //   1) Preset → usa ID direto do schedule.
-        //   2) Catálogo escolhido → casa por template_item_id.
-        //   3) Fallback → casa por nome/substring.
-        const targetIds: string[] = [];
-        if (preset) targetIds.push(preset.scheduleId);
-        else {
-          const ids = await findSchedulesForCatalogItem(moto.id, {
-            templateItemId,
-            itemName: svc,
-          });
-          targetIds.push(...ids);
-        }
+        // v1.2.1 — Regra #8/#9/#10: SOMENTE os schedules explicitamente
+        // selecionados pelo usuário serão atualizados. Sem fallback por
+        // nome. Preset = 1 schedule direto; caso contrário, o usuário
+        // marca no formulário quais itens do plano essa manutenção afeta.
+        const targetIds: string[] = preset
+          ? [preset.scheduleId]
+          : Array.from(new Set(affectedScheduleIds));
 
-        await supabase.from("maintenance_items").insert({
-          event_id: ev.id,
-          category: cat as any,
-          service: svc,
-          product,
-          brand,
-          template_item_id: templateItemId,
-          schedule_id: targetIds[0] ?? null,
-        } as never);
+        // Cria um maintenance_item por schedule afetado — histórico
+        // individual por item (regra #12). Se nenhum foi vinculado,
+        // ainda registra o item genérico sem schedule_id (visível no
+        // histórico do evento, mas não em nenhum item do plano).
+        if (targetIds.length > 0) {
+          await supabase.from("maintenance_items").insert(
+            targetIds.map((sid) => ({
+              event_id: ev.id,
+              category: cat as any,
+              service: svc,
+              product,
+              brand,
+              template_item_id: templateItemId,
+              schedule_id: sid,
+            })) as never,
+          );
+        } else {
+          await supabase.from("maintenance_items").insert({
+            event_id: ev.id,
+            category: cat as any,
+            service: svc,
+            product,
+            brand,
+            template_item_id: templateItemId,
+            schedule_id: null,
+          } as never);
+        }
 
         // Só atualiza schedules quando houve vínculo estruturado
         // (preset direto OU catálogo escolhido OU nome que casa exatamente).
