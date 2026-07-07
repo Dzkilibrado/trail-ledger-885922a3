@@ -10,7 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { NewEventDialog } from "@/components/NewEventDialog";
 import { ComponentIcon } from "./componentIcon";
-import type { ComponentView } from "@/lib/til/components";
+import type { ComponentView, ComponentSeverity } from "@/lib/til/components";
+import { SEVERITY_LABEL } from "@/lib/til/components";
 import { MAINT_CATEGORY_LABEL, type MaintenanceCategory, formatDate } from "@/lib/trailbook";
 import type { Motorcycle } from "@/lib/trailbook";
 import { Pin, PinOff, EyeOff, Eye, RotateCcw, Wrench, ChevronDown, ChevronUp } from "lucide-react";
@@ -70,7 +71,14 @@ export function ComponentSheet({
                 <ComponentIcon category={c.category} className="h-7 w-7 text-primary" />
               </div>
               <div className="min-w-0 flex-1">
-                <div className="text-[11px] uppercase tracking-widest text-muted-foreground">{c.categoryLabel}</div>
+                <div className="flex flex-wrap items-center gap-1.5 text-[11px] uppercase tracking-widest text-muted-foreground">
+                  <span>{c.categoryLabel}</span>
+                  {c.isCustom && (
+                    <span className="rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold text-primary">
+                      Personalizado
+                    </span>
+                  )}
+                </div>
                 <SheetTitle className="truncate font-display text-xl">{c.name}</SheetTitle>
                 <SheetDescription className="mt-0.5 text-sm">{c.statusLabel}</SheetDescription>
               </div>
@@ -181,6 +189,7 @@ export function ComponentSheet({
                 interval_km: null,
                 interval_days: null,
                 notes: c.notes,
+                severity: c.severity,
               }}
               onDone={() => { setEditing(false); qc.invalidateQueries(); }}
             />
@@ -213,7 +222,7 @@ function ComponentEditorInline({
   scheduleId, initial, onDone,
 }: {
   scheduleId: string;
-  initial: { name: string; category: MaintenanceCategory; interval_hours: number | null; interval_km: number | null; interval_days: number | null; notes: string | null };
+  initial: { name: string; category: MaintenanceCategory; interval_hours: number | null; interval_km: number | null; interval_days: number | null; notes: string | null; severity: ComponentSeverity };
   onDone: () => void;
 }) {
   const [name, setName] = useState(initial.name);
@@ -222,6 +231,7 @@ function ComponentEditorInline({
   const [km, setKm] = useState<string>(initial.interval_km?.toString() ?? "");
   const [d, setD] = useState<string>(initial.interval_days?.toString() ?? "");
   const [notes, setNotes] = useState<string>(initial.notes ?? "");
+  const [severity, setSeverity] = useState<ComponentSeverity>(initial.severity);
   const [saving, setSaving] = useState(false);
 
   async function save() {
@@ -235,6 +245,7 @@ function ComponentEditorInline({
         interval_km: km ? Number(km) : null,
         interval_days: d ? Number(d) : null,
         notes: notes.trim() || null,
+        severity,
       } as never)
       .eq("id", scheduleId);
     setSaving(false);
@@ -262,6 +273,18 @@ function ComponentEditorInline({
         <div className="space-y-1.5"><Label className="text-xs">A cada (h)</Label><Input type="number" step="0.1" value={h} onChange={(e) => setH(e.target.value)} /></div>
         <div className="space-y-1.5"><Label className="text-xs">A cada (km)</Label><Input type="number" value={km} onChange={(e) => setKm(e.target.value)} /></div>
         <div className="space-y-1.5"><Label className="text-xs">A cada (dias)</Label><Input type="number" value={d} onChange={(e) => setD(e.target.value)} /></div>
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs">Severidade</Label>
+        <Select value={severity} onValueChange={(v) => setSeverity(v as ComponentSeverity)}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            {(Object.keys(SEVERITY_LABEL) as ComponentSeverity[]).map((s) => (
+              <SelectItem key={s} value={s}>{SEVERITY_LABEL[s]}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-[11px] text-muted-foreground">Personaliza a importância deste componente conforme seu uso (não altera intervalo).</p>
       </div>
       <div className="space-y-1.5">
         <Label className="text-xs">Observações</Label>
