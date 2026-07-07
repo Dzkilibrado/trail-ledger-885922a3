@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { StoragePhoto } from "@/components/StoragePhoto";
 import { EventTypeIcon } from "@/components/EventTypeIcon";
 import { NewEventDialog } from "@/components/NewEventDialog";
-import { ScheduleManager } from "@/components/ScheduleManager";
+import { ComponentsList } from "@/components/components/ComponentsList";
+import { InitialReviewSheet } from "@/components/onboarding/InitialReviewSheet";
 import { HealthPanel } from "@/components/HealthPanel";
 import { ConservationCard } from "@/components/ConservationCard";
 import { brl, EVENT_TYPE_LABEL, formatDate } from "@/lib/trailbook";
@@ -44,6 +45,7 @@ export function MotoControlCenter({ id }: { id: string }) {
   const [archiveReason, setArchiveReason] = useState("");
   const [inspectTarget, setInspectTarget] = useState<null | { id: string; name: string; category: string }>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
   }, []);
