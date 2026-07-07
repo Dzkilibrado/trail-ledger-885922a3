@@ -409,10 +409,79 @@ export function NewEventDialog({
             </F>
           )}
 
-          <div className="grid grid-cols-3 gap-3">
-            <F label="+ Horas"><Input name="hours_delta" type="number" step="0.1" placeholder="0" /></F>
-            <F label="+ Km"><Input name="km_delta" type="number" step="1" placeholder="0" /></F>
-            <F label="Custo R$"><Input name="cost" type="number" step="0.01" placeholder="0,00" /></F>
+          <div className="space-y-3 rounded-2xl border border-border/60 bg-background/30 p-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Uso da moto neste registro
+              </div>
+              <div className="flex gap-1 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => setReadingMode("current")}
+                  className={`rounded-full border px-2 py-0.5 ${readingMode === "current" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+                >
+                  Leitura atual
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReadingMode("delta")}
+                  className={`rounded-full border px-2 py-0.5 ${readingMode === "delta" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
+                >
+                  Informar horas/KM utilizados
+                </button>
+              </div>
+            </div>
+            {readingMode === "current" ? (
+              <>
+                <p className="text-[11px] text-muted-foreground">
+                  Informe o horímetro e/ou KM atual da moto. O TrailBook calcula automaticamente
+                  quanto rodou desde o último registro
+                  <span className="ml-1 opacity-70">
+                    (atual: {Number(moto.hours_total).toFixed(1)}h · {Number(moto.km_total).toFixed(0)}km).
+                  </span>
+                </p>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <F label="Horímetro atual (h)">
+                    <Input type="number" step="1" min="0" placeholder="0"
+                      value={currentHours} onChange={(e) => setCurrentHours(e.target.value)} />
+                  </F>
+                  <F label="Minutos">
+                    <Input type="number" step="1" min="0" max="59" placeholder="0"
+                      value={currentMinutes} onChange={(e) => setCurrentMinutes(e.target.value)} />
+                  </F>
+                  <F label="KM atual">
+                    <Input type="number" step="1" min="0" placeholder="0"
+                      value={currentKm} onChange={(e) => setCurrentKm(e.target.value)} />
+                  </F>
+                  <F label="Custo R$">
+                    <Input name="cost" type="number" step="0.01" placeholder="0,00" />
+                  </F>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-[11px] text-muted-foreground">
+                  Modo alternativo — use quando não souber a leitura atual do horímetro/hodômetro.
+                </p>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  <F label="+ Horas">
+                    <Input type="number" step="1" min="0" placeholder="0"
+                      value={deltaHours} onChange={(e) => setDeltaHours(e.target.value)} />
+                  </F>
+                  <F label="Minutos">
+                    <Input type="number" step="1" min="0" max="59" placeholder="0"
+                      value={deltaMinutes} onChange={(e) => setDeltaMinutes(e.target.value)} />
+                  </F>
+                  <F label="+ KM">
+                    <Input type="number" step="1" min="0" placeholder="0"
+                      value={deltaKm} onChange={(e) => setDeltaKm(e.target.value)} />
+                  </F>
+                  <F label="Custo R$">
+                    <Input name="cost" type="number" step="0.01" placeholder="0,00" />
+                  </F>
+                </div>
+              </>
+            )}
           </div>
           <F label="Observações"><Textarea name="description" rows={3} /></F>
           <F label="Fotos e vídeos do serviço (opcional)">
