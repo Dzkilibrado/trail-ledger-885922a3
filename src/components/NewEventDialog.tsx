@@ -398,6 +398,54 @@ export function NewEventDialog({
                 <F label="Produto"><Input name="product" placeholder="10W40" /></F>
               </div>
               <F label="Marca do produto"><Input name="brand_used" placeholder="Motul" /></F>
+
+              {!preset && (
+                <div className="space-y-2 rounded-2xl border border-primary/30 bg-primary/5 p-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-xs font-semibold uppercase tracking-widest text-primary">
+                      Item(ns) do plano afetados
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">
+                      {affectedScheduleIds.length} selecionado(s)
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Marque exatamente os itens do plano que esta manutenção atualiza.
+                    Nenhum outro item será tocado.
+                  </p>
+                  <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg bg-background/50 p-2">
+                    {(motoSchedules.data ?? []).length === 0 ? (
+                      <p className="px-1 py-2 text-[11px] text-muted-foreground">
+                        Nenhuma programação ativa. A atividade será registrada sem vínculo.
+                      </p>
+                    ) : (
+                      (motoSchedules.data ?? []).map((s: any) => (
+                        <label
+                          key={s.id}
+                          className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/50"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={affectedScheduleIds.includes(s.id)}
+                            onChange={() => toggleAffected(s.id)}
+                            className="h-4 w-4"
+                          />
+                          <span className="flex-1 truncate">{s.name}</span>
+                          <span className="text-[10px] uppercase text-muted-foreground">
+                            {MAINT_CATEGORY_LABEL[s.category as keyof typeof MAINT_CATEGORY_LABEL]}
+                          </span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                  {affectedScheduleIds.length === 0 && (motoSchedules.data ?? []).length > 0 && (
+                    <p className="text-[11px] text-amber-500">
+                      Nenhum item marcado — a manutenção ficará no histórico mas não atualizará
+                      nenhum item do plano.
+                    </p>
+                  )}
+                </div>
+              )}
             </>
           )}
 
