@@ -32,6 +32,11 @@ export function ComponentCard({
         <div className="flex items-center gap-1.5">
           {component.pinned && <Pin className="h-3 w-3 text-primary" aria-label="Fixado" />}
           <div className="truncate font-medium">{component.name}</div>
+          {component.isCustom && (
+            <span className="rounded-full border border-primary/30 bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-primary">
+              Personalizado
+            </span>
+          )}
         </div>
         <div className="mt-0.5 flex items-center gap-1.5 text-xs">
           <span className={`inline-block h-1.5 w-1.5 rounded-full ${t.dot}`} />
