@@ -7,8 +7,9 @@ import { groupComponentsByCategory } from "@/lib/til/components";
 import { ComponentCard } from "./ComponentCard";
 import { ComponentSheet } from "./ComponentSheet";
 import { PlanCatalogSyncDialog } from "@/components/PlanCatalogSyncDialog";
+import { NewComponentDialog } from "./NewComponentDialog";
 import { Button } from "@/components/ui/button";
-import { Wand2 } from "lucide-react";
+import { Wand2, Plus } from "lucide-react";
 
 /**
  * Lista de COMPONENTES da moto — agrupada por categoria,
@@ -87,7 +88,7 @@ export function ComponentsList({ moto, isOwner, limitPerCategory }: {
           Aplique o plano recomendado do catálogo para começar a acompanhar cada componente da sua moto.
         </p>
         {isOwner && (
-          <div className="flex justify-center pt-1">
+          <div className="flex flex-wrap justify-center gap-2 pt-1">
             <PlanCatalogSyncDialog
               moto={moto}
               trigger={
@@ -96,6 +97,7 @@ export function ComponentsList({ moto, isOwner, limitPerCategory }: {
                 </Button>
               }
             />
+            <NewComponentDialog motorcycleId={moto.id} />
           </div>
         )}
       </div>
@@ -104,6 +106,14 @@ export function ComponentsList({ moto, isOwner, limitPerCategory }: {
 
   return (
     <>
+      {isOwner && (
+        <div className="flex justify-end">
+          <NewComponentDialog
+            motorcycleId={moto.id}
+            trigger={<Button variant="outline" size="sm"><Plus className="h-4 w-4" /> Adicionar componente</Button>}
+          />
+        </div>
+      )}
       <div className="space-y-5">
         {groups.map((g) => {
           const visible = limitPerCategory ? g.items.slice(0, limitPerCategory) : g.items;
