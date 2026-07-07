@@ -31,7 +31,6 @@ export function computeCockpitSnapshot(input: {
   const { moto, events, schedules, attachments, isOwner, maintenanceItems } = input;
   const workshopEventIds = new Set(events.filter((e) => e.workshop_id).map((e) => e.id));
   const statuses = computeStatuses(moto, schedules, events);
-  const health = computeHealth({ moto, events, attachments, statuses, workshopEventIds });
   const nextMaintenance = computeNextMaintenance(statuses);
   const stats = computeStats(moto, events);
   const nextAlert = computeNextAlert(statuses);
@@ -43,6 +42,7 @@ export function computeCockpitSnapshot(input: {
     (itemsByScheduleId[it.schedule_id] ||= []).push({ event_id: it.event_id, created_at: it.created_at });
   }
   const components = computeComponentViews(schedules, statuses, events, itemsByScheduleId);
+  const health = computeHealth({ moto, events, attachments, statuses, workshopEventIds, components });
 
   return {
     motoId: moto.id,
