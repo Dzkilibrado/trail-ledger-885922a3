@@ -51,9 +51,13 @@ export async function fetchMotorcycleSchedules(motorcycleId: string) {
 
 /**
  * Localiza schedules candidatos para uma atividade.
- *   1. Preferência: vínculo por ID do item do catálogo (template_item_id).
- *   2. Fallback: nome idêntico ao "Item — Ação" ou item_name em substring.
- * Isso torna o registro robusto mesmo que o usuário renomeie um schedule.
+ *   1. Preferência ABSOLUTA: vínculo por ID do item do catálogo (template_item_id).
+ *   2. Fallback restrito: nome idêntico ao item_name OU exatamente "item_name — Ação".
+ *
+ * ATENÇÃO: nunca usar substring/`includes`. Isso replicaria o serviço em
+ * schedules de outros itens (ex.: "óleo" bateria em "óleo do motor" e
+ * "filtro de óleo") — o efeito colateral que a Fase 2 precisa eliminar.
+ * Se nada casa exatamente, retorna [] e nenhuma programação é alterada.
  */
 export async function findSchedulesForCatalogItem(
   motorcycleId: string,
@@ -64,11 +68,10 @@ export async function findSchedulesForCatalogItem(
     const byId = schedules.filter((s) => s.template_item_id === opts.templateItemId);
     if (byId.length > 0) return byId.map((s) => s.id);
   }
-  if (opts.itemName) {
-    const name = opts.itemName;
-    return schedules
-      .filter((s) => s.name === name || s.name.startsWith(`${name} —`) || s.name.includes(name))
-      .map((s) => s.id);
-  }
-  return [];
+  const name = (opts.itemName ?? "").trim();
+  if (!name) return [];
+  const exact = schedules.filter(
+    (s) => s.name === name || s.name.startsWith(`${name} —`),
+  );
+  return exact.map((s) => s.id);
 }
