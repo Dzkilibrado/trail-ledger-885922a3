@@ -1,132 +1,63 @@
-# Fase 3 (v1.2) — TrailBook Cockpit + TrailBook Intelligence Layer (TIL)
+# TrailBook v1.2.1 — Saúde da Moto + Plano Editável + Integridade por Item
 
-Filosofia gravada em `mem://index.md` (Core) e ADR 0002 registrada. Este plano executa a nova arquitetura respeitando: mobile-first, Regra dos 30s, telas não calculam, personalização mínima.
+Escopo grande. Proponho dividir em 4 sub-fases sequenciais, cada uma homologável isoladamente. Isso reduz risco de regressão e mantém a filosofia de simplicidade (nenhuma tela nova cheia).
 
-> **Status:** Implementação concluída — aguardando homologação do usuário.
-> Fase 1 (v1.0) e Fase 2 (v1.1) foram homologadas em rodadas anteriores; ver ADR 0001.
+---
 
-## 0. Entrega
+## Sub-fase A — Fundação de dados e integridade (backend + TIL)
 
-Arquivos criados/alterados nesta rodada:
+**Objetivo:** garantir a regra crítica #8/#9/#10 antes de mexer em UI.
 
-**TIL — `src/lib/til/`**
-- `types.ts` — tipos do `CockpitSnapshot`.
-- `health.ts` — score + frase única + tom (reutiliza `computeConservation`).
-- `schedule.ts` — statuses via `priorityList` + próxima manutenção.
-- `usage.ts` — horímetro/KM/última atividade/investido.
-- `alerts.ts` — próximo alerta priorizado.
-- `suggestions.ts` — `NextAction` (revisar plano, registrar manutenção, registrar atividade…).
-- `index.ts` — fachada `computeCockpitSnapshot()`.
+1. **Migration** em `maintenance_schedules`:
+   - Novos status: `no_info`, `not_applicable`, `custom` (além de `active/ignored/snoozed` já existentes).
+   - Colunas: `pinned boolean default false`, `sort_order int`, `hidden boolean default false`, `needs_review boolean default false`.
+   - `initial_review_done_at timestamptz` na `motorcycles` (para fluxo #7).
+2. **Migration** — trigger de auditoria em `maintenance_schedules` e `maintenance_items` gravando em `audit_log` (edição de intervalo, marcação de status, criação/remoção, vínculo/desvínculo de item).
+3. **`src/lib/maintenance-catalog.ts`:** remover o fallback por nome canônico em `findSchedulesForCatalogItem` — passar a exigir vínculo explícito (`template_item_id` ou `scheduleId` selecionado). Sem vínculo → retorna `[]` e nenhum schedule é tocado (regra #10).
+4. **`NewEventDialog`:** substituir "categoria + item do catálogo" por seleção obrigatória de **schedule(s) da moto** (multi-select "Adicionar outro item"). Se o item desejado não existe no plano, botão "Criar item personalizado agora" que insere um schedule antes de gravar.
+5. **`activity-recalc.recomposeTimeline`:** já correto — apenas garantir que `recalcScheduleFromHistory` usa `maintenance_items.schedule_id` (vínculo explícito), nunca nome.
 
-**Cockpit — `src/components/cockpit/`**
-- `Cockpit.tsx` — layout mobile-first `max-w-2xl`, carrega dados e consulta a TIL.
-- `widgets/HealthHeroWidget.tsx` — cartão-herói: score + frase + próxima manutenção.
-- `widgets/QuickStatsWidget.tsx` — última atividade · horímetro · KM · próximo alerta.
-- `widgets/NextActionWidget.tsx` — CTA único, contextual, aparece só se houver ação.
+## Sub-fase B — Plano de manutenção editável item a item
 
-**Rotas**
-- `src/routes/_authenticated/motorcycles.$id.tsx` — agora é layout `<Outlet/>`.
-- `src/routes/_authenticated/motorcycles.$id.index.tsx` — `/motorcycles/$id` → Cockpit.
-- `src/routes/_authenticated/motorcycles.$id.control.tsx` — `/motorcycles/$id/control` → Centro de Controle (detalhes completos preservados).
-- `src/components/MotoControlCenter.tsx` — todo o conteúdo detalhado anterior extraído em componente reutilizável.
+**Objetivo:** #5, #6, #7.
 
-## 1. Escopo desta entrega
+1. **Novo componente `PlanItemEditor`** (Sheet mobile-first) — edita: nome, categoria, intervalos h/km/dias, última manutenção (data/h/km), severidade, observações, status. Ações: desativar / marcar sem informação / não aplicável / remover / duplicar.
+2. **`ScheduleManager`** (Plano de Manutenção): trocar lista atual por cards agrupados por categoria, cada um com badge de status, botão "Editar" abrindo o `PlanItemEditor` e botão "Registrar manutenção" (abre `NewEventDialog` já pré-selecionado nesse schedule).
+3. **Alerta moto usada** — Cockpit exibe widget "Revise o plano" quando `motorcycles.initial_review_done_at IS NULL` e `moto.hours_total > 0`. CTA abre um wizard leve (`InitialReviewSheet`) que percorre os schedules pedindo: última manutenção / sem info / novo / não aplicável.
 
-- Criar a **TIL** (`src/lib/til/`) como fonte única de cálculos.
-- Substituir a tela de detalhe da moto pelo **Cockpit** enxuto.
-- Mover o conteúdo detalhado atual para o **Centro de Controle** (tabs internas: Saúde, Manutenção, Agenda, Histórico, Documentação, Custos, Alertas).
-- Personalização mínima: fixar favoritos, ocultar painel, restaurar padrão.
-- Homologação (checklist da mensagem).
+## Sub-fase C — Saúde por componente + personalização
 
-Fora de escopo: novos widgets (Oficina, Eventos, Seguro, IA), IA preditiva, push notifications.
+**Objetivo:** #1, #2, #3, #4, #12.
 
-## 2. Arquitetura
+1. **TIL — `src/lib/til/component-health.ts`:** para cada schedule ativa da moto, snapshot `{scheduleId, name, category, status(traffic-light), remaining{h,km,d}, lastDoneAt, nextEstimatedAt, hasInfo}`. Fonte: `evaluateSchedule` já existente + flag `no_info`. Nenhum cálculo em componentes.
+2. **`computeCockpitSnapshot`:** incluir `componentHealth: ComponentHealthSnapshot[]` e `healthPhrase` (recomendação inteligente: "Item que mais merece atenção: X", "N itens sem informação", etc.).
+3. **Novo widget `ComponentHealthWidget`** no Cockpit: mostra 4 itens (fixados + top prioridade). Link "Ver todos" abre `MotoControlCenter` na aba **Saúde**.
+4. **Nova aba "Saúde"** no Control Center: lista completa por categoria com traffic-lights. Cada card: score/status, restante, última, próxima, ações rápidas (Registrar / Inspecionar / Editar plano / Ver histórico).
+5. **Personalização (#4):** `pinned`, `hidden`, `sort_order` persistidos em `maintenance_schedules`. UI: menu de contexto no card ("Fixar no cockpit / Ocultar / Restaurar padrão"). Reordenação apenas dos fixados (drag simples ou setas — mobile-first, setas ↑↓).
+6. **Detalhe do item (#12):** rota `motorcycles.$id.control.item.$scheduleId.tsx` — histórico do item lendo `maintenance_items` daquele schedule + eventos vinculados; botões Registrar manutenção / Editar plano.
 
-### 2.1 TIL — `src/lib/til/`
+## Sub-fase D — Homologação completa
 
-```text
-src/lib/til/
-  index.ts          getCockpit(motoId) → CockpitSnapshot
-  types.ts          CockpitSnapshot, HealthStatus, NextAction, Alert, ...
-  health.ts         computeHealth(moto, schedules, events) → { score, label }
-  schedule.ts       computeSchedule(...)  → { next, upcoming, overdue }
-  alerts.ts         computeAlerts(...)    → Alert[] priorizados
-  usage.ts          computeUsage(...)     → { hoursTotal, kmTotal, lastEvent }
-  costs.ts          computeCosts(...)     → { total, byCategory, byPeriod }
-  suggestions.ts    computeNextAction(...) → NextAction | null
-```
+Executar via Playwright headless em mobile (390×844) e desktop, cobrindo os 22 itens da seção 16 do pedido. Retornar relatório item-a-item + evidências (screenshots) + typecheck.
 
-- Funções **puras**: recebem dados já carregados, retornam snapshot tipado.
-- `getCockpit(motoId)` orquestra queries via TanStack Query (loader) e retorna o snapshot completo. Componentes só leem.
-- 100% testável isoladamente.
+---
 
-### 2.2 Cockpit — `src/components/cockpit/`
+## Detalhes técnicos-chave
 
-```text
-src/components/cockpit/
-  Cockpit.tsx                    layout principal
-  ControlCenter.tsx              tabs: Saúde/Manutenção/Agenda/Histórico/Doc/Custos/Alertas
-  registry.ts                    registro de widgets
-  widgets/
-    HealthHeroWidget.tsx         cartão-herói: saúde + próxima manutenção + CTA
-    QuickStatsWidget.tsx         última atividade · horímetro · KM · próximo alerta
-    NextActionWidget.tsx         CTA contextual (aparece só se houver ação)
-```
+- **Integridade por item (regra #8):** nenhuma manutenção grava em schedule sem `scheduleId` vindo de seleção explícita do usuário. `findSchedulesForCatalogItem` deixa de ser usada como fallback silencioso; passa a ser apenas helper de sugestão visível no UI ("encontramos programação: X — vincular?").
+- **Atividade geral (#11):** `type ∈ {usage, incident, note, inspection}` nunca toca schedules mesmo que o usuário informe horímetro/KM — só atualiza timeline via `recomposeTimeline`.
+- **Recomposição:** continua sendo o único caminho pós-mutação (ADR 0001). Nada muda aqui.
+- **Auditoria:** trigger em SQL grava em `audit_log` com `actor = auth.uid()`, `entity = 'maintenance_schedule'|'maintenance_item'`, `action`, `before/after jsonb`.
+- **Mobile-first:** todos os editores em `<Sheet>` (não `<Dialog>`), cards empilhados, botões ≥ 44px.
 
-- Widget = `(snapshot) => JSX`. Sem fetch, sem cálculo.
-- Mobile-first (375px): stack vertical, tipografia grande, áreas de toque ≥ 48px.
-- Desktop: container centralizado max-w-2xl — sem virar dashboard largo.
+## Ordem de entrega e critérios de aprovação
 
-### 2.3 Rotas
+Executarei **Sub-fase A → B → C → D em sequência, sem parar entre elas**, mas cada uma commitada logicamente. Ao final entrego o relatório de homologação dos 22 itens.
 
-- `/_authenticated/motorcycles/$id` → **Cockpit** (novo padrão).
-- `/_authenticated/motorcycles/$id/control` → Centro de Controle (tabs).
-- Rotas antigas de plano/etc migram para tabs do Centro de Controle preservando URLs quando possível.
+Alternativa se preferir: parar após cada sub-fase para você validar. Diga se prefere entrega contínua ou por sub-fase.
 
-## 3. Passos de implementação
+## Perguntas para confirmar antes de codar
 
-1. **TIL base**: criar `src/lib/til/*` com tipos e funções puras. Reutilizar `activity-recalc` e `maintenance-catalog` já existentes. Retornar snapshot.
-2. **Loader/hook**: `useCockpit(motoId)` via TanStack Query + `ensureQueryData` no loader.
-3. **HealthHeroWidget**: hierarquia visual clara (score grande, frase única, CTA único).
-4. **QuickStatsWidget**: 4 métricas em linha (mobile: 2x2, desktop: 1x4).
-5. **NextActionWidget**: renderiza apenas se `snapshot.nextAction` existir.
-6. **Cockpit.tsx**: compõe os 3 widgets acima, sem mais nada.
-7. **ControlCenter.tsx**: tabs internas (shadcn Tabs) preservando conteúdo atual da tela de detalhe.
-8. **Migração da rota** `/motorcycles/$id`: passa a renderizar `Cockpit`. Conteúdo antigo vai para `.../control`.
-9. **Personalização mínima**: menu com "Fixar favorito", "Ocultar painel", "Restaurar padrão" persistido em `localStorage` por moto.
-10. **Homologação**: rodar `tsgo`, verificar console, Playwright em 375px e desktop, validar checklist.
-
-## 4. Design tokens
-
-- Nenhuma cor nova hardcoded. Usar semantic tokens já existentes (`--primary`, `--muted`, etc.).
-- Muito espaço em branco: padding generoso, hierarquia por tamanho de fonte, não por cor.
-- Máximo 1 cor de destaque por tela (o CTA principal).
-
-## 5. Homologação (checklist oficial)
-
-- ✓ Interface continua simples (≤ 3 blocos no Cockpit).
-- ✓ Poucos elementos visuais.
-- ✓ Nenhuma informação duplicada entre Cockpit e Centro de Controle.
-- ✓ Mobile confortável (375px, áreas de toque ≥ 48px, sem scroll horizontal).
-- ✓ Desktop organizado (container centrado, sem virar dashboard).
-- ✓ Performance preservada (snapshot memoizado via TanStack Query).
-- ✓ Console limpo.
-- ✓ `tsgo --noEmit` limpo.
-- ✓ Regra dos 30s validada num cenário real.
-
-## 6. Riscos / mitigações
-
-- **Regressão de informação**: Centro de Controle preserva 100% do detalhe atual.
-- **Tentação de reintroduzir cards**: filtro obrigatório "isso simplifica?" antes de qualquer adição.
-- **Custo de cálculo**: TIL memoizada por moto; recomposição já é O(n) em eventos.
-
-## 7. Entregáveis
-
-- `src/lib/til/*` (7 arquivos).
-- `src/components/cockpit/*` + widgets (5 arquivos).
-- Rota `.../control` com tabs.
-- Rota `$id` renderizando o Cockpit.
-- Atualização de `.lovable/plan.md` com Fase 3.
-- Homologação registrada.
-
-Confirmar para eu iniciar a implementação exatamente nesta ordem.
+1. **Ordem/atomicidade:** entrega contínua (A→B→C→D em um turno) **ou** parar após cada sub-fase para validação?
+2. **Reordenação de fixados:** setas ↑↓ (simples, mobile-friendly) **ou** drag-and-drop (mais moderno, requer lib)? Recomendo setas.
+3. **Wizard de revisão de moto usada** — obrigatório (bloqueia alertas até concluir) **ou** opt-in (banner dispensável)? Recomendo opt-in com banner persistente.
