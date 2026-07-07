@@ -6,7 +6,7 @@ import { EventTypeIcon } from "@/components/EventTypeIcon";
 import { NewEventDialog } from "@/components/NewEventDialog";
 import { ComponentsList } from "@/components/components/ComponentsList";
 import { InitialReviewSheet } from "@/components/onboarding/InitialReviewSheet";
-import { HealthPanel } from "@/components/HealthPanel";
+import { HealthOverview } from "@/components/health/HealthOverview";
 import { ConservationCard } from "@/components/ConservationCard";
 import { brl, EVENT_TYPE_LABEL, formatDate } from "@/lib/trailbook";
 import { Button } from "@/components/ui/button";
@@ -335,8 +335,13 @@ export function MotoControlCenter({ id }: { id: string }) {
       <MotorcycleDocuments motorcycleId={m.id} />
 
       <section className="space-y-3">
-        <h2 className="font-display text-lg font-bold">Painel de saúde</h2>
-        <HealthPanel items={health} />
+        <div className="flex items-baseline justify-between">
+          <h2 className="font-display text-lg font-bold">Saúde da moto</h2>
+          <Link to="/motorcycles/$id/health" params={{ id: m.id }} className="text-xs text-primary hover:underline">
+            Abrir check-up completo
+          </Link>
+        </div>
+        <HealthOverview moto={m as any} isOwner={isOwner} />
       </section>
 
       {isOwner && (

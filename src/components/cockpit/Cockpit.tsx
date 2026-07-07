@@ -123,6 +123,12 @@ export function Cockpit({ motoId }: { motoId: string }) {
 
       <div className="pt-2">
         <Button asChild variant="outline" className="w-full justify-between">
+          <Link to="/motorcycles/$id/health" params={{ id: m.id }}>
+            Ver saúde da moto
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        </Button>
+        <Button asChild variant="outline" className="mt-2 w-full justify-between">
           <Link to="/motorcycles/$id/components" params={{ id: m.id }}>
             Ver componentes
             <ChevronRight className="h-4 w-4" />
