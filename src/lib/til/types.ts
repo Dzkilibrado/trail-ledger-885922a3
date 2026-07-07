@@ -8,10 +8,31 @@ export type Attachment = Database["public"]["Tables"]["event_attachments"]["Row"
 
 export type Tone = "good" | "warn" | "bad";
 
+export type HealthGrade = "excellent" | "good" | "attention" | "critical";
+
+export const HEALTH_GRADE_LABEL: Record<HealthGrade, string> = {
+  excellent: "Excelente",
+  good: "Boa",
+  attention: "Atenção",
+  critical: "Crítica",
+};
+
+export interface HealthBuckets {
+  ok: ComponentView[];
+  attention: ComponentView[];
+  overdue: ComponentView[];
+  noInfo: ComponentView[];
+}
+
 export interface HealthSnapshot {
   score: number; // 0..100
   label: string; // frase única, ex.: "Sua moto está saudável"
   tone: Tone;
+  grade: HealthGrade;         // Excelente / Boa / Atenção / Crítica
+  gradeLabel: string;
+  headline: string;           // frase curta acionável ("Pronta para uso" / "Existe algo a resolver")
+  buckets: HealthBuckets;     // agrupamento inteligente
+  topAttention: ComponentView | null; // componente mais urgente (para o Cockpit)
 }
 
 export interface NextMaintenanceSnapshot {
