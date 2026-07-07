@@ -50,28 +50,23 @@ export async function fetchMotorcycleSchedules(motorcycleId: string) {
 }
 
 /**
- * Localiza schedules candidatos para uma atividade.
- *   1. Preferência ABSOLUTA: vínculo por ID do item do catálogo (template_item_id).
- *   2. Fallback restrito: nome idêntico ao item_name OU exatamente "item_name — Ação".
+ * v1.2.1 — Vínculo item→schedule EXCLUSIVAMENTE por identificador estruturado.
  *
- * ATENÇÃO: nunca usar substring/`includes`. Isso replicaria o serviço em
- * schedules de outros itens (ex.: "óleo" bateria em "óleo do motor" e
- * "filtro de óleo") — o efeito colateral que a Fase 2 precisa eliminar.
- * Se nada casa exatamente, retorna [] e nenhuma programação é alterada.
+ * Regra #10 do TrailBook: uma manutenção só pode atualizar um schedule
+ * quando existe vínculo explícito. Nenhum matching por nome/substring é
+ * feito aqui — nem mesmo por nome exato — porque o usuário pode ter
+ * renomeado a programação, ter duplicatas ou usar catálogo diferente.
+ *
+ * Se `templateItemId` não casar com nenhum schedule ativo da moto,
+ * retorna [] e a UI DEVE pedir seleção manual do(s) schedule(s) afetados.
  */
 export async function findSchedulesForCatalogItem(
   motorcycleId: string,
-  opts: { templateItemId?: string | null; itemName?: string | null },
+  opts: { templateItemId?: string | null },
 ): Promise<string[]> {
+  if (!opts.templateItemId) return [];
   const schedules = await fetchMotorcycleSchedules(motorcycleId);
-  if (opts.templateItemId) {
-    const byId = schedules.filter((s) => s.template_item_id === opts.templateItemId);
-    if (byId.length > 0) return byId.map((s) => s.id);
-  }
-  const name = (opts.itemName ?? "").trim();
-  if (!name) return [];
-  const exact = schedules.filter(
-    (s) => s.name === name || s.name.startsWith(`${name} —`),
-  );
-  return exact.map((s) => s.id);
+  return schedules
+    .filter((s) => s.template_item_id === opts.templateItemId)
+    .map((s) => s.id);
 }
