@@ -15,6 +15,11 @@ import { SEVERITY_LABEL } from "@/lib/til/components";
 import { MAINT_CATEGORY_LABEL, type MaintenanceCategory, formatDate } from "@/lib/trailbook";
 import type { Motorcycle } from "@/lib/trailbook";
 import { Pin, PinOff, EyeOff, Eye, RotateCcw, Wrench, ChevronDown, ChevronUp } from "lucide-react";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { PowerOff } from "lucide-react";
 
 /**
  * ComponentSheet — identidade do COMPONENTE (não do "plano").
@@ -175,6 +180,29 @@ export function ComponentSheet({
               <Button size="sm" variant="ghost" onClick={() => setEditing((v) => !v)}>
                 {editing ? "Fechar edição" : "Editar componente"}
               </Button>
+              {c.isCustom && !c.hidden && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                      <PowerOff className="h-4 w-4" /> Desativar
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Desativar este componente?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        O componente <strong>{c.name}</strong> sairá da lista ativa desta moto, mas seu
+                        histórico, auditoria, eventos e custos serão preservados. Você pode reativá-lo
+                        a qualquer momento em "Mostrar".
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction onClick={toggleHidden}>Desativar componente</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
             </div>
           )}
 
