@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { StoragePhoto } from "@/components/StoragePhoto";
@@ -35,13 +35,7 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { AdminMotoDangerZone } from "@/components/AdminMotoDangerZone";
 import { EventActionsMenu } from "@/components/EventActionsMenu";
 
-export const Route = createFileRoute("/_authenticated/motorcycles/$id")({
-  head: () => ({ meta: [{ title: "Moto — TrailBook" }] }),
-  component: MotoDetail,
-});
-
-function MotoDetail() {
-  const { id } = Route.useParams();
+export function MotoControlCenter({ id }: { id: string }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
   const { plan } = usePlan();
