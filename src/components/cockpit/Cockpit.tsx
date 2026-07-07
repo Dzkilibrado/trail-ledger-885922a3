@@ -122,6 +122,12 @@ export function Cockpit({ motoId }: { motoId: string }) {
       <QuickStatsWidget snapshot={snapshot} />
 
       <div className="pt-2">
+        <Button asChild variant="outline" className="w-full justify-between">
+          <Link to="/motorcycles/$id/components" params={{ id: m.id }}>
+            Ver componentes
+            <ChevronRight className="h-4 w-4" />
+          </Link>
+        </Button>
         <Button asChild variant="ghost" className="w-full justify-between text-muted-foreground hover:text-foreground">
           <Link to="/motorcycles/$id/control" params={{ id: m.id }}>
             Abrir Centro de Controle
