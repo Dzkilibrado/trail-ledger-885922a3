@@ -6,6 +6,9 @@ import type { Motorcycle } from "@/lib/trailbook";
 import { groupComponentsByCategory } from "@/lib/til/components";
 import { ComponentCard } from "./ComponentCard";
 import { ComponentSheet } from "./ComponentSheet";
+import { PlanCatalogSyncDialog } from "@/components/PlanCatalogSyncDialog";
+import { Button } from "@/components/ui/button";
+import { Wand2 } from "lucide-react";
 
 /**
  * Lista de COMPONENTES da moto — agrupada por categoria,
@@ -78,8 +81,23 @@ export function ComponentsList({ moto, isOwner, limitPerCategory }: {
 
   if (snapshot.components.length === 0) {
     return (
-      <div className="surface-elevated rounded-2xl p-6 text-center text-sm text-muted-foreground">
-        Nenhum componente cadastrado ainda.
+      <div className="surface-elevated space-y-3 rounded-2xl p-6 text-center">
+        <div className="text-sm font-medium">Nenhum componente cadastrado ainda</div>
+        <p className="text-xs text-muted-foreground">
+          Aplique o plano recomendado do catálogo para começar a acompanhar cada componente da sua moto.
+        </p>
+        {isOwner && (
+          <div className="flex justify-center pt-1">
+            <PlanCatalogSyncDialog
+              moto={moto}
+              trigger={
+                <Button className="btn-glow" size="sm">
+                  <Wand2 className="h-4 w-4" /> Aplicar plano recomendado
+                </Button>
+              }
+            />
+          </div>
+        )}
       </div>
     );
   }
