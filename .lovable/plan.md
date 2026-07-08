@@ -1,141 +1,196 @@
-## Revisão da Navegação Principal — Mobile First
 
-### 1. Estrutura atual
+# TrailBook — Revisão Geral de UX Mobile
 
-Sidebar principal hoje tem **10 itens** de Navegação + 4 de Conta + 6 de Admin:
-
-**Navegação (10):**
-- Dashboard
-- Minhas Motos
-- Documentos da Moto
-- Agenda
-- Certificados
-- Chamados
-- Mensagens
-- Oficinas
-- Financeiro
-- Transferências
-
-**Minha Conta (4):** Perfil · Configurações · Plano · Ajuda
-**Administração (6):** Dashboard Admin · Usuários · Chamados · Mensagens · Documentos · Módulos
-**Sessão:** Sair
-
-**Problema:** muitos itens são funções *da moto* (Documentos, Agenda, Certificados, Financeiro, Transferências) que já existem dentro do contexto de cada motocicleta (Cockpit → Check-up, Componentes, Plano, Central da Moto). Duplicação + poluição visual no mobile.
+Proposta completa antes de qualquer implementação. Nada será alterado até homologação.
 
 ---
 
-### 2. Estrutura proposta
+## 1. Arquitetura atual (resumo)
 
-Menu principal reduzido a **5 módulos** (+ Administração para admin):
+**Menu principal (pós-última entrega):** Início · Minhas Motos · Central · Comunicação · Perfil (+ Administração).
+
+**Dentro de uma moto (Cockpit):** foto + saudação + hero de Saúde + próxima ação + stats + 3 cards (Check-up, Componentes, Central da Moto).
+
+**Problemas remanescentes identificados na homologação:**
+- Check-up mostra as 4 categorias abertas ao mesmo tempo (Vencidos, Atenção, Sem info, Em dia) → rolagem longa.
+- Componentes sem filtros rápidos → lista contínua.
+- Central da Moto acumula muita informação simultânea.
+- Card de Saúde do Cockpit ocupa muito espaço para pouca informação essencial.
+- Próximas Manutenções apresentadas como lista, não como ação.
+- Títulos ainda podem cortar em telas estreitas (390px).
+- Cabeçalhos com múltiplas ações competindo com o título.
+- Empty States inconsistentes.
+
+---
+
+## 2. Arquitetura proposta
+
+### 2.1 Menu principal — mantém 5 módulos
 
 ```
-┌─ PRINCIPAL ─────────────────┐
-│ 🏠  Início                  │  → /dashboard
-│ 🏍️  Minhas Motos             │  → /motorcycles
-│ 📂  Central                 │  → /central (novo hub)
-│ 💬  Comunicação             │  → /comunicacao (novo hub)
-│ 👤  Perfil                  │  → /perfil (novo hub)
-└─────────────────────────────┘
-
-┌─ ADMINISTRAÇÃO (admin) ─────┐
-│ 🛡️  Administração            │  → /admin (hub já existente)
-└─────────────────────────────┘
+🏠 Início · 🏍 Minhas Motos · 📂 Central · 💬 Comunicação · 👤 Perfil
+🛡 Administração (admin)
 ```
 
+Sem novos itens. Toda funcionalidade **da moto** vive **dentro da moto**.
+
+### 2.2 Moto Ativa (oficialização)
+
+- Início mostra **1 moto** (a ativa) + botão "Trocar moto" → **TBBottomSheet** com lista compacta.
+- Lista completa "Suas motos (N)" inicia **recolhida**.
+- Selecionar moto atualiza contexto global (`useActiveMotorcycle` já existe — apenas oficializar).
+
+### 2.3 Navegação contextual dentro da moto
+
+```
+Moto Ativa
+ ├─ Cockpit (home da moto)
+ ├─ Check-up
+ ├─ Componentes
+ ├─ Plano / Agenda
+ ├─ Histórico
+ └─ Central da Moto
+     ├─ Documentos
+     ├─ Certificados
+     ├─ Financeiro
+     └─ Transferências
+```
+
+Central/Comunicação/Perfil no menu principal seguem sendo **transversais ao usuário** (não da moto).
+
 ---
 
-### 3. Agrupamentos e justificativas
+## 3. Redesenho tela a tela
 
-#### 📂 Central — `/central`
-Hub de artefatos transversais ao usuário (não pertencem a uma moto específica ou cruzam várias).
+### 3.1 Cockpit (home da moto)
+- **Foto**: card compacto quando ausente (já implementado ✓).
+- **Saudação**: mantida, uma linha.
+- **Saúde**: reduzir hero — linha única `❤️ Saúde · Excelente · 64%` + subtítulo "Próxima: troca de óleo em 3h" (ou "Nenhuma pendência").
+- **Próxima ação**: um botão CTA grande apenas quando existir pendência.
+- **Áreas**: 3 cards atuais mantidos (Check-up, Componentes, Central).
 
-| Item | Origem | Justificativa |
-|---|---|---|
-| Documentos | `/documents` | Visão consolidada; documentos de moto continuam dentro da própria moto |
-| Certificados | `/certificates` | Emitidos pelo usuário; ação pontual, não diária |
-| Compartilhamentos | `/transfers` (renomeado) | "Transferências" é técnico; compartilhar/transferir moto é a mesma família |
-| Oficinas | `/workshops` | Diretório de terceiros do usuário; baixa frequência de acesso |
-| Financeiro | `/financial` | Consolidado multi-moto; o financeiro *da moto* fica no Cockpit |
+### 3.2 Check-up Completo (mudança maior)
+Substituir as 4 seções abertas por **4 cards executáveis** empilhados:
 
-**Por quê agrupar:** todos são "coisas do meu ecossistema" acessadas com baixa frequência. Um hub com 5 cards grandes é mais confortável no mobile que 5 itens espalhados no menu.
+```
+🔴 Vencidos           (2)  ›
+🟠 Atenção            (3)  ›
+⚪ Sem informação     (4)  ›
+🟢 Em dia            (18)  ›
+```
 
-#### 💬 Comunicação — `/comunicacao`
-Tudo que é troca de mensagem, alerta ou suporte.
+Toque abre **TBBottomSheet** com apenas aquela categoria (interface progressiva nível 2). Contagem 0 = card desabilitado com "Nada aqui ✓".
 
-| Item | Origem | Justificativa |
-|---|---|---|
-| Mensagens | `/messages` | Conversas |
-| Chamados | `/tickets` | Suporte |
-| Notificações | (hoje só no sino) | Centralizar histórico de notificações |
+### 3.3 Componentes
+- **Empty state** amigável + CTA "Cadastrar componente".
+- **TBFilterBar** sticky no topo: `Todos · Atenção · Vencidos · Em dia · Personalizados`.
+- Renderiza somente a categoria ativa.
 
-**Por quê agrupar:** três canais diferentes com a mesma natureza (mensagem recebida/enviada). O sino do header continua para acesso rápido; o hub é o "inbox unificado".
+### 3.4 Central da Moto (painel executivo)
+Grid de 6 cards resumo, cada um com 1 número + 1 status. Toque abre a área:
 
-#### 👤 Perfil — `/perfil`
-Substitui a seção "Minha Conta" da sidebar por uma tela única.
+```
+❤️ Saúde · 64%      🔧 Componentes · 12
+📅 Próximas · 3     📄 Documentos · 5
+🏆 Certificados · 1 📈 Histórico · 47
+```
 
-| Item | Origem |
+Sem listas, sem timeline embutida, sem gráficos.
+
+### 3.5 Próximas Manutenções
+Cards orientados a ação:
+
+```
+Troca de óleo · Em 3h        [ Registrar ]
+Filtro de ar  · Em 5 dias    [ Registrar ]
+```
+
+Empty state amigável quando não houver.
+
+### 3.6 Cabeçalhos (todas as telas)
+Padrão único: `‹ Voltar · Título · Ação principal · ⋯`.
+- Título nunca truncado; pode quebrar em 2 linhas (`break-words leading-tight`, já aplicado em `TBPageHeader`).
+- Ações secundárias em menu `⋯` (kebab).
+
+### 3.7 Empty states / progressão
+Padrão oficial em todo o sistema:
+```
+Resumo → Filtro/Categoria → Detalhe
+```
+Nunca exibir tudo simultaneamente.
+
+---
+
+## 4. Menus/telas que mudam de contexto
+
+| Hoje | Vai para |
 |---|---|
-| Dados | `/profile` |
-| Configurações | `/settings` |
-| Plano | `/plans` |
-| Ajuda | `/help` |
-| Sair | ação (com confirm existente) |
+| Check-up com 4 listas abertas | 4 cards executáveis + bottom sheet |
+| Componentes lista contínua | Filtros + categoria única |
+| Central da Moto densa | 6 cards resumo |
+| Hero de Saúde grande | Linha compacta no Cockpit |
+| Próximas manutenções em lista | Cards com botão "Registrar" |
 
-**Por quê agrupar:** todos são "sobre mim". Menos ruído no menu; a tela de Perfil vira o ponto único de auto-serviço.
-
----
-
-### 4. O que **sai** do menu principal
-
-Estes itens deixam de aparecer no menu — passam a viver **dentro do contexto de cada moto** (já existem no Cockpit / Central da Moto):
-
-- Documentos **da moto** (fica em `/motorcycles/$id/control` — Central da Moto)
-- Agenda **da moto** (fica no Cockpit + Plano de Manutenção)
-- Certificados **da moto** (emissão dentro da moto)
-- Financeiro **da moto** (dentro do Cockpit)
-- Check-up, Componentes, Plano, Histórico — já são contextuais
-
-Fica valendo a regra: **opções da moto se encontram dentro da moto**.
+Nenhuma rota nova. Nenhuma mudança de business logic.
 
 ---
 
-### 5. Mapeamento de rotas
+## 5. Roadmap por fases
 
-| Rota antiga | Nova localização |
-|---|---|
-| `/documents` | `/central/documents` (ou permanece, agrupada em Central) |
-| `/certificates` | `/central/certificates` |
-| `/transfers` | `/central/shares` |
-| `/workshops` | `/central/workshops` |
-| `/financial` | `/central/financial` |
-| `/messages` | `/comunicacao/messages` |
-| `/tickets` | `/comunicacao/tickets` |
-| `/profile` `/settings` `/plans` `/help` | tabs dentro de `/perfil` |
+**Fase A — Cockpit + Moto Ativa (baixo risco)**
+- Compactar hero de Saúde.
+- Oficializar bottom sheet de troca de moto no Início.
+- Auditoria de títulos e cabeçalhos (PageHeader, TBPageHeader).
 
-Rotas antigas mantêm-se funcionando via redirect (para não quebrar links existentes / notificações).
+**Fase B — Check-up progressivo**
+- Trocar 4 seções por 4 cards executáveis + TBBottomSheet por categoria.
 
----
+**Fase C — Componentes com filtros**
+- TBFilterBar sticky + empty state + renderização por categoria.
 
-### 6. Impacto técnico (resumo)
+**Fase D — Central da Moto painel executivo**
+- Refatorar `MotoControlCenter` em grid de 6 cards resumo.
 
-- **Novos hubs:** `src/routes/_authenticated/central.tsx`, `comunicacao.tsx`, `perfil.tsx` (cada um com grid de cards TB navegando para as sub-rotas).
-- **Sidebar (`src/routes/_authenticated/route.tsx`):** reduzir `NAV` de 10 para 5 itens; remover seção "Minha Conta" (vira `/perfil`).
-- **`ROUTE_TO_MODULE`** (`src/lib/modules.ts`): mapear as novas rotas para os `moduleKey` existentes para preservar `ModuleGate`.
-- **Header:** sino de notificações permanece; adicionar link direto de "Nova moto".
-- **Redirects:** manter rotas antigas com `<Navigate to=... replace />` para não quebrar deep links.
-- **Zero mudança de business logic** — só arquitetura de navegação + componentes de hub.
+**Fase E — Próximas manutenções orientadas a ação**
+- Cards com CTA "Registrar" reaproveitando `NewEventDialog`.
+
+**Fase F — Auditoria geral**
+- Varredura de todas as telas (390px): truncamento, áreas de toque ≥44px, espaçamento, empty states, consistência.
+
+Cada fase é entregável e homologável isoladamente.
 
 ---
 
-### 7. Validação após implementação
+## 6. Benefícios Mobile
 
-- ✅ Menu principal com 5 itens (6 se admin)
-- ✅ Cada hub abre e lista as sub-áreas em cards mobile-friendly (44px+)
-- ✅ Rotas antigas redirecionam sem quebrar bookmarks/notificações
-- ✅ Sino de notificações e "Nova moto" continuam no header
-- ✅ Admin toggle "Visualizar como Usuário" continua funcional
-- ✅ Console limpo · typecheck limpo · mobile confortável
+- Menos rolagem (interface progressiva).
+- Menos carga cognitiva (1 categoria por vez).
+- Descoberta natural (ações no lugar de listas).
+- Áreas de toque generosas (cards executáveis).
+- Regra dos 3 toques respeitada em todos os fluxos principais.
+
+## 7. Impactos / riscos
+
+- **Zero** mudança de dados, TIL, RLS, migrations.
+- Mudança concentrada em componentes de apresentação.
+- Rotas antigas mantidas (redirects já implementados).
+- Risco baixo; cada fase reversível.
 
 ---
 
-**Aguardo aprovação para iniciar a implementação.** Se quiser ajustar nomes (ex: "Central" vs "Meu Espaço", "Comunicação" vs "Mensagens"), ícones dos hubs, ou incluir/excluir algum item de algum grupo, me diga antes que eu comece.
+## 8. Detalhes técnicos (referência)
+
+- **TIL intacta** (`src/lib/til/*`) — telas continuam apenas consumindo snapshot.
+- **Design system**: usar `TBBottomSheet`, `TBFilterBar`, `TBEmptyState`, `TBActionCard`, `TBKpiCard` já existentes.
+- **Componentes tocados**:
+  - `src/components/cockpit/Cockpit.tsx` + `widgets/HealthHeroWidget.tsx` (compactação).
+  - `src/components/health/HealthOverview.tsx` (4 cards executáveis + sheet).
+  - `src/components/components/ComponentsList.tsx` (filtros).
+  - `src/components/MotoControlCenter.tsx` (grid de 6 resumos).
+  - `src/routes/_authenticated/dashboard.tsx` (bottom sheet oficial).
+  - `PageHeader.tsx` / `TBPageHeader.tsx` (auditoria).
+- **Sem novas rotas, sem novos hooks, sem novas tabelas.**
+
+---
+
+**Aguardo homologação.** Posso iniciar por qualquer fase — recomendo A → B → C → D → E → F. Se quiser priorizar diferente, ajustar nomes/ícones/agrupamentos, ou remover alguma fase, me diga antes de começar.
