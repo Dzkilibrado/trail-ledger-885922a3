@@ -1,196 +1,167 @@
 
-# TrailBook — Revisão Geral de UX Mobile
+# Fase C — Central da Moto como Painel Executivo
 
-Proposta completa antes de qualquer implementação. Nada será alterado até homologação.
-
----
-
-## 1. Arquitetura atual (resumo)
-
-**Menu principal (pós-última entrega):** Início · Minhas Motos · Central · Comunicação · Perfil (+ Administração).
-
-**Dentro de uma moto (Cockpit):** foto + saudação + hero de Saúde + próxima ação + stats + 3 cards (Check-up, Componentes, Central da Moto).
-
-**Problemas remanescentes identificados na homologação:**
-- Check-up mostra as 4 categorias abertas ao mesmo tempo (Vencidos, Atenção, Sem info, Em dia) → rolagem longa.
-- Componentes sem filtros rápidos → lista contínua.
-- Central da Moto acumula muita informação simultânea.
-- Card de Saúde do Cockpit ocupa muito espaço para pouca informação essencial.
-- Próximas Manutenções apresentadas como lista, não como ação.
-- Títulos ainda podem cortar em telas estreitas (390px).
-- Cabeçalhos com múltiplas ações competindo com o título.
-- Empty States inconsistentes.
+Proposta antes da implementação. Nada será alterado até homologação.
 
 ---
 
-## 2. Arquitetura proposta
+## 1. Estrutura atual
 
-### 2.1 Menu principal — mantém 5 módulos
+`MotoControlCenter` (501 linhas, 1 tela) empilha hoje **tudo ao mesmo tempo**:
 
-```
-🏠 Início · 🏍 Minhas Motos · 📂 Central · 💬 Comunicação · 👤 Perfil
-🛡 Administração (admin)
-```
+- `PageHeader` + foto + auditoria
+- `HealthOverview` completo (score + 4 cards de categoria)
+- `ConservationCard` com 3 barras (categorias, docs, histórico)
+- `ComponentsList` completa
+- `NewEventDialog` inline
+- Lista de últimos eventos com `EventActionsMenu`
+- `MotorcycleDocuments` (galeria completa)
+- `MotorcyclePhotos`
+- `OwnershipTimeline`
+- Certificados: `CertificateSettingsDialog` + `TransferOwnershipDialog` + QR
+- Admin: `PlanCatalogSyncDialog`, `AdminMotoDangerZone`, arquivar/apagar
 
-Sem novos itens. Toda funcionalidade **da moto** vive **dentro da moto**.
-
-### 2.2 Moto Ativa (oficialização)
-
-- Início mostra **1 moto** (a ativa) + botão "Trocar moto" → **TBBottomSheet** com lista compacta.
-- Lista completa "Suas motos (N)" inicia **recolhida**.
-- Selecionar moto atualiza contexto global (`useActiveMotorcycle` já existe — apenas oficializar).
-
-### 2.3 Navegação contextual dentro da moto
-
-```
-Moto Ativa
- ├─ Cockpit (home da moto)
- ├─ Check-up
- ├─ Componentes
- ├─ Plano / Agenda
- ├─ Histórico
- └─ Central da Moto
-     ├─ Documentos
-     ├─ Certificados
-     ├─ Financeiro
-     └─ Transferências
-```
-
-Central/Comunicação/Perfil no menu principal seguem sendo **transversais ao usuário** (não da moto).
+Tudo isso na **mesma rota** (`/motorcycles/$id/control`). Resultado: rolagem longa, hierarquia visual perdida, missão da tela indefinida.
 
 ---
 
-## 3. Redesenho tela a tela
+## 2. Princípio: uma tela, uma missão
 
-### 3.1 Cockpit (home da moto)
-- **Foto**: card compacto quando ausente (já implementado ✓).
-- **Saudação**: mantida, uma linha.
-- **Saúde**: reduzir hero — linha única `❤️ Saúde · Excelente · 64%` + subtítulo "Próxima: troca de óleo em 3h" (ou "Nenhuma pendência").
-- **Próxima ação**: um botão CTA grande apenas quando existir pendência.
-- **Áreas**: 3 cards atuais mantidos (Check-up, Componentes, Central).
+A Central da Moto tem **uma** missão: **acessar rapidamente tudo relacionado à motocicleta**.
 
-### 3.2 Check-up Completo (mudança maior)
-Substituir as 4 seções abertas por **4 cards executáveis** empilhados:
+Ela não é o lugar para diagnosticar (Check-up), gerenciar (Componentes), ou operar (registrar evento). É o **índice inteligente** que leva a cada uma dessas áreas.
 
-```
-🔴 Vencidos           (2)  ›
-🟠 Atenção            (3)  ›
-⚪ Sem informação     (4)  ›
-🟢 Em dia            (18)  ›
-```
-
-Toque abre **TBBottomSheet** com apenas aquela categoria (interface progressiva nível 2). Contagem 0 = card desabilitado com "Nada aqui ✓".
-
-### 3.3 Componentes
-- **Empty state** amigável + CTA "Cadastrar componente".
-- **TBFilterBar** sticky no topo: `Todos · Atenção · Vencidos · Em dia · Personalizados`.
-- Renderiza somente a categoria ativa.
-
-### 3.4 Central da Moto (painel executivo)
-Grid de 6 cards resumo, cada um com 1 número + 1 status. Toque abre a área:
-
-```
-❤️ Saúde · 64%      🔧 Componentes · 12
-📅 Próximas · 3     📄 Documentos · 5
-🏆 Certificados · 1 📈 Histórico · 47
-```
-
-Sem listas, sem timeline embutida, sem gráficos.
-
-### 3.5 Próximas Manutenções
-Cards orientados a ação:
-
-```
-Troca de óleo · Em 3h        [ Registrar ]
-Filtro de ar  · Em 5 dias    [ Registrar ]
-```
-
-Empty state amigável quando não houver.
-
-### 3.6 Cabeçalhos (todas as telas)
-Padrão único: `‹ Voltar · Título · Ação principal · ⋯`.
-- Título nunca truncado; pode quebrar em 2 linhas (`break-words leading-tight`, já aplicado em `TBPageHeader`).
-- Ações secundárias em menu `⋯` (kebab).
-
-### 3.7 Empty states / progressão
-Padrão oficial em todo o sistema:
-```
-Resumo → Filtro/Categoria → Detalhe
-```
-Nunca exibir tudo simultaneamente.
+Nas primeiras 5 segundos o usuário responde:
+1. Como está a moto? → **linha compacta de Saúde no topo**
+2. Existe algo urgente? → **badge no card afetado**
+3. Qual a próxima ação? → **CTA único quando aplicável**
+4. Onde encontro o restante? → **6 cards de resumo**
 
 ---
 
-## 4. Menus/telas que mudam de contexto
+## 3. Estrutura proposta
 
-| Hoje | Vai para |
+```
+┌─────────────────────────────────┐
+│ ‹ Voltar · Título · ⋯          │  header limpo, ações secundárias no kebab
+├─────────────────────────────────┤
+│ Foto compacta (ou empty state) │
+├─────────────────────────────────┤
+│ ❤️ Saúde · Excelente · 64%      │  linha compacta (mesma do Cockpit)
+│    Próxima: troca de óleo · 3h  │
+├─────────────────────────────────┤
+│ 6 cards resumo (grid 2 col)     │  ← núcleo do painel
+│                                 │
+│ 🔧 Componentes    📅 Próximas   │
+│ 24 cadastrados    2 programadas │
+│ 2 atenção         Óleo · 3h     │
+│                                 │
+│ 📄 Documentos     🏆 Certif.    │
+│ Todos válidos     Plano Free    │
+│                   1 disponível  │
+│                                 │
+│ 📈 Histórico      🔁 Transfer.  │
+│ Última: 2 dias    Nenhuma ativa │
+└─────────────────────────────────┘
+```
+
+Cada card = **um resumo objetivo + toque abre a área**. Nada de listas na tela principal.
+
+### Cards e conteúdo do resumo
+
+| Card | Resumo (1–2 linhas) | Ação |
+|---|---|---|
+| ❤️ **Saúde** | `Score · Status` + próxima pendência | → `/motorcycles/$id/health` |
+| 🔧 **Componentes** | `N cadastrados` + `M merecem atenção` (badge âmbar) | → `/motorcycles/$id/components` |
+| 📅 **Próximas Manutenções** | `N programadas` + próxima (`Óleo · em 3h`) | → `/motorcycles/$id/plan` |
+| 📄 **Documentos** | `Todos válidos` **ou** `N pendentes` (badge) | Bottom sheet |
+| 🏆 **Certificados** | Situação do plano + saldo/emissão | Bottom sheet |
+| 📈 **Histórico** | `Última atividade: <tipo> · <data>` | Bottom sheet |
+
+---
+
+## 4. Onde vai cada coisa que sai da tela principal
+
+| Antes (inline) | Depois |
 |---|---|
-| Check-up com 4 listas abertas | 4 cards executáveis + bottom sheet |
-| Componentes lista contínua | Filtros + categoria única |
-| Central da Moto densa | 6 cards resumo |
-| Hero de Saúde grande | Linha compacta no Cockpit |
-| Próximas manutenções em lista | Cards com botão "Registrar" |
-
-Nenhuma rota nova. Nenhuma mudança de business logic.
-
----
-
-## 5. Roadmap por fases
-
-**Fase A — Cockpit + Moto Ativa (baixo risco)**
-- Compactar hero de Saúde.
-- Oficializar bottom sheet de troca de moto no Início.
-- Auditoria de títulos e cabeçalhos (PageHeader, TBPageHeader).
-
-**Fase B — Check-up progressivo**
-- Trocar 4 seções por 4 cards executáveis + TBBottomSheet por categoria.
-
-**Fase C — Componentes com filtros**
-- TBFilterBar sticky + empty state + renderização por categoria.
-
-**Fase D — Central da Moto painel executivo**
-- Refatorar `MotoControlCenter` em grid de 6 cards resumo.
-
-**Fase E — Próximas manutenções orientadas a ação**
-- Cards com CTA "Registrar" reaproveitando `NewEventDialog`.
-
-**Fase F — Auditoria geral**
-- Varredura de todas as telas (390px): truncamento, áreas de toque ≥44px, espaçamento, empty states, consistência.
-
-Cada fase é entregável e homologável isoladamente.
+| `HealthOverview` completo | Fica apenas no Check-up (rota própria); Central mostra só linha resumo |
+| `ComponentsList` inline | Fica só na rota de Componentes |
+| `NewEventDialog` inline | Vira ação do card Próximas / atalho no kebab |
+| Lista de eventos + `EventActionsMenu` | Bottom sheet do card Histórico (últimos 5 + link "Ver tudo") |
+| `MotorcycleDocuments` galeria | Bottom sheet do card Documentos |
+| `MotorcyclePhotos` | Ação no kebab do header ("Fotos da moto") |
+| `OwnershipTimeline` + `TransferOwnershipDialog` | Card Transferências → bottom sheet |
+| `ConservationCard` (3 barras) | **Removido da Central** — a informação já está em Saúde |
+| `CertificateSettingsDialog` | Bottom sheet do card Certificados |
+| `PlanCatalogSyncDialog` (admin) | Movido para menu ⋯ (admin) |
+| `AdminMotoDangerZone` | Menu ⋯ → "Zona de perigo" (bottom sheet confirmando) |
+| Arquivar / apagar | Menu ⋯ com confirmação em drawer |
 
 ---
 
-## 6. Benefícios Mobile
+## 5. Padrão dos cards (Resumo → Ação → Detalhe)
 
-- Menos rolagem (interface progressiva).
-- Menos carga cognitiva (1 categoria por vez).
-- Descoberta natural (ações no lugar de listas).
-- Áreas de toque generosas (cards executáveis).
-- Regra dos 3 toques respeitada em todos os fluxos principais.
+```tsx
+<button className="grid grid-cols-[auto_1fr_auto] ...">
+  <IconTonal />               // saúde do card em cor tonal
+  <div>
+    <Title />                 // "Componentes"
+    <Summary />               // "24 cadastrados · 2 atenção"
+  </div>
+  <ChevronRight />
+</button>
+```
 
-## 7. Impactos / riscos
-
-- **Zero** mudança de dados, TIL, RLS, migrations.
-- Mudança concentrada em componentes de apresentação.
-- Rotas antigas mantidas (redirects já implementados).
-- Risco baixo; cada fase reversível.
-
----
-
-## 8. Detalhes técnicos (referência)
-
-- **TIL intacta** (`src/lib/til/*`) — telas continuam apenas consumindo snapshot.
-- **Design system**: usar `TBBottomSheet`, `TBFilterBar`, `TBEmptyState`, `TBActionCard`, `TBKpiCard` já existentes.
-- **Componentes tocados**:
-  - `src/components/cockpit/Cockpit.tsx` + `widgets/HealthHeroWidget.tsx` (compactação).
-  - `src/components/health/HealthOverview.tsx` (4 cards executáveis + sheet).
-  - `src/components/components/ComponentsList.tsx` (filtros).
-  - `src/components/MotoControlCenter.tsx` (grid de 6 resumos).
-  - `src/routes/_authenticated/dashboard.tsx` (bottom sheet oficial).
-  - `PageHeader.tsx` / `TBPageHeader.tsx` (auditoria).
-- **Sem novas rotas, sem novos hooks, sem novas tabelas.**
+- Área de toque ≥ 64 px de altura.
+- Badge de urgência quando aplicável (âmbar/vermelho).
+- `active:scale-[0.98]` como microinteração; nenhum ripple pesado.
+- Estados vazios discretos ("—") em vez de blocos com dicas grandes.
 
 ---
 
-**Aguardo homologação.** Posso iniciar por qualquer fase — recomendo A → B → C → D → E → F. Se quiser priorizar diferente, ajustar nomes/ícones/agrupamentos, ou remover alguma fase, me diga antes de começar.
+## 6. Redução estimada
+
+| Métrica | Hoje | Proposto |
+|---|---|---|
+| Altura total da tela (390 px) | ~4200 px (11+ rolagens) | ~1500 px (2 rolagens) |
+| Elementos renderizados de largura total | ~9 | 1 header + 1 foto + 1 linha saúde + 6 cards |
+| Diálogos/estados carregados no primeiro paint | ~5 | 0 (todos sob demanda) |
+| Cargas de dados no primeiro render | events + schedules + attachments + items + docs + transfers | events + schedules + attachments (sob demanda o resto) |
+
+---
+
+## 7. Impactos técnicos
+
+- Arquivo `src/components/MotoControlCenter.tsx` será **reescrito** como painel executivo (~150 linhas).
+- Novos componentes de apresentação em `src/components/cockpit/central/`: `SummaryCard`, `HealthSummaryLine`, `DocumentsSheet`, `HistorySheet`, `CertificatesSheet`, `TransfersSheet`.
+- **TIL intacta** — resumos leem do `snapshot` já computado (Saúde, Componentes, Próximas) e de queries dedicadas (Documentos, Transferências).
+- Rotas inalteradas. `/motorcycles/$id/control` continua sendo a Central.
+- Diálogos/lists existentes (`MotorcycleDocuments`, `OwnershipTimeline`, `TransferOwnershipDialog`, `CertificateSettingsDialog`, `AdminMotoDangerZone`, `PlanCatalogSyncDialog`, `EventActionsMenu`) **reutilizados** dentro dos bottom sheets — sem duplicar lógica.
+- Zero mudança de dados, RLS ou migrations.
+
+---
+
+## 8. Ganhos Mobile
+
+- ~75% menos rolagem no primeiro acesso.
+- Uma missão clara por tela.
+- Áreas de toque generosas e uniformes.
+- Descoberta natural via 6 cards visualmente iguais.
+- Payload inicial menor → primeira pintura mais rápida no 4G.
+
+---
+
+## 9. Critérios de homologação (espelham os do briefing)
+
+- [ ] Tela responde às 4 perguntas em <5 s.
+- [ ] Sem listas extensas na tela principal.
+- [ ] Hierarquia visual clara (foto → saúde → 6 cards).
+- [ ] Uma ação principal por bloco.
+- [ ] Rolagem reduzida (~2 alturas de tela em 390 px).
+- [ ] Todas as áreas antigas acessíveis via card ou menu ⋯.
+- [ ] Typecheck limpo, console sem erros.
+- [ ] Sensação de aplicativo nativo premium.
+
+---
+
+**Aguardo homologação para implementar.** Se quiser trocar quais 6 cards entram, renomear algum bloco, mover a auditoria/QR para outro lugar, ou preservar algo que está previsto sair, me diga antes que eu comece.
