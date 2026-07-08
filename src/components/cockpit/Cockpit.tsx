@@ -2,7 +2,7 @@ import { useMemo, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, AlertTriangle } from "lucide-react";
+import { ChevronRight, AlertTriangle, Heart, Wrench, FolderOpen, Camera, Sparkles } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { computeCockpitSnapshot } from "@/lib/til";
 import { HealthHeroWidget } from "./widgets/HealthHeroWidget";
@@ -108,39 +108,96 @@ export function Cockpit({ motoId }: { motoId: string }) {
         crumbs={[{ label: "Motos", to: "/motorcycles" }, { label: m.nickname || m.model }]}
       />
 
-      {m.main_photo_url && (
+      {m.main_photo_url ? (
         <StoragePhoto
           path={m.main_photo_url}
           className="h-40 w-full overflow-hidden rounded-2xl sm:h-48"
         />
+      ) : (
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-dashed border-border bg-card/60 p-3 sm:p-4">
+          <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-muted text-muted-foreground">
+            <Camera className="h-5 w-5" />
+          </div>
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold">Adicione uma foto da sua moto</div>
+            <div className="truncate text-xs text-muted-foreground">
+              Personaliza sua garagem e facilita a identificação.
+            </div>
+          </div>
+          <Button asChild size="sm" variant="outline" className="shrink-0">
+            <Link to="/motorcycles/$id/control" params={{ id: m.id }}>Adicionar</Link>
+          </Button>
+        </div>
       )}
+
+      {/* Saudação contextual — vinda da TIL */}
+      <div className="flex items-start gap-2 rounded-2xl bg-primary/5 px-4 py-3 text-sm text-foreground/90 animate-fade-in">
+        <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
+        <p className="leading-snug">{snapshot.greeting}</p>
+      </div>
 
       <HealthHeroWidget snapshot={snapshot} />
 
+      {/* Card dinâmico de prioridade — aparece só quando há pendência */}
       <NextActionWidget snapshot={snapshot} moto={m} />
 
       <QuickStatsWidget snapshot={snapshot} />
 
-      <div className="pt-2">
-        <Button asChild variant="outline" className="w-full justify-between">
-          <Link to="/motorcycles/$id/health" params={{ id: m.id }}>
-            Ver saúde da moto
-            <ChevronRight className="h-4 w-4" />
-          </Link>
-        </Button>
-        <Button asChild variant="outline" className="mt-2 w-full justify-between">
-          <Link to="/motorcycles/$id/components" params={{ id: m.id }}>
-            Ver componentes
-            <ChevronRight className="h-4 w-4" />
-          </Link>
-        </Button>
-        <Button asChild variant="ghost" className="w-full justify-between text-muted-foreground hover:text-foreground">
-          <Link to="/motorcycles/$id/control" params={{ id: m.id }}>
-            Abrir Centro de Controle
-            <ChevronRight className="h-4 w-4" />
-          </Link>
-        </Button>
-      </div>
+      {/* Áreas principais da moto — não menus */}
+      <nav aria-label="Áreas da moto" className="space-y-3 pt-2">
+        <ActionCard
+          to="/motorcycles/$id/health"
+          params={{ id: m.id }}
+          icon={<Heart className="h-5 w-5 text-rose-400" />}
+          title="Check-up Completo"
+          description="Diagnóstico completo da motocicleta"
+        />
+        <ActionCard
+          to="/motorcycles/$id/components"
+          params={{ id: m.id }}
+          icon={<Wrench className="h-5 w-5 text-primary" />}
+          title="Componentes"
+          description="Plano de manutenção e componentes"
+        />
+        <ActionCard
+          to="/motorcycles/$id/control"
+          params={{ id: m.id }}
+          icon={<FolderOpen className="h-5 w-5 text-amber-400" />}
+          title="Central da Moto"
+          description="Documentos, histórico, certificados e informações"
+        />
+      </nav>
     </div>
+  );
+}
+
+function ActionCard({
+  to,
+  params,
+  icon,
+  title,
+  description,
+}: {
+  to: string;
+  params: Record<string, string>;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}) {
+  return (
+    <Link
+      to={to as any}
+      params={params as any}
+      className="group grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-accent/40 hover:shadow-md active:translate-y-0 active:bg-accent/60 sm:p-5"
+    >
+      <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-muted transition-colors group-hover:bg-primary/10">
+        {icon}
+      </span>
+      <div className="min-w-0">
+        <div className="truncate text-sm font-semibold sm:text-base">{title}</div>
+        <div className="truncate text-xs text-muted-foreground sm:text-sm">{description}</div>
+      </div>
+      <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-foreground" />
+    </Link>
   );
 }
