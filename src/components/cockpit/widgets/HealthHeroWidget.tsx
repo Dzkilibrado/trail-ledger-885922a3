@@ -17,32 +17,24 @@ export function HealthHeroWidget({ snapshot }: { snapshot: CockpitSnapshot }) {
   return (
     <section
       aria-label="Estado da moto"
-      className="surface-elevated rounded-3xl px-6 py-8 sm:px-10 sm:py-12"
+      className="surface-elevated grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-4 rounded-2xl px-4 py-4 sm:px-5 sm:py-5"
     >
-      <div className="flex flex-col items-center gap-6 text-center">
-        <div className={`flex items-center gap-3 text-sm uppercase tracking-widest ${accent}`}>
-          <Icon className="h-4 w-4" aria-hidden />
-          <span>{health.gradeLabel}</span>
+      <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-muted ${accent}`}>
+        <Icon className="h-5 w-5" aria-hidden />
+      </span>
+      <div className="min-w-0">
+        <div className="flex items-baseline gap-2">
+          <span className="text-sm font-semibold">Saúde</span>
+          <span className={`text-xs uppercase tracking-wider ${accent}`}>{health.gradeLabel}</span>
         </div>
-
-        <div className="font-display text-6xl font-bold sm:text-7xl">
+        <div className="truncate text-xs text-muted-foreground">
+          {top ? `${top.name} · ${top.statusLabel}` : health.headline}
+        </div>
+      </div>
+      <div className="shrink-0 text-right">
+        <div className="font-display text-2xl font-bold leading-none sm:text-3xl">
           {health.score}
-          <span className="ml-1 text-2xl text-muted-foreground sm:text-3xl">%</span>
-        </div>
-
-        <div className="max-w-sm space-y-1">
-          <div className="text-sm text-muted-foreground">{health.headline}</div>
-          {top && (
-            <>
-              <div className="mt-3 text-xs uppercase tracking-widest text-muted-foreground">
-                Item mais crítico
-              </div>
-              <div className="text-lg font-semibold">{top.name}</div>
-              <div className={`text-sm ${top.tone === "critical" ? "text-destructive" : "text-amber-400"}`}>
-                {top.statusLabel}
-              </div>
-            </>
-          )}
+          <span className="ml-0.5 text-sm text-muted-foreground">%</span>
         </div>
       </div>
     </section>
