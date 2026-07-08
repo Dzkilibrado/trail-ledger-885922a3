@@ -78,4 +78,6 @@ export interface CockpitSnapshot {
   nextAlert: AlertSnapshot | null;
   nextAction: NextAction | null;
   components: ComponentView[];
+  /** Frase curta e contextual do assistente TrailBook. */
+  greeting: string;
 }

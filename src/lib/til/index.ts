@@ -4,6 +4,7 @@ import { computeStats } from "./usage";
 import { computeNextAlert } from "./alerts";
 import { computeNextAction } from "./suggestions";
 import { computeComponentViews } from "./components";
+import { computeGreeting } from "./greeting";
 import type {
   Attachment,
   CockpitSnapshot,
@@ -43,6 +44,7 @@ export function computeCockpitSnapshot(input: {
   }
   const components = computeComponentViews(schedules, statuses, events, itemsByScheduleId);
   const health = computeHealth({ moto, events, attachments, statuses, workshopEventIds, components });
+  const greeting = computeGreeting({ moto, health, nextMaintenance, nextAction });
 
   return {
     motoId: moto.id,
@@ -53,5 +55,6 @@ export function computeCockpitSnapshot(input: {
     nextAlert,
     nextAction,
     components,
+    greeting,
   };
 }
