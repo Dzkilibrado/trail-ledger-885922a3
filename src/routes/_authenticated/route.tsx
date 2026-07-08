@@ -109,20 +109,23 @@ function AuthedLayout() {
   return (
     <div className="flex min-h-screen w-full bg-background text-foreground">
       {viewingAsUser && (
-        <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-between gap-3 border-b border-amber-500/50 bg-amber-500/95 px-4 py-2 text-amber-950 shadow-md">
-          <div className="flex items-center gap-2 text-xs font-semibold sm:text-sm">
-            <Eye className="h-4 w-4 shrink-0" />
-            <span>
-              Você está visualizando o TrailBook como <b>USUÁRIO</b>.
-            </span>
+        <div className="fixed inset-x-0 top-0 z-50 flex items-start justify-between gap-3 border-b border-amber-500/50 bg-amber-500/95 px-4 py-2 text-amber-950 shadow-md">
+          <div className="flex min-w-0 items-start gap-2 text-xs sm:text-sm">
+            <span aria-hidden className="mt-0.5 text-base leading-none">🟡</span>
+            <div className="min-w-0">
+              <div className="font-bold uppercase tracking-wide">Modo Homologação</div>
+              <div className="text-[11px] leading-snug text-amber-950/85 sm:text-xs">
+                Você está visualizando o sistema como um usuário comum. Todos os testes utilizam apenas os dados da sua própria conta.
+              </div>
+            </div>
           </div>
           <Button
             size="sm"
             variant="outline"
-            className="border-amber-950/40 bg-amber-950/10 text-amber-950 hover:bg-amber-950/20"
+            className="shrink-0 border-amber-950/40 bg-amber-950/10 text-amber-950 hover:bg-amber-950/20"
             onClick={() => viewAs.exit()}
           >
-            <ShieldCheck className="h-4 w-4" /> <span className="hidden sm:inline">Voltar ao modo Administrador</span><span className="sm:hidden">Voltar</span>
+            <ShieldCheck className="h-4 w-4" /> <span className="hidden sm:inline">Voltar para Administração</span><span className="sm:hidden">Voltar</span>
           </Button>
         </div>
       )}
