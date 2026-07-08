@@ -342,6 +342,19 @@ export function MotoControlCenter({ id }: { id: string }) {
                       />
                     )}
                   </div>
+                  {archiveReason && (archiveReason !== "Outros motivos" || archiveReasonOther.trim().length >= 3) && (
+                    <div className="rounded-xl border border-border bg-muted/40 p-3 text-xs">
+                      <div className="mb-1.5 font-semibold text-foreground">Esta motocicleta será:</div>
+                      <ul className="space-y-1 text-muted-foreground">
+                        <li className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> removida da garagem ativa</li>
+                        <li className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> preservada no histórico</li>
+                        <li className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> documentos mantidos</li>
+                        <li className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> atividades mantidas</li>
+                        <li className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> certificados preservados</li>
+                        <li className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> poderá ser restaurada futuramente</li>
+                      </ul>
+                    </div>
+                  )}
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
                     <AlertDialogAction
