@@ -10,6 +10,7 @@ import { QuickStatsWidget } from "./widgets/QuickStatsWidget";
 import { NextActionWidget } from "./widgets/NextActionWidget";
 import { PageHeader } from "@/components/PageHeader";
 import { StoragePhoto } from "@/components/StoragePhoto";
+import { useActiveMotorcycle } from "@/hooks/useActiveMotorcycle";
 
 /**
  * TrailBook Cockpit — centro da experiência.
@@ -21,9 +22,13 @@ import { StoragePhoto } from "@/components/StoragePhoto";
  */
 export function Cockpit({ motoId }: { motoId: string }) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const { setActiveId } = useActiveMotorcycle();
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
   }, []);
+  useEffect(() => {
+    if (motoId) setActiveId(motoId);
+  }, [motoId, setActiveId]);
 
   const moto = useQuery({
     queryKey: ["motorcycle", motoId],

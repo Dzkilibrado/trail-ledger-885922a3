@@ -19,7 +19,7 @@ export function TBPageHeader({
       )}
     >
       <div className="min-w-0 space-y-1">
-        <h1 className="truncate text-2xl font-black tracking-tight">{title}</h1>
+        <h1 className="text-xl font-black leading-tight tracking-tight break-words sm:text-2xl">{title}</h1>
         {subtitle && (
           <p className="text-sm leading-relaxed text-muted-foreground">
             {subtitle}
