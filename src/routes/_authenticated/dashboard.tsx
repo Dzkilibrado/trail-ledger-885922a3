@@ -1,11 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Activity, Wrench, Calendar, TrendingUp } from "lucide-react";
+import { Plus, Activity, Wrench, Calendar, TrendingUp, ChevronDown, ChevronUp, Bike } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StoragePhoto } from "@/components/StoragePhoto";
 import { EventTypeIcon } from "@/components/EventTypeIcon";
 import { brl, EVENT_TYPE_LABEL, formatDate } from "@/lib/trailbook";
+import { ActiveMotoCard } from "@/components/ActiveMotoCard";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [{ title: "Dashboard — TrailBook" }] }),
@@ -13,6 +15,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 });
 
 function Dashboard() {
+  const [showAll, setShowAll] = useState(false);
   const motos = useQuery({
     queryKey: ["motorcycles"],
     queryFn: async () => {
@@ -62,29 +65,48 @@ function Dashboard() {
         <MetricCard icon={Wrench} label="Investido" value={brl(totalCost)} />
       </div>
 
-      <section>
-        <h2 className="mb-3 font-display text-lg font-bold">Suas motos</h2>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {motos.data!.map((m) => (
-            <Link key={m.id} to="/motorcycles/$id" params={{ id: m.id }} className="surface-elevated group overflow-hidden rounded-2xl transition-transform hover:-translate-y-0.5">
-              <StoragePhoto path={m.main_photo_url} className="h-44 w-full" />
-              <div className="p-4">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <div className="text-xs uppercase tracking-widest text-muted-foreground">{m.brand}</div>
-                    <div className="font-display text-lg font-bold">{m.nickname || `${m.model} ${m.year_model || ""}`}</div>
-                  </div>
-                  <div className="rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-semibold text-primary">{m.conservation_score}</div>
-                </div>
-                <div className="mt-3 flex gap-4 text-sm text-muted-foreground">
-                  <span>{Number(m.hours_total).toFixed(1)} h</span>
-                  <span>{Number(m.km_total).toFixed(0)} km</span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-      </section>
+      <ActiveMotoCard motos={motos.data as any} />
+
+      {(motos.data?.length ?? 0) > 1 && (
+        <section>
+          <button
+            type="button"
+            onClick={() => setShowAll((v) => !v)}
+            className="flex w-full items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 text-left text-sm font-semibold transition-colors hover:bg-accent/40"
+          >
+            <span>Suas motos ({motos.data!.length})</span>
+            {showAll ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+          {showAll && (
+            <ul className="mt-3 space-y-2">
+              {motos.data!.map((m) => (
+                <li key={m.id}>
+                  <Link
+                    to="/motorcycles/$id"
+                    params={{ id: m.id }}
+                    className="surface-elevated grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl p-3 transition-colors hover:bg-accent/30"
+                  >
+                    {m.main_photo_url ? (
+                      <StoragePhoto path={m.main_photo_url} className="h-12 w-12 shrink-0 overflow-hidden rounded-lg" />
+                    ) : (
+                      <div className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
+                        <Bike className="h-5 w-5" />
+                      </div>
+                    )}
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold">{m.nickname || m.model}</div>
+                      <div className="truncate text-xs text-muted-foreground">
+                        {m.brand} · {Number(m.hours_total).toFixed(1)} h · {Number(m.km_total).toFixed(0)} km
+                      </div>
+                    </div>
+                    <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">{m.conservation_score}%</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       <section>
         <h2 className="mb-3 font-display text-lg font-bold">Últimos eventos</h2>
