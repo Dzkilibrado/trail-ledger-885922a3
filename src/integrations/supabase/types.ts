@@ -384,6 +384,13 @@ export type Database = {
             referencedRelation: "workshops"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "events_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops_public"
+            referencedColumns: ["id"]
+          },
         ]
       }
       help_requests: {
@@ -1985,6 +1992,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      workshops_public: {
+        Row: {
+          city: string | null
+          created_at: string | null
+          id: string | null
+          name: string | null
+          owner_user_id: string | null
+          state: string | null
+          updated_at: string | null
+          verified: boolean | null
+          verified_at: string | null
+          verified_label: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string | null
+          id?: string | null
+          name?: string | null
+          owner_user_id?: string | null
+          state?: string | null
+          updated_at?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_label?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string | null
+          id?: string | null
+          name?: string | null
+          owner_user_id?: string | null
+          state?: string | null
+          updated_at?: string | null
+          verified?: boolean | null
+          verified_at?: string | null
+          verified_label?: string | null
+        }
+        Relationships: []
       }
     }
     Functions: {
