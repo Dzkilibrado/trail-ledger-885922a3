@@ -2399,6 +2399,14 @@ export type Database = {
         Returns: undefined
       }
       me_access_status: { Args: never; Returns: Json }
+      my_workshop_private: {
+        Args: { _workshop: string }
+        Returns: {
+          cnpj: string
+          id: string
+          phone: string
+        }[]
+      }
       request_ownership_transfer: {
         Args: { _message: string; _moto_id: string; _to_email: string }
         Returns: string
