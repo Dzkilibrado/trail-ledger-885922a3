@@ -45,6 +45,7 @@ export function MotoControlCenter({ id }: { id: string }) {
   const { isAdmin } = useIsAdmin();
   const [archiveReason, setArchiveReason] = useState<string>("");
   const [archiveReasonOther, setArchiveReasonOther] = useState<string>("");
+  const [unarchiveOpen, setUnarchiveOpen] = useState(false);
   const [inspectTarget, setInspectTarget] = useState<null | { id: string; name: string; category: string }>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -149,6 +150,7 @@ export function MotoControlCenter({ id }: { id: string }) {
     if (error) { toast.error(error.message || "Falha ao reativar"); return; }
     toast.success("Moto reativada na sua garagem.");
     qc.invalidateQueries();
+    setUnarchiveOpen(false);
   }
 
   const m = moto.data;
@@ -227,9 +229,27 @@ export function MotoControlCenter({ id }: { id: string }) {
                   Fora da garagem ativa. Histórico e auditoria preservados. Certificados públicos foram revogados.
                 </p>
                 {isOwner && (
-                  <Button size="sm" variant="outline" className="mt-2" onClick={unarchiveMoto}>
-                    <RotateCcw className="h-4 w-4" /> Reativar moto
-                  </Button>
+                  <AlertDialog open={unarchiveOpen} onOpenChange={setUnarchiveOpen}>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="outline" className="mt-2">
+                        <RotateCcw className="h-4 w-4" /> Restaurar moto
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                          <RotateCcw className="h-5 w-5" /> Restaurar esta motocicleta?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          <strong>{m.nickname || m.model}</strong> voltará para a sua garagem ativa. Todo o histórico, documentos, atividades e certificados permanecem inalterados.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={unarchiveMoto}>Restaurar moto</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
               </div>
             )}
@@ -322,6 +342,19 @@ export function MotoControlCenter({ id }: { id: string }) {
                       />
                     )}
                   </div>
+                  {archiveReason && (archiveReason !== "Outros motivos" || archiveReasonOther.trim().length >= 3) && (
+                    <div className="rounded-xl border border-border bg-muted/40 p-3 text-xs">
+                      <div className="mb-1.5 font-semibold text-foreground">Esta motocicleta será:</div>
+                      <ul className="space-y-1 text-muted-foreground">
+                        <li className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> removida da garagem ativa</li>
+                        <li className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> preservada no histórico</li>
+                        <li className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> documentos mantidos</li>
+                        <li className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> atividades mantidas</li>
+                        <li className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> certificados preservados</li>
+                        <li className="flex items-center gap-2"><CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> poderá ser restaurada futuramente</li>
+                      </ul>
+                    </div>
+                  )}
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
                     <AlertDialogAction
