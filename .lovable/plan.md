@@ -1,148 +1,141 @@
-# TrailBook Design System — v1.3.0
+## Revisão da Navegação Principal — Mobile First
 
-Transformar a padronização de formulários em um Design System oficial e reutilizável, implantado de forma **incremental por área**, sem refatoração massiva. Objetivo: qualquer nova tela do TrailBook nasce usando os mesmos componentes, com identidade visual única e ergonomia Mobile Native First.
+### 1. Estrutura atual
+
+Sidebar principal hoje tem **10 itens** de Navegação + 4 de Conta + 6 de Admin:
+
+**Navegação (10):**
+- Dashboard
+- Minhas Motos
+- Documentos da Moto
+- Agenda
+- Certificados
+- Chamados
+- Mensagens
+- Oficinas
+- Financeiro
+- Transferências
+
+**Minha Conta (4):** Perfil · Configurações · Plano · Ajuda
+**Administração (6):** Dashboard Admin · Usuários · Chamados · Mensagens · Documentos · Módulos
+**Sessão:** Sair
+
+**Problema:** muitos itens são funções *da moto* (Documentos, Agenda, Certificados, Financeiro, Transferências) que já existem dentro do contexto de cada motocicleta (Cockpit → Check-up, Componentes, Plano, Central da Moto). Duplicação + poluição visual no mobile.
 
 ---
 
-## Pilares
+### 2. Estrutura proposta
 
-1. **Mobile Native First** — todo componente nasce no viewport 390×844, depois escala.
-2. **TIL continua sendo a única fonte de lógica** — o DS é 100% presentational.
-3. **shadcn como base** — não recriar primitivos, apenas encapsular em padrões TrailBook.
-4. **Tokens semânticos** — nada de cores hardcoded; tudo via `src/styles.css`.
-5. **Um componente = um padrão** — proibido variação isolada em telas.
+Menu principal reduzido a **5 módulos** (+ Administração para admin):
 
----
+```
+┌─ PRINCIPAL ─────────────────┐
+│ 🏠  Início                  │  → /dashboard
+│ 🏍️  Minhas Motos             │  → /motorcycles
+│ 📂  Central                 │  → /central (novo hub)
+│ 💬  Comunicação             │  → /comunicacao (novo hub)
+│ 👤  Perfil                  │  → /perfil (novo hub)
+└─────────────────────────────┘
 
-## Estrutura de arquivos
-
-```text
-src/design-system/
-├── tokens/                    # documentação viva dos tokens (MD)
-│   └── README.md              # espaçamentos, alturas, área de toque, tipografia
-├── primitives/                # blocos atômicos (envolvem shadcn)
-│   ├── TBButton.tsx
-│   ├── TBInput.tsx
-│   ├── TBSelect.tsx
-│   ├── TBTextarea.tsx
-│   ├── TBBadge.tsx
-│   ├── TBChip.tsx
-│   └── TBIcon.tsx
-├── inputs/                    # inputs especializados TrailBook
-│   ├── TBNumberInput.tsx
-│   ├── TBCurrencyInput.tsx
-│   ├── TBDateInput.tsx
-│   ├── TBHourmeterInput.tsx  # horímetro (H) c/ decimal
-│   ├── TBOdometerInput.tsx   # KM
-│   └── TBSearchInput.tsx
-├── forms/
-│   ├── TBFormField.tsx       # label + input + hint + erro (o "F" atual, oficial)
-│   ├── TBFormGrid.tsx        # grid 2/4 col mobile-first, items-end
-│   ├── TBFormSection.tsx     # título + descrição + slot
-│   └── TBFormActions.tsx     # rodapé sticky mobile c/ CTA principal
-├── layout/
-│   ├── TBPageHeader.tsx      # título, subtítulo, ações
-│   ├── TBSectionHeader.tsx
-│   ├── TBCard.tsx            # base
-│   ├── TBStatusCard.tsx      # com severidade (excelente/boa/atenção/crítica)
-│   ├── TBInfoCard.tsx
-│   ├── TBActionCard.tsx      # tap-target grande, mobile
-│   ├── TBKpiCard.tsx
-│   └── TBTimelineItem.tsx
-├── overlays/
-│   ├── TBDrawer.tsx          # side drawer desktop
-│   ├── TBBottomSheet.tsx     # mobile-first (usar em vez de Dialog no mobile)
-│   └── TBDialog.tsx          # apenas para confirmações curtas
-├── feedback/
-│   ├── TBEmptyState.tsx
-│   ├── TBLoadingState.tsx    # skeleton + spinner variants
-│   ├── TBErrorState.tsx
-│   ├── TBSuccessState.tsx
-│   ├── TBInfoState.tsx
-│   └── TBWarningState.tsx
-├── filters/
-│   ├── TBFilterBar.tsx
-│   └── TBFilterChip.tsx
-└── index.ts                   # barrel export único: import { TBFormField } from '@/design-system'
+┌─ ADMINISTRAÇÃO (admin) ─────┐
+│ 🛡️  Administração            │  → /admin (hub já existente)
+└─────────────────────────────┘
 ```
 
-Regra: nenhuma tela importa de `src/components/ui/*` diretamente para os padrões acima — sempre via `@/design-system`.
+---
+
+### 3. Agrupamentos e justificativas
+
+#### 📂 Central — `/central`
+Hub de artefatos transversais ao usuário (não pertencem a uma moto específica ou cruzam várias).
+
+| Item | Origem | Justificativa |
+|---|---|---|
+| Documentos | `/documents` | Visão consolidada; documentos de moto continuam dentro da própria moto |
+| Certificados | `/certificates` | Emitidos pelo usuário; ação pontual, não diária |
+| Compartilhamentos | `/transfers` (renomeado) | "Transferências" é técnico; compartilhar/transferir moto é a mesma família |
+| Oficinas | `/workshops` | Diretório de terceiros do usuário; baixa frequência de acesso |
+| Financeiro | `/financial` | Consolidado multi-moto; o financeiro *da moto* fica no Cockpit |
+
+**Por quê agrupar:** todos são "coisas do meu ecossistema" acessadas com baixa frequência. Um hub com 5 cards grandes é mais confortável no mobile que 5 itens espalhados no menu.
+
+#### 💬 Comunicação — `/comunicacao`
+Tudo que é troca de mensagem, alerta ou suporte.
+
+| Item | Origem | Justificativa |
+|---|---|---|
+| Mensagens | `/messages` | Conversas |
+| Chamados | `/tickets` | Suporte |
+| Notificações | (hoje só no sino) | Centralizar histórico de notificações |
+
+**Por quê agrupar:** três canais diferentes com a mesma natureza (mensagem recebida/enviada). O sino do header continua para acesso rápido; o hub é o "inbox unificado".
+
+#### 👤 Perfil — `/perfil`
+Substitui a seção "Minha Conta" da sidebar por uma tela única.
+
+| Item | Origem |
+|---|---|
+| Dados | `/profile` |
+| Configurações | `/settings` |
+| Plano | `/plans` |
+| Ajuda | `/help` |
+| Sair | ação (com confirm existente) |
+
+**Por quê agrupar:** todos são "sobre mim". Menos ruído no menu; a tela de Perfil vira o ponto único de auto-serviço.
 
 ---
 
-## Tokens oficiais (documentados em `tokens/README.md`)
+### 4. O que **sai** do menu principal
 
-- **Espaçamento base**: 4px. Escala: 4, 8, 12, 16, 20, 24, 32, 48.
-- **Grid formulário mobile**: `grid-cols-2 gap-x-3 gap-y-3 items-end`; desktop `sm:grid-cols-4`.
-- **Altura de campo**: 44px (mobile), 40px (desktop compacto).
-- **Altura mínima de botão**: 44px (área de toque iOS/Android).
-- **Área de toque mínima**: 44×44px.
-- **Label**: `text-[11px] uppercase tracking-widest text-muted-foreground`, `min-h-[1rem] truncate`.
-- **Título de página**: `text-2xl font-black`.
-- **Título de seção**: `text-lg font-semibold`.
-- **Subtítulo**: `text-sm text-muted-foreground leading-relaxed`.
-- **Radius**: `rounded-2xl` cards, `rounded-xl` inputs, `rounded-full` chips/badges.
-- **Cores**: 100% via tokens já definidos em `src/styles.css` (nenhum hardcode).
-- **Ícones**: lucide-react, tamanho padrão 20px em botões, 16px em chips, 24px em headers.
+Estes itens deixam de aparecer no menu — passam a viver **dentro do contexto de cada moto** (já existem no Cockpit / Central da Moto):
 
-Estados semânticos (badges/cards): `excelente`, `boa`, `atencao`, `critica`, `info`, `neutro` — mapeados 1:1 com a severidade da TIL.
+- Documentos **da moto** (fica em `/motorcycles/$id/control` — Central da Moto)
+- Agenda **da moto** (fica no Cockpit + Plano de Manutenção)
+- Certificados **da moto** (emissão dentro da moto)
+- Financeiro **da moto** (dentro do Cockpit)
+- Check-up, Componentes, Plano, Histórico — já são contextuais
+
+Fica valendo a regra: **opções da moto se encontram dentro da moto**.
 
 ---
 
-## Fase 1 — Fundação (sem tocar telas)
+### 5. Mapeamento de rotas
 
-1. Criar árvore `src/design-system/` + `index.ts`.
-2. Extrair `F` (do `NewEventDialog`) como `TBFormField` oficial.
-3. Escrever `tokens/README.md` com os padrões acima.
-4. Criar primitivos e inputs especializados listados na árvore.
-5. Criar overlays (`TBBottomSheet` prioritário — mobile).
-6. Criar estados de feedback (`TBEmptyState`, `TBLoadingState`, `TBErrorState`).
-7. `tsgo` limpo; nenhum consumidor ainda.
+| Rota antiga | Nova localização |
+|---|---|
+| `/documents` | `/central/documents` (ou permanece, agrupada em Central) |
+| `/certificates` | `/central/certificates` |
+| `/transfers` | `/central/shares` |
+| `/workshops` | `/central/workshops` |
+| `/financial` | `/central/financial` |
+| `/messages` | `/comunicacao/messages` |
+| `/tickets` | `/comunicacao/tickets` |
+| `/profile` `/settings` `/plans` `/help` | tabs dentro de `/perfil` |
 
-**Homologação**: revisão visual dos componentes em página de sandbox interna (não publicada).
-
----
-
-## Fase 2 — Migração incremental (uma área por PR)
-
-Ordem por impacto de UX (do mais crítico ao menos):
-
-1. **NewEventDialog** (form principal — piloto da migração).
-2. **Cockpit** (headers, KPIs, StatusCards).
-3. **Saúde da Moto** + ComponentSheet.
-4. **Plano de manutenção** (formulários de edição).
-5. **Cadastro de moto** + edição.
-6. **Timeline / detalhes de atividade**.
-7. **Documentos, chamados**.
-8. **Admin** (menor prioridade UX).
-
-Para cada área: migrar → validar mobile 390 + desktop → homologar com o usuário → seguir.
+Rotas antigas mantêm-se funcionando via redirect (para não quebrar links existentes / notificações).
 
 ---
 
-## Fase 3 — Governança
+### 6. Impacto técnico (resumo)
 
-- ADR **0005 — Design System TrailBook**: registra pilares, tokens, regra "não importar shadcn direto".
-- `.lovable/plan.md`: adicionar seção "Design System v1.3.0" com status por área.
-- Memória do projeto: regra permanente "novas telas usam `@/design-system`".
-
----
-
-## Fora de escopo
-
-- Não alterar lógica de negócio, TIL ou schema.
-- Não redesenhar identidade visual (cores, tipografia já aprovadas ficam).
-- Não migrar tudo em uma tacada — cada área é um passo aprovado.
+- **Novos hubs:** `src/routes/_authenticated/central.tsx`, `comunicacao.tsx`, `perfil.tsx` (cada um com grid de cards TB navegando para as sub-rotas).
+- **Sidebar (`src/routes/_authenticated/route.tsx`):** reduzir `NAV` de 10 para 5 itens; remover seção "Minha Conta" (vira `/perfil`).
+- **`ROUTE_TO_MODULE`** (`src/lib/modules.ts`): mapear as novas rotas para os `moduleKey` existentes para preservar `ModuleGate`.
+- **Header:** sino de notificações permanece; adicionar link direto de "Nova moto".
+- **Redirects:** manter rotas antigas com `<Navigate to=... replace />` para não quebrar deep links.
+- **Zero mudança de business logic** — só arquitetura de navegação + componentes de hub.
 
 ---
 
-## Entregável desta primeira rodada
+### 7. Validação após implementação
 
-Apenas a **Fase 1 (Fundação)**. Ao final, retorno com:
-- árvore criada;
-- lista de componentes prontos;
-- link para `tokens/README.md`;
-- typecheck limpo;
-- proposta da primeira área para migrar na Fase 2 (sugestão: `NewEventDialog`).
+- ✅ Menu principal com 5 itens (6 se admin)
+- ✅ Cada hub abre e lista as sub-áreas em cards mobile-friendly (44px+)
+- ✅ Rotas antigas redirecionam sem quebrar bookmarks/notificações
+- ✅ Sino de notificações e "Nova moto" continuam no header
+- ✅ Admin toggle "Visualizar como Usuário" continua funcional
+- ✅ Console limpo · typecheck limpo · mobile confortável
 
-Confirma que posso iniciar pela Fase 1?
+---
+
+**Aguardo aprovação para iniciar a implementação.** Se quiser ajustar nomes (ex: "Central" vs "Meu Espaço", "Comunicação" vs "Mensagens"), ícones dos hubs, ou incluir/excluir algum item de algum grupo, me diga antes que eu comece.
