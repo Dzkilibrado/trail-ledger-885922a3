@@ -17,7 +17,10 @@ function MotorcyclesList() {
   const { data, isLoading } = useQuery({
     queryKey: ["motorcycles"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("motorcycles").select("*").order("created_at", { ascending: false });
+      const { data: u } = await supabase.auth.getUser();
+      const uid = u.user?.id;
+      if (!uid) return [];
+      const { data, error } = await supabase.from("motorcycles").select("*").eq("owner_id", uid).order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },
