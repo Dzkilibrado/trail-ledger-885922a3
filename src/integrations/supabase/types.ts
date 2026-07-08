@@ -1988,6 +1988,7 @@ export type Database = {
       }
     }
     Functions: {
+      _ot_visible_to_email: { Args: { _transfer_id: string }; Returns: string }
       admin_block_user: {
         Args: { _notes?: string; _reason: string; _user: string }
         Returns: undefined
