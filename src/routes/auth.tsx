@@ -101,23 +101,49 @@ function AuthPage() {
 
   async function handleSignIn(e: React.FormEvent) {
     e.preventDefault();
+    if (loading) return; // hard guard against double submit
     setLoading(true);
     setUnconfirmedEmail(null);
-    const email = await resolveEmail(identifier);
-    if (!email) { setLoading(false); return; }
-    if (password.length < 6) { setLoading(false); return toast.error("Informe sua senha"); }
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setLoading(false);
-    if (error) {
-      // Supabase returns "Email not confirmed" for unverified accounts.
-      if (/confirm/i.test(error.message) || /not confirmed/i.test(error.message)) {
-        setUnconfirmedEmail(email);
-        return toast.error("Seu e-mail ainda não foi confirmado. Verifique sua caixa de entrada e SPAM.");
+    try {
+      const email = await resolveEmail(identifier);
+      if (!email) { setLoading(false); return; }
+      if (!password || password.length < 6) {
+        setLoading(false);
+        return toast.error("Informe sua senha (mínimo 6 caracteres).");
       }
-      return toast.error(error.message);
+      const { error } = await supabase.auth.signInWithPassword({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      if (error) {
+        const msg = error.message || "";
+        if (/confirm/i.test(msg) || /not confirmed/i.test(msg)) {
+          setUnconfirmedEmail(email);
+          toast.error("Seu e-mail ainda não foi confirmado. Verifique sua caixa de entrada e SPAM.");
+        } else if (/invalid login credentials/i.test(msg) || /invalid.*password/i.test(msg)) {
+          toast.error("E-mail ou senha incorretos.");
+        } else if (/rate limit|too many/i.test(msg)) {
+          toast.error("Muitas tentativas. Aguarde alguns instantes e tente novamente.");
+        } else if (/network|fetch|failed to fetch/i.test(msg)) {
+          toast.error("Não foi possível conectar agora. Verifique sua internet e tente novamente.");
+        } else if (/banned|blocked/i.test(msg)) {
+          toast.error("Seu acesso está bloqueado. Entre em contato com o suporte.");
+        } else {
+          toast.error(msg || "Não foi possível entrar. Tente novamente.");
+        }
+        return;
+      }
+      if (!remember) armEphemeralSession();
+      navigate({ to: "/dashboard" as string, replace: true });
+    } catch (err: any) {
+      toast.error(
+        err?.message?.includes("fetch")
+          ? "Não foi possível conectar agora. Verifique sua internet e tente novamente."
+          : "Não foi possível entrar. Tente novamente."
+      );
+    } finally {
+      setLoading(false);
     }
-    if (!remember) armEphemeralSession();
-    navigate({ to: "/dashboard" as string });
   }
 
   async function handleSignUp(e: React.FormEvent) {

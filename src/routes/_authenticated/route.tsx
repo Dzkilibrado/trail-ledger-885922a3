@@ -19,28 +19,45 @@ import { ModuleGate } from "@/components/ModuleGate";
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
   beforeLoad: async ({ location }) => {
-    const { data, error } = await supabase.auth.getUser();
-    if (error || !data.user) throw redirect({ to: "/auth" });
+    // Prefer local session (no network round-trip) to avoid intermittent
+    // redirects back to /auth on flaky mobile connections. Only when there is
+    // truly no session do we bounce the user to sign-in.
+    const { data: sessionData } = await supabase.auth.getSession();
+    const user = sessionData.session?.user ?? null;
+    if (!user) throw redirect({ to: "/auth" });
+
     // Force profile completion (CPF) before accessing anything else.
+    // Tolerate transient network errors — do NOT sign the user out on a
+    // simple fetch failure, or the app looks like "login broken".
     if (location.pathname !== "/complete-profile") {
-      const { data: p } = await supabase
-        .from("profiles")
-        .select("cpf,status,blocked_reason,inactive_reason")
-        .eq("id", data.user.id)
-        .maybeSingle();
-      if (!p?.cpf) throw redirect({ to: "/complete-profile" });
-      if (p.status === "blocked" || p.status === "inactive") {
-        await supabase.auth.signOut();
-        throw redirect({
-          to: "/auth",
-          search: {
-            blocked: p.status,
-            reason: (p.status === "blocked" ? p.blocked_reason : p.inactive_reason) ?? "",
-          } as any,
-        });
+      try {
+        const { data: p, error: pErr } = await supabase
+          .from("profiles")
+          .select("cpf,status,blocked_reason,inactive_reason")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (pErr) {
+          // network / RLS glitch: let the app render; the sidebar/profile query
+          // will retry and surface a friendlier state.
+          return { user };
+        }
+        if (p && (p.status === "blocked" || p.status === "inactive")) {
+          await supabase.auth.signOut();
+          throw redirect({
+            to: "/auth",
+            search: {
+              blocked: p.status,
+              reason: (p.status === "blocked" ? p.blocked_reason : p.inactive_reason) ?? "",
+            } as any,
+          });
+        }
+        if (p && !p.cpf) throw redirect({ to: "/complete-profile" });
+      } catch (e: any) {
+        // Rethrow router redirects; swallow other transient errors.
+        if (e && typeof e === "object" && "options" in e && "to" in (e as any)) throw e;
       }
     }
-    return { user: data.user };
+    return { user };
   },
   component: AuthedLayout,
 });
