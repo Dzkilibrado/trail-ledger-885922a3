@@ -1,5 +1,18 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
+import { z } from "zod";
+
+const uuid = z.string().uuid("userId inválido");
+const reason = z.string().trim().min(2, "Motivo obrigatório").max(500);
+const confirmation = z.string().trim().min(1, "Confirmação obrigatória").max(64);
+
+const passwordResetSchema = z.object({ userId: uuid });
+const deleteMotoSchema = z.object({
+  motorcycleId: z.string().uuid("motorcycleId inválido"),
+  reason,
+  confirmation,
+});
+const deleteUserSchema = z.object({ userId: uuid, reason, confirmation });
 
 /**
  * Sends the standard "reset password" e-mail using the platform recovery flow.
@@ -7,7 +20,7 @@ import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
  */
 export const adminSendPasswordReset = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: unknown) => data as { userId: string })
+  .inputValidator((data: unknown) => passwordResetSchema.parse(data))
   .handler(async ({ data, context }) => {
     // Admin check
     const { data: isAdmin, error: eAdmin } = await context.supabase.rpc(
@@ -67,9 +80,7 @@ export const adminSendPasswordReset = createServerFn({ method: "POST" })
  */
 export const adminDeleteHomologMotorcycle = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (data: unknown) => data as { motorcycleId: string; reason: string; confirmation: string },
-  )
+  .inputValidator((data: unknown) => deleteMotoSchema.parse(data))
   .handler(async ({ data, context }) => {
     const { data: isAdmin, error: eAdmin } = await context.supabase.rpc(
       "is_user_admin" as any,
@@ -141,9 +152,7 @@ export const adminDeleteHomologMotorcycle = createServerFn({ method: "POST" })
  */
 export const adminDeleteHomologUser = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator(
-    (data: unknown) => data as { userId: string; reason: string; confirmation: string },
-  )
+  .inputValidator((data: unknown) => deleteUserSchema.parse(data))
   .handler(async ({ data, context }) => {
     const { data: isAdmin, error: eAdmin } = await context.supabase.rpc(
       "is_user_admin" as any,
