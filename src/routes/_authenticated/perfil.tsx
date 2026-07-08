@@ -1,30 +1,97 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { User, Settings, Crown, HelpCircle, LogOut, ChevronRight } from "lucide-react";
-import { useQueryClient } from "@tanstack/react-query";
+import {
+  Pencil, Settings, Bell, Crown, KeyRound, ShieldCheck,
+  HelpCircle, Info, FileText, LogOut, ChevronRight, UserRound,
+} from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { usePlan } from "@/hooks/usePlan";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
-  head: () => ({ meta: [{ title: "Perfil — TrailBook" }] }),
-  component: PerfilHub,
+  head: () => ({ meta: [{ title: "Minha Conta — TrailBook" }] }),
+  component: AccountCenter,
 });
 
-const ITEMS = [
-  { to: "/profile", label: "Dados", desc: "Nome, CPF, contato", icon: User },
-  { to: "/settings", label: "Configurações", desc: "Preferências e privacidade", icon: Settings },
-  { to: "/plans", label: "Plano", desc: "Seu plano e benefícios", icon: Crown },
-  { to: "/help", label: "Ajuda", desc: "Central de ajuda e FAQ", icon: HelpCircle },
-] as const;
+const APP_VERSION = "1.2.1";
 
-function PerfilHub() {
+type Row = { to: string; label: string; icon: any; hint?: string; external?: boolean };
+
+const PREFERENCES: Row[] = [
+  { to: "/settings", label: "Configurações", icon: Settings, hint: "Tema e preferências gerais" },
+  { to: "/settings", label: "Notificações", icon: Bell, hint: "Alertas e comunicações" },
+  { to: "/plans", label: "Plano atual", icon: Crown, hint: "Seu plano e benefícios" },
+];
+
+const SECURITY: Row[] = [
+  { to: "/reset-password", label: "Alterar senha", icon: KeyRound },
+  { to: "/settings", label: "Privacidade", icon: ShieldCheck, hint: "Dados e visibilidade" },
+];
+
+const SUPPORT: Row[] = [
+  { to: "/help", label: "Ajuda", icon: HelpCircle, hint: "Central de ajuda e FAQ" },
+  { to: "/help", label: "Sobre o TrailBook", icon: Info },
+];
+
+function SectionHeader({ icon: Icon, title }: { icon: any; title: string }) {
+  return (
+    <div className="flex items-center gap-2 px-1 pb-2 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+      <Icon className="h-3.5 w-3.5" /> {title}
+    </div>
+  );
+}
+
+function RowLink({ to, label, icon: Icon, hint }: Row) {
+  return (
+    <Link
+      to={to}
+      className="flex min-h-[56px] items-center gap-3 rounded-xl border border-border bg-card/40 px-4 py-3 transition-colors hover:border-primary/50 hover:bg-card active:bg-card"
+    >
+      <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="truncate text-sm font-semibold text-foreground">{label}</div>
+        {hint && <div className="truncate text-[11px] text-muted-foreground">{hint}</div>}
+      </div>
+      <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+    </Link>
+  );
+}
+
+function AccountCenter() {
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const { plan } = usePlan();
+  const { isAdmin } = useIsAdmin();
   const [confirm, setConfirm] = useState(false);
+
+  const meQ = useQuery({
+    queryKey: ["account-center", "me"],
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("full_name, email, avatar_url")
+        .eq("id", u.user.id)
+        .maybeSingle();
+      return data;
+    },
+    staleTime: 60_000,
+  });
+
+  const p = meQ.data;
+  const fullName = p?.full_name || p?.email || "Minha conta";
+  const initials = fullName
+    .split(" ").filter(Boolean).slice(0, 2)
+    .map((s: string) => s[0]?.toUpperCase() ?? "").join("") || "?";
 
   async function signOut() {
     await qc.cancelQueries();
@@ -34,42 +101,86 @@ function PerfilHub() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-6">
-      <header>
-        <h1 className="font-display text-2xl font-bold">Perfil</h1>
-        <p className="text-sm text-muted-foreground">Sua conta, plano e preferências.</p>
-      </header>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {ITEMS.map((it) => (
-          <Link
-            key={it.to}
-            to={it.to}
-            className="group flex items-center gap-3 rounded-2xl border border-border bg-card/40 p-4 transition-colors hover:border-primary/50 hover:bg-card"
-          >
-            <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
-              <it.icon className="h-5 w-5" />
+    <div className="mx-auto w-full max-w-2xl space-y-5 pb-8">
+      {/* Minha Conta — cartão de identidade */}
+      <section className="rounded-2xl border border-border bg-card/60 p-4">
+        <div className="flex items-center gap-3">
+          {p?.avatar_url ? (
+            <img
+              src={p.avatar_url}
+              alt=""
+              className="h-14 w-14 shrink-0 rounded-full object-cover ring-2 ring-primary/30"
+            />
+          ) : (
+            <div className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-primary/15 text-lg font-bold text-primary ring-2 ring-primary/30">
+              {initials}
             </div>
-            <div className="min-w-0 flex-1">
-              <div className="truncate font-semibold text-foreground">{it.label}</div>
-              <div className="truncate text-xs text-muted-foreground">{it.desc}</div>
+          )}
+          <div className="min-w-0 flex-1">
+            <div className="truncate font-display text-lg font-bold text-foreground">{fullName}</div>
+            <div className="truncate text-xs text-muted-foreground">{p?.email ?? ""}</div>
+            <div className="mt-1.5 flex flex-wrap items-center gap-1">
+              <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-primary">
+                <Crown className="mr-1 inline h-3 w-3" /> {plan.label}
+              </span>
+              {isAdmin && (
+                <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-emerald-400">
+                  Administrador
+                </span>
+              )}
             </div>
-            <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
+          </div>
+          <Link to="/profile" aria-label="Editar perfil">
+            <Button variant="outline" size="sm" className="shrink-0">
+              <Pencil className="h-4 w-4" /> <span className="hidden sm:inline">Editar</span>
+            </Button>
           </Link>
-        ))}
-      </div>
-      <div className="pt-2">
-        <Button
-          variant="ghost"
-          className="w-full justify-start gap-3 text-destructive hover:bg-destructive/10 hover:text-destructive"
-          onClick={() => setConfirm(true)}
-        >
-          <LogOut className="h-4 w-4" /> Sair
-        </Button>
-      </div>
+        </div>
+      </section>
+
+      {/* Sair — em destaque logo abaixo do cartão, sem rolagem */}
+      <Button
+        variant="outline"
+        className="h-12 w-full justify-center gap-2 border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive"
+        onClick={() => setConfirm(true)}
+      >
+        <LogOut className="h-4 w-4" /> Sair do TrailBook
+      </Button>
+
+      {/* Preferências */}
+      <section>
+        <SectionHeader icon={Settings} title="Preferências" />
+        <div className="space-y-2">
+          {PREFERENCES.map((r) => <RowLink key={r.label} {...r} />)}
+        </div>
+      </section>
+
+      {/* Segurança */}
+      <section>
+        <SectionHeader icon={ShieldCheck} title="Segurança" />
+        <div className="space-y-2">
+          {SECURITY.map((r) => <RowLink key={r.label} {...r} />)}
+        </div>
+      </section>
+
+      {/* Suporte */}
+      <section>
+        <SectionHeader icon={HelpCircle} title="Suporte" />
+        <div className="space-y-2">
+          {SUPPORT.map((r) => <RowLink key={r.label} {...r} />)}
+        </div>
+        <div className="mt-3 flex items-center justify-between rounded-xl border border-dashed border-border/60 bg-card/30 px-4 py-2 text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" /> Política de Privacidade · Termos de Uso</span>
+          <span className="font-mono">v{APP_VERSION}</span>
+        </div>
+      </section>
+
       <AlertDialog open={confirm} onOpenChange={setConfirm}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Encerrar sessão</AlertDialogTitle>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <LogOut className="h-5 w-5" /> Encerrar sessão
+            </AlertDialogTitle>
             <AlertDialogDescription>Deseja realmente sair do TrailBook?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -78,6 +189,9 @@ function PerfilHub() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* silenciar o import não usado — reservado para futuras seções */}
+      <span className="sr-only" aria-hidden><UserRound /></span>
     </div>
   );
 }
