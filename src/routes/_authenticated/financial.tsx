@@ -27,7 +27,12 @@ function Financial() {
 
   const motos = useQuery({
     queryKey: ["motorcycles"],
-    queryFn: async () => (await supabase.from("motorcycles").select("id, nickname, model")).data ?? [],
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      const uid = u.user?.id;
+      if (!uid) return [];
+      return (await supabase.from("motorcycles").select("id, nickname, model").eq("owner_id", uid)).data ?? [];
+    },
   });
   const workshops = useQuery({
     queryKey: ["workshops", "list"],

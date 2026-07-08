@@ -229,9 +229,13 @@ function SidebarBody({
   const activeMotoQ = useQuery({
     queryKey: ["sidebar", "active-moto"],
     queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      const uid = u.user?.id;
+      if (!uid) return null;
       const { data } = await supabase
         .from("motorcycles")
         .select("id, brand, model, nickname, main_photo_url, status")
+        .eq("owner_id", uid)
         .neq("status", "archived")
         .order("updated_at", { ascending: false })
         .limit(1)

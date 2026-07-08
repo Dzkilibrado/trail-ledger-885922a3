@@ -19,7 +19,10 @@ function Dashboard() {
   const motos = useQuery({
     queryKey: ["motorcycles"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("motorcycles").select("*").eq("status" as never, "active" as never).order("created_at", { ascending: false });
+      const { data: u } = await supabase.auth.getUser();
+      const uid = u.user?.id;
+      if (!uid) return [];
+      const { data, error } = await supabase.from("motorcycles").select("*").eq("owner_id", uid).eq("status" as never, "active" as never).order("created_at", { ascending: false });
       if (error) throw error;
       return data;
     },

@@ -31,7 +31,10 @@ function NewTicketPage() {
   const motos = useQuery({
     queryKey: ["my-motos-min"],
     queryFn: async () => {
-      const { data } = await supabase.from("motorcycles").select("id, brand, model, nickname").order("created_at", { ascending: false });
+      const { data: u } = await supabase.auth.getUser();
+      const uid = u.user?.id;
+      if (!uid) return [];
+      const { data } = await supabase.from("motorcycles").select("id, brand, model, nickname").eq("owner_id", uid).order("created_at", { ascending: false });
       return data ?? [];
     },
   });
