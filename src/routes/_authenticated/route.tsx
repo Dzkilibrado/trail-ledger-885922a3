@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect, Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, LayoutDashboard, Calendar, DollarSign, QrCode, Building2, LogOut, Plus, Menu, X, Crown, ArrowRightLeft, LifeBuoy, Shield, Bell, FolderOpen, Blocks, Wrench, Lock, Mail, MessageSquare, User, Settings, HelpCircle, Compass, UserCircle2, DoorOpen, Eye, EyeOff, ShieldCheck } from "lucide-react";
+import { Bike, LayoutDashboard, LogOut, Plus, Menu, X, Shield, Bell, FolderOpen, Blocks, Wrench, Lock, Mail, MessageSquare, User, Compass, DoorOpen, Eye, ShieldCheck, Home, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -63,23 +63,11 @@ export const Route = createFileRoute("/_authenticated")({
 });
 
 const NAV = [
-  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/dashboard", label: "Início", icon: Home },
   { to: "/motorcycles", label: "Minhas Motos", icon: Bike },
-  { to: "/documents", label: "Documentos da Moto", icon: FolderOpen },
-  { to: "/agenda", label: "Agenda", icon: Calendar },
-  { to: "/certificates", label: "Certificados", icon: QrCode },
-  { to: "/tickets", label: "Chamados", icon: LifeBuoy },
-  { to: "/messages", label: "Mensagens", icon: Mail },
-  { to: "/workshops", label: "Oficinas", icon: Building2 },
-  { to: "/financial", label: "Financeiro", icon: DollarSign },
-  { to: "/transfers", label: "Transferências", icon: ArrowRightLeft },
-] as const;
-
-const ACCOUNT_NAV = [
-  { to: "/profile", label: "Perfil", icon: User },
-  { to: "/settings", label: "Configurações", icon: Settings },
-  { to: "/plans", label: "Plano", icon: Crown },
-  { to: "/help", label: "Ajuda", icon: HelpCircle },
+  { to: "/central", label: "Central", icon: FolderOpen },
+  { to: "/comunicacao", label: "Comunicação", icon: MessageCircle },
+  { to: "/perfil", label: "Perfil", icon: User },
 ] as const;
 
 const ADMIN_NAV = [
