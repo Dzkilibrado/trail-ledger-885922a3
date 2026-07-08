@@ -45,6 +45,7 @@ export function MotoControlCenter({ id }: { id: string }) {
   const { isAdmin } = useIsAdmin();
   const [archiveReason, setArchiveReason] = useState<string>("");
   const [archiveReasonOther, setArchiveReasonOther] = useState<string>("");
+  const [unarchiveOpen, setUnarchiveOpen] = useState(false);
   const [inspectTarget, setInspectTarget] = useState<null | { id: string; name: string; category: string }>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -149,6 +150,7 @@ export function MotoControlCenter({ id }: { id: string }) {
     if (error) { toast.error(error.message || "Falha ao reativar"); return; }
     toast.success("Moto reativada na sua garagem.");
     qc.invalidateQueries();
+    setUnarchiveOpen(false);
   }
 
   const m = moto.data;
