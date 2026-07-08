@@ -229,9 +229,27 @@ export function MotoControlCenter({ id }: { id: string }) {
                   Fora da garagem ativa. Histórico e auditoria preservados. Certificados públicos foram revogados.
                 </p>
                 {isOwner && (
-                  <Button size="sm" variant="outline" className="mt-2" onClick={unarchiveMoto}>
-                    <RotateCcw className="h-4 w-4" /> Reativar moto
-                  </Button>
+                  <AlertDialog open={unarchiveOpen} onOpenChange={setUnarchiveOpen}>
+                    <AlertDialogTrigger asChild>
+                      <Button size="sm" variant="outline" className="mt-2">
+                        <RotateCcw className="h-4 w-4" /> Restaurar moto
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                          <RotateCcw className="h-5 w-5" /> Restaurar esta motocicleta?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription>
+                          <strong>{m.nickname || m.model}</strong> voltará para a sua garagem ativa. Todo o histórico, documentos, atividades e certificados permanecem inalterados.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={unarchiveMoto}>Restaurar moto</AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 )}
               </div>
             )}
