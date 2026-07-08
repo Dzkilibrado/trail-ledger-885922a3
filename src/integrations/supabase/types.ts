@@ -2465,7 +2465,7 @@ export type Database = {
     Enums: {
       app_role: "owner" | "mechanic" | "admin" | "USER_ADMIN"
       attachment_kind: "photo" | "video" | "document" | "invoice"
-      audit_action: "insert" | "update" | "delete"
+      audit_action: "insert" | "update" | "delete" | "archive" | "unarchive"
       control_type: "hours" | "km" | "both" | "not_informed"
       delivery_status:
         | "pending"
@@ -2761,7 +2761,7 @@ export const Constants = {
     Enums: {
       app_role: ["owner", "mechanic", "admin", "USER_ADMIN"],
       attachment_kind: ["photo", "video", "document", "invoice"],
-      audit_action: ["insert", "update", "delete"],
+      audit_action: ["insert", "update", "delete", "archive", "unarchive"],
       control_type: ["hours", "km", "both", "not_informed"],
       delivery_status: [
         "pending",
