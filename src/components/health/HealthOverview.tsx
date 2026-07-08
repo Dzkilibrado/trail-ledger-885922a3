@@ -6,7 +6,10 @@ import type { CockpitSnapshot } from "@/lib/til";
 import type { Motorcycle } from "@/lib/trailbook";
 import { ComponentCard } from "@/components/components/ComponentCard";
 import { ComponentSheet } from "@/components/components/ComponentSheet";
-import { CheckCircle2, AlertTriangle, Clock, HelpCircle, Heart } from "lucide-react";
+import { CheckCircle2, AlertTriangle, Clock, HelpCircle, Heart, ChevronRight, Search } from "lucide-react";
+import { TBBottomSheet } from "@/design-system/overlays/TBBottomSheet";
+import { Input } from "@/components/ui/input";
+import type { ComponentView } from "@/lib/til/components";
 
 /**
  * Saúde da Moto — check-up visual do estado atual, alimentado 100% pela TIL.
@@ -14,6 +17,8 @@ import { CheckCircle2, AlertTriangle, Clock, HelpCircle, Heart } from "lucide-re
  */
 export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: boolean }) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [openBucket, setOpenBucket] = useState<BucketKey | null>(null);
+  const [query, setQuery] = useState("");
 
   const events = useQuery({
     queryKey: ["events", moto.id],
@@ -74,6 +79,26 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
                             : "text-destructive";
   const GradeIcon = grade === "critical" ? AlertTriangle : grade === "attention" ? Clock : Heart;
 
+  const buckets: Array<{
+    key: BucketKey;
+    title: string;
+    subtitle: string;
+    tone: keyof typeof TONE_ACCENT;
+    icon: React.ComponentType<{ className?: string }>;
+    items: ComponentView[];
+    emptyLabel: string;
+  }> = [
+    { key: "overdue",   title: "Vencidos",         subtitle: "Resolva antes de rodar",           tone: "critical",  icon: AlertTriangle, items: health.buckets.overdue,   emptyLabel: "Nenhum componente vencido" },
+    { key: "attention", title: "Merecem atenção",  subtitle: "Planeje a próxima manutenção",     tone: "attention", icon: Clock,         items: health.buckets.attention, emptyLabel: "Nada pendente por enquanto" },
+    { key: "noInfo",    title: "Sem informação",   subtitle: "Informe a última manutenção",      tone: "no_info",   icon: HelpCircle,    items: health.buckets.noInfo,    emptyLabel: "Todos já têm histórico" },
+    { key: "ok",        title: "Em dia",           subtitle: "Dentro do intervalo previsto",     tone: "ok",        icon: CheckCircle2,  items: health.buckets.ok,        emptyLabel: "—" },
+  ];
+
+  const active = buckets.find((b) => b.key === openBucket) ?? null;
+  const filtered = active
+    ? active.items.filter((c) => !query.trim() || c.name.toLowerCase().includes(query.trim().toLowerCase()))
+    : [];
+
   return (
     <div className="space-y-5">
       {/* Diagnóstico geral */}
@@ -91,45 +116,59 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
         <p className="mt-2 text-sm text-muted-foreground">{health.headline}</p>
       </section>
 
-      {/* Buckets */}
-      <Bucket
-        title="Vencidos"
-        subtitle="Resolva antes de rodar"
-        tone="critical"
-        icon={AlertTriangle}
-        items={health.buckets.overdue}
-        onOpen={setSelectedId}
-        emptyLabel="Nenhum componente vencido"
-      />
-      <Bucket
-        title="Merecem atenção"
-        subtitle="Planeje a próxima manutenção"
-        tone="attention"
-        icon={Clock}
-        items={health.buckets.attention}
-        onOpen={setSelectedId}
-        emptyLabel="Nada pendente por enquanto"
-      />
-      <Bucket
-        title="Sem informação"
-        subtitle="Informe a última manutenção para acompanhar"
-        tone="no_info"
-        icon={HelpCircle}
-        items={health.buckets.noInfo}
-        onOpen={setSelectedId}
-        emptyLabel="Todos os componentes já têm histórico"
-        defaultCollapsed
-      />
-      <Bucket
-        title="Em dia"
-        subtitle="Componentes dentro do intervalo"
-        tone="ok"
-        icon={CheckCircle2}
-        items={health.buckets.ok}
-        onOpen={setSelectedId}
-        emptyLabel="—"
-        defaultCollapsed
-      />
+      {/* Cards executáveis — abrem bottom sheet com a categoria */}
+      <div className="space-y-2">
+        {buckets.map((b) => (
+          <BucketCard
+            key={b.key}
+            title={b.title}
+            subtitle={b.subtitle}
+            tone={b.tone}
+            icon={b.icon}
+            count={b.items.length}
+            onOpen={() => {
+              if (b.items.length === 0) return;
+              setQuery("");
+              setOpenBucket(b.key);
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Bottom sheet da categoria selecionada */}
+      <TBBottomSheet
+        open={!!active}
+        onOpenChange={(v) => !v && setOpenBucket(null)}
+        title={active ? `${active.title} (${active.items.length})` : undefined}
+        description={active?.subtitle}
+      >
+        {active && (
+          <div className="space-y-3">
+            {active.items.length > 5 && (
+              <div className="relative">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Buscar componente…"
+                  className="pl-9"
+                />
+              </div>
+            )}
+            {filtered.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                {query ? "Nenhum resultado." : active.emptyLabel}
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filtered.map((c) => (
+                  <ComponentCard key={c.scheduleId} component={c} onOpen={setSelectedId} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </TBBottomSheet>
 
       <ComponentSheet
         moto={moto}
@@ -142,6 +181,8 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
   );
 }
 
+type BucketKey = "overdue" | "attention" | "noInfo" | "ok";
+
 const TONE_ACCENT = {
   critical:  { badge: "bg-destructive/10 text-destructive",  ring: "ring-destructive/20" },
   attention: { badge: "bg-amber-500/10 text-amber-400",      ring: "ring-amber-400/20" },
@@ -149,47 +190,37 @@ const TONE_ACCENT = {
   ok:        { badge: "bg-emerald-500/10 text-emerald-400",  ring: "ring-emerald-500/20" },
 } as const;
 
-function Bucket({
-  title, subtitle, tone, icon: Icon, items, onOpen, emptyLabel, defaultCollapsed,
+function BucketCard({
+  title, subtitle, tone, icon: Icon, count, onOpen,
 }: {
   title: string;
   subtitle: string;
   tone: keyof typeof TONE_ACCENT;
   icon: React.ComponentType<{ className?: string }>;
-  items: import("@/lib/til/components").ComponentView[];
-  onOpen: (id: string) => void;
-  emptyLabel: string;
-  defaultCollapsed?: boolean;
+  count: number;
+  onOpen: () => void;
 }) {
-  const [open, setOpen] = useState(!defaultCollapsed);
   const t = TONE_ACCENT[tone];
-  const count = items.length;
-
+  const empty = count === 0;
   return (
-    <section className="space-y-2">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between rounded-2xl px-2 py-2 text-left hover:bg-muted/30"
-      >
-        <div className="flex items-center gap-3">
-          <span className={`grid h-8 w-8 place-items-center rounded-full ring-1 ${t.ring} ${t.badge}`}>
-            <Icon className="h-4 w-4" />
-          </span>
-          <div>
-            <div className="text-sm font-semibold">{title}</div>
-            <div className="text-[11px] text-muted-foreground">{subtitle}</div>
-          </div>
+    <button
+      type="button"
+      onClick={onOpen}
+      disabled={empty}
+      aria-label={`${title}: ${count}`}
+      className={`grid w-full grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition ${empty ? "opacity-60" : "hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md active:translate-y-0"}`}
+    >
+      <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ring-1 ${t.ring} ${t.badge}`}>
+        <Icon className="h-5 w-5" />
+      </span>
+      <div className="min-w-0">
+        <div className="truncate text-sm font-semibold">{title}</div>
+        <div className="truncate text-xs text-muted-foreground">
+          {empty ? "Nada aqui ✓" : subtitle}
         </div>
-        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${t.badge}`}>{count}</span>
-      </button>
-      {open && (
-        count === 0
-          ? <div className="rounded-xl border border-dashed border-border p-3 text-center text-xs text-muted-foreground">{emptyLabel}</div>
-          : <div className="space-y-2">
-              {items.map((c) => <ComponentCard key={c.scheduleId} component={c} onOpen={onOpen} />)}
-            </div>
-      )}
-    </section>
+      </div>
+      <span className={`shrink-0 rounded-full px-2.5 py-1 text-sm font-bold ${t.badge}`}>{count}</span>
+      <ChevronRight className={`h-5 w-5 shrink-0 ${empty ? "text-transparent" : "text-muted-foreground"}`} />
+    </button>
   );
 }
