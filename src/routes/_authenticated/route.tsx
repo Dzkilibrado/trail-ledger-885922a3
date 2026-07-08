@@ -341,7 +341,7 @@ function SidebarBody({
               className="w-full justify-start gap-2 border-amber-500/40 bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 hover:text-amber-200"
               onClick={() => viewAs.exit()}
             >
-              <ShieldCheck className="h-4 w-4" /> Voltar ao modo Administrador
+              <ShieldCheck className="h-4 w-4" /> Voltar para Administração
             </Button>
           ) : (
             <Button
@@ -350,7 +350,7 @@ function SidebarBody({
               className="w-full justify-start gap-2"
               onClick={() => setEnterOpen(true)}
             >
-              <Eye className="h-4 w-4" /> Visualizar como Usuário
+              <Eye className="h-4 w-4" /> Modo Homologação
             </Button>
           )}
         </div>
@@ -427,18 +427,17 @@ function SidebarBody({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
-              <Eye className="h-5 w-5" /> Modo de Visualização
+              <Eye className="h-5 w-5" /> Entrar no Modo Homologação
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-2 text-left">
               <span className="block">
-                Você continuará autenticado como Administrador.
+                Você continuará autenticado como Administrador na sua própria conta.
               </span>
               <span className="block">
-                O TrailBook ocultará temporariamente todas as funcionalidades administrativas
-                para que você visualize exatamente a experiência de um usuário comum.
+                O TrailBook ocultará as funcionalidades administrativas e exibirá a mesma experiência de um usuário comum, usando apenas os dados da sua própria conta — nenhum dado de outros usuários será acessado.
               </span>
               <span className="block font-medium">
-                Nenhuma permissão será alterada permanentemente.
+                Nenhuma permissão real é alterada. A entrada e a saída são registradas na auditoria.
               </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -451,7 +450,7 @@ function SidebarBody({
                 await viewAs.enter();
               }}
             >
-              Entrar no modo Usuário
+              Entrar no Modo Homologação
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
