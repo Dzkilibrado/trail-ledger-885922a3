@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet, redirect, Link, useRouterState, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, LayoutDashboard, LogOut, Plus, Menu, X, Shield, Bell, FolderOpen, Blocks, Wrench, Lock, Mail, MessageSquare, User, Compass, DoorOpen, Eye, ShieldCheck, Home, MessageCircle } from "lucide-react";
+import { Bike, LayoutDashboard, LogOut, Plus, Menu, X, Shield, Bell, FolderOpen, Blocks, Wrench, Lock, Mail, MessageSquare, User, Compass, DoorOpen, Eye, ShieldCheck, Home, MessageCircle, LifeBuoy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
@@ -400,14 +400,6 @@ function SidebarBody({
           </div>
         )}
 
-        <div className="mt-5 space-y-1">
-          <div className="flex items-center gap-2 px-3 pb-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-            <UserCircle2 className="h-3 w-3" /> Minha Conta
-          </div>
-          {ACCOUNT_NAV.map((item) => (
-            <NavLink key={item.to} to={item.to} label={item.label} icon={item.icon} />
-          ))}
-        </div>
       </div>
 
       {/* Sessão — fixed bottom */}
