@@ -14,6 +14,8 @@ import { Trash2, QrCode, AlertTriangle, CheckCircle2, Clock, ArrowRightLeft, Cop
 import { ClipboardCheck, Wand2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import { AuditSummary } from "@/components/AuditDialog";
@@ -41,8 +43,8 @@ export function MotoControlCenter({ id }: { id: string }) {
   const navigate = useNavigate();
   const { plan } = usePlan();
   const { isAdmin } = useIsAdmin();
-  const [deleteConfirm, setDeleteConfirm] = useState("");
-  const [archiveReason, setArchiveReason] = useState("");
+  const [archiveReason, setArchiveReason] = useState<string>("");
+  const [archiveReasonOther, setArchiveReasonOther] = useState<string>("");
   const [inspectTarget, setInspectTarget] = useState<null | { id: string; name: string; category: string }>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [reviewOpen, setReviewOpen] = useState(false);
@@ -133,7 +135,10 @@ export function MotoControlCenter({ id }: { id: string }) {
   }
 
   async function archiveMoto() {
-    const { error } = await supabase.rpc("archive_motorcycle" as never, { _moto_id: id, _reason: archiveReason || null } as never);
+    const finalReason = archiveReason === "Outros motivos"
+      ? `Outros motivos: ${archiveReasonOther.trim()}`
+      : archiveReason;
+    const { error } = await supabase.rpc("archive_motorcycle" as never, { _moto_id: id, _reason: finalReason || null } as never);
     if (error) { toast.error(error.message || "Falha ao arquivar"); return; }
     toast.success("Moto arquivada. Histórico preservado para auditoria.");
     qc.invalidateQueries();
