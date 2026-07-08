@@ -36,3 +36,6 @@ export const ROUTE_TO_MODULE: Record<string, string> = {
   "/tickets": "tickets",
   "/plans": "plans",
 };
+
+/** Hub routes that group multiple modules. */
+export const HUB_ROUTES = new Set<string>(["/central", "/comunicacao", "/perfil"]);
