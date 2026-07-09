@@ -7,6 +7,7 @@ import { StoragePhoto } from "@/components/StoragePhoto";
 import { EventTypeIcon } from "@/components/EventTypeIcon";
 import { brl, EVENT_TYPE_LABEL, formatDate } from "@/lib/trailbook";
 import { ActiveMotoCard } from "@/components/ActiveMotoCard";
+import { DocumentPendenciesCard } from "@/components/DocumentPendenciesCard";
 import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -69,6 +70,8 @@ function Dashboard() {
       </div>
 
       <ActiveMotoCard motos={motos.data as any} />
+
+      <DocumentPendenciesCard />
 
       {(motos.data?.length ?? 0) > 1 && (
         <section>
