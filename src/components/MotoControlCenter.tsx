@@ -65,6 +65,8 @@ export function MotoControlCenter({ id }: { id: string }) {
     },
   });
 
+  const pendency = useMotoDocumentPendency(id);
+
   const events = useQuery({
     queryKey: ["events", id],
     queryFn: async () => {
