@@ -37,6 +37,9 @@ import { Eye } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { AdminMotoDangerZone } from "@/components/AdminMotoDangerZone";
 import { EventActionsMenu } from "@/components/EventActionsMenu";
+import { useMotoDocumentPendency } from "@/hooks/useDocumentPendencies";
+import { EXPECTED_DOC_LABEL, findOrigin } from "@/lib/motorcycle-origin";
+import { FileWarning } from "lucide-react";
 
 export function MotoControlCenter({ id }: { id: string }) {
   const qc = useQueryClient();
