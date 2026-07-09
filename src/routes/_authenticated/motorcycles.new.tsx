@@ -304,6 +304,21 @@ function NewMotorcycle() {
             )}
           </ReviewSection>
 
+          <ReviewSection title="Origem da motocicleta" onEdit={() => setMode("edit")}>
+            <Kv
+              k="Como foi adquirida"
+              v={ORIGIN_OPTIONS.find((o) => o.value === originType)?.label ?? "—"}
+            />
+            {originNotes.trim() && (
+              <p className="col-span-full mt-2 whitespace-pre-wrap rounded-lg border border-border bg-background/40 p-3 text-[11px] text-muted-foreground">
+                {originNotes}
+              </p>
+            )}
+            <p className="col-span-full mt-2 text-[11px] text-muted-foreground">
+              Você poderá anexar o documento (Nota Fiscal ou Recibo) depois em <strong>Documentação da moto</strong>. Motos sem documento aparecem como pendência no Dashboard, sem bloquear o uso.
+            </p>
+          </ReviewSection>
+
           <ReviewSection title="Observações" onEdit={() => setMode("edit")}>
             {notes.trim() ? <p className="whitespace-pre-wrap text-sm">{notes}</p> : <p className="text-sm text-muted-foreground">Nenhuma observação.</p>}
           </ReviewSection>
