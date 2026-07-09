@@ -658,6 +658,55 @@ function NewMotorcycle() {
           </div>
         </div>
 
+        {/* Origem da motocicleta */}
+        <div className="rounded-2xl border border-border/60 bg-background/30 p-4 space-y-3">
+          <div>
+            <div className="text-sm font-semibold">Como esta motocicleta foi adquirida?</div>
+            <div className="text-xs text-muted-foreground">
+              Passa a compor o histórico de propriedade. Você poderá anexar Nota Fiscal ou Recibo depois — nada bloqueia o cadastro.
+            </div>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {ORIGIN_OPTIONS.map((o) => {
+              const active = originType === o.value;
+              return (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => setOriginType(o.value)}
+                  className={`rounded-xl border p-3 text-left transition ${
+                    active
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:border-primary/40"
+                  }`}
+                >
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-base">{o.emoji}</span>
+                    <span className="text-sm font-semibold">{o.label}</span>
+                  </div>
+                  <p className={`mt-1 text-[11px] ${active ? "text-primary/80" : "text-muted-foreground"}`}>
+                    {o.description}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+          {(originType === "other" || originType === "private") && (
+            <Field label="Observações da origem (opcional)">
+              <Textarea
+                rows={2}
+                value={originNotes}
+                onChange={(e) => setOriginNotes(e.target.value)}
+                placeholder={
+                  originType === "other"
+                    ? "Ex.: herdada de familiar, doação, permuta, etc."
+                    : "Ex.: comprada de um amigo — recibo em papel será digitalizado depois."
+                }
+              />
+            </Field>
+          )}
+        </div>
+
         <div className="flex flex-wrap gap-3">
           <Button type="submit" className="btn-glow" disabled={loading || blocked}>Revisar e confirmar</Button>
           <Button type="button" variant="outline" onClick={() => navigate({ to: "/motorcycles" })}>Cancelar</Button>
