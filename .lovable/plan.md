@@ -1,238 +1,181 @@
-# Proposta — Documento de Origem & Recibo de Compra e Venda
+# PRD-005 — Módulo de Propriedade e Documentação (Sprint 1)
 
-> Proposta para homologação. **Nada será implementado** antes do "De Acordo".
-> Filosofia aplicada: nenhum menu novo na navegação principal; tudo entra em fluxos já existentes (Cadastro da Moto, Central da Moto, Documentos, Pendências).
-
----
-
-## 1. Desenho do fluxo completo
-
-Três fluxos coexistem, todos ancorados no mesmo conceito: **Documento de Origem da moto**.
-
-### Fluxo A — Cadastro da moto (novo passo "Documento de Origem")
-Adicionar um passo ao final do wizard atual de `motorcycles.new`:
-
-```text
-[Dados básicos] → [Motor/Uso] → [Documento de Origem] → [Concluir]
-                                        │
-                     ┌──────────────────┼──────────────────┐
-                     ▼                  ▼                  ▼
-              Nota Fiscal        Recibo C/V         Enviar depois
-                (upload)           (upload)         (cria pendência)
-```
-
-### Fluxo B — Moto comprada fora do TrailBook (retroativo)
-Mesmo componente do Fluxo A, acessível via:
-- alerta do Cockpit → "Anexar agora"
-- `Central da Moto → Documentos → Documento de Origem`
-- card de Pendências
-
-### Fluxo C — Compra e venda entre usuários TrailBook
-Wizard de 7 passos, ancorado em **Central da Moto → Transferência / Compra e Venda** (estende o `TransferOwnershipDialog` já existente):
-
-```text
-1. Dados da negociação (valor, forma pgto, data, local)
-2. Identificar comprador (e-mail | CPF | telefone) — busca em profiles
-   └─ não encontrado: convidar por link (fluxo pendente)
-3. Confirmar dados da moto (pré-preenchido, editável)
-4. Revisão (resumo compacto)
-5. Gerar PDF do Recibo (download + envio ao comprador in-app)
-6. Anexar recibo assinado (foto/scan) — vendedor OU comprador
-7. Confirmação bilateral → conclui e dispara transferência de titularidade
-```
-
-Status do fluxo (máquina de estados):
-```text
-draft → awaiting_signature → awaiting_signed_upload
-      → under_review (contra-parte confere)
-      → completed | cancelled
-```
+> Proposta para homologação. **Nada será implementado antes do "De Acordo".**
+> Substitui e amplia a proposta anterior de "Documento de Origem & Recibo C/V" (`.lovable/plan.md`), agora alinhada ao PRD-005 v1.0.
+> Filosofia mantida: **zero menus novos na navegação principal**; tudo entra em fluxos existentes (Cadastro, Central da Moto, Documentos, Passport, Dashboard, Timeline, Auditoria).
 
 ---
 
-## 2. Melhor local no sistema
+## 1. Escopo desta Sprint (o que ENTRA)
 
-| Superfície | Papel |
+| Bloco | Entrega |
 |---|---|
-| **Cockpit da Moto** | Só exibe **alerta** quando há pendência de documento de origem ou fluxo C/V em aberto. Uma linha, um botão. |
-| **Central da Moto → Documentos** | Nova seção "Documento de Origem" acima da lista atual (NF / Recibo / Pendente). |
-| **Central da Moto → Transferência / Compra e Venda** | Entrada do Fluxo C (estende `TransferOwnershipDialog`). |
-| **Cadastro da Moto** | Novo passo opcional no wizard. |
-| Navegação principal | **Nada muda.** Sem novo item de menu. |
+| **Origem da moto** | Novo passo no wizard de cadastro: "Como esta motocicleta foi adquirida?" (5 opções) |
+| **Documentos** | Nota Fiscal + Recibo de Compra e Venda como documentos de 1ª classe, com flag `is_origin_document` |
+| **Recibo Inteligente** | Geração de PDF assinável com Código Único, QR Code, Hash SHA-256 e Página Pública de Validação |
+| **Transferência entre usuários TB** | Fluxo automatizado (estende `TransferOwnershipDialog`) — vendedor → comprador → recibo gerado automaticamente |
+| **Pendências Documentais** | "Enviar Posteriormente" sempre disponível; gera pendência não-bloqueante em Dashboard, Timeline e Auditoria |
+| **Propriedade & Documentação** | Nova seção dentro da Central da Moto (não é rota nova) com: Proprietário Atual · Histórico · Documentação · Recibos · Transferências · Auditoria |
+| **Passport** | Consome automaticamente proprietário atual, data, documento, status, pendências e nº de proprietários |
+| **Viewer + Compartilhamento** | Reuso do viewer existente de `MotorcycleDocuments` |
+| **Auditoria + Timeline** | Todos os eventos registrados via `audit_log` + `events` |
+
+## 2. Fora do escopo (confirmado pelo PRD)
+
+Gov.br · ICP-Brasil · DETRAN · Alienação · Financiamento · Copropriedade · Procuração · Biometria · Múltiplos proprietários.
 
 ---
 
-## 3. Prévia textual do Recibo (PDF, 1 página A4)
+## 3. Onde cada peça vive (sem novos menus)
 
 ```text
-┌──────────────────────────────────────────────────────────┐
-│  TrailBook                              [logo]  │
-│  RECIBO DE COMPRA E VENDA DE MOTOCICLETA                │
-│  Modelo operacional — não substitui orientação jurídica │
-└──────────────────────────────────────────────────────────┘
+Cadastro da Moto (wizard)
+  └─ novo passo "Origem"  →  fluxo por tipo  →  documento OU "enviar depois"
 
-VENDEDOR
-Nome: _________________________  CPF: ______________
-RG: __________  Tel/WhatsApp: ______________
-E-mail: _______________________________________
-Endereço: ____________________________________
-Cidade/UF: ___________________________________
+Central da Moto (rota existente motorcycles.$id)
+  └─ nova aba/seção "Propriedade & Documentação"
+        ├─ Proprietário Atual        (from ownership_history)
+        ├─ Histórico de Proprietários (OwnershipTimeline já existe)
+        ├─ Documentação              (MotorcycleDocuments existente + filtro NF/Recibo)
+        ├─ Recibos                   (novo — lista de smart_receipts da moto)
+        ├─ Transferências            (ownership_transfers existente)
+        └─ Auditoria                 (audit_log filtrado por motorcycle_id)
 
-COMPRADOR
-[mesmos campos]
+Passport (motorcycles.$id.passport)
+  └─ novo bloco "Propriedade" no topo (proprietário, aquisição, documento, pendências, #donos)
 
-MOTOCICLETA
-Marca: _______________  Modelo: __________________
-Ano fab./modelo: _______ / _______  Cor: __________
-Chassi: _______________________  Motor: ___________
-Horímetro atual: ______ h    KM atual: ______ km
-Apelido (se houver): _______________________________
+Dashboard
+  └─ novo card "Pendências Documentais" (agrega motos do usuário com pendência)
 
-NEGOCIAÇÃO
-Valor: R$ _______________  (por extenso: _______________)
-Forma de pagamento: _______________________________
-Data: __/__/____   Local: ________________________
-Observações: _____________________________________
-
-DECLARAÇÕES
-1. As partes declaram que as informações acima são
-   verdadeiras e que a motocicleta é entregue no estado
-   em que se encontra, previamente inspecionada pelo
-   comprador.
-2. As partes declaram ciência de que a motocicleta
-   destina-se ao uso off-road / trilha / motocross,
-   podendo NÃO possuir garantia legal ou contratual
-   aplicável à negociação particular, salvo acordo
-   escrito em contrário. *(sujeito a validação jurídica)*
-3. A transferência de titularidade junto ao órgão de
-   trânsito, quando aplicável, é responsabilidade das
-   partes conforme prazo legal.
-
-ASSINATURAS
-_______________________     _______________________
-Vendedor                    Comprador
-Data: __/__/____            Data: __/__/____
-
-Testemunha 1 (opcional): __________________________
-Testemunha 2 (opcional): __________________________
-
-──────────────────────────────────────────────────────────
-Documento gerado por TrailBook em __/__/____ às __:__
-ID do recibo: TB-RCV-XXXXXXXX  •  trailbook.com.br
-Modelo de apoio. Recomenda-se validação jurídica.
+Timeline
+  └─ eventos: origin_set · document_attached · document_pending · receipt_generated · receipt_signed · ownership_transferred
 ```
 
----
-
-## 4. Campos necessários (resumo)
-
-Vendedor / Comprador: nome, CPF, RG (opc.), tel, e-mail, endereço, cidade/UF.
-Moto: marca, modelo, ano fab./modelo, chassi, motor (opc.), cor (opc.), horímetro, KM (opc.), apelido (opc.).
-Negociação: valor, forma pgto, data, local, observações.
-Assinaturas: vendedor, comprador, data, local, 2 testemunhas (opc.).
-
-Grande parte é **pré-preenchida** a partir de `profiles` e `motorcycles` — o usuário só confirma.
+Nenhum item novo no menu principal. Nenhuma rota nova de topo.
 
 ---
 
-## 5. Status do fluxo
+## 4. Fluxos (resumo executivo)
 
-| Status | Quem age | Próximo passo |
-|---|---|---|
-| `draft` | vendedor | completar dados |
-| `awaiting_signature` | ambos | imprimir + assinar |
-| `awaiting_signed_upload` | qualquer parte | anexar foto/scan |
-| `under_review` | contra-parte | confirmar |
-| `completed` | — | dispara transferência |
-| `cancelled` | qualquer parte | motivo obrigatório |
+**Zero KM:** pergunta NF → anexar OU enviar depois → conclui. Pendência = "Nota Fiscal pendente".
 
-Fluxo A/B (só documento de origem) usa estados simplificados: `pending` → `attached`.
+**Compra Particular / Loja:** NF **OU** Recibo (gerar novo | anexar existente | enviar depois).
 
----
+**Compra entre usuários TrailBook (100% automatizado):**
+```text
+Vendedor: "Transferir Motocicleta"
+   ↓ seleciona comprador (busca por email/CPF/tel em profiles)
+Comprador recebe notificação in-app + e-mail
+   ↓ confirma recebimento
+Sistema, em uma transação:
+   • gera Recibo Inteligente (PDF + QR + hash + código)
+   • fecha ownership atual, abre nova em ownership_history
+   • dispara audit + timeline + notificações
+   • atualiza Passport
+```
 
-## 6. Regras de pendência
-
-- Moto sem NF nem Recibo → pendência **permanente** até anexo.
-- Aparece: Cockpit (alerta amarelo, 1 linha), Central da Moto (chip), Documentos (banner topo).
-- Nunca bloqueia uso da moto. Nunca aparece como erro. Sempre com botão único "Anexar agora".
-- Fluxo C em aberto → chip de status na Central + card em Pendências, com "Continuar" e "Cancelar".
-
----
-
-## 7. UX Mobile (Native First)
-
-- Wizard/stepper vertical, 1 pergunta por tela.
-- Campos de seleção (Combobox de comprador por email/CPF/tel) em vez de digitação livre.
-- Máscaras BR (CPF, telefone, moeda) — reusar `src/lib/br-validators.ts`.
-- `TBBottomSheet` para revisão antes de gerar PDF.
-- Botão primário fixo no rodapé (área de toque ≥44px).
-- Após gerar: 3 ações grandes — **Baixar PDF** / **Enviar ao comprador** / **Já assinei, anexar agora**.
-- Estado de "aguardando assinatura" com instrução visual em 3 passos ilustrados.
+Sem etapas manuais adicionais. Sem upload de recibo assinado nesta variante (partes já autenticadas na plataforma = assinatura implícita registrada em auditoria).
 
 ---
 
-## 8. Impacto em Documentos da Moto
+## 5. Recibo Inteligente — anatomia
 
-- `motorcycle_documents` já tem `doc_type` — adicionar valores `invoice_purchase` (já existe como `invoice`) e `bill_of_sale` (novo) ao catálogo em `src/lib/motorcycle-documents.ts`.
-- Marcar 1 documento como **"Documento de Origem"** (flag `is_origin_document boolean`).
-- Regra: exatamente **um** origin doc por moto; anexar novo substitui o anterior (versionado no histórico).
+```text
+Código Único:   TB-RCV-YYYY-XXXXXX
+Hash SHA-256:   dos bytes do PDF + payload canônico
+QR Code:        aponta para https://trailbook.com.br/v/<codigo>
+Página Pública: /v/$code  (rota pública, sem auth)
+  └─ mostra: código, hash, data, moto (marca/modelo/ano/chassi),
+             vendedor (nome + CPF mascarado ***.***.***-NN),
+             comprador (idem), valor, status
+             + "Verificar autenticidade" (recalcula hash do PDF anexado)
+Versionamento:  toda regeneração cria nova versão; hash antigo permanece consultável
+```
 
----
-
-## 9. Impacto em Central da Moto
-
-- Nova entrada "Transferência / Compra e Venda" (já existe `TransferOwnershipDialog` — estender, não duplicar).
-- Chip de pendência de documento de origem no topo da Central.
-- Nenhuma nova rota principal.
-
----
-
-## 10. Pontos jurídicos — **exigem validação antes da implementação**
-
-1. **Cláusula de garantia off-road** — CDC e Código Civil se aplicam mesmo em venda entre particulares? Redação atual precisa de revisão por advogado.
-2. **Modelo vs. documento oficial** — o aviso "não substitui orientação jurídica" é suficiente para limitar responsabilidade do TrailBook?
-3. **Transferência DETRAN** — o recibo do TrailBook substitui ATPV-e / CRV? **Não.** Precisa ficar explícito no PDF.
-4. **Assinatura eletrônica** — v1 é impressão + assinatura física + upload da imagem. Assinatura digital (ICP-Brasil / clique) fica para v2.
-5. **LGPD** — compartilhar CPF/endereço entre comprador e vendedor exige consentimento explícito de ambos antes de gerar o PDF.
-6. **Retenção do PDF** — por quanto tempo o TrailBook guarda? Quem pode baixar depois? (proposta: ambas as partes, para sempre, com auditoria de download).
-7. **Menor de idade / representação** — bloquear se CPF do comprador for menor, ou permitir com responsável?
-8. **Chassi remarcado / sinistro** — declaração explícita das partes? Proposta: campo "Observações sobre o estado" obrigatório quando aplicável.
+Conteúdo do PDF (1 página A4) mantém o modelo já homologado no plano anterior, agora com rodapé:
+`Código TB-RCV-… · SHA-256: <hash> · Valide em trailbook.com.br/v/<código>`
 
 ---
 
-## 11. Recomendação técnica (para depois do "De Acordo")
+## 6. Modelo de dados (novas estruturas)
 
-### Modelo de dados
-- **Nova tabela** `bill_of_sale_flows` — id, motorcycle_id, seller_id, buyer_id (nullable), buyer_lookup (email/cpf/tel), negotiation (jsonb), status, pdf_path, signed_pdf_path, cancel_reason, timestamps. RLS: só as duas partes leem/escrevem; audit obrigatório.
-- **Extensão** `motorcycle_documents`: coluna `is_origin_document boolean` + índice único parcial.
-- **Enum extension**: `doc_type` ganha `bill_of_sale`.
-- **audit_log** já cobre; adicionar eventos `bill_of_sale.created|pdf_generated|pdf_downloaded|signed_uploaded|status_changed|completed|cancelled`.
+Novas tabelas / colunas (detalhes SQL na fase de implementação):
 
-### Geração do PDF
-- Server function (`createServerFn`) usando **pdf-lib** (Worker-compatível — ver `server-runtime`), template A4 renderizado no servidor a partir dos dados do fluxo.
-- Salva em Storage (bucket privado), signed URL para download.
-- Marca d'água discreta "MODELO" no fundo até status = `completed`.
+- `motorcycles.origin_type` enum: `zero_km | private | dealer | trailbook_transfer | other`
+- `motorcycles.origin_set_at`, `origin_notes`
+- `motorcycle_documents.is_origin_document boolean` (índice único parcial por moto)
+- `motorcycle_documents.doc_type` estende: adicionar `bill_of_sale`
+- **`smart_receipts`** (nova): id, motorcycle_id, code (único), sha256, pdf_path, qr_path, seller_id, buyer_id, negotiation jsonb, status (`draft|issued|signed|cancelled`), version, previous_receipt_id, created_at
+- **`document_pendencies`** (view materializada ou tabela leve): motorcycle_id, kind (`origin_document|receipt`), created_at, resolved_at
+- Extensão de `audit_log` (só eventos, sem schema change)
 
-### Frontend
-- Reuso máximo: `TBBottomSheet`, `TBFormGrid`, `TBFormField`, `TransferOwnershipDialog`, `MotorcycleDocuments`.
-- Nenhum novo componente de baixo nível — apenas 1 novo componente de wizard `BillOfSaleWizard.tsx`.
-
-### Segurança em camadas
-Frontend (Zod) + server fn (Zod + `requireSupabaseAuth` + verificação de titularidade via `is_moto_owner`) + DB (RLS por partes envolvidas + CHECK de status).
-
-### Roadmap sugerido
-- **Fase 1**: Documento de Origem (Fluxos A e B) — baixo risco, alto valor imediato.
-- **Fase 2**: Recibo C/V entre usuários (Fluxo C) — depende de validação jurídica dos pontos 1-8.
-- **Fase 3** (futuro): assinatura eletrônica, integração ATPV-e, avaliação FIPE embutida.
+Todas com RLS por titularidade + `service_role` + grants explícitos.
 
 ---
 
-## Filtro de Evolução Controlada (5 perguntas)
+## 7. Página Pública de Validação — `/v/$code`
 
-1. **Resolve problema real?** Sim — hoje o TrailBook não registra origem da moto, ponto fraco de confiança do histórico.
-2. **Uso frequente?** Documento de Origem: 1x por moto (essencial). Recibo C/V: eventual mas alto impacto quando acontece.
-3. **Cabe em fluxo existente?** Sim — Cadastro, Central da Moto, Documentos, Transferência. **Zero menus novos.**
-4. **Aumenta complexidade?** Não na navegação. Cresce no backend (1 tabela nova, 1 coluna, 1 PDF), mas invisível ao usuário.
-5. **Existe mais simples?** Para Fluxo A/B, não — é só upload. Para Fluxo C, alternativa mais simples seria só gerar PDF sem gestão de status; proposta atual mantém status porque a pendência do assinado é o que dá valor real.
+Rota pública em `src/routes/v.$code.tsx` (fora do `_authenticated`). SSR-friendly:
+- Consulta via server publishable client (SELECT `TO anon` em view segura `public_receipt_validation`).
+- Exibe apenas dados não sensíveis (CPF mascarado, sem endereço, sem observações privadas).
+- Botão "Verificar autenticidade" faz upload local (browser) do PDF, recalcula SHA-256 client-side e compara.
 
-**Conclusão:** aderente à filosofia. Aguardando "De Acordo" para detalhar migração e começar pela Fase 1.
+---
+
+## 8. Impacto técnico
+
+- **PDF**: `pdf-lib` server-side (Worker-compatible), reuso do padrão já validado no projeto.
+- **QR Code**: `qrcode` npm (~puro JS, safe no Worker).
+- **Hash**: `crypto.subtle` (browser) + `node:crypto` (server) — determinístico.
+- **RLS**: `smart_receipts` visível para seller_id, buyer_id e admins; validação pública via view restrita.
+- **Frontend**: zero componentes novos de baixo nível. Novos wizards de topo:
+  - `OriginStep.tsx` (dentro do cadastro)
+  - `PropertyDocSection.tsx` (dentro da Central da Moto)
+  - `SmartReceiptWizard.tsx` (estende `TransferOwnershipDialog`)
+  - `ReceiptPublicView.tsx` (rota `/v/$code`)
+- **Server functions**: `generateSmartReceipt`, `attachOriginDocument`, `confirmTrailbookTransfer`, `validateReceiptPublic` (públic).
+
+---
+
+## 9. Pontos jurídicos que **exigem** validação antes de codar
+
+Herdados da proposta anterior + novos do PRD:
+1. Cláusula off-road / garantia entre particulares.
+2. Aviso "modelo — não substitui orientação jurídica" nos PDFs.
+3. Explicitar que **não substitui** ATPV-e / CRV / DETRAN.
+4. LGPD: consentimento explícito de ambas as partes antes do PDF (com registro em auditoria).
+5. Retenção do PDF: proposta = permanente para as partes + admin, com auditoria de download.
+6. Assinatura implícita na transferência TB (partes autenticadas) — validar se advogado aceita como suficiente sem assinatura física.
+7. CPF de menor / representação — bloquear ou permitir com responsável?
+8. Página pública `/v/$code` mostra CPF mascarado — validar se mesmo mascarado exige consentimento.
+
+---
+
+## 10. Ordem de execução sugerida (após "De Acordo")
+
+**Fase 1.1 — Base (baixo risco)**
+1. Migração: `origin_type` + `is_origin_document` + `doc_type=bill_of_sale` + tabela `smart_receipts` + view pública + grants + RLS.
+2. Wizard "Origem" no cadastro (5 opções + "enviar depois").
+3. Pendência não-bloqueante: card Dashboard + banner Central da Moto + evento Timeline/Auditoria.
+4. Seção "Propriedade & Documentação" na Central (agrega o que já existe: OwnershipTimeline, MotorcycleDocuments, TransferOwnershipDialog).
+5. Passport lê `origin_type`, proprietário atual e pendências.
+
+**Fase 1.2 — Recibo Inteligente**
+6. Geração de PDF + QR + hash + código (server fn).
+7. Página pública `/v/$code` com verificação de autenticidade.
+8. Fluxo "Compra entre usuários TrailBook" (estende TransferOwnershipDialog): confirmação bilateral → recibo automático → transferência atômica.
+
+**Fase 1.3 — Homologação**
+9. Auditoria completa dos novos eventos, checklist de cenários (5 origens × 3 desfechos).
+
+---
+
+## Filtro de Evolução Controlada
+
+1. **Resolve problema real?** Sim — origem e cadeia de propriedade são o principal ponto fraco de confiança hoje.
+2. **Uso frequente?** Origem: 1x por moto (obrigatório na jornada). Transferência: eventual, mas de altíssimo valor.
+3. **Cabe em fluxo existente?** Sim — Cadastro, Central, Passport, Dashboard, Timeline, Auditoria. **Zero menus novos.**
+4. **Aumenta complexidade?** Não na navegação. Backend cresce (2 tabelas/1 view/2 colunas), mas invisível ao usuário.
+5. **Existe mais simples?** Para origem e pendência, não. Para o Recibo Inteligente, o mínimo viável seria PDF sem QR/hash — mas isso quebra o requisito de "Documento Inteligente" do PRD.
+
+**Conclusão:** aderente à filosofia TrailBook e ao PRD-005 v1.0. Aguardando **"De Acordo"** para iniciar a Fase 1.1 (migração + wizard de origem + pendências).
