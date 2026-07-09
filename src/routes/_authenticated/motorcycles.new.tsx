@@ -21,6 +21,7 @@ import { usePlan } from "@/hooks/usePlan";
 import { canCreateMotorcycle } from "@/lib/plans";
 import { useQuery } from "@tanstack/react-query";
 import { Crown, ShieldAlert, CheckCircle2, Pencil, Info } from "lucide-react";
+import { ORIGIN_OPTIONS, type OriginType } from "@/lib/motorcycle-origin";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/new")({
   head: () => ({ meta: [{ title: "Nova moto — TrailBook" }] }),
@@ -69,6 +70,8 @@ function NewMotorcycle() {
   const [useProfileNote, setUseProfileNote] = useState("");
   const [applyPlan, setApplyPlan] = useState<"review" | "auto" | "skip">("review");
   const [notes, setNotes] = useState("");
+  const [originType, setOriginType] = useState<OriginType | "">("");
+  const [originNotes, setOriginNotes] = useState("");
   const [mode, setMode] = useState<"edit" | "review">("edit");
   const [draft, setDraft] = useState<z.infer<typeof schema> | null>(null);
   const { plan } = usePlan();
@@ -144,6 +147,9 @@ function NewMotorcycle() {
     if (useProfile === "other" && !useProfileNote.trim()) {
       toast.error("Descreva o perfil de uso."); return;
     }
+    if (!originType) {
+      toast.error("Informe como a motocicleta foi adquirida."); return;
+    }
     setDraft(parsed.data);
     setMode("review");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -176,6 +182,9 @@ function NewMotorcycle() {
         // Moto nova: revisão marcada como skipped (não precisa revisar plano);
         // Moto usada: pending — dispara banner de revisão no dashboard da moto.
         plan_review_status: draft.condition === "new" ? "skipped" : "pending",
+        origin_type: originType || null,
+        origin_notes: originNotes.trim() || null,
+        origin_set_at: originType ? new Date().toISOString() : null,
       } as never).select("id").single();
       if (error) throw error;
       // Se subiu foto principal no cadastro, registra na galeria
@@ -293,6 +302,21 @@ function NewMotorcycle() {
                 <em>{INCIDENT_DECLARATION_TEXT}</em>
               </p>
             )}
+          </ReviewSection>
+
+          <ReviewSection title="Origem da motocicleta" onEdit={() => setMode("edit")}>
+            <Kv
+              k="Como foi adquirida"
+              v={ORIGIN_OPTIONS.find((o) => o.value === originType)?.label ?? "—"}
+            />
+            {originNotes.trim() && (
+              <p className="col-span-full mt-2 whitespace-pre-wrap rounded-lg border border-border bg-background/40 p-3 text-[11px] text-muted-foreground">
+                {originNotes}
+              </p>
+            )}
+            <p className="col-span-full mt-2 text-[11px] text-muted-foreground">
+              Você poderá anexar o documento (Nota Fiscal ou Recibo) depois em <strong>Documentação da moto</strong>. Motos sem documento aparecem como pendência no Dashboard, sem bloquear o uso.
+            </p>
           </ReviewSection>
 
           <ReviewSection title="Observações" onEdit={() => setMode("edit")}>
@@ -632,6 +656,55 @@ function NewMotorcycle() {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Origem da motocicleta */}
+        <div className="rounded-2xl border border-border/60 bg-background/30 p-4 space-y-3">
+          <div>
+            <div className="text-sm font-semibold">Como esta motocicleta foi adquirida?</div>
+            <div className="text-xs text-muted-foreground">
+              Passa a compor o histórico de propriedade. Você poderá anexar Nota Fiscal ou Recibo depois — nada bloqueia o cadastro.
+            </div>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {ORIGIN_OPTIONS.map((o) => {
+              const active = originType === o.value;
+              return (
+                <button
+                  key={o.value}
+                  type="button"
+                  onClick={() => setOriginType(o.value)}
+                  className={`rounded-xl border p-3 text-left transition ${
+                    active
+                      ? "border-primary bg-primary/10"
+                      : "border-border hover:border-primary/40"
+                  }`}
+                >
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-base">{o.emoji}</span>
+                    <span className="text-sm font-semibold">{o.label}</span>
+                  </div>
+                  <p className={`mt-1 text-[11px] ${active ? "text-primary/80" : "text-muted-foreground"}`}>
+                    {o.description}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
+          {(originType === "other" || originType === "private") && (
+            <Field label="Observações da origem (opcional)">
+              <Textarea
+                rows={2}
+                value={originNotes}
+                onChange={(e) => setOriginNotes(e.target.value)}
+                placeholder={
+                  originType === "other"
+                    ? "Ex.: herdada de familiar, doação, permuta, etc."
+                    : "Ex.: comprada de um amigo — recibo em papel será digitalizado depois."
+                }
+              />
+            </Field>
+          )}
         </div>
 
         <div className="flex flex-wrap gap-3">

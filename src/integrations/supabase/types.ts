@@ -175,6 +175,13 @@ export type Database = {
             foreignKeyName: "certificates_motorcycle_id_fkey"
             columns: ["motorcycle_id"]
             isOneToOne: false
+            referencedRelation: "document_pendencies_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "certificates_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
             referencedRelation: "motorcycles"
             referencedColumns: ["id"]
           },
@@ -374,6 +381,13 @@ export type Database = {
             foreignKeyName: "events_motorcycle_id_fkey"
             columns: ["motorcycle_id"]
             isOneToOne: false
+            referencedRelation: "document_pendencies_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "events_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
             referencedRelation: "motorcycles"
             referencedColumns: ["id"]
           },
@@ -496,6 +510,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "events"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maintenance_inspections_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "document_pendencies_view"
+            referencedColumns: ["motorcycle_id"]
           },
           {
             foreignKeyName: "maintenance_inspections_motorcycle_id_fkey"
@@ -778,6 +799,13 @@ export type Database = {
             foreignKeyName: "maintenance_schedules_motorcycle_id_fkey"
             columns: ["motorcycle_id"]
             isOneToOne: false
+            referencedRelation: "document_pendencies_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "maintenance_schedules_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
             referencedRelation: "motorcycles"
             referencedColumns: ["id"]
           },
@@ -1019,6 +1047,7 @@ export type Database = {
           file_name: string | null
           id: string
           is_current: boolean
+          is_origin_document: boolean
           issuer: string | null
           mime_type: string | null
           motorcycle_id: string
@@ -1044,6 +1073,7 @@ export type Database = {
           file_name?: string | null
           id?: string
           is_current?: boolean
+          is_origin_document?: boolean
           issuer?: string | null
           mime_type?: string | null
           motorcycle_id: string
@@ -1069,6 +1099,7 @@ export type Database = {
           file_name?: string | null
           id?: string
           is_current?: boolean
+          is_origin_document?: boolean
           issuer?: string | null
           mime_type?: string | null
           motorcycle_id?: string
@@ -1081,6 +1112,13 @@ export type Database = {
           version?: number
         }
         Relationships: [
+          {
+            foreignKeyName: "motorcycle_documents_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "document_pendencies_view"
+            referencedColumns: ["motorcycle_id"]
+          },
           {
             foreignKeyName: "motorcycle_documents_motorcycle_id_fkey"
             columns: ["motorcycle_id"]
@@ -1295,6 +1333,13 @@ export type Database = {
             foreignKeyName: "motorcycle_photos_motorcycle_id_fkey"
             columns: ["motorcycle_id"]
             isOneToOne: false
+            referencedRelation: "document_pendencies_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "motorcycle_photos_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
             referencedRelation: "motorcycles"
             referencedColumns: ["id"]
           },
@@ -1347,6 +1392,11 @@ export type Database = {
           main_photo_url: string | null
           model: string
           nickname: string | null
+          origin_notes: string | null
+          origin_set_at: string | null
+          origin_type:
+            | Database["public"]["Enums"]["motorcycle_origin_type"]
+            | null
           owner_id: string
           plan_review_status: string
           plate: string | null
@@ -1381,6 +1431,11 @@ export type Database = {
           main_photo_url?: string | null
           model: string
           nickname?: string | null
+          origin_notes?: string | null
+          origin_set_at?: string | null
+          origin_type?:
+            | Database["public"]["Enums"]["motorcycle_origin_type"]
+            | null
           owner_id: string
           plan_review_status?: string
           plate?: string | null
@@ -1415,6 +1470,11 @@ export type Database = {
           main_photo_url?: string | null
           model?: string
           nickname?: string | null
+          origin_notes?: string | null
+          origin_set_at?: string | null
+          origin_type?:
+            | Database["public"]["Enums"]["motorcycle_origin_type"]
+            | null
           owner_id?: string
           plan_review_status?: string
           plate?: string | null
@@ -1506,6 +1566,13 @@ export type Database = {
             foreignKeyName: "ownership_history_motorcycle_id_fkey"
             columns: ["motorcycle_id"]
             isOneToOne: false
+            referencedRelation: "document_pendencies_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "ownership_history_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
             referencedRelation: "motorcycles"
             referencedColumns: ["id"]
           },
@@ -1555,6 +1622,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "ownership_transfers_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "document_pendencies_view"
+            referencedColumns: ["motorcycle_id"]
+          },
           {
             foreignKeyName: "ownership_transfers_motorcycle_id_fkey"
             columns: ["motorcycle_id"]
@@ -1711,6 +1785,106 @@ export type Database = {
         }
         Relationships: []
       }
+      smart_receipts: {
+        Row: {
+          bucket: string | null
+          buyer_id: string | null
+          buyer_snapshot: Json
+          cancel_reason: string | null
+          cancelled_at: string | null
+          code: string
+          created_at: string
+          created_by: string
+          id: string
+          issued_at: string | null
+          motorcycle_id: string
+          motorcycle_snapshot: Json
+          negotiation: Json
+          pdf_path: string | null
+          previous_receipt_id: string | null
+          qr_path: string | null
+          seller_id: string | null
+          seller_snapshot: Json
+          sha256: string | null
+          signed_at: string | null
+          status: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          bucket?: string | null
+          buyer_id?: string | null
+          buyer_snapshot?: Json
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          code: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          issued_at?: string | null
+          motorcycle_id: string
+          motorcycle_snapshot?: Json
+          negotiation?: Json
+          pdf_path?: string | null
+          previous_receipt_id?: string | null
+          qr_path?: string | null
+          seller_id?: string | null
+          seller_snapshot?: Json
+          sha256?: string | null
+          signed_at?: string | null
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          bucket?: string | null
+          buyer_id?: string | null
+          buyer_snapshot?: Json
+          cancel_reason?: string | null
+          cancelled_at?: string | null
+          code?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          issued_at?: string | null
+          motorcycle_id?: string
+          motorcycle_snapshot?: Json
+          negotiation?: Json
+          pdf_path?: string | null
+          previous_receipt_id?: string | null
+          qr_path?: string | null
+          seller_id?: string | null
+          seller_snapshot?: Json
+          sha256?: string | null
+          signed_at?: string | null
+          status?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "smart_receipts_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "document_pendencies_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "smart_receipts_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "smart_receipts_previous_receipt_id_fkey"
+            columns: ["previous_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "smart_receipts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ticket_attachments: {
         Row: {
           bucket: string
@@ -1860,6 +2034,13 @@ export type Database = {
             foreignKeyName: "tickets_motorcycle_id_fkey"
             columns: ["motorcycle_id"]
             isOneToOne: false
+            referencedRelation: "document_pendencies_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "tickets_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
             referencedRelation: "motorcycles"
             referencedColumns: ["id"]
           },
@@ -1933,6 +2114,48 @@ export type Database = {
       }
     }
     Views: {
+      document_pendencies_view: {
+        Row: {
+          brand: string | null
+          expected_kind: string | null
+          has_origin_pendency: boolean | null
+          model: string | null
+          motorcycle_id: string | null
+          nickname: string | null
+          origin_type:
+            | Database["public"]["Enums"]["motorcycle_origin_type"]
+            | null
+          owner_id: string | null
+          year_model: number | null
+        }
+        Insert: {
+          brand?: string | null
+          expected_kind?: never
+          has_origin_pendency?: never
+          model?: string | null
+          motorcycle_id?: string | null
+          nickname?: string | null
+          origin_type?:
+            | Database["public"]["Enums"]["motorcycle_origin_type"]
+            | null
+          owner_id?: string | null
+          year_model?: number | null
+        }
+        Update: {
+          brand?: string | null
+          expected_kind?: never
+          has_origin_pendency?: never
+          model?: string | null
+          motorcycle_id?: string | null
+          nickname?: string | null
+          origin_type?:
+            | Database["public"]["Enums"]["motorcycle_origin_type"]
+            | null
+          owner_id?: string | null
+          year_model?: number | null
+        }
+        Relationships: []
+      }
       my_ownership_transfers: {
         Row: {
           created_at: string | null
@@ -1981,10 +2204,77 @@ export type Database = {
             foreignKeyName: "ownership_transfers_motorcycle_id_fkey"
             columns: ["motorcycle_id"]
             isOneToOne: false
+            referencedRelation: "document_pendencies_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "ownership_transfers_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
             referencedRelation: "motorcycles"
             referencedColumns: ["id"]
           },
         ]
+      }
+      public_receipt_validation: {
+        Row: {
+          amount: string | null
+          buyer_cpf_masked: string | null
+          buyer_name: string | null
+          code: string | null
+          issued_at: string | null
+          moto_brand: string | null
+          moto_chassis: string | null
+          moto_model: string | null
+          moto_year_model: string | null
+          negotiation_date: string | null
+          negotiation_location: string | null
+          seller_cpf_masked: string | null
+          seller_name: string | null
+          sha256: string | null
+          signed_at: string | null
+          status: string | null
+          version: number | null
+        }
+        Insert: {
+          amount?: never
+          buyer_cpf_masked?: never
+          buyer_name?: never
+          code?: string | null
+          issued_at?: string | null
+          moto_brand?: never
+          moto_chassis?: never
+          moto_model?: never
+          moto_year_model?: never
+          negotiation_date?: never
+          negotiation_location?: never
+          seller_cpf_masked?: never
+          seller_name?: never
+          sha256?: string | null
+          signed_at?: string | null
+          status?: string | null
+          version?: number | null
+        }
+        Update: {
+          amount?: never
+          buyer_cpf_masked?: never
+          buyer_name?: never
+          code?: string | null
+          issued_at?: string | null
+          moto_brand?: never
+          moto_chassis?: never
+          moto_model?: never
+          moto_year_model?: never
+          negotiation_date?: never
+          negotiation_location?: never
+          seller_cpf_masked?: never
+          seller_name?: never
+          sha256?: string | null
+          signed_at?: string | null
+          status?: string | null
+          version?: number | null
+        }
+        Relationships: []
       }
     }
     Functions: {
@@ -2582,6 +2872,13 @@ export type Database = {
         | "import"
         | "contract"
         | "other"
+        | "bill_of_sale"
+      motorcycle_origin_type:
+        | "zero_km"
+        | "private"
+        | "dealer"
+        | "trailbook_transfer"
+        | "other"
       ownership_method: "creation" | "transfer" | "import"
       plan_item_action:
         | "inspect"
@@ -2887,6 +3184,14 @@ export const Constants = {
         "warranty",
         "import",
         "contract",
+        "other",
+        "bill_of_sale",
+      ],
+      motorcycle_origin_type: [
+        "zero_km",
+        "private",
+        "dealer",
+        "trailbook_transfer",
         "other",
       ],
       ownership_method: ["creation", "transfer", "import"],
