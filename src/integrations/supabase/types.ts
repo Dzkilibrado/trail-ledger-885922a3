@@ -2229,6 +2229,8 @@ export type Database = {
           moto_year_model: string | null
           negotiation_date: string | null
           negotiation_location: string | null
+          payment_method: string | null
+          previous_receipt_id: string | null
           seller_cpf_masked: string | null
           seller_name: string | null
           sha256: string | null
@@ -2248,6 +2250,8 @@ export type Database = {
           moto_year_model?: never
           negotiation_date?: never
           negotiation_location?: never
+          payment_method?: never
+          previous_receipt_id?: string | null
           seller_cpf_masked?: never
           seller_name?: never
           sha256?: string | null
@@ -2267,6 +2271,8 @@ export type Database = {
           moto_year_model?: never
           negotiation_date?: never
           negotiation_location?: never
+          payment_method?: never
+          previous_receipt_id?: string | null
           seller_cpf_masked?: never
           seller_name?: never
           sha256?: string | null
@@ -2274,7 +2280,15 @@ export type Database = {
           status?: string | null
           version?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "smart_receipts_previous_receipt_id_fkey"
+            columns: ["previous_receipt_id"]
+            isOneToOne: false
+            referencedRelation: "smart_receipts"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Functions: {
@@ -2670,6 +2684,37 @@ export type Database = {
         }
       }
       get_public_certificate: { Args: { _token: string }; Returns: Json }
+      get_public_receipt: {
+        Args: { _code: string }
+        Returns: {
+          amount: string | null
+          buyer_cpf_masked: string | null
+          buyer_name: string | null
+          code: string | null
+          issued_at: string | null
+          moto_brand: string | null
+          moto_chassis: string | null
+          moto_model: string | null
+          moto_year_model: string | null
+          negotiation_date: string | null
+          negotiation_location: string | null
+          payment_method: string | null
+          previous_receipt_id: string | null
+          seller_cpf_masked: string | null
+          seller_name: string | null
+          sha256: string | null
+          signed_at: string | null
+          status: string | null
+          version: number | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "public_receipt_validation"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_receipt_pdf_path: { Args: { _code: string }; Returns: string }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

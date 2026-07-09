@@ -1,181 +1,113 @@
-# PRD-005 — Módulo de Propriedade e Documentação (Sprint 1)
+# Fase 1.2 — Recibo Inteligente & Transferência entre Usuários TrailBook
 
-> Proposta para homologação. **Nada será implementado antes do "De Acordo".**
-> Substitui e amplia a proposta anterior de "Documento de Origem & Recibo C/V" (`.lovable/plan.md`), agora alinhada ao PRD-005 v1.0.
-> Filosofia mantida: **zero menus novos na navegação principal**; tudo entra em fluxos existentes (Cadastro, Central da Moto, Documentos, Passport, Dashboard, Timeline, Auditoria).
+> Base: Fase 1.1 já entregue (tabela `smart_receipts`, view `public_receipt_validation`, origem da moto, pendências). Nada é reimplementado; esta fase apenas ativa o Recibo e o fluxo automatizado.
 
----
+## 1. Ajustes solicitados nesta rodada (incorporados)
 
-## 1. Escopo desta Sprint (o que ENTRA)
+| # | Solicitação | Onde entra |
+|---|---|---|
+| 1 | Rodapé institucional "Emitido eletronicamente pelo TrailBook" | PDF (todas as páginas) |
+| 2 | Exibir **versão** do documento | PDF + Página Pública |
+| 3 | Exibir **status** (Ativo / Substituído / Revogado) | Página Pública (badge topo) |
+| 4 | Exibir **data e hora** da emissão | PDF + Página Pública |
+| 5 | URL amigável `/r/TB-RCV-2026-000001` | Rota pública renomeada de `/v/$code` → `/r/$code` |
+| 6 | Passport consome do módulo, sem duplicar | Passport lê `smart_receipts` + `ownership_history` direto (sem colunas novas) |
 
-| Bloco | Entrega |
-|---|---|
-| **Origem da moto** | Novo passo no wizard de cadastro: "Como esta motocicleta foi adquirida?" (5 opções) |
-| **Documentos** | Nota Fiscal + Recibo de Compra e Venda como documentos de 1ª classe, com flag `is_origin_document` |
-| **Recibo Inteligente** | Geração de PDF assinável com Código Único, QR Code, Hash SHA-256 e Página Pública de Validação |
-| **Transferência entre usuários TB** | Fluxo automatizado (estende `TransferOwnershipDialog`) — vendedor → comprador → recibo gerado automaticamente |
-| **Pendências Documentais** | "Enviar Posteriormente" sempre disponível; gera pendência não-bloqueante em Dashboard, Timeline e Auditoria |
-| **Propriedade & Documentação** | Nova seção dentro da Central da Moto (não é rota nova) com: Proprietário Atual · Histórico · Documentação · Recibos · Transferências · Auditoria |
-| **Passport** | Consome automaticamente proprietário atual, data, documento, status, pendências e nº de proprietários |
-| **Viewer + Compartilhamento** | Reuso do viewer existente de `MotorcycleDocuments` |
-| **Auditoria + Timeline** | Todos os eventos registrados via `audit_log` + `events` |
+## 2. Entregas técnicas
 
-## 2. Fora do escopo (confirmado pelo PRD)
+### 2.1 Banco (migração leve)
+- Enum `receipt_status`: garantir valores `draft | issued | superseded | revoked` (mapear "Ativo"=`issued`, "Substituído"=`superseded`, "Revogado"=`revoked`).
+- Trigger em `smart_receipts`: ao emitir novo recibo (`version > 1`) marcar o anterior como `superseded` e preencher `previous_receipt_id`.
+- View `public_receipt_validation` já existe — adicionar colunas `version`, `status`, `issued_at` (mascaradas conforme necessário).
+- Server function pública `get_public_receipt(_code text)` (SECURITY DEFINER, retorna somente campos seguros) — invocada pela página `/r/$code`.
 
-Gov.br · ICP-Brasil · DETRAN · Alienação · Financiamento · Copropriedade · Procuração · Biometria · Múltiplos proprietários.
+### 2.2 Geração de PDF (server function)
+- `generateSmartReceipt` (`createServerFn` + `requireSupabaseAuth`):
+  1. Valida propriedade (RLS via `context.supabase`).
+  2. Monta payload canônico JSON (moto, partes, valores, data/hora ISO, versão).
+  3. Gera PDF com `pdf-lib` (A4, 1 página + rodapé em todas):
+     - Cabeçalho: logo TrailBook, código `TB-RCV-YYYY-NNNNNN`, versão `v1`, emitido em `dd/mm/aaaa hh:mm` (America/Sao_Paulo).
+     - Corpo: dados moto (marca/modelo/ano/chassi/horímetro), vendedor, comprador, valor, forma de pagamento, cláusulas padrão + off-road.
+     - QR Code (via `qrcode` npm, canvas→PNG bytes) apontando para `https://trailbook.com.br/r/<code>`.
+     - Rodapé institucional (repetido em toda página):
+       `Documento emitido eletronicamente pelo TrailBook · Código <code> · Versão v<n> · SHA-256 <hash> · Valide em trailbook.com.br/r/<code>`
+  4. Calcula SHA-256 dos bytes finais do PDF.
+  5. Faz upload para bucket `smart-receipts` (privado, path `motorcycles/{id}/{code}-v{n}.pdf`).
+  6. INSERT em `smart_receipts` com `pdf_path`, `sha256`, `status='issued'`, `version`, `previous_receipt_id`.
+  7. Grava `audit_log` + evento na timeline (`receipt_generated`).
 
----
+### 2.3 Página pública `/r/$code` (nova rota, fora de `_authenticated`)
+- Arquivo `src/routes/r.$code.tsx` — SSR, `head()` com título/description dinâmicos e `og:image` opcional.
+- Loader chama server fn pública `validateReceiptPublic({ code })` que executa `get_public_receipt` via client publishable + `anon`.
+- Layout:
+  - **Badge de status** no topo: `Ativo` (verde) · `Substituído` (âmbar, linkando ao novo código) · `Revogado` (vermelho).
+  - Bloco: código, versão, data/hora de emissão, hash SHA-256 (mono).
+  - Bloco moto: marca/modelo/ano/chassi.
+  - Bloco partes: nome + CPF mascarado `***.***.***-NN`.
+  - Bloco negociação: valor, forma de pagamento.
+  - CTA "Verificar autenticidade": input file client-side → calcula SHA-256 → compara com o hash oficial → mostra ✅/❌.
+  - Link para baixar PDF assinado (signed URL curta via server fn).
 
-## 3. Onde cada peça vive (sem novos menus)
+### 2.4 Fluxo "Transferência entre usuários TrailBook"
+- Estende `TransferOwnershipDialog` existente (não cria menu novo):
+  1. Vendedor busca comprador por e-mail/CPF (query em `profiles`).
+  2. Preenche valor + forma de pagamento + observações + aceite LGPD.
+  3. Envia solicitação (já existente via `request_ownership_transfer`).
+  4. Comprador recebe notificação in-app; ao aceitar em `/transfers`, dispara server fn `confirmTrailbookTransfer` que **em uma única transação**:
+     - Gera Recibo Inteligente (chama internamente `generateSmartReceipt`).
+     - Fecha ownership atual, abre nova em `ownership_history`.
+     - Marca `ownership_transfers.status='completed'` + `receipt_id`.
+     - Grava audit + timeline dos dois lados + notifica vendedor.
+- Sem upload manual de recibo assinado nesta variante (assinatura implícita — ambas as partes autenticadas + auditoria).
 
-```text
-Cadastro da Moto (wizard)
-  └─ novo passo "Origem"  →  fluxo por tipo  →  documento OU "enviar depois"
+### 2.5 Integração com Passport (sem duplicar)
+- `motorcycles.$id.passport.tsx` passa a ler:
+  - Proprietário atual → `ownership_history` (aberto).
+  - Histórico de donos → `ownership_history`.
+  - Documento de origem → `motorcycle_documents WHERE is_origin_document`.
+  - Último recibo → `smart_receipts WHERE status='issued' ORDER BY version DESC LIMIT 1`.
+- **Nenhuma coluna nova** em `motorcycles` para essas infos — Passport é apenas leitor.
 
-Central da Moto (rota existente motorcycles.$id)
-  └─ nova aba/seção "Propriedade & Documentação"
-        ├─ Proprietário Atual        (from ownership_history)
-        ├─ Histórico de Proprietários (OwnershipTimeline já existe)
-        ├─ Documentação              (MotorcycleDocuments existente + filtro NF/Recibo)
-        ├─ Recibos                   (novo — lista de smart_receipts da moto)
-        ├─ Transferências            (ownership_transfers existente)
-        └─ Auditoria                 (audit_log filtrado por motorcycle_id)
+### 2.6 Storage
+- Bucket privado `smart-receipts` (criação idempotente via migração).
+- RLS: SELECT restrito ao vendedor, comprador, admins; download público apenas via signed URL emitida por `validateReceiptPublic`.
 
-Passport (motorcycles.$id.passport)
-  └─ novo bloco "Propriedade" no topo (proprietário, aquisição, documento, pendências, #donos)
-
-Dashboard
-  └─ novo card "Pendências Documentais" (agrega motos do usuário com pendência)
-
-Timeline
-  └─ eventos: origin_set · document_attached · document_pending · receipt_generated · receipt_signed · ownership_transferred
-```
-
-Nenhum item novo no menu principal. Nenhuma rota nova de topo.
-
----
-
-## 4. Fluxos (resumo executivo)
-
-**Zero KM:** pergunta NF → anexar OU enviar depois → conclui. Pendência = "Nota Fiscal pendente".
-
-**Compra Particular / Loja:** NF **OU** Recibo (gerar novo | anexar existente | enviar depois).
-
-**Compra entre usuários TrailBook (100% automatizado):**
-```text
-Vendedor: "Transferir Motocicleta"
-   ↓ seleciona comprador (busca por email/CPF/tel em profiles)
-Comprador recebe notificação in-app + e-mail
-   ↓ confirma recebimento
-Sistema, em uma transação:
-   • gera Recibo Inteligente (PDF + QR + hash + código)
-   • fecha ownership atual, abre nova em ownership_history
-   • dispara audit + timeline + notificações
-   • atualiza Passport
-```
-
-Sem etapas manuais adicionais. Sem upload de recibo assinado nesta variante (partes já autenticadas na plataforma = assinatura implícita registrada em auditoria).
-
----
-
-## 5. Recibo Inteligente — anatomia
+## 3. Novos arquivos
 
 ```text
-Código Único:   TB-RCV-YYYY-XXXXXX
-Hash SHA-256:   dos bytes do PDF + payload canônico
-QR Code:        aponta para https://trailbook.com.br/v/<codigo>
-Página Pública: /v/$code  (rota pública, sem auth)
-  └─ mostra: código, hash, data, moto (marca/modelo/ano/chassi),
-             vendedor (nome + CPF mascarado ***.***.***-NN),
-             comprador (idem), valor, status
-             + "Verificar autenticidade" (recalcula hash do PDF anexado)
-Versionamento:  toda regeneração cria nova versão; hash antigo permanece consultável
+src/routes/r.$code.tsx                          # página pública (SSR)
+src/lib/smart-receipts.functions.ts             # generateSmartReceipt, validateReceiptPublic, confirmTrailbookTransfer, revokeReceipt
+src/lib/smart-receipts.server.ts                # PDF/QR/hash helpers (server-only)
+src/lib/smart-receipts.ts                       # utils compartilhados (formatação código, status labels)
+src/components/receipts/SmartReceiptWizard.tsx  # dentro do TransferOwnershipDialog
+src/components/receipts/ReceiptStatusBadge.tsx
+src/components/receipts/PublicReceiptView.tsx
 ```
 
-Conteúdo do PDF (1 página A4) mantém o modelo já homologado no plano anterior, agora com rodapé:
-`Código TB-RCV-… · SHA-256: <hash> · Valide em trailbook.com.br/v/<código>`
+Arquivos editados:
+- `src/components/TransferOwnershipDialog.tsx` (novo passo: dados da negociação)
+- `src/routes/_authenticated/motorcycles.$id.passport.tsx` (novo bloco Propriedade & Recibo)
+- `src/routes/_authenticated/transfers.tsx` (ação "Aceitar e gerar recibo")
 
----
+## 4. Dependências npm
+- `pdf-lib` (já é padrão validado no projeto)
+- `qrcode` (puro JS, Worker-safe)
+- Hash: `crypto.subtle` (browser) + `node:crypto` (server) — sem dependência.
 
-## 6. Modelo de dados (novas estruturas)
+## 5. Ordem de execução
 
-Novas tabelas / colunas (detalhes SQL na fase de implementação):
+1. **Migração**: enum de status + trigger de versão + view atualizada + bucket + `get_public_receipt`.
+2. **Server**: helpers de PDF/QR/hash + `generateSmartReceipt` + `validateReceiptPublic`.
+3. **Rota pública `/r/$code`** com verificação de autenticidade.
+4. **Wizard de transferência TB** + `confirmTrailbookTransfer` transacional.
+5. **Passport** consumindo do módulo.
+6. **Homologação**: cenários (1ª emissão, reemissão v2, revogação, transferência TB completa, validação pública com hash correto e adulterado).
 
-- `motorcycles.origin_type` enum: `zero_km | private | dealer | trailbook_transfer | other`
-- `motorcycles.origin_set_at`, `origin_notes`
-- `motorcycle_documents.is_origin_document boolean` (índice único parcial por moto)
-- `motorcycle_documents.doc_type` estende: adicionar `bill_of_sale`
-- **`smart_receipts`** (nova): id, motorcycle_id, code (único), sha256, pdf_path, qr_path, seller_id, buyer_id, negotiation jsonb, status (`draft|issued|signed|cancelled`), version, previous_receipt_id, created_at
-- **`document_pendencies`** (view materializada ou tabela leve): motorcycle_id, kind (`origin_document|receipt`), created_at, resolved_at
-- Extensão de `audit_log` (só eventos, sem schema change)
+## 6. Regras jurídicas mantidas da Fase 1.1
+- Cláusula off-road no PDF.
+- Aviso "não substitui ATPV-e / CRV / DETRAN".
+- Consentimento LGPD antes de gerar (checkbox obrigatório no wizard).
+- CPF mascarado na página pública.
 
-Todas com RLS por titularidade + `service_role` + grants explícitos.
-
----
-
-## 7. Página Pública de Validação — `/v/$code`
-
-Rota pública em `src/routes/v.$code.tsx` (fora do `_authenticated`). SSR-friendly:
-- Consulta via server publishable client (SELECT `TO anon` em view segura `public_receipt_validation`).
-- Exibe apenas dados não sensíveis (CPF mascarado, sem endereço, sem observações privadas).
-- Botão "Verificar autenticidade" faz upload local (browser) do PDF, recalcula SHA-256 client-side e compara.
-
----
-
-## 8. Impacto técnico
-
-- **PDF**: `pdf-lib` server-side (Worker-compatible), reuso do padrão já validado no projeto.
-- **QR Code**: `qrcode` npm (~puro JS, safe no Worker).
-- **Hash**: `crypto.subtle` (browser) + `node:crypto` (server) — determinístico.
-- **RLS**: `smart_receipts` visível para seller_id, buyer_id e admins; validação pública via view restrita.
-- **Frontend**: zero componentes novos de baixo nível. Novos wizards de topo:
-  - `OriginStep.tsx` (dentro do cadastro)
-  - `PropertyDocSection.tsx` (dentro da Central da Moto)
-  - `SmartReceiptWizard.tsx` (estende `TransferOwnershipDialog`)
-  - `ReceiptPublicView.tsx` (rota `/v/$code`)
-- **Server functions**: `generateSmartReceipt`, `attachOriginDocument`, `confirmTrailbookTransfer`, `validateReceiptPublic` (públic).
-
----
-
-## 9. Pontos jurídicos que **exigem** validação antes de codar
-
-Herdados da proposta anterior + novos do PRD:
-1. Cláusula off-road / garantia entre particulares.
-2. Aviso "modelo — não substitui orientação jurídica" nos PDFs.
-3. Explicitar que **não substitui** ATPV-e / CRV / DETRAN.
-4. LGPD: consentimento explícito de ambas as partes antes do PDF (com registro em auditoria).
-5. Retenção do PDF: proposta = permanente para as partes + admin, com auditoria de download.
-6. Assinatura implícita na transferência TB (partes autenticadas) — validar se advogado aceita como suficiente sem assinatura física.
-7. CPF de menor / representação — bloquear ou permitir com responsável?
-8. Página pública `/v/$code` mostra CPF mascarado — validar se mesmo mascarado exige consentimento.
-
----
-
-## 10. Ordem de execução sugerida (após "De Acordo")
-
-**Fase 1.1 — Base (baixo risco)**
-1. Migração: `origin_type` + `is_origin_document` + `doc_type=bill_of_sale` + tabela `smart_receipts` + view pública + grants + RLS.
-2. Wizard "Origem" no cadastro (5 opções + "enviar depois").
-3. Pendência não-bloqueante: card Dashboard + banner Central da Moto + evento Timeline/Auditoria.
-4. Seção "Propriedade & Documentação" na Central (agrega o que já existe: OwnershipTimeline, MotorcycleDocuments, TransferOwnershipDialog).
-5. Passport lê `origin_type`, proprietário atual e pendências.
-
-**Fase 1.2 — Recibo Inteligente**
-6. Geração de PDF + QR + hash + código (server fn).
-7. Página pública `/v/$code` com verificação de autenticidade.
-8. Fluxo "Compra entre usuários TrailBook" (estende TransferOwnershipDialog): confirmação bilateral → recibo automático → transferência atômica.
-
-**Fase 1.3 — Homologação**
-9. Auditoria completa dos novos eventos, checklist de cenários (5 origens × 3 desfechos).
-
----
-
-## Filtro de Evolução Controlada
-
-1. **Resolve problema real?** Sim — origem e cadeia de propriedade são o principal ponto fraco de confiança hoje.
-2. **Uso frequente?** Origem: 1x por moto (obrigatório na jornada). Transferência: eventual, mas de altíssimo valor.
-3. **Cabe em fluxo existente?** Sim — Cadastro, Central, Passport, Dashboard, Timeline, Auditoria. **Zero menus novos.**
-4. **Aumenta complexidade?** Não na navegação. Backend cresce (2 tabelas/1 view/2 colunas), mas invisível ao usuário.
-5. **Existe mais simples?** Para origem e pendência, não. Para o Recibo Inteligente, o mínimo viável seria PDF sem QR/hash — mas isso quebra o requisito de "Documento Inteligente" do PRD.
-
-**Conclusão:** aderente à filosofia TrailBook e ao PRD-005 v1.0. Aguardando **"De Acordo"** para iniciar a Fase 1.1 (migração + wizard de origem + pendências).
+## 7. Fora do escopo (confirmado)
+Gov.br · ICP-Brasil · assinatura digital ICP · DETRAN · alienação · copropriedade. Arquitetura fica pronta para receber esses módulos sem refatoração (campos `signed_at`, `signature_provider` já reservados em `smart_receipts`).
