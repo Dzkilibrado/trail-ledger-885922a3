@@ -273,6 +273,25 @@ export function MotoControlCenter({ id }: { id: string }) {
                 </div>
               </div>
             )}
+            {isOwner && !isArchived && pendency.data?.has_origin_pendency && (
+              <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 font-semibold text-amber-200">
+                      <FileWarning className="h-4 w-4" /> Documento de origem pendente
+                    </div>
+                    <p className="mt-1 text-amber-100/80">
+                      {findOrigin(pendency.data.origin_type)?.short ?? "Origem"} — anexe {EXPECTED_DOC_LABEL[pendency.data.expected_kind]} para completar o histórico da moto. Nada bloqueia o uso.
+                    </p>
+                  </div>
+                  <Button size="sm" variant="outline" asChild>
+                    <Link to="/documents/$id" params={{ id: m.id }}>
+                      Anexar agora
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-3 gap-3">
               <Stat label="Horas" value={`${Number(m.hours_total).toFixed(1)} h`} />
               <Stat label="Km" value={Number(m.km_total).toFixed(0)} />
