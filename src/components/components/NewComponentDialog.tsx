@@ -45,6 +45,16 @@ export function NewComponentDialog({ motorcycleId, trigger }: { motorcycleId: st
   async function create() {
     if (!name.trim()) { toast.error("Informe um nome para o componente."); return; }
     setSaving(true);
+    // Baseline do componente = leitura atual da moto. Não altera nem zera
+    // o horímetro/hodômetro da moto; apenas define o ponto de partida para
+    // acompanhar a vida útil deste componente a partir de agora.
+    const { data: motoRow } = await supabase
+      .from("motorcycles")
+      .select("hours_total, km_total")
+      .eq("id", motorcycleId)
+      .maybeSingle();
+    const baseHours = Number((motoRow as any)?.hours_total) || 0;
+    const baseKm = Number((motoRow as any)?.km_total) || 0;
     const { error } = await supabase.from("maintenance_schedules").insert({
       motorcycle_id: motorcycleId,
       name: name.trim(),
@@ -58,6 +68,9 @@ export function NewComponentDialog({ motorcycleId, trigger }: { motorcycleId: st
       is_custom: true,
       pinned: false,
       hidden: false,
+      last_done_at: new Date().toISOString(),
+      last_done_hours: baseHours,
+      last_done_km: baseKm,
     } as never);
     setSaving(false);
     if (error) return toast.error(error.message);

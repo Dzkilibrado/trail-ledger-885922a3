@@ -74,6 +74,11 @@ export function PlanCatalogSyncDialog({ moto, trigger }: { moto: Motorcycle; tri
           interval_km: r.interval_km,
           interval_days: r.interval_days,
           template_item_id: r.key,
+          // Baseline: componente cadastrado agora começa a contar a partir do
+          // uso atual da moto. Nunca zera o horímetro/hodômetro da moto.
+          last_done_at: new Date().toISOString(),
+          last_done_hours: Number((moto as any).hours_total) || 0,
+          last_done_km: Number((moto as any).km_total) || 0,
         }));
       if (rows.length === 0) {
         setOpen(false);
