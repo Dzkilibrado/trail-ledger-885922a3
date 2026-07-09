@@ -14,6 +14,7 @@ import { Route as HelpRouteImport } from './routes/help'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as RCodeRouteImport } from './routes/r.$code'
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedWorkshopsRouteImport } from './routes/_authenticated/workshops'
 import { Route as AuthenticatedTransfersRouteImport } from './routes/_authenticated/transfers'
@@ -73,6 +74,11 @@ const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RCodeRoute = RCodeRouteImport.update({
+  id: '/r/$code',
+  path: '/r/$code',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CTokenRoute = CTokenRouteImport.update({
@@ -296,6 +302,7 @@ export interface FileRoutesByFullPath {
   '/transfers': typeof AuthenticatedTransfersRoute
   '/workshops': typeof AuthenticatedWorkshopsRoute
   '/c/$token': typeof CTokenRoute
+  '/r/$code': typeof RCodeRoute
   '/admin/documents': typeof AuthenticatedAdminDocumentsRoute
   '/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/admin/modules': typeof AuthenticatedAdminModulesRoute
@@ -337,6 +344,7 @@ export interface FileRoutesByTo {
   '/transfers': typeof AuthenticatedTransfersRoute
   '/workshops': typeof AuthenticatedWorkshopsRoute
   '/c/$token': typeof CTokenRoute
+  '/r/$code': typeof RCodeRoute
   '/admin/documents': typeof AuthenticatedAdminDocumentsRoute
   '/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/admin/modules': typeof AuthenticatedAdminModulesRoute
@@ -380,6 +388,7 @@ export interface FileRoutesById {
   '/_authenticated/transfers': typeof AuthenticatedTransfersRoute
   '/_authenticated/workshops': typeof AuthenticatedWorkshopsRoute
   '/c/$token': typeof CTokenRoute
+  '/r/$code': typeof RCodeRoute
   '/_authenticated/admin/documents': typeof AuthenticatedAdminDocumentsRoute
   '/_authenticated/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/_authenticated/admin/modules': typeof AuthenticatedAdminModulesRoute
@@ -424,6 +433,7 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/workshops'
     | '/c/$token'
+    | '/r/$code'
     | '/admin/documents'
     | '/admin/messages'
     | '/admin/modules'
@@ -465,6 +475,7 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/workshops'
     | '/c/$token'
+    | '/r/$code'
     | '/admin/documents'
     | '/admin/messages'
     | '/admin/modules'
@@ -507,6 +518,7 @@ export interface FileRouteTypes {
     | '/_authenticated/transfers'
     | '/_authenticated/workshops'
     | '/c/$token'
+    | '/r/$code'
     | '/_authenticated/admin/documents'
     | '/_authenticated/admin/messages'
     | '/_authenticated/admin/modules'
@@ -535,6 +547,7 @@ export interface RootRouteChildren {
   HelpRoute: typeof HelpRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   CTokenRoute: typeof CTokenRoute
+  RCodeRoute: typeof RCodeRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -572,6 +585,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/r/$code': {
+      id: '/r/$code'
+      path: '/r/$code'
+      fullPath: '/r/$code'
+      preLoaderRoute: typeof RCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/c/$token': {
@@ -949,6 +969,7 @@ const rootRouteChildren: RootRouteChildren = {
   HelpRoute: HelpRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   CTokenRoute: CTokenRoute,
+  RCodeRoute: RCodeRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
