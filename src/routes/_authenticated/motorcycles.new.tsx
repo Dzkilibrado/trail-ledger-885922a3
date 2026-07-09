@@ -21,6 +21,7 @@ import { usePlan } from "@/hooks/usePlan";
 import { canCreateMotorcycle } from "@/lib/plans";
 import { useQuery } from "@tanstack/react-query";
 import { Crown, ShieldAlert, CheckCircle2, Pencil, Info } from "lucide-react";
+import { ORIGIN_OPTIONS, type OriginType } from "@/lib/motorcycle-origin";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/new")({
   head: () => ({ meta: [{ title: "Nova moto — TrailBook" }] }),
@@ -69,6 +70,8 @@ function NewMotorcycle() {
   const [useProfileNote, setUseProfileNote] = useState("");
   const [applyPlan, setApplyPlan] = useState<"review" | "auto" | "skip">("review");
   const [notes, setNotes] = useState("");
+  const [originType, setOriginType] = useState<OriginType | "">("");
+  const [originNotes, setOriginNotes] = useState("");
   const [mode, setMode] = useState<"edit" | "review">("edit");
   const [draft, setDraft] = useState<z.infer<typeof schema> | null>(null);
   const { plan } = usePlan();
@@ -144,6 +147,9 @@ function NewMotorcycle() {
     if (useProfile === "other" && !useProfileNote.trim()) {
       toast.error("Descreva o perfil de uso."); return;
     }
+    if (!originType) {
+      toast.error("Informe como a motocicleta foi adquirida."); return;
+    }
     setDraft(parsed.data);
     setMode("review");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -176,6 +182,9 @@ function NewMotorcycle() {
         // Moto nova: revisão marcada como skipped (não precisa revisar plano);
         // Moto usada: pending — dispara banner de revisão no dashboard da moto.
         plan_review_status: draft.condition === "new" ? "skipped" : "pending",
+        origin_type: originType || null,
+        origin_notes: originNotes.trim() || null,
+        origin_set_at: originType ? new Date().toISOString() : null,
       } as never).select("id").single();
       if (error) throw error;
       // Se subiu foto principal no cadastro, registra na galeria
