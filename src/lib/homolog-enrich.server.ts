@@ -531,6 +531,19 @@ export async function normalizeHomologPasswords(
   if (!pwd || pwd.length < 8) return { updated: 0, skipped: true };
   let updated = 0;
   for (const uid of Object.values(users)) {
+    // Guard: só aplicar a contas cujo profile está marcado como is_homologation
+    // E cujo email pertence ao domínio homolog.trailbook.test.
+    const { data: prof, error: pErr } = await admin
+      .from("profiles")
+      .select("id, email, is_homologation")
+      .eq("id", uid)
+      .maybeSingle();
+    if (pErr || !prof) continue;
+    if (!prof.is_homologation) continue;
+    if (!prof.email || !prof.email.toLowerCase().endsWith("@homolog.trailbook.test")) continue;
+    // Nunca alterar administradores
+    const { data: isAdmin } = await admin.rpc("is_user_admin", { _user_id: uid });
+    if (isAdmin) continue;
     const { error } = await admin.auth.admin.updateUserById(uid, { password: pwd });
     if (!error) updated++;
   }
