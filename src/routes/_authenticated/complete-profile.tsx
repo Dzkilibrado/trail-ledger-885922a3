@@ -10,6 +10,7 @@ import { isValidCPF, maskCPF, maskPhone, onlyDigits } from "@/lib/br-validators"
 import { CpfConflictDialog } from "@/components/CpfConflictDialog";
 import { LocationPicker } from "@/components/LocationPicker";
 import { parseLocation } from "@/lib/br-locations";
+import { useInvalidateProfileSnapshot } from "@/hooks/useProfileSnapshot";
 import { CheckCircle2, ChevronLeft, ChevronRight, MapPin, Phone, User } from "lucide-react";
 
 /**
@@ -61,6 +62,7 @@ const FIELD_LABELS: Record<string, string> = {
 
 function CompleteProfilePage() {
   const navigate = useNavigate();
+  const invalidateProfile = useInvalidateProfileSnapshot();
   const [checking, setChecking] = useState(true);
   const [saving, setSaving] = useState(false);
   const [step, setStep] = useState(0);
@@ -249,6 +251,8 @@ function CompleteProfilePage() {
     }
     await supabase.from("profiles").update({ profile_completed_at: new Date().toISOString() }).eq("id", u.user.id);
     setSaving(false);
+    // Notifica módulos que consomem o snapshot (Smart Receipt etc.)
+    invalidateProfile();
     toast.success("Cadastro concluído!");
     navigate({ to: "/dashboard" as string });
   }
