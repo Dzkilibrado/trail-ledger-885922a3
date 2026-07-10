@@ -15,6 +15,7 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { labelFor, PRIORITY_TONE, STATUS_TONE, TICKET_MODULES, TICKET_PRIORITIES, TICKET_STATUSES, TICKET_TYPES } from "@/lib/tickets";
 import { Shield, Send, CheckCircle2, RotateCcw, XCircle } from "lucide-react";
 import { TicketAttachments } from "@/components/TicketAttachments";
+import { CpfChangeAdminPanel } from "@/components/CpfChangeAdminPanel";
 
 export const Route = createFileRoute("/_authenticated/tickets/$id")({
   head: () => ({ meta: [{ title: "Chamado — TrailBook" }] }),
@@ -118,6 +119,8 @@ function TicketDetail() {
       </div>
 
       <TicketAttachments ticketId={id} />
+
+      {isAdmin && t.type === "cpf_change" && <CpfChangeAdminPanel ticketId={id} />}
 
       {!isAdmin && (
         <div className="flex flex-wrap gap-2">

@@ -318,7 +318,7 @@ function CompleteProfilePage() {
                   onChange={(e) => update("cpf", maskCPF(e.target.value))}
                 />
                 {cpfLocked && (
-                  <p className="text-[10px] text-muted-foreground">CPF validado. <Link to="/help" className="text-primary underline">Alteração via suporte</Link>.</p>
+                  <p className="text-[10px] text-muted-foreground">CPF validado. <Link to="/tickets/cpf-change" className="text-primary underline">Solicitar alteração via suporte</Link>.</p>
                 )}
               </Field>
               <Field label="Nascimento" required>

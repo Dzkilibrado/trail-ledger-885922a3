@@ -281,6 +281,65 @@ export type Database = {
         }
         Relationships: []
       }
+      cpf_change_requests: {
+        Row: {
+          created_at: string
+          current_cpf_hash: string
+          decided_at: string | null
+          decided_by: string | null
+          decision_notes: string | null
+          document_path: string
+          id: string
+          new_cpf: string | null
+          new_cpf_hash: string
+          reason: string
+          status: Database["public"]["Enums"]["cpf_change_status"]
+          ticket_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_cpf_hash: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_notes?: string | null
+          document_path: string
+          id?: string
+          new_cpf?: string | null
+          new_cpf_hash: string
+          reason: string
+          status?: Database["public"]["Enums"]["cpf_change_status"]
+          ticket_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_cpf_hash?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_notes?: string | null
+          document_path?: string
+          id?: string
+          new_cpf?: string | null
+          new_cpf_hash?: string
+          reason?: string
+          status?: Database["public"]["Enums"]["cpf_change_status"]
+          ticket_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cpf_change_requests_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: true
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       event_attachments: {
         Row: {
           bucket: string
@@ -2442,10 +2501,15 @@ export type Database = {
     }
     Functions: {
       _ot_visible_to_email: { Args: { _transfer_id: string }; Returns: string }
+      admin_approve_cpf_change: {
+        Args: { _id: string; _notes?: string }
+        Returns: undefined
+      }
       admin_block_user: {
         Args: { _notes?: string; _reason: string; _user: string }
         Returns: undefined
       }
+      admin_cpf_request_detail: { Args: { _id: string }; Returns: Json }
       admin_dashboard_stats: { Args: never; Returns: Json }
       admin_deactivate_user: {
         Args: { _notes?: string; _reason: string; _user: string }
@@ -2477,6 +2541,23 @@ export type Database = {
           isOneToOne: true
           isSetofReturn: false
         }
+      }
+      admin_list_cpf_requests: {
+        Args: { _limit?: number; _status?: string }
+        Returns: {
+          created_at: string
+          current_cpf_masked: string
+          decided_at: string
+          id: string
+          new_cpf_masked: string
+          reason: string
+          status: Database["public"]["Enums"]["cpf_change_status"]
+          ticket_code: string
+          ticket_id: string
+          user_email: string
+          user_id: string
+          user_name: string
+        }[]
       }
       admin_list_deliveries: {
         Args: { _limit?: number; _only_simulated?: boolean }
@@ -2620,9 +2701,17 @@ export type Database = {
         Args: { _notes?: string; _user: string }
         Returns: undefined
       }
+      admin_reject_cpf_change: {
+        Args: { _id: string; _notes: string }
+        Returns: undefined
+      }
       admin_reply_message: {
         Args: { _body: string; _parent: string }
         Returns: string
+      }
+      admin_request_more_info_cpf: {
+        Args: { _id: string; _notes: string }
+        Returns: undefined
       }
       admin_send_message: {
         Args: {
@@ -2884,6 +2973,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      hash_cpf: { Args: { _cpf: string }; Returns: string }
       is_moto_owner: { Args: { _moto_id: string }; Returns: boolean }
       is_user_admin: { Args: { _user_id: string }; Returns: boolean }
       log_certificate_access: {
@@ -2896,6 +2986,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      mask_cpf: { Args: { _cpf: string }; Returns: string }
       me_access_status: { Args: never; Returns: Json }
       my_workshop_private: {
         Args: { _workshop: string }
@@ -2913,6 +3004,15 @@ export type Database = {
       respond_ownership_transfer: {
         Args: { _approve: boolean; _transfer_id: string }
         Returns: undefined
+      }
+      submit_cpf_change_request: {
+        Args: {
+          _document_path: string
+          _new_cpf: string
+          _reason: string
+          _ticket_id: string
+        }
+        Returns: string
       }
       submit_help_request: {
         Args: {
@@ -2974,6 +3074,13 @@ export type Database = {
       attachment_kind: "photo" | "video" | "document" | "invoice"
       audit_action: "insert" | "update" | "delete" | "archive" | "unarchive"
       control_type: "hours" | "km" | "both" | "not_informed"
+      cpf_change_status:
+        | "open"
+        | "in_review"
+        | "awaiting_info"
+        | "approved"
+        | "rejected"
+        | "cancelled"
       delivery_status:
         | "pending"
         | "sent"
@@ -3136,6 +3243,7 @@ export type Database = {
         | "suggestion"
         | "admin_request"
         | "other"
+        | "cpf_change"
       transfer_status: "pending" | "approved" | "rejected" | "cancelled"
       use_profile:
         | "light"
@@ -3277,6 +3385,14 @@ export const Constants = {
       attachment_kind: ["photo", "video", "document", "invoice"],
       audit_action: ["insert", "update", "delete", "archive", "unarchive"],
       control_type: ["hours", "km", "both", "not_informed"],
+      cpf_change_status: [
+        "open",
+        "in_review",
+        "awaiting_info",
+        "approved",
+        "rejected",
+        "cancelled",
+      ],
       delivery_status: [
         "pending",
         "sent",
@@ -3455,6 +3571,7 @@ export const Constants = {
         "suggestion",
         "admin_request",
         "other",
+        "cpf_change",
       ],
       transfer_status: ["pending", "approved", "rejected", "cancelled"],
       use_profile: [

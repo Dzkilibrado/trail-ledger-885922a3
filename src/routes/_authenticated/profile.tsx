@@ -80,6 +80,13 @@ function ProfilePage() {
         <Row icon={Calendar} label="Data de nascimento" value={p?.birth_date ?? ""} />
       </section>
 
+      {p?.cpf && (
+        <p className="text-xs text-muted-foreground">
+          O CPF foi validado e não pode ser editado diretamente.{" "}
+          <Link to="/tickets/cpf-change" className="text-primary hover:underline">Solicitar alteração via suporte</Link>.
+        </p>
+      )}
+
       <section className="rounded-2xl border border-border bg-card/40 p-4">
         <div className="text-xs font-semibold text-muted-foreground">Atalhos</div>
         <div className="mt-2 grid gap-2 sm:grid-cols-3">

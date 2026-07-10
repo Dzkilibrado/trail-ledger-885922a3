@@ -36,6 +36,7 @@ import { Route as AuthenticatedMotorcyclesIndexRouteImport } from './routes/_aut
 import { Route as AuthenticatedDocumentsIndexRouteImport } from './routes/_authenticated/documents.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as AuthenticatedTicketsNewRouteImport } from './routes/_authenticated/tickets.new'
+import { Route as AuthenticatedTicketsCpfChangeRouteImport } from './routes/_authenticated/tickets.cpf-change'
 import { Route as AuthenticatedTicketsIdRouteImport } from './routes/_authenticated/tickets.$id'
 import { Route as AuthenticatedMotorcyclesNewRouteImport } from './routes/_authenticated/motorcycles.new'
 import { Route as AuthenticatedMotorcyclesIdRouteImport } from './routes/_authenticated/motorcycles.$id'
@@ -192,6 +193,12 @@ const AuthenticatedTicketsNewRoute = AuthenticatedTicketsNewRouteImport.update({
   path: '/new',
   getParentRoute: () => AuthenticatedTicketsRoute,
 } as any)
+const AuthenticatedTicketsCpfChangeRoute =
+  AuthenticatedTicketsCpfChangeRouteImport.update({
+    id: '/cpf-change',
+    path: '/cpf-change',
+    getParentRoute: () => AuthenticatedTicketsRoute,
+  } as any)
 const AuthenticatedTicketsIdRoute = AuthenticatedTicketsIdRouteImport.update({
   id: '/$id',
   path: '/$id',
@@ -320,6 +327,7 @@ export interface FileRoutesByFullPath {
   '/motorcycles/$id': typeof AuthenticatedMotorcyclesIdRouteWithChildren
   '/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
   '/tickets/$id': typeof AuthenticatedTicketsIdRoute
+  '/tickets/cpf-change': typeof AuthenticatedTicketsCpfChangeRoute
   '/tickets/new': typeof AuthenticatedTicketsNewRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/documents/': typeof AuthenticatedDocumentsIndexRoute
@@ -362,6 +370,7 @@ export interface FileRoutesByTo {
   '/documents/$id': typeof AuthenticatedDocumentsIdRoute
   '/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
   '/tickets/$id': typeof AuthenticatedTicketsIdRoute
+  '/tickets/cpf-change': typeof AuthenticatedTicketsCpfChangeRoute
   '/tickets/new': typeof AuthenticatedTicketsNewRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/documents': typeof AuthenticatedDocumentsIndexRoute
@@ -408,6 +417,7 @@ export interface FileRoutesById {
   '/_authenticated/motorcycles/$id': typeof AuthenticatedMotorcyclesIdRouteWithChildren
   '/_authenticated/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
   '/_authenticated/tickets/$id': typeof AuthenticatedTicketsIdRoute
+  '/_authenticated/tickets/cpf-change': typeof AuthenticatedTicketsCpfChangeRoute
   '/_authenticated/tickets/new': typeof AuthenticatedTicketsNewRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/documents/': typeof AuthenticatedDocumentsIndexRoute
@@ -454,6 +464,7 @@ export interface FileRouteTypes {
     | '/motorcycles/$id'
     | '/motorcycles/new'
     | '/tickets/$id'
+    | '/tickets/cpf-change'
     | '/tickets/new'
     | '/admin/'
     | '/documents/'
@@ -496,6 +507,7 @@ export interface FileRouteTypes {
     | '/documents/$id'
     | '/motorcycles/new'
     | '/tickets/$id'
+    | '/tickets/cpf-change'
     | '/tickets/new'
     | '/admin'
     | '/documents'
@@ -541,6 +553,7 @@ export interface FileRouteTypes {
     | '/_authenticated/motorcycles/$id'
     | '/_authenticated/motorcycles/new'
     | '/_authenticated/tickets/$id'
+    | '/_authenticated/tickets/cpf-change'
     | '/_authenticated/tickets/new'
     | '/_authenticated/admin/'
     | '/_authenticated/documents/'
@@ -754,6 +767,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTicketsNewRouteImport
       parentRoute: typeof AuthenticatedTicketsRoute
     }
+    '/_authenticated/tickets/cpf-change': {
+      id: '/_authenticated/tickets/cpf-change'
+      path: '/cpf-change'
+      fullPath: '/tickets/cpf-change'
+      preLoaderRoute: typeof AuthenticatedTicketsCpfChangeRouteImport
+      parentRoute: typeof AuthenticatedTicketsRoute
+    }
     '/_authenticated/tickets/$id': {
       id: '/_authenticated/tickets/$id'
       path: '/$id'
@@ -894,11 +914,13 @@ const AuthenticatedAdminRouteWithChildren =
 
 interface AuthenticatedTicketsRouteChildren {
   AuthenticatedTicketsIdRoute: typeof AuthenticatedTicketsIdRoute
+  AuthenticatedTicketsCpfChangeRoute: typeof AuthenticatedTicketsCpfChangeRoute
   AuthenticatedTicketsNewRoute: typeof AuthenticatedTicketsNewRoute
 }
 
 const AuthenticatedTicketsRouteChildren: AuthenticatedTicketsRouteChildren = {
   AuthenticatedTicketsIdRoute: AuthenticatedTicketsIdRoute,
+  AuthenticatedTicketsCpfChangeRoute: AuthenticatedTicketsCpfChangeRoute,
   AuthenticatedTicketsNewRoute: AuthenticatedTicketsNewRoute,
 }
 
