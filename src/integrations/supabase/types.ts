@@ -2749,6 +2749,7 @@ export type Database = {
         }
       }
       admin_user_details: { Args: { _user: string }; Returns: Json }
+      align_smart_receipt_code_seq: { Args: never; Returns: number }
       archive_motorcycle: {
         Args: { _moto_id: string; _reason?: string }
         Returns: Json
