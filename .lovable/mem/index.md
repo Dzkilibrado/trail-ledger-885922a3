@@ -20,3 +20,4 @@
 - [Campos: Seleção > Autocomplete > Texto livre](mem://principles/campos-selecao-oficial) — regra oficial; UF/Cidade via IBGE em `src/lib/br-locations.ts` + `LocationPicker` reutilizável
 - [Informar uma vez. Reutilizar sempre.](mem://principles/informar-uma-vez) — módulos consomem `useProfileSnapshot` + `<ProfileDataChip />`; nunca pedir de novo nem escrever de volta
 - [Alteração de CPF via Suporte](mem://features/alteracao-cpf) — fluxo excepcional auditado; `admin_approve_cpf_change` é a única forma legítima de trocar CPF já validado
+- [ADR 0006 — Cadastro Completo (Fases A · B · D · E)](docs/adr/0006-cadastro-completo-fases.md) — entrega v1.3 encerrada; gate, wizard, imutabilidade do CPF, reutilização automática e alteração via suporte
