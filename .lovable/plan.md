@@ -1,101 +1,88 @@
-# TrailBook — Plano oficial
+# Evolução do Cadastro de Usuários — Plano por Fases
 
-## Status por fase
+Baseado na especificação enviada. Princípio-guia: **informar uma vez, reutilizar sempre**; **Seleção → Autocomplete → Texto livre**; Mobile First.
 
-| Fase | Escopo | Status |
-|---|---|---|
-| 1.0 | Cadastro, Passaporte, Timeline, Manutenções | ✅ Homologada |
-| 1.1 | Cockpit + TIL + Plano editável + Componentes + Saúde | ✅ Homologada |
-| 1.2 | **Smart Receipt (Recibo Inteligente)** | ✅ **HOMOLOGADA E ENCERRADA em 2026-07-10** |
-| APH | Ambiente Permanente de Homologação | ✅ Operacional (ADR 0005) |
+## Situação atual (mapeada)
 
-> **Smart Receipt Fase 1.2 está encerrada.** Não realizar novas alterações neste módulo sem nova solicitação formal. Detalhes do escopo entregue e cenários homologados em [CHANGELOG.md](../CHANGELOG.md) e [docs/homologacao/README.md](../docs/homologacao/README.md).
+Tabela `public.profiles` já possui: `full_name`, `email`, `phone`, `cpf`, `birth_date`, `avatar_url`, `plan`, `status`, `login_provider`.
 
----
+Faltam para atender a especificação: `display_name`, `whatsapp`, `uf`, `city`, `ibge_code`, `cep`, `bairro`, `logradouro`, `numero`, `complemento`, `profile_completed_at`, `cpf_locked_at`.
 
-# Ambiente Permanente de Homologação (APH) do TrailBook
+Fluxos atuais:
+- `/_authenticated/complete-profile` já pede `full_name + cpf + birth_date + phone` para contas Google — servirá de base para o wizard.
+- `LocationPicker` (UF/Cidade IBGE) já está pronto e homologado no Smart Receipt — será reaproveitado no cadastro e nos demais módulos.
 
-Antes de executar a homologação end-to-end da Fase 1.2, quero alinhar o escopo do **Ambiente Permanente de Homologação** — porque ele passa a fazer parte oficial da arquitetura e envolve criação de usuários reais no `auth.users`, seed de dados e um harness de testes que vai ser reutilizado em todas as próximas fases. Preferível acertar o formato agora do que refazer depois.
+## Fase A — Modelo de dados e SSOT do perfil
 
-## 1. Convenções de identificação
+**Objetivo:** ampliar `profiles` e criar contrato único de leitura.
 
-- Domínio de e-mail dedicado: `@homolog.trailbook.test` — nunca colide com contas reais.
-- Prefixo em todos os nomes: `[HOMOLOG]` (ex.: `[HOMOLOG] Vendedor A`, `[HOMOLOG] XR 250 Tornado`).
-- Flag técnica: coluna `is_sandbox boolean default false` em `profiles` e `motorcycles` (migração dedicada). Permite:
-  - filtrar dashboards/admin para esconder dados de homologação da visão "real";
-  - script de reseed idempotente (apaga só onde `is_sandbox = true`);
-  - relatórios de métricas ignorarem sandbox.
-- Chassi fictício padronizado: `HOMOLOG` + 10 dígitos (não colide com VIN real de 17).
+- Migração acrescentando colunas: `display_name`, `whatsapp text`, `whatsapp_same_as_phone bool`, `uf char(2)`, `city text`, `ibge_code text`, `cep text`, `bairro text`, `logradouro text`, `numero text`, `complemento text`, `profile_completed_at timestamptz`, `cpf_locked_at timestamptz`.
+- Trigger: quando `cpf` passa de NULL→valor, gravar `cpf_locked_at = now()`. Bloquear UPDATE de `cpf` quando já travado (exceção: `service_role`, para o fluxo de suporte).
+- Função `public.profile_completeness(_user uuid)` → `{ pct int, missing text[] }` para alimentar barra de progresso e gate de rotas.
+- RLS: mantida (SELECT/UPDATE só do próprio dono, admin via `has_role`). GRANTs revisados.
 
-## 2. Contas de homologação
+## Fase B — Wizard de cadastro (mobile-first)
 
-Criadas via `supabaseAdmin.auth.admin.createUser` com `email_confirm: true` e senha padrão de sandbox (armazenada apenas no seed, nunca em código versionado — usa `HOMOLOG_SEED_PASSWORD` como secret).
+**Objetivo:** substituir `complete-profile` por wizard de 4 passos alinhado à spec.
 
-| Conta | Email | Papel | Uso |
-|---|---|---|---|
-| A | `vendedor.a@homolog.trailbook.test` | user | Vendedor (proprietário) |
-| B | `comprador.b@homolog.trailbook.test` | user | Comprador TrailBook |
-| C | `externo.c@homolog.trailbook.test` | user | Comprador externo simulado (fica só no snapshot) |
-| D | `frota.d@homolog.trailbook.test` | user | Múltiplas motos |
-| E | `novo.e@homolog.trailbook.test` | user | Onboarding, sem motos |
-| ADMIN | conta atual | admin | Já existe, usada como orquestrador |
+Passos:
+1. **Dados pessoais** — nome completo, apelido (opcional), CPF, data de nascimento.
+2. **Contato** — e-mail (readonly quando vindo do provedor), telefone, WhatsApp com toggle "igual ao telefone".
+3. **Localização** — UF + Cidade via `LocationPicker` (IBGE); campos de endereço (CEP/bairro/logradouro/número/complemento) presentes mas colapsáveis ("Adicionar endereço completo — opcional agora").
+4. **Revisão** — resumo + confirmação.
 
-Idempotente: se já existir, reaproveita `id`.
+Componentes:
+- `WizardShell` (progresso, voltar/avançar, salvamento parcial em `profiles`).
+- Barra superior com % de completude e lista de pendências (consumo de `profile_completeness`).
+- Validações amigáveis: CPF válido/único, e-mail válido/único, idade mínima, telefones BR, UF+Cidade obrigatórios.
 
-## 3. Motocicletas seed (todas `is_sandbox = true`, prefixo `[HOMOLOG]`)
+## Fase C — Gate global de perfil incompleto
 
-- M1 — Nova (Conta A) — sem histórico
-- M2 — Usada com histórico completo (Conta A) — 3 manutenções, 2 documentos, certificado
-- M3 — Arquivada (ex-Conta A, transferida para externo)
-- M4 — Com pendências (Conta A) — sem doc de origem
-- M5 — Múltiplos proprietários (Conta D) — ownership_history com 3 entradas
-- M6 — Em negociação ativa (Conta A → Conta B, receipt em `awaiting_acceptance`)
-- M7 — Negociação concluída (histórico) — receipt `completed`
-- M8 — Manutenção vencida (Conta D)
-- M9 — Recém cadastrada (Conta D)
-- M10 — Crítica (Conta D) — múltiplas pendências + timeline densa
+**Objetivo:** garantir que usuários existentes completem os obrigatórios.
 
-## 4. Entregáveis técnicos
+- No layout `_authenticated/route.tsx`, após checar sessão, consultar `profile_completeness`. Se faltarem campos obrigatórios, redirecionar para `/complete-profile` (wizard) — exceto rotas `/help`, `/messages` (suporte) e `/auth`.
+- Tela exclusiva de atualização mostra % e a lista exata do que falta (reuso do wizard, entrando no primeiro passo pendente).
 
-1. **Migração** `..._sandbox_flags.sql`:
-   - `alter table profiles add column is_sandbox boolean not null default false;`
-   - `alter table motorcycles add column is_sandbox boolean not null default false;`
-   - índice parcial `where is_sandbox = true`.
-2. **Seed script** `scripts/homolog/seed.ts` — idempotente, roda via `bun run homolog:seed`:
-   - cria/atualiza contas via admin API;
-   - cria/atualiza motos M1..M10 com todos os anexos (documentos, eventos, ownership_history, smart_receipts, certificates);
-   - reset opcional com `HOMOLOG_RESET=1` (deleta tudo `where is_sandbox = true` e recria).
-3. **Harness Playwright** `scripts/homolog/e2e/`:
-   - `login.ts` helper (usa `supabaseAdmin.auth.admin.generateLink` para minter magic link, evita depender de UI de senha);
-   - suíte `smart-receipt.spec.ts` cobrindo os 3 cenários (TB↔TB, externo, revogação);
-   - roda com `bun run homolog:e2e`;
-   - captura screenshots em `/mnt/documents/homolog/<timestamp>/`.
-4. **Documentação** `docs/homologacao/README.md` + ADR `0005-ambiente-permanente-homologacao.md`:
-   - convenções, como rodar, como estender, política "toda nova feature ganha ao menos 1 cenário aqui".
-5. **Atualização do `.lovable/plan.md`** e **`mem://index.md`** registrando o APH como parte permanente.
+## Fase D — Reutilização automática nos módulos
 
-## 5. Execução da homologação Fase 1.2
+**Objetivo:** eliminar redigitação. Nenhum módulo altera o perfil ao editar dados da operação corrente.
 
-Depois do APH estar de pé, executo:
+- Criar hook `useProfileSnapshot()` que devolve os campos padronizados do usuário (nome, CPF mascarado, UF/Cidade, telefone, endereço).
+- Pré-preencher, com override local (sem persistir de volta em `profiles`):
+  - **Smart Receipt** — vendedor (quando o usuário é o vendedor) e local da negociação sugerido como Cidade/UF do perfil.
+  - **Certificados / Passaporte** — dados do titular.
+  - **Transferências / Ownership** — parte que representa o usuário logado.
+  - **Documentos / Chamados** — solicitante.
+- Cada formulário exibe um chip "Usando dados do seu perfil — editar só nesta operação".
 
-- **Cenário 1** — Venda TB↔TB (A vende para B): draft → issued → awaiting_acceptance → completed, com queries de `owner_id`, `ownership_history`, `events (ownership_transfer)`, `smart_receipts.status` entre cada etapa.
-- **Cenário 2** — Venda externa (A vende para C sem conta): completed → moto arquivada, sem owner fictício.
-- **Cenário 3** — Cancelamento + Substituição + Revogação.
-- **Idempotência** — completar 2x, garantir 1 evento apenas.
-- **RLS** — tentar ler receipt de outro user como B enquanto está draft de A (deve falhar).
-- **Página pública** `/r/$code` — hash, QR, status.
-- **Mobile** — screenshots 375×812.
+## Fase E — Alteração de CPF via suporte
 
-Cada cenário gera: resultado item-a-item, snapshots de DB antes/depois, screenshots, bugs encontrados + correções aplicadas.
+**Objetivo:** CPF imutável pelo usuário após validado.
 
-## 6. O que NÃO vou fazer nesta rodada
+- UI do perfil: campo CPF readonly com link "Solicitar alteração" que abre chamado pré-preenchido no módulo de tickets (categoria `profile_cpf_change`).
+- Backoffice (`admin.users`): ação "Alterar CPF" com motivo obrigatório, gravando `admin_user_events` (`action: 'profile_cpf_changed'`) e auditoria.
 
-- Não vou construir Demo Mode (é outro conceito, como você já separou).
-- Não vou adicionar UI de administração de sandbox no app — o APH é orquestrado por scripts + admin API. Se depois quiser um painel `/admin/sandbox`, entra em fase própria.
-- Não vou automatizar CI ainda (rodada é local/manual via bun); ADR já deixa isso registrado como próximo passo.
+## Fase F — Documentação e homologação
 
-## 7. Pergunta única antes de prosseguir
+- ADR 0006 — Cadastro Unificado e Reutilização de Dados.
+- Atualizar `.lovable/plan.md`, `CHANGELOG.md`, `docs/homologacao/README.md`.
+- Registrar memórias: `mem://principles/informar-uma-vez` e `mem://features/cadastro-usuario`.
+- Checklist de homologação por fase (funcional, RLS, mobile, typecheck, console).
 
-Preciso gerar/salvar o secret `HOMOLOG_SEED_PASSWORD` (senha padrão das contas de sandbox, usada só no seed). Posso usar `generate_secret` para mintar uma senha aleatória forte automaticamente — as contas ficam acessíveis via magic link no harness, então você nunca precisa digitá-la. Ok?
+## Detalhes técnicos
 
-Se aprovar este plano, sigo na ordem: (1) migração de flags, (2) seed script, (3) harness + execução Cenário 1..3, (4) relatório final com evidências.
+- Reaproveitar `LocationPicker`, `br-validators` (CPF/telefone) e padrão de `Sheet` já homologados.
+- Nenhuma alteração em `auth`/`storage`/`realtime`.
+- CEP: preparar coluna e UI, mas integração com serviço de CEP entra só em fase futura (fora deste plano).
+- Sem breaking changes em RLS: novos campos herdam as políticas atuais de `profiles`.
+
+## Sequência sugerida de entrega
+
+1. Fase A (schema + `profile_completeness`).
+2. Fase B (wizard).
+3. Fase C (gate global).
+4. Fase D (reutilização por módulo — começar por Smart Receipt e Certificados).
+5. Fase E (fluxo de suporte para CPF).
+6. Fase F (docs + homologação final).
+
+Cada fase encerra com typecheck limpo, teste mobile no preview e registro no changelog. Aguardo aprovação para iniciar pela Fase A.

@@ -1752,14 +1752,21 @@ export type Database = {
       profiles: {
         Row: {
           avatar_url: string | null
+          bairro: string | null
           birth_date: string | null
           blocked_at: string | null
           blocked_notes: string | null
           blocked_reason: string | null
+          cep: string | null
+          city: string | null
+          complemento: string | null
           cpf: string | null
+          cpf_locked_at: string | null
           created_at: string
+          display_name: string | null
           email: string | null
           full_name: string | null
+          ibge_code: string | null
           id: string
           inactive_at: string | null
           inactive_notes: string | null
@@ -1767,22 +1774,35 @@ export type Database = {
           is_homologation: boolean
           last_seen_at: string | null
           login_provider: string | null
+          logradouro: string | null
+          numero: string | null
           phone: string | null
           plan: Database["public"]["Enums"]["plan_tier"]
           plan_since: string
+          profile_completed_at: string | null
           status: Database["public"]["Enums"]["user_status"]
+          uf: string | null
           updated_at: string
+          whatsapp: string | null
+          whatsapp_same_as_phone: boolean
         }
         Insert: {
           avatar_url?: string | null
+          bairro?: string | null
           birth_date?: string | null
           blocked_at?: string | null
           blocked_notes?: string | null
           blocked_reason?: string | null
+          cep?: string | null
+          city?: string | null
+          complemento?: string | null
           cpf?: string | null
+          cpf_locked_at?: string | null
           created_at?: string
+          display_name?: string | null
           email?: string | null
           full_name?: string | null
+          ibge_code?: string | null
           id: string
           inactive_at?: string | null
           inactive_notes?: string | null
@@ -1790,22 +1810,35 @@ export type Database = {
           is_homologation?: boolean
           last_seen_at?: string | null
           login_provider?: string | null
+          logradouro?: string | null
+          numero?: string | null
           phone?: string | null
           plan?: Database["public"]["Enums"]["plan_tier"]
           plan_since?: string
+          profile_completed_at?: string | null
           status?: Database["public"]["Enums"]["user_status"]
+          uf?: string | null
           updated_at?: string
+          whatsapp?: string | null
+          whatsapp_same_as_phone?: boolean
         }
         Update: {
           avatar_url?: string | null
+          bairro?: string | null
           birth_date?: string | null
           blocked_at?: string | null
           blocked_notes?: string | null
           blocked_reason?: string | null
+          cep?: string | null
+          city?: string | null
+          complemento?: string | null
           cpf?: string | null
+          cpf_locked_at?: string | null
           created_at?: string
+          display_name?: string | null
           email?: string | null
           full_name?: string | null
+          ibge_code?: string | null
           id?: string
           inactive_at?: string | null
           inactive_notes?: string | null
@@ -1813,11 +1846,17 @@ export type Database = {
           is_homologation?: boolean
           last_seen_at?: string | null
           login_provider?: string | null
+          logradouro?: string | null
+          numero?: string | null
           phone?: string | null
           plan?: Database["public"]["Enums"]["plan_tier"]
           plan_since?: string
+          profile_completed_at?: string | null
           status?: Database["public"]["Enums"]["user_status"]
+          uf?: string | null
           updated_at?: string
+          whatsapp?: string | null
+          whatsapp_same_as_phone?: boolean
         }
         Relationships: []
       }
@@ -2866,6 +2905,7 @@ export type Database = {
           phone: string
         }[]
       }
+      profile_completeness: { Args: { _user: string }; Returns: Json }
       request_ownership_transfer: {
         Args: { _message: string; _moto_id: string; _to_email: string }
         Returns: string
