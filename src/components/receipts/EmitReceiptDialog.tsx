@@ -1,0 +1,521 @@
+import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { supabase } from "@/integrations/supabase/client";
+import {
+  createReceiptDraft,
+  updateReceiptDraft,
+  generateReceiptPdf,
+  attachSignedReceipt,
+  acceptSignedReceipt,
+  completeReceiptTransfer,
+  cancelDraftReceipt,
+  getReceiptSignedUrl,
+} from "@/lib/smart-receipts.functions";
+import { toast } from "sonner";
+import { FileSignature, Search, ArrowLeft, ArrowRight, CheckCircle2, Upload, Download, XCircle } from "lucide-react";
+import { formatCurrencyBRL, RECEIPT_STATUS_LABEL, type ReceiptStatus } from "@/lib/smart-receipts";
+
+const PAYMENT_METHODS = ["Dinheiro", "PIX", "Transferência bancária", "Financiamento", "Cartão", "Outro"];
+
+type BuyerLookup = { id: string; full_name: string; email: string | null; cpf: string | null } | null;
+type ReceiptRow = {
+  id: string; code: string; status: string; version: number;
+  buyer_id: string | null; seller_id: string; external_buyer: boolean;
+  buyer_snapshot: { full_name?: string; cpf?: string | null; email?: string | null } | null;
+  negotiation: { amount?: number; payment_method?: string; date?: string; location?: string | null; notes?: string | null } | null;
+  signed_pdf_path: string | null;
+  seller_accepted_at: string | null;
+  buyer_accepted_at: string | null;
+};
+
+export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: controlledOpen, onOpenChange, onIssued }: {
+  motorcycleId: string;
+  receiptId?: string;
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (v: boolean) => void;
+  onIssued?: (url: string) => void;
+}) {
+  const qc = useQueryClient();
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = (v: boolean) => { onOpenChange?.(v); setUncontrolledOpen(v); };
+
+  const [step, setStep] = useState(1);
+  const [currentReceiptId, setCurrentReceiptId] = useState<string | null>(receiptId ?? null);
+  const [currentReceipt, setCurrentReceipt] = useState<ReceiptRow | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  const [buyerMode, setBuyerMode] = useState<"tb" | "external">("tb");
+  const [buyerSearch, setBuyerSearch] = useState("");
+  const [buyerFound, setBuyerFound] = useState<BuyerLookup>(null);
+  const [buyerName, setBuyerName] = useState("");
+  const [buyerCpf, setBuyerCpf] = useState("");
+  const [buyerEmail, setBuyerEmail] = useState("");
+  const [amount, setAmount] = useState<string>("");
+  const [paymentMethod, setPaymentMethod] = useState<string>("PIX");
+  const [paymentOther, setPaymentOther] = useState("");
+  const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10));
+  const [location, setLocation] = useState("");
+  const [notes, setNotes] = useState("");
+  const [lgpd, setLgpd] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const createDraft = useServerFn(createReceiptDraft);
+  const updateDraft = useServerFn(updateReceiptDraft);
+  const genPdf = useServerFn(generateReceiptPdf);
+  const attach = useServerFn(attachSignedReceipt);
+  const accept = useServerFn(acceptSignedReceipt);
+  const complete = useServerFn(completeReceiptTransfer);
+  const cancelDraft = useServerFn(cancelDraftReceipt);
+  const signedUrlFn = useServerFn(getReceiptSignedUrl);
+
+  useEffect(() => {
+    if (!open) return;
+    supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
+  }, [open]);
+
+  useEffect(() => { setCurrentReceiptId(receiptId ?? null); }, [receiptId]);
+
+  async function reloadReceipt(id: string) {
+    const { data, error } = await supabase
+      .from("smart_receipts" as never)
+      .select("id, code, status, version, buyer_id, seller_id, external_buyer, buyer_snapshot, negotiation, signed_pdf_path, seller_accepted_at, buyer_accepted_at")
+      .eq("id", id).single();
+    if (error) { toast.error(error.message); return null; }
+    const r = data as unknown as ReceiptRow;
+    setCurrentReceipt(r);
+    return r;
+  }
+
+  useEffect(() => {
+    if (!open || !currentReceiptId) return;
+    (async () => {
+      const r = await reloadReceipt(currentReceiptId);
+      if (!r) return;
+      setBuyerName(r.buyer_snapshot?.full_name ?? "");
+      setBuyerCpf(r.buyer_snapshot?.cpf ?? "");
+      setBuyerEmail(r.buyer_snapshot?.email ?? "");
+      setBuyerMode(r.external_buyer ? "external" : "tb");
+      if (r.buyer_id) setBuyerFound({ id: r.buyer_id, full_name: r.buyer_snapshot?.full_name ?? "", cpf: r.buyer_snapshot?.cpf ?? null, email: r.buyer_snapshot?.email ?? null });
+      setAmount(String(r.negotiation?.amount ?? ""));
+      setPaymentMethod(r.negotiation?.payment_method ?? "PIX");
+      setDate(r.negotiation?.date ?? new Date().toISOString().slice(0, 10));
+      setLocation(r.negotiation?.location ?? "");
+      setNotes(r.negotiation?.notes ?? "");
+      setLgpd(true);
+      setStep(r.status === "draft" ? 4 : 5);
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, currentReceiptId]);
+
+  async function lookupBuyer() {
+    const q = buyerSearch.trim();
+    if (!q) return;
+    const { data, error } = await supabase
+      .from("profiles").select("id, full_name, email, cpf")
+      .or(`email.eq.${q},cpf.eq.${q.replace(/\D/g, "")}`)
+      .maybeSingle();
+    if (error) { toast.error("Falha na busca"); return; }
+    if (!data) { toast.info("Nenhum usuário TrailBook encontrado"); setBuyerFound(null); return; }
+    setBuyerFound(data as BuyerLookup);
+    setBuyerName(data.full_name ?? "");
+    setBuyerCpf(data.cpf ?? "");
+    setBuyerEmail(data.email ?? "");
+  }
+
+  function resetForm() {
+    setStep(1);
+    setCurrentReceiptId(receiptId ?? null); setCurrentReceipt(null);
+    setBuyerMode("tb"); setBuyerSearch(""); setBuyerFound(null);
+    setBuyerName(""); setBuyerCpf(""); setBuyerEmail("");
+    setAmount(""); setPaymentMethod("PIX"); setPaymentOther("");
+    setDate(new Date().toISOString().slice(0, 10));
+    setLocation(""); setNotes(""); setLgpd(false);
+  }
+
+  const amountValue = useMemo(() => Number(String(amount).replace(",", ".")), [amount]);
+  const paymentLabel = paymentMethod === "Outro" ? (paymentOther.trim() || "Outro") : paymentMethod;
+
+  function validatePartes() {
+    if (!buyerName.trim()) { toast.error("Informe o nome do comprador"); return false; }
+    if (buyerMode === "tb" && !buyerFound) { toast.error("Localize um usuário TrailBook ou selecione comprador externo"); return false; }
+    return true;
+  }
+  function validateValor() {
+    if (!amountValue || amountValue <= 0) { toast.error("Informe um valor válido"); return false; }
+    if (!paymentMethod) { toast.error("Selecione a forma de pagamento"); return false; }
+    if (!date) { toast.error("Informe a data"); return false; }
+    return true;
+  }
+
+  function invalidateAll() {
+    qc.invalidateQueries({ queryKey: ["smart-receipts", motorcycleId] });
+    qc.invalidateQueries({ queryKey: ["active-negotiation", motorcycleId] });
+    qc.invalidateQueries({ queryKey: ["events", motorcycleId] });
+    qc.invalidateQueries({ queryKey: ["ownership", motorcycleId] });
+    qc.invalidateQueries({ queryKey: ["motorcycle", motorcycleId] });
+    qc.invalidateQueries({ queryKey: ["document-pendencies"] });
+  }
+
+  async function saveAndIssue() {
+    if (!validatePartes() || !validateValor()) return;
+    if (!lgpd) { toast.error("Aceite o consentimento LGPD"); return; }
+    setLoading(true);
+    try {
+      let id = currentReceiptId;
+      const buyerPayload = {
+        user_id: buyerMode === "tb" ? buyerFound?.id ?? null : null,
+        full_name: buyerName.trim(),
+        cpf: buyerCpf.trim() || null,
+        email: buyerEmail.trim() || null,
+      };
+      const negPayload = {
+        amount: amountValue, payment_method: paymentLabel, date,
+        location: location.trim() || null, notes: notes.trim() || null,
+      };
+      if (!id) {
+        const res = await createDraft({ data: {
+          motorcycle_id: motorcycleId, buyer: buyerPayload,
+          external_buyer: buyerMode === "external",
+          negotiation: negPayload, lgpd_consent: true,
+        }});
+        id = res.receipt.id; setCurrentReceiptId(id);
+      } else if (currentReceipt?.status === "draft") {
+        await updateDraft({ data: { id, patch: { buyer: buyerPayload, external_buyer: buyerMode === "external", negotiation: negPayload } } });
+      }
+      const pdfRes = await genPdf({ data: { id: id! } });
+      toast.success(`Recibo ${pdfRes.code} emitido. Assine e anexe o PDF para concluir.`);
+      invalidateAll();
+      onIssued?.(pdfRes.url);
+      await reloadReceipt(id!);
+      setStep(5);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao emitir");
+    } finally { setLoading(false); }
+  }
+
+  async function onUploadSigned(file: File) {
+    if (!currentReceiptId) return;
+    if (file.type !== "application/pdf") { toast.error("Envie um PDF"); return; }
+    setLoading(true);
+    try {
+      const buf = new Uint8Array(await file.arrayBuffer());
+      let bin = ""; for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+      const b64 = btoa(bin);
+      await attach({ data: { id: currentReceiptId, pdf_base64: b64 } });
+      toast.success("Documento assinado anexado.");
+      await reloadReceipt(currentReceiptId);
+      invalidateAll();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha no upload");
+    } finally { setLoading(false); }
+  }
+
+  async function onAccept() {
+    if (!currentReceiptId) return;
+    setLoading(true);
+    try {
+      await accept({ data: { id: currentReceiptId } });
+      toast.success("Aceite registrado");
+      await reloadReceipt(currentReceiptId);
+      invalidateAll();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha no aceite");
+    } finally { setLoading(false); }
+  }
+
+  async function onComplete() {
+    if (!currentReceiptId) return;
+    setLoading(true);
+    try {
+      await complete({ data: { id: currentReceiptId } });
+      toast.success("Transferência concluída. Histórico atualizado.");
+      invalidateAll();
+      setOpen(false); resetForm();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao concluir");
+    } finally { setLoading(false); }
+  }
+
+  async function onCancel() {
+    if (!currentReceiptId) return;
+    if (!confirm("Cancelar esta negociação? A ação não pode ser desfeita.")) return;
+    setLoading(true);
+    try {
+      await cancelDraft({ data: { id: currentReceiptId, reason: "Cancelado pelo vendedor" } });
+      toast.success("Negociação cancelada");
+      invalidateAll();
+      setOpen(false); resetForm();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao cancelar");
+    } finally { setLoading(false); }
+  }
+
+  async function downloadOriginal() {
+    if (!currentReceipt) return;
+    try {
+      const { url } = await signedUrlFn({ data: { code: currentReceipt.code, variant: "original" } });
+      if (url) window.open(url, "_blank");
+      else toast.error("PDF indisponível");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha");
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
+      <DialogContent className="max-w-lg max-h-[92vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileSignature className="h-5 w-5 text-primary" /> Recibo Inteligente
+          </DialogTitle>
+          <DialogDescription>
+            Etapa {Math.min(step, 5)} de 5 — a transferência só se concluirá após o PDF assinado ser anexado e os aceites registrados.
+          </DialogDescription>
+        </DialogHeader>
+
+        {step === 1 && (
+          <div className="space-y-4">
+            <div className="rounded-xl border border-border bg-muted/20 p-3">
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Comprador</Label>
+              <div className="mt-2 flex gap-2">
+                <Button type="button" size="sm" variant={buyerMode === "tb" ? "default" : "outline"} onClick={() => setBuyerMode("tb")}>
+                  Usuário TrailBook
+                </Button>
+                <Button type="button" size="sm" variant={buyerMode === "external" ? "default" : "outline"} onClick={() => { setBuyerMode("external"); setBuyerFound(null); }}>
+                  Comprador externo
+                </Button>
+              </div>
+              {buyerMode === "tb" ? (
+                <div className="mt-3 flex gap-2">
+                  <Input placeholder="E-mail ou CPF" value={buyerSearch} onChange={(e) => setBuyerSearch(e.target.value)} />
+                  <Button type="button" variant="outline" onClick={lookupBuyer}><Search className="h-4 w-4" /></Button>
+                </div>
+              ) : (
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  Comprador sem conta TrailBook. Só o aceite do vendedor será exigido; a moto será arquivada ao concluir.
+                </p>
+              )}
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label htmlFor="b-name">Nome completo *</Label>
+                <Input id="b-name" value={buyerName} onChange={(e) => setBuyerName(e.target.value)} />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="b-cpf">CPF</Label>
+                <Input id="b-cpf" value={buyerCpf} onChange={(e) => setBuyerCpf(e.target.value)} placeholder="000.000.000-00" />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="b-email">E-mail</Label>
+                <Input id="b-email" type="email" value={buyerEmail} onChange={(e) => setBuyerEmail(e.target.value)} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {step === 2 && (
+          <div className="rounded-xl border border-border bg-muted/20 p-4 text-sm">
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">Motocicleta</Label>
+            <p className="mt-2 text-muted-foreground">
+              Os dados da moto (marca, modelo, ano, chassi, placa, horímetro/km atual) são capturados do TrailBook e ficarão registrados no recibo. Confira no Passaporte antes de avançar.
+            </p>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="amount">Valor (R$) *</Label>
+              <Input id="amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="12500,00" />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Forma de pagamento *</Label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{PAYMENT_METHODS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+              </Select>
+              {paymentMethod === "Outro" && (
+                <Input className="mt-2" placeholder="Especifique" value={paymentOther} onChange={(e) => setPaymentOther(e.target.value)} />
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="date">Data da negociação *</Label>
+              <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="location">Local</Label>
+              <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Cidade / UF" />
+            </div>
+            <div className="space-y-1.5 sm:col-span-2">
+              <Label htmlFor="notes">Observações</Label>
+              <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Estado da moto, acessórios inclusos…" />
+            </div>
+          </div>
+        )}
+
+        {step === 4 && (
+          <div className="space-y-3 text-sm">
+            <div className="rounded-xl border border-border bg-muted/20 p-3">
+              <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Comprador</div>
+              <div className="mt-1 font-semibold">{buyerName}</div>
+              <div className="text-xs text-muted-foreground">
+                {buyerMode === "tb" ? "Usuário TrailBook" : "Comprador externo"}{buyerCpf ? ` · ${buyerCpf}` : ""}{buyerEmail ? ` · ${buyerEmail}` : ""}
+              </div>
+            </div>
+            <div className="rounded-xl border border-border bg-muted/20 p-3">
+              <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Negociação</div>
+              <div className="mt-1 text-lg font-bold">{formatCurrencyBRL(amountValue)}</div>
+              <div className="text-xs text-muted-foreground">
+                {paymentLabel} · {date ? new Date(date).toLocaleDateString("pt-BR") : ""}{location ? ` · ${location}` : ""}
+              </div>
+              {notes && <p className="mt-2 text-xs text-muted-foreground">{notes}</p>}
+            </div>
+            <label className="flex items-start gap-2 rounded-xl border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
+              <Checkbox checked={lgpd} onCheckedChange={(v) => setLgpd(!!v)} />
+              <span>
+                Confirmo o registro do recibo no TrailBook e a consulta pública pelo código único (LGPD). O PDF gerado é modelo para assinatura — a transferência só se efetiva após anexar o documento assinado e as partes registrarem aceite.
+              </span>
+            </label>
+          </div>
+        )}
+
+        {step === 5 && currentReceipt && (
+          <ReceiptLifecyclePanel
+            receipt={currentReceipt} userId={currentUserId} loading={loading}
+            onUpload={onUploadSigned} onAccept={onAccept} onComplete={onComplete}
+            onCancel={onCancel} onDownloadOriginal={downloadOriginal}
+          />
+        )}
+
+        <DialogFooter className="gap-2 sm:justify-between">
+          <div>
+            {step > 1 && step < 5 && (
+              <Button variant="ghost" onClick={() => setStep((s) => Math.max(1, s - 1))}>
+                <ArrowLeft className="h-4 w-4" /> Voltar
+              </Button>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="ghost" onClick={() => setOpen(false)}>Fechar</Button>
+            {step < 4 && (
+              <Button onClick={() => {
+                if (step === 1 && !validatePartes()) return;
+                if (step === 3 && !validateValor()) return;
+                setStep(step + 1);
+              }}>
+                Avançar <ArrowRight className="h-4 w-4" />
+              </Button>
+            )}
+            {step === 4 && (
+              <Button onClick={saveAndIssue} disabled={loading || !lgpd} className="btn-glow">
+                <FileSignature className="h-4 w-4" /> {loading ? "Emitindo…" : "Emitir PDF"}
+              </Button>
+            )}
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function ReceiptLifecyclePanel({
+  receipt, userId, loading, onUpload, onAccept, onComplete, onCancel, onDownloadOriginal,
+}: {
+  receipt: ReceiptRow; userId: string | null; loading: boolean;
+  onUpload: (f: File) => void; onAccept: () => void; onComplete: () => void;
+  onCancel: () => void; onDownloadOriginal: () => void;
+}) {
+  const isSeller = userId === receipt.seller_id;
+  const isBuyer = userId === receipt.buyer_id;
+  const needsBuyerAccept = !!receipt.buyer_id;
+  const canComplete = !!receipt.signed_pdf_path && !!receipt.seller_accepted_at && (!needsBuyerAccept || !!receipt.buyer_accepted_at);
+  const label = RECEIPT_STATUS_LABEL[(receipt.status as ReceiptStatus)] ?? receipt.status;
+
+  return (
+    <div className="space-y-4 text-sm">
+      <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
+        <div className="text-[11px] uppercase tracking-widest text-primary">Recibo {receipt.code}</div>
+        <div className="mt-1 text-xs text-muted-foreground">Estado: <strong className="text-foreground">{label}</strong></div>
+      </div>
+
+      <div className="rounded-xl border border-border p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="font-semibold">1. Documento original (para assinar)</div>
+            <div className="text-xs text-muted-foreground">PDF modelo — imprima ou assine digitalmente.</div>
+          </div>
+          <Button size="sm" variant="outline" onClick={onDownloadOriginal}>
+            <Download className="h-4 w-4" /> Baixar
+          </Button>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-border p-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <div className="font-semibold">2. Anexar documento assinado</div>
+            <div className="text-xs text-muted-foreground">
+              {receipt.signed_pdf_path ? "Anexado ✓ (reanexar reseta aceites)" : "PDF assinado pelas partes"}
+            </div>
+          </div>
+          <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted">
+            <Upload className="h-4 w-4" /> Enviar PDF
+            <input type="file" accept="application/pdf" hidden onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])} disabled={loading} />
+          </label>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-border p-3 space-y-2">
+        <div className="font-semibold">3. Aceites</div>
+        <div className="flex items-center justify-between gap-3">
+          <div className="text-xs">
+            Vendedor {receipt.seller_accepted_at
+              ? <span className="text-emerald-400"><CheckCircle2 className="inline h-3 w-3" /> aceito</span>
+              : <span className="text-muted-foreground">pendente</span>}
+          </div>
+          {isSeller && receipt.status === "awaiting_acceptance" && !receipt.seller_accepted_at && (
+            <Button size="sm" onClick={onAccept} disabled={loading}>Aceitar</Button>
+          )}
+        </div>
+        {needsBuyerAccept ? (
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-xs">
+              Comprador {receipt.buyer_accepted_at
+                ? <span className="text-emerald-400"><CheckCircle2 className="inline h-3 w-3" /> aceito</span>
+                : <span className="text-muted-foreground">pendente</span>}
+            </div>
+            {isBuyer && receipt.status === "awaiting_acceptance" && !receipt.buyer_accepted_at && (
+              <Button size="sm" onClick={onAccept} disabled={loading}>Aceitar</Button>
+            )}
+          </div>
+        ) : (
+          <div className="text-xs text-muted-foreground">Comprador externo — aceite não é exigido dentro do TrailBook.</div>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-2">
+        {isSeller && receipt.status !== "completed" && (
+          <Button variant="ghost" onClick={onCancel} disabled={loading} className="text-destructive">
+            <XCircle className="h-4 w-4" /> Cancelar
+          </Button>
+        )}
+        {canComplete && receipt.status === "awaiting_acceptance" && (
+          <Button className="ml-auto btn-glow" onClick={onComplete} disabled={loading}>
+            <CheckCircle2 className="h-4 w-4" /> Concluir transferência
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
