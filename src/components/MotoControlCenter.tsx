@@ -563,6 +563,22 @@ export function MotoControlCenter({ id }: { id: string }) {
                         {e.location && <span>{e.location}</span>}
                         {e.cost != null && <span className="font-semibold text-primary">{brl(Number(e.cost))}</span>}
                       </div>
+                      {e.type === "ownership_transfer" && e.metadata?.receipt_code && (
+                        <div className="mt-3 flex flex-wrap gap-1.5">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => openReceiptPdf(String(e.metadata.receipt_code), "signed")}
+                          >
+                            <Download className="h-3.5 w-3.5" /> Baixar recibo
+                          </Button>
+                          <Button size="sm" variant="outline" asChild>
+                            <a href={`/r/${e.metadata.receipt_code}`} target="_blank" rel="noopener noreferrer">
+                              <ExternalLink className="h-3.5 w-3.5" /> Página pública
+                            </a>
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
