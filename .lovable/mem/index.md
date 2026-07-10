@@ -17,3 +17,4 @@
 - [Princípios oficiais de UX](mem://principles/ux-official) — Filosofia mandatória: 3 perguntas, usuário cansado, uma tela = uma decisão, menos é mais, decisão > informação
 - [Princípio da Evolução Controlada](mem://principles/evolucao-controlada) — 5 perguntas obrigatórias antes de qualquer nova funcionalidade + arquitetura evolutiva + prioridade da experiência
 - [ADR 0005 — Ambiente Permanente de Homologação](docs/adr/0005-ambiente-permanente-homologacao.md) — convenções, contas, cenários, operação via `/admin/homolog`
+- [Campos: Seleção > Autocomplete > Texto livre](mem://principles/campos-selecao-oficial) — regra oficial; UF/Cidade via IBGE em `src/lib/br-locations.ts` + `LocationPicker` reutilizável
