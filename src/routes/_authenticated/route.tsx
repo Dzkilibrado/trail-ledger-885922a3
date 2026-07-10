@@ -29,11 +29,28 @@ export const Route = createFileRoute("/_authenticated")({
     // Force profile completion (CPF) before accessing anything else.
     // Tolerate transient network errors — do NOT sign the user out on a
     // simple fetch failure, or the app looks like "login broken".
-    if (location.pathname !== "/complete-profile" && location.pathname !== "/help") {
+    //
+    // Rotas SEMPRE permitidas para usuário com perfil incompleto:
+    // - /complete-profile (wizard)
+    // - /help (Central de Ajuda, público)
+    // - /tickets, /tickets/new, /tickets/$id (abrir/acompanhar chamado)
+    // - /settings (configurações básicas)
+    // - /perfil (edição do próprio perfil)
+    // Logout é ação de botão, não rota.
+    const path = location.pathname;
+    const allowedForIncomplete =
+      path === "/complete-profile" ||
+      path === "/help" ||
+      path === "/settings" ||
+      path === "/perfil" ||
+      path === "/tickets" ||
+      path === "/tickets/new" ||
+      path.startsWith("/tickets/");
+    if (!allowedForIncomplete) {
       try {
         const { data: p, error: pErr } = await supabase
           .from("profiles")
-          .select("cpf,status,blocked_reason,inactive_reason,profile_completed_at")
+          .select("cpf,status,blocked_reason,inactive_reason,profile_completed_at,full_name,birth_date,email,phone,whatsapp,whatsapp_same_as_phone,uf,city")
           .eq("id", user.id)
           .maybeSingle();
         if (pErr) {
@@ -53,12 +70,25 @@ export const Route = createFileRoute("/_authenticated")({
         }
         if (p && !p.cpf) throw redirect({ to: "/complete-profile" });
         // Gate global: qualquer campo obrigatório faltando → wizard.
-        // Perfis já com profile_completed_at pulam o RPC (fast path).
-        if (p && p.cpf && !p.profile_completed_at) {
-          const { data: comp } = await supabase.rpc("profile_completeness", { _user: user.id });
-          const missing = ((comp ?? {}) as any).missing as string[] | undefined;
-          if (Array.isArray(missing) && missing.length > 0) {
-            throw redirect({ to: "/complete-profile" });
+        //
+        // Fast-path seguro: `profile_completed_at` sozinho NÃO libera o perfil.
+        // Sempre validamos localmente os campos essenciais (sem custo, sem RPC).
+        // Se algum estiver ausente (campo removido depois, backfill parcial,
+        // nova obrigatoriedade), consultamos `profile_completeness` para
+        // confirmar antes de bloquear/liberar. Isto evita que o timestamp
+        // esconda um perfil incompleto.
+        if (p && p.cpf) {
+          const essentialsOk = !!(
+            p.full_name && p.birth_date && p.email && p.phone &&
+            (p.whatsapp || p.whatsapp_same_as_phone) &&
+            p.uf && p.city
+          );
+          if (!p.profile_completed_at || !essentialsOk) {
+            const { data: comp } = await supabase.rpc("profile_completeness", { _user: user.id });
+            const missing = ((comp ?? {}) as any).missing as string[] | undefined;
+            if (Array.isArray(missing) && missing.length > 0) {
+              throw redirect({ to: "/complete-profile" });
+            }
           }
         }
       } catch (e: any) {
