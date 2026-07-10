@@ -40,6 +40,10 @@ import { EventActionsMenu } from "@/components/EventActionsMenu";
 import { useMotoDocumentPendency } from "@/hooks/useDocumentPendencies";
 import { EXPECTED_DOC_LABEL, findOrigin } from "@/lib/motorcycle-origin";
 import { FileWarning } from "lucide-react";
+import { useActiveNegotiation } from "@/hooks/useActiveNegotiation";
+import { ActiveNegotiationCard } from "@/components/ActiveNegotiationCard";
+import { EmitReceiptDialog } from "@/components/receipts/EmitReceiptDialog";
+import { FileSignature } from "lucide-react";
 
 export function MotoControlCenter({ id }: { id: string }) {
   const qc = useQueryClient();
@@ -66,6 +70,7 @@ export function MotoControlCenter({ id }: { id: string }) {
   });
 
   const pendency = useMotoDocumentPendency(id);
+  const activeNegotiation = useActiveNegotiation(id);
 
   const events = useQuery({
     queryKey: ["events", id],
@@ -329,6 +334,24 @@ export function MotoControlCenter({ id }: { id: string }) {
                   trigger={<Button variant="outline"><ArrowRightLeft className="h-4 w-4" /> Transferir</Button>}
                 />
               ))}
+              {isOwner && !isArchived && (
+                <EmitReceiptDialog
+                  motorcycleId={m.id}
+                  onIssued={() => {
+                    qc.invalidateQueries({ queryKey: ["events", m.id] });
+                    qc.invalidateQueries({ queryKey: ["ownership", m.id] });
+                    qc.invalidateQueries({ queryKey: ["motorcycle_documents", m.id] });
+                    qc.invalidateQueries({ queryKey: ["document-pendencies"] });
+                    qc.invalidateQueries({ queryKey: ["active-negotiation", m.id] });
+                    qc.invalidateQueries({ queryKey: ["smart-receipts", m.id] });
+                  }}
+                  trigger={
+                    <Button variant="outline" className="btn-glow">
+                      <FileSignature className="h-4 w-4" /> Vender / Emitir Recibo
+                    </Button>
+                  }
+                />
+              )}
               {isOwner && !isArchived && <AlertDialog onOpenChange={(o) => { if (!o) { setArchiveReason(""); setArchiveReasonOther(""); } }}>
                 <AlertDialogTrigger asChild>
                   <Button variant="ghost"><Archive className="h-4 w-4" /> Arquivar moto</Button>
