@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { validateReceiptPublic, getReceiptSignedUrl } from "@/lib/smart-receipts.functions";
 import { ReceiptStatusBadge } from "@/components/receipts/ReceiptStatusBadge";
-import { formatCurrencyBRL, formatIssuedAt, formatVersion, sha256HexBytes, type ReceiptStatus } from "@/lib/smart-receipts";
+import { formatIssuedAt, formatVersion, sha256HexBytes, type ReceiptStatus } from "@/lib/smart-receipts";
 import { Button } from "@/components/ui/button";
 import { BadgeCheck, Download, FileWarning, ShieldCheck, ShieldX, Upload } from "lucide-react";
 
