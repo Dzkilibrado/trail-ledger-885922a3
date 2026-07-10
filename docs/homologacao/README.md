@@ -57,3 +57,11 @@ Se a feature não couber em nenhuma moto atual, adicione um novo slug em `src/li
 - [ADR 0005](../adr/0005-ambiente-permanente-homologacao.md)
 - Fonte: `src/lib/homolog.functions.ts`
 - UI: `/admin/homolog`
+
+## Fases homologadas neste ambiente
+
+| Fase | Cenários | Data | Status |
+|---|---|---|---|
+| **Smart Receipt 1.2** | 1 · TB↔TB (A→B) · 2 · Compra externa (B cadastra) · 3 · Venda externa (A→externo, M2 arquivada) | 2026-07-10 | ✅ HOMOLOGADA E ENCERRADA |
+
+Ver [CHANGELOG.md](../../CHANGELOG.md) para o escopo detalhado de cada fase.

@@ -10,6 +10,7 @@
 - Auditoria: `audit_log` + triggers + `write_admin_audit`. Imutável.
 - Documentação oficial vive em `/mnt/documents/Documentation/`. Atualizar CHANGELOG/Release Notes/Manual ao concluir features.
 - Ambiente Permanente de Homologação (APH): contas `@homolog.trailbook.test` + motos `[HOMOLOG]` marcadas com `is_homologation=true`. Operado em `/admin/homolog`. Toda feature nova ganha ao menos um cenário aqui antes de homologar. NÃO confundir com Demo Mode (futuro, uso comercial).
+- Smart Receipt Fase 1.2 está HOMOLOGADA E ENCERRADA (2026-07-10). Não alterar `smart_receipts.*`, triggers `on_smart_receipt_completed` / `smart_receipts_supersede_previous` / `generate_smart_receipt_code`, RPC `get_public_receipt`, rota `/r/:code` nem `src/lib/smart-receipts*` sem nova solicitação formal. Detalhes em CHANGELOG.md.
 
 ## Memories
 - [Diretrizes de desenvolvimento](mem://standards/dev-directives) — Padrões obrigatórios (18 pontos) aplicáveis a toda nova funcionalidade v1.0.1+
