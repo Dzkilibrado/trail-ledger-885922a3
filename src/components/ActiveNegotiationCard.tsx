@@ -1,6 +1,5 @@
 import { FileSignature, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Link } from "@tanstack/react-router";
 import { formatCurrencyBRL, formatIssuedAt } from "@/lib/smart-receipts";
 import type { ActiveNegotiation } from "@/hooks/useActiveNegotiation";
 
@@ -9,10 +8,9 @@ import type { ActiveNegotiation } from "@/hooks/useActiveNegotiation";
  * Filosofia: Resumo → Ação → Detalhe. Só aparece quando existe rascunho.
  */
 export function ActiveNegotiationCard({
-  motoId,
   negotiation,
 }: {
-  motoId: string;
+  motoId?: string;
   negotiation: ActiveNegotiation;
 }) {
   return (
@@ -32,9 +30,9 @@ export function ActiveNegotiationCard({
         </div>
         <div className="flex gap-2">
           <Button size="sm" asChild>
-            <Link to="/r/$code" params={{ code: negotiation.code }}>
+            <a href={`/r/${negotiation.code}`} target="_blank" rel="noopener noreferrer">
               <ExternalLink className="h-3.5 w-3.5" /> Continuar
-            </Link>
+            </a>
           </Button>
         </div>
       </div>
