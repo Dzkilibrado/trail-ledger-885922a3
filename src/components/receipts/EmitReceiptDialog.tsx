@@ -22,6 +22,7 @@ import {
 import { toast } from "sonner";
 import { FileSignature, Search, ArrowLeft, ArrowRight, CheckCircle2, Upload, Download, XCircle, Eye, Share2, Printer, Clock } from "lucide-react";
 import { formatCurrencyBRL, publicReceiptUrl, RECEIPT_STATUS_LABEL, type ReceiptStatus } from "@/lib/smart-receipts";
+import { LocationPicker } from "@/components/LocationPicker";
 
 const PAYMENT_METHODS = ["Dinheiro", "PIX", "Transferência bancária", "Financiamento", "Cartão", "Outro"];
 
@@ -410,9 +411,8 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
               <Label htmlFor="date">Data da negociação *</Label>
               <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="location">Local</Label>
-              <Input id="location" value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Cidade / UF" />
+            <div className="space-y-1.5 sm:col-span-2">
+              <LocationPicker value={location} onChange={setLocation} label="Local da negociação" />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="notes">Observações</Label>
