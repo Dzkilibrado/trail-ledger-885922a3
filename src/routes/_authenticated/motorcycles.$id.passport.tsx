@@ -23,6 +23,9 @@ import {
 } from "@/lib/passport";
 import { AlertTriangle, ArrowLeft, BadgeCheck, Copy, FileText, QrCode, Share2, ShieldAlert, Sparkles } from "lucide-react";
 import { toast } from "sonner";
+import { ReceiptsSummaryRow } from "@/components/receipts/ReceiptsHistorySheet";
+import { useReceiptsForMoto } from "@/hooks/useActiveNegotiation";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id/passport")({
   head: () => ({ meta: [{ title: "Passaporte Digital — TrailBook" }] }),
@@ -101,6 +104,11 @@ function Passport() {
     queryKey: ["workshops", "byId"],
     queryFn: async () => (await supabase.from("workshops").select("id, name")).data ?? [],
   });
+  const receipts = useReceiptsForMoto(id);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
+  }, []);
 
   const workshopsById = useMemo(() => {
     const m: Record<string, { name: string }> = {};
@@ -277,6 +285,16 @@ function Passport() {
           </ul>
         </div>
       </div>
+
+      {/* Resumo do Histórico de Propriedade */}
+      <section className="space-y-3">
+        <h2 className="font-display text-lg font-bold">Histórico de propriedade</h2>
+        <ReceiptsSummaryRow
+          motoId={m.id}
+          isOwner={!!currentUserId && (m as any).owner_id === currentUserId}
+          count={(receipts.data ?? []).length}
+        />
+      </section>
 
       {/* Painel de saúde por categoria */}
       <section className="space-y-3">

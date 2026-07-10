@@ -182,6 +182,13 @@ export type Database = {
             foreignKeyName: "certificates_motorcycle_id_fkey"
             columns: ["motorcycle_id"]
             isOneToOne: false
+            referencedRelation: "motorcycle_origin_document_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "certificates_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
             referencedRelation: "motorcycles"
             referencedColumns: ["id"]
           },
@@ -388,6 +395,13 @@ export type Database = {
             foreignKeyName: "events_motorcycle_id_fkey"
             columns: ["motorcycle_id"]
             isOneToOne: false
+            referencedRelation: "motorcycle_origin_document_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "events_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
             referencedRelation: "motorcycles"
             referencedColumns: ["id"]
           },
@@ -516,6 +530,13 @@ export type Database = {
             columns: ["motorcycle_id"]
             isOneToOne: false
             referencedRelation: "document_pendencies_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "maintenance_inspections_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycle_origin_document_view"
             referencedColumns: ["motorcycle_id"]
           },
           {
@@ -800,6 +821,13 @@ export type Database = {
             columns: ["motorcycle_id"]
             isOneToOne: false
             referencedRelation: "document_pendencies_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "maintenance_schedules_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycle_origin_document_view"
             referencedColumns: ["motorcycle_id"]
           },
           {
@@ -1123,6 +1151,13 @@ export type Database = {
             foreignKeyName: "motorcycle_documents_motorcycle_id_fkey"
             columns: ["motorcycle_id"]
             isOneToOne: false
+            referencedRelation: "motorcycle_origin_document_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "motorcycle_documents_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
             referencedRelation: "motorcycles"
             referencedColumns: ["id"]
           },
@@ -1132,6 +1167,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "motorcycle_documents"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "motorcycle_documents_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycle_origin_document_view"
+            referencedColumns: ["document_id"]
           },
         ]
       }
@@ -1334,6 +1376,13 @@ export type Database = {
             columns: ["motorcycle_id"]
             isOneToOne: false
             referencedRelation: "document_pendencies_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "motorcycle_photos_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycle_origin_document_view"
             referencedColumns: ["motorcycle_id"]
           },
           {
@@ -1573,6 +1622,13 @@ export type Database = {
             foreignKeyName: "ownership_history_motorcycle_id_fkey"
             columns: ["motorcycle_id"]
             isOneToOne: false
+            referencedRelation: "motorcycle_origin_document_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "ownership_history_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
             referencedRelation: "motorcycles"
             referencedColumns: ["id"]
           },
@@ -1627,6 +1683,13 @@ export type Database = {
             columns: ["motorcycle_id"]
             isOneToOne: false
             referencedRelation: "document_pendencies_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "ownership_transfers_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycle_origin_document_view"
             referencedColumns: ["motorcycle_id"]
           },
           {
@@ -1873,6 +1936,13 @@ export type Database = {
             foreignKeyName: "smart_receipts_motorcycle_id_fkey"
             columns: ["motorcycle_id"]
             isOneToOne: false
+            referencedRelation: "motorcycle_origin_document_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "smart_receipts_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
             referencedRelation: "motorcycles"
             referencedColumns: ["id"]
           },
@@ -2041,6 +2111,13 @@ export type Database = {
             foreignKeyName: "tickets_motorcycle_id_fkey"
             columns: ["motorcycle_id"]
             isOneToOne: false
+            referencedRelation: "motorcycle_origin_document_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "tickets_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
             referencedRelation: "motorcycles"
             referencedColumns: ["id"]
           },
@@ -2156,6 +2233,23 @@ export type Database = {
         }
         Relationships: []
       }
+      motorcycle_origin_document_view: {
+        Row: {
+          bucket: string | null
+          doc_date: string | null
+          doc_number: string | null
+          doc_type:
+            | Database["public"]["Enums"]["motorcycle_document_type"]
+            | null
+          document_id: string | null
+          file_name: string | null
+          motorcycle_id: string | null
+          receipt_code: string | null
+          source_kind: string | null
+          storage_path: string | null
+        }
+        Relationships: []
+      }
       my_ownership_transfers: {
         Row: {
           created_at: string | null
@@ -2205,6 +2299,13 @@ export type Database = {
             columns: ["motorcycle_id"]
             isOneToOne: false
             referencedRelation: "document_pendencies_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "ownership_transfers_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycle_origin_document_view"
             referencedColumns: ["motorcycle_id"]
           },
           {
@@ -2657,6 +2758,18 @@ export type Database = {
           _user: string
         }
         Returns: string
+      }
+      get_active_negotiation: {
+        Args: { _moto_id: string }
+        Returns: {
+          amount: number
+          buyer_name: string
+          code: string
+          created_at: string
+          id: string
+          status: string
+          version: number
+        }[]
       }
       get_email_by_cpf: { Args: { _cpf: string }; Returns: string }
       get_platform_modules: {
