@@ -6,6 +6,7 @@ export const TICKET_TYPES = [
   { value: "billing", label: "Pagamento / plano" },
   { value: "suggestion", label: "Sugestão de melhoria" },
   { value: "admin_request", label: "Solicitação administrativa" },
+  { value: "cpf_change", label: "Alteração de CPF" },
   { value: "other", label: "Outro" },
 ] as const;
 
