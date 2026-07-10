@@ -9,8 +9,10 @@
 - Módulos controlados por `platform_modules` (active/maintenance/disabled/beta) via `<ModuleGate />`. Sidebar reage ao status.
 - Auditoria: `audit_log` + triggers + `write_admin_audit`. Imutável.
 - Documentação oficial vive em `/mnt/documents/Documentation/`. Atualizar CHANGELOG/Release Notes/Manual ao concluir features.
+- Ambiente Permanente de Homologação (APH): contas `@homolog.trailbook.test` + motos `[HOMOLOG]` marcadas com `is_homologation=true`. Operado em `/admin/homolog`. Toda feature nova ganha ao menos um cenário aqui antes de homologar. NÃO confundir com Demo Mode (futuro, uso comercial).
 
 ## Memories
 - [Diretrizes de desenvolvimento](mem://standards/dev-directives) — Padrões obrigatórios (18 pontos) aplicáveis a toda nova funcionalidade v1.0.1+
 - [Princípios oficiais de UX](mem://principles/ux-official) — Filosofia mandatória: 3 perguntas, usuário cansado, uma tela = uma decisão, menos é mais, decisão > informação
 - [Princípio da Evolução Controlada](mem://principles/evolucao-controlada) — 5 perguntas obrigatórias antes de qualquer nova funcionalidade + arquitetura evolutiva + prioridade da experiência
+- [ADR 0005 — Ambiente Permanente de Homologação](docs/adr/0005-ambiente-permanente-homologacao.md) — convenções, contas, cenários, operação via `/admin/homolog`
