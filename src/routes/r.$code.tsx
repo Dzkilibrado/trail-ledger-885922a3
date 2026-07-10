@@ -90,28 +90,13 @@ function PublicReceipt() {
         <p className="font-semibold">
           {r.moto_brand} {r.moto_model}{r.moto_year_model ? ` — ${r.moto_year_model}` : ""}
         </p>
-        {r.moto_chassis && <p className="text-sm text-muted-foreground">Chassi: {r.moto_chassis}</p>}
       </section>
 
-      <section className="grid gap-3 sm:grid-cols-2">
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <h2 className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Vendedor</h2>
-          <p className="font-semibold">{r.seller_name}</p>
-          {r.seller_cpf_masked && <p className="text-sm text-muted-foreground">{r.seller_cpf_masked}</p>}
-        </div>
-        <div className="rounded-2xl border border-border bg-card p-4">
-          <h2 className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Comprador</h2>
-          <p className="font-semibold">{r.buyer_name}</p>
-          {r.buyer_cpf_masked && <p className="text-sm text-muted-foreground">{r.buyer_cpf_masked}</p>}
-        </div>
-      </section>
-
-      <section className="rounded-2xl border border-border bg-card p-4">
-        <h2 className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Negociação</h2>
-        <p className="text-lg font-bold">{formatCurrencyBRL(r.amount)}</p>
-        {r.payment_method && <p className="text-sm">{r.payment_method}</p>}
-        {r.negotiation_date && <p className="text-sm text-muted-foreground">Data: {new Date(r.negotiation_date).toLocaleDateString("pt-BR")}</p>}
-        {r.negotiation_location && <p className="text-sm text-muted-foreground">{r.negotiation_location}</p>}
+      <section className="rounded-2xl border border-border bg-muted/10 p-4 text-sm text-muted-foreground">
+        <p>
+          Detalhes das partes (vendedor e comprador), CPF, chassi e valor da negociação
+          são visíveis apenas para as partes envolvidas autenticadas no TrailBook.
+        </p>
       </section>
 
       <section className="rounded-2xl border border-border bg-muted/20 p-4">
