@@ -3,23 +3,41 @@
  * Este arquivo é seguro para importar de qualquer lugar (client e server).
  */
 
-export type ReceiptStatus = "draft" | "issued" | "signed" | "superseded" | "revoked";
+export type ReceiptStatus =
+  | "draft"
+  | "issued"
+  | "awaiting_acceptance"
+  | "completed"
+  | "cancelled"
+  | "superseded"
+  | "revoked";
 
 export const RECEIPT_STATUS_LABEL: Record<ReceiptStatus, string> = {
   draft: "Rascunho",
-  issued: "Ativo",
-  signed: "Ativo",
+  issued: "Aguardando assinatura",
+  awaiting_acceptance: "Aguardando aceite",
+  completed: "Concluído",
+  cancelled: "Cancelado",
   superseded: "Substituído",
   revoked: "Revogado",
 };
 
 export const RECEIPT_STATUS_TONE: Record<ReceiptStatus, string> = {
   draft: "bg-muted text-muted-foreground border-border",
-  issued: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  signed: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+  issued: "bg-sky-500/15 text-sky-300 border-sky-500/30",
+  awaiting_acceptance: "bg-amber-500/15 text-amber-300 border-amber-500/30",
+  completed: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
+  cancelled: "bg-muted text-muted-foreground border-border line-through",
   superseded: "bg-amber-500/15 text-amber-300 border-amber-500/30",
   revoked: "bg-destructive/15 text-destructive border-destructive/30",
 };
+
+/** Estados que representam uma negociação viva (não terminada). */
+export const RECEIPT_OPEN_STATES: readonly ReceiptStatus[] = [
+  "draft",
+  "issued",
+  "awaiting_acceptance",
+] as const;
 
 /**
  * URL amigável de validação pública.
