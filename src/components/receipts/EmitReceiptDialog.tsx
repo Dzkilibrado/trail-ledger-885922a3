@@ -23,6 +23,8 @@ import { toast } from "sonner";
 import { FileSignature, Search, ArrowLeft, ArrowRight, CheckCircle2, Upload, Download, XCircle, Eye, Share2, Printer, Clock } from "lucide-react";
 import { formatCurrencyBRL, publicReceiptUrl, RECEIPT_STATUS_LABEL, type ReceiptStatus } from "@/lib/smart-receipts";
 import { LocationPicker } from "@/components/LocationPicker";
+import { useProfileSnapshot } from "@/hooks/useProfileSnapshot";
+import { ProfileDataChip } from "@/components/ProfileDataChip";
 
 const PAYMENT_METHODS = ["Dinheiro", "PIX", "Transferência bancária", "Financiamento", "Cartão", "Outro"];
 
@@ -66,6 +68,9 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
   const [paymentOther, setPaymentOther] = useState("");
   const [date, setDate] = useState<string>(new Date().toISOString().slice(0, 10));
   const [location, setLocation] = useState("");
+  // Marca se o campo Local foi pré-preenchido a partir do perfil do vendedor
+  // (para exibir o chip explicativo). Reseta quando o usuário edita.
+  const [locationFromProfile, setLocationFromProfile] = useState(false);
   const [notes, setNotes] = useState("");
   const [lgpd, setLgpd] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -78,11 +83,26 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
   const complete = useServerFn(completeReceiptTransfer);
   const cancelDraft = useServerFn(cancelDraftReceipt);
   const signedUrlFn = useServerFn(getReceiptSignedUrl);
+  const profileQ = useProfileSnapshot();
 
   useEffect(() => {
     if (!open) return;
     supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
   }, [open]);
+
+  // Pré-preenche "Local da negociação" com a Cidade/UF do perfil do vendedor
+  // somente quando: dialog aberto, novo recibo (sem receiptId), campo vazio
+  // e snapshot disponível. Não sobrescreve rascunhos nem edições em andamento.
+  useEffect(() => {
+    if (!open) return;
+    if (currentReceiptId) return; // rascunho/edição: respeita valor salvo
+    if (location) return;         // já digitado nesta sessão
+    const loc = profileQ.data?.location;
+    if (loc) {
+      setLocation(loc);
+      setLocationFromProfile(true);
+    }
+  }, [open, currentReceiptId, location, profileQ.data?.location]);
 
   useEffect(() => { setCurrentReceiptId(receiptId ?? null); }, [receiptId]);
 
@@ -140,7 +160,7 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     setBuyerName(""); setBuyerCpf(""); setBuyerEmail("");
     setAmount(""); setPaymentMethod("PIX"); setPaymentOther("");
     setDate(new Date().toISOString().slice(0, 10));
-    setLocation(""); setNotes(""); setLgpd(false);
+    setLocation(""); setLocationFromProfile(false); setNotes(""); setLgpd(false);
   }
 
   const amountValue = useMemo(() => Number(String(amount).replace(",", ".")), [amount]);
