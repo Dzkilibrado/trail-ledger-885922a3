@@ -9,6 +9,9 @@ export type ActiveNegotiation = {
   buyer_name: string | null;
   amount: number | null;
   created_at: string;
+  has_signed_document: boolean;
+  seller_accepted: boolean;
+  buyer_accepted: boolean;
 };
 
 /** Recibo em rascunho mais recente da moto (para card na Central). */
