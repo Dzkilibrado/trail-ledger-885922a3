@@ -29,11 +29,11 @@ export const Route = createFileRoute("/_authenticated")({
     // Force profile completion (CPF) before accessing anything else.
     // Tolerate transient network errors — do NOT sign the user out on a
     // simple fetch failure, or the app looks like "login broken".
-    if (location.pathname !== "/complete-profile") {
+    if (location.pathname !== "/complete-profile" && location.pathname !== "/help") {
       try {
         const { data: p, error: pErr } = await supabase
           .from("profiles")
-          .select("cpf,status,blocked_reason,inactive_reason")
+          .select("cpf,status,blocked_reason,inactive_reason,profile_completed_at")
           .eq("id", user.id)
           .maybeSingle();
         if (pErr) {
@@ -52,6 +52,15 @@ export const Route = createFileRoute("/_authenticated")({
           });
         }
         if (p && !p.cpf) throw redirect({ to: "/complete-profile" });
+        // Gate global: qualquer campo obrigatório faltando → wizard.
+        // Perfis já com profile_completed_at pulam o RPC (fast path).
+        if (p && p.cpf && !p.profile_completed_at) {
+          const { data: comp } = await supabase.rpc("profile_completeness", { _user: user.id });
+          const missing = ((comp ?? {}) as any).missing as string[] | undefined;
+          if (Array.isArray(missing) && missing.length > 0) {
+            throw redirect({ to: "/complete-profile" });
+          }
+        }
       } catch (e: any) {
         // Rethrow router redirects; swallow other transient errors.
         if (e && typeof e === "object" && "options" in e && "to" in (e as any)) throw e;
