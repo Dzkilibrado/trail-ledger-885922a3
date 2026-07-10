@@ -11,6 +11,9 @@ import { supabase } from "@/integrations/supabase/client";
  * - Chave única `["profile-snapshot", uid]` compartilhada entre módulos.
  * - Invalidado automaticamente no `onAuthStateChange` do root
  *   (SIGNED_IN / SIGNED_OUT / USER_UPDATED) e sempre que o wizard concluir.
+ * - Refetch automático ao montar componente e ao retomar a janela/aba, para
+ *   garantir que aprovações externas (ex.: alteração de CPF via suporte)
+ *   apareçam sem depender de invalidação manual do cliente.
  * - Módulos NUNCA escrevem de volta no perfil a partir deste snapshot;
  *   edições locais só valem para a operação corrente.
  */
@@ -95,8 +98,13 @@ export function useProfileSnapshot() {
   return useQuery({
     queryKey: ["profile-snapshot"],
     queryFn: fetchSnapshot,
-    staleTime: 5 * 60_000,
+    // staleTime curto: mudanças aplicadas pelo admin (aprovação de CPF)
+    // precisam aparecer na próxima navegação/foco sem cache preso a 5 min.
+    staleTime: 30_000,
     gcTime: 30 * 60_000,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 }
 
