@@ -432,7 +432,17 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
               <Input id="date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
-              <LocationPicker value={location} onChange={setLocation} label="Local da negociação" />
+              <div className="flex items-center justify-between gap-2">
+                <Label>Local da negociação</Label>
+                {locationFromProfile && location === profileQ.data?.location && (
+                  <ProfileDataChip />
+                )}
+              </div>
+              <LocationPicker
+                value={location}
+                onChange={(v) => { setLocation(v); setLocationFromProfile(false); }}
+                label=""
+              />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="notes">Observações</Label>
