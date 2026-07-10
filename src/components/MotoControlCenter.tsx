@@ -424,6 +424,10 @@ export function MotoControlCenter({ id }: { id: string }) {
         </div>
       </div>
 
+      {activeNegotiation.data && (
+        <ActiveNegotiationCard motoId={m.id} negotiation={activeNegotiation.data} />
+      )}
+
       <section className="space-y-3">
         <h2 className="font-display text-lg font-bold">Histórico de proprietários</h2>
         <OwnershipTimeline entries={ownership.data ?? []} />
