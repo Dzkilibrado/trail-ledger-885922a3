@@ -25,7 +25,7 @@ import { AlertTriangle, ArrowLeft, BadgeCheck, Copy, FileText, QrCode, Share2, S
 import { toast } from "sonner";
 import { ReceiptsSummaryRow } from "@/components/receipts/ReceiptsHistorySheet";
 import { useReceiptsForMoto } from "@/hooks/useActiveNegotiation";
-import { useEffect, useState as _unused } from "react";
+import { useEffect } from "react";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id/passport")({
   head: () => ({ meta: [{ title: "Passaporte Digital — TrailBook" }] }),
