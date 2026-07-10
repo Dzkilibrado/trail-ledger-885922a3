@@ -20,15 +20,15 @@ type SeedUser = {
   email: string;
   full_name: string;
   role: string;
-  plan: "basic" | "essencial" | "premium";
+  plan: "free" | "premium" | "workshop";
 };
 
 const SEED_USERS: SeedUser[] = [
   { key: "A", email: `vendedor.a@${HOMOLOG_DOMAIN}`, full_name: "[HOMOLOG] Vendedor A", role: "Vendedor TrailBook", plan: "premium" },
-  { key: "B", email: `comprador.b@${HOMOLOG_DOMAIN}`, full_name: "[HOMOLOG] Comprador B", role: "Comprador TrailBook", plan: "essencial" },
-  { key: "C", email: `externo.c@${HOMOLOG_DOMAIN}`, full_name: "[HOMOLOG] Externo C", role: "Comprador externo simulado", plan: "basic" },
+  { key: "B", email: `comprador.b@${HOMOLOG_DOMAIN}`, full_name: "[HOMOLOG] Comprador B", role: "Comprador TrailBook", plan: "premium" },
+  { key: "C", email: `externo.c@${HOMOLOG_DOMAIN}`, full_name: "[HOMOLOG] Externo C", role: "Comprador externo simulado", plan: "free" },
   { key: "D", email: `frota.d@${HOMOLOG_DOMAIN}`, full_name: "[HOMOLOG] Frota D", role: "Usuário com múltiplas motos", plan: "premium" },
-  { key: "E", email: `novo.e@${HOMOLOG_DOMAIN}`, full_name: "[HOMOLOG] Novo E", role: "Usuário novo (onboarding)", plan: "basic" },
+  { key: "E", email: `novo.e@${HOMOLOG_DOMAIN}`, full_name: "[HOMOLOG] Novo E", role: "Usuário novo (onboarding)", plan: "free" },
 ];
 
 type SeedMoto = {
