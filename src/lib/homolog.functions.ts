@@ -185,6 +185,14 @@ export const seedHomologEnvironment = createServerFn({ method: "POST" })
       report.warnings.push(`enrichment: ${(e as Error).message}`);
     }
 
+    // Alinha o smart_receipt_code_seq ao maior código já emitido para evitar colisões
+    try {
+      const { error } = await context.supabase.rpc("align_smart_receipt_code_seq");
+      if (error) report.warnings.push(`align_smart_receipt_code_seq: ${error.message}`);
+    } catch (e) {
+      report.warnings.push(`align_smart_receipt_code_seq: ${(e as Error).message}`);
+    }
+
     return { ok: true as const, report };
   });
 
