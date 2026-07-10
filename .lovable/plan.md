@@ -1,3 +1,18 @@
+# TrailBook — Plano oficial
+
+## Status por fase
+
+| Fase | Escopo | Status |
+|---|---|---|
+| 1.0 | Cadastro, Passaporte, Timeline, Manutenções | ✅ Homologada |
+| 1.1 | Cockpit + TIL + Plano editável + Componentes + Saúde | ✅ Homologada |
+| 1.2 | **Smart Receipt (Recibo Inteligente)** | ✅ **HOMOLOGADA E ENCERRADA em 2026-07-10** |
+| APH | Ambiente Permanente de Homologação | ✅ Operacional (ADR 0005) |
+
+> **Smart Receipt Fase 1.2 está encerrada.** Não realizar novas alterações neste módulo sem nova solicitação formal. Detalhes do escopo entregue e cenários homologados em [CHANGELOG.md](../CHANGELOG.md) e [docs/homologacao/README.md](../docs/homologacao/README.md).
+
+---
+
 # Ambiente Permanente de Homologação (APH) do TrailBook
 
 Antes de executar a homologação end-to-end da Fase 1.2, quero alinhar o escopo do **Ambiente Permanente de Homologação** — porque ele passa a fazer parte oficial da arquitetura e envolve criação de usuários reais no `auth.users`, seed de dados e um harness de testes que vai ser reutilizado em todas as próximas fases. Preferível acertar o formato agora do que refazer depois.
