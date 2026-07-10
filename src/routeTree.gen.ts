@@ -44,6 +44,7 @@ import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authentic
 import { Route as AuthenticatedAdminTicketsRouteImport } from './routes/_authenticated/admin.tickets'
 import { Route as AuthenticatedAdminModulesRouteImport } from './routes/_authenticated/admin.modules'
 import { Route as AuthenticatedAdminMessagesRouteImport } from './routes/_authenticated/admin.messages'
+import { Route as AuthenticatedAdminHomologRouteImport } from './routes/_authenticated/admin.homolog'
 import { Route as AuthenticatedAdminDocumentsRouteImport } from './routes/_authenticated/admin.documents'
 import { Route as AuthenticatedMotorcyclesIdIndexRouteImport } from './routes/_authenticated/motorcycles.$id.index'
 import { Route as AuthenticatedMotorcyclesIdPlanRouteImport } from './routes/_authenticated/motorcycles.$id.plan'
@@ -237,6 +238,12 @@ const AuthenticatedAdminMessagesRoute =
     path: '/messages',
     getParentRoute: () => AuthenticatedAdminRoute,
   } as any)
+const AuthenticatedAdminHomologRoute =
+  AuthenticatedAdminHomologRouteImport.update({
+    id: '/homolog',
+    path: '/homolog',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedAdminDocumentsRoute =
   AuthenticatedAdminDocumentsRouteImport.update({
     id: '/documents',
@@ -304,6 +311,7 @@ export interface FileRoutesByFullPath {
   '/c/$token': typeof CTokenRoute
   '/r/$code': typeof RCodeRoute
   '/admin/documents': typeof AuthenticatedAdminDocumentsRoute
+  '/admin/homolog': typeof AuthenticatedAdminHomologRoute
   '/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/admin/modules': typeof AuthenticatedAdminModulesRoute
   '/admin/tickets': typeof AuthenticatedAdminTicketsRoute
@@ -346,6 +354,7 @@ export interface FileRoutesByTo {
   '/c/$token': typeof CTokenRoute
   '/r/$code': typeof RCodeRoute
   '/admin/documents': typeof AuthenticatedAdminDocumentsRoute
+  '/admin/homolog': typeof AuthenticatedAdminHomologRoute
   '/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/admin/modules': typeof AuthenticatedAdminModulesRoute
   '/admin/tickets': typeof AuthenticatedAdminTicketsRoute
@@ -390,6 +399,7 @@ export interface FileRoutesById {
   '/c/$token': typeof CTokenRoute
   '/r/$code': typeof RCodeRoute
   '/_authenticated/admin/documents': typeof AuthenticatedAdminDocumentsRoute
+  '/_authenticated/admin/homolog': typeof AuthenticatedAdminHomologRoute
   '/_authenticated/admin/messages': typeof AuthenticatedAdminMessagesRoute
   '/_authenticated/admin/modules': typeof AuthenticatedAdminModulesRoute
   '/_authenticated/admin/tickets': typeof AuthenticatedAdminTicketsRoute
@@ -435,6 +445,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/r/$code'
     | '/admin/documents'
+    | '/admin/homolog'
     | '/admin/messages'
     | '/admin/modules'
     | '/admin/tickets'
@@ -477,6 +488,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/r/$code'
     | '/admin/documents'
+    | '/admin/homolog'
     | '/admin/messages'
     | '/admin/modules'
     | '/admin/tickets'
@@ -520,6 +532,7 @@ export interface FileRouteTypes {
     | '/c/$token'
     | '/r/$code'
     | '/_authenticated/admin/documents'
+    | '/_authenticated/admin/homolog'
     | '/_authenticated/admin/messages'
     | '/_authenticated/admin/modules'
     | '/_authenticated/admin/tickets'
@@ -797,6 +810,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAdminMessagesRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
     }
+    '/_authenticated/admin/homolog': {
+      id: '/_authenticated/admin/homolog'
+      path: '/homolog'
+      fullPath: '/admin/homolog'
+      preLoaderRoute: typeof AuthenticatedAdminHomologRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
     '/_authenticated/admin/documents': {
       id: '/_authenticated/admin/documents'
       path: '/documents'
@@ -851,6 +871,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedAdminRouteChildren {
   AuthenticatedAdminDocumentsRoute: typeof AuthenticatedAdminDocumentsRoute
+  AuthenticatedAdminHomologRoute: typeof AuthenticatedAdminHomologRoute
   AuthenticatedAdminMessagesRoute: typeof AuthenticatedAdminMessagesRoute
   AuthenticatedAdminModulesRoute: typeof AuthenticatedAdminModulesRoute
   AuthenticatedAdminTicketsRoute: typeof AuthenticatedAdminTicketsRoute
@@ -860,6 +881,7 @@ interface AuthenticatedAdminRouteChildren {
 
 const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
   AuthenticatedAdminDocumentsRoute: AuthenticatedAdminDocumentsRoute,
+  AuthenticatedAdminHomologRoute: AuthenticatedAdminHomologRoute,
   AuthenticatedAdminMessagesRoute: AuthenticatedAdminMessagesRoute,
   AuthenticatedAdminModulesRoute: AuthenticatedAdminModulesRoute,
   AuthenticatedAdminTicketsRoute: AuthenticatedAdminTicketsRoute,

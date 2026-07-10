@@ -5,7 +5,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import {
   Users, Bike, LifeBuoy, AlertTriangle, Hourglass, FileText, BadgeCheck,
-  MessageSquare, Wrench, Activity, ArrowRight, ShieldCheck, Archive, UserX,
+  MessageSquare, Wrench, Activity, ArrowRight, ShieldCheck, Archive, UserX, FlaskConical,
 } from "lucide-react";
 import { formatDate } from "@/lib/trailbook";
 import { Badge } from "@/components/ui/badge";
@@ -84,6 +84,7 @@ function AdminHome() {
           <QuickAction to="/admin/documents" icon={FileText} label="Documentos" />
           <QuickAction to="/admin/modules" icon={Wrench} label="Módulos" />
           <QuickAction to="/admin/messages" icon={MessageSquare} label="Mensagens" />
+          <QuickAction to="/admin/homolog" icon={FlaskConical} label="Homologação" />
         </div>
       </div>
 
