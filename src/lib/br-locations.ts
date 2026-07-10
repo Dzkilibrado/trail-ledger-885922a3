@@ -13,6 +13,16 @@ export interface UF {
   nome: string;
 }
 
+/** Normaliza texto para busca: minúsculas e sem acentos/diacríticos. */
+export function normalizeSearch(v: string): string {
+  return (v ?? "")
+    .toString()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .trim();
+}
+
 export const BR_UFS: readonly UF[] = [
   { sigla: "AC", nome: "Acre" },
   { sigla: "AL", nome: "Alagoas" },

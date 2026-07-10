@@ -3,7 +3,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/co
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { BR_UFS, fetchMunicipiosByUF, formatLocation, parseLocation } from "@/lib/br-locations";
+import { BR_UFS, fetchMunicipiosByUF, formatLocation, normalizeSearch, parseLocation } from "@/lib/br-locations";
 import { ChevronDown, MapPin, Search, X } from "lucide-react";
 
 const OTHER = "__other__";
@@ -60,15 +60,15 @@ export function LocationPicker({
   }, [uf, city, cityIsOther, freeText]);
 
   const ufList = useMemo(() => {
-    const q = ufSearch.trim().toLowerCase();
-    const base = BR_UFS.filter((u) => !q || u.nome.toLowerCase().includes(q) || u.sigla.toLowerCase().includes(q));
+    const q = normalizeSearch(ufSearch);
+    const base = BR_UFS.filter((u) => !q || normalizeSearch(u.nome).includes(q) || normalizeSearch(u.sigla).includes(q));
     return base;
   }, [ufSearch]);
 
   const cityList = useMemo(() => {
-    const q = citySearch.trim().toLowerCase();
+    const q = normalizeSearch(citySearch);
     if (!q) return cities.slice(0, 200);
-    return cities.filter((c) => c.toLowerCase().includes(q)).slice(0, 200);
+    return cities.filter((c) => normalizeSearch(c).includes(q)).slice(0, 200);
   }, [cities, citySearch]);
 
   const ufLabel = uf === OTHER ? "Outros" : (BR_UFS.find((u) => u.sigla === uf)?.nome ?? "Selecionar estado");
