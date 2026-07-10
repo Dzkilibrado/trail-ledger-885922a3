@@ -68,9 +68,9 @@ export function PageHeader({
           </span>
         )}
       </div>
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-4 sm:flex sm:flex-wrap sm:items-end sm:justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="font-display text-xl font-bold leading-tight break-words sm:text-2xl">{title}</h1>
+          <h1 className="font-display text-xl font-bold leading-tight [overflow-wrap:anywhere] sm:text-2xl">{title}</h1>
           {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
         </div>
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
