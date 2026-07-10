@@ -18,3 +18,4 @@
 - [Princípio da Evolução Controlada](mem://principles/evolucao-controlada) — 5 perguntas obrigatórias antes de qualquer nova funcionalidade + arquitetura evolutiva + prioridade da experiência
 - [ADR 0005 — Ambiente Permanente de Homologação](docs/adr/0005-ambiente-permanente-homologacao.md) — convenções, contas, cenários, operação via `/admin/homolog`
 - [Campos: Seleção > Autocomplete > Texto livre](mem://principles/campos-selecao-oficial) — regra oficial; UF/Cidade via IBGE em `src/lib/br-locations.ts` + `LocationPicker` reutilizável
+- [Informar uma vez. Reutilizar sempre.](mem://principles/informar-uma-vez) — módulos consomem `useProfileSnapshot` + `<ProfileDataChip />`; nunca pedir de novo nem escrever de volta
