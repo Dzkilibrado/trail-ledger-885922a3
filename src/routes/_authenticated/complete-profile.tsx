@@ -129,7 +129,7 @@ function CompleteProfilePage() {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return { ok: false, error: "not signed in" };
     const parsedLoc = parseLocation(draft.location);
-    const patch: Record<string, any> = {
+    const patch = {
       full_name: draft.full_name.trim() || null,
       display_name: draft.display_name.trim() || null,
       birth_date: draft.birth_date || null,
@@ -143,7 +143,7 @@ function CompleteProfilePage() {
       logradouro: draft.logradouro || null,
       numero: draft.numero || null,
       complemento: draft.complemento || null,
-    };
+    } as const;
     // CPF: só entra via RPC quando ainda não foi travado
     if (!cpfLocked && draft.cpf) {
       const digits = onlyDigits(draft.cpf);
