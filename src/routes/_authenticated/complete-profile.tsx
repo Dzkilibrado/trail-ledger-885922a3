@@ -70,6 +70,9 @@ function CompleteProfilePage() {
   const [missing, setMissing] = useState<string[]>([]);
   const [pct, setPct] = useState(0);
   const [showAddress, setShowAddress] = useState(false);
+  // Guarda o WhatsApp digitado quando o usuário marca "igual ao celular",
+  // para restaurar sem apagar caso desmarque em seguida.
+  const [whatsappBackup, setWhatsappBackup] = useState<string>("");
 
   async function refreshCompleteness(uid: string) {
     const { data } = await supabase.rpc("profile_completeness", { _user: uid });
@@ -125,6 +128,31 @@ function CompleteProfilePage() {
     setDraft((d) => ({ ...d, [k]: v }));
   }
 
+  // Sincroniza WhatsApp com celular enquanto a opção estiver marcada.
+  // - marcar → whatsapp := phone (normalizado pela máscara)
+  // - alterar phone com opção ativa → whatsapp acompanha
+  // - desmarcar → restaura o valor anterior (não apaga se já havia)
+  useEffect(() => {
+    if (draft.whatsapp_same_as_phone) {
+      if (draft.whatsapp !== draft.phone) {
+        setDraft((d) => ({ ...d, whatsapp: d.phone }));
+      }
+    }
+  }, [draft.whatsapp_same_as_phone, draft.phone]);
+
+  function toggleWhatsappSame(checked: boolean) {
+    setDraft((d) => {
+      if (checked) {
+        // Antes de sobrescrever, preservar o valor atual como backup se houver.
+        if (d.whatsapp && d.whatsapp !== d.phone) setWhatsappBackup(d.whatsapp);
+        return { ...d, whatsapp_same_as_phone: true, whatsapp: d.phone };
+      }
+      // Restaura backup somente se o campo estiver espelhando o celular.
+      const restore = whatsappBackup || d.whatsapp;
+      return { ...d, whatsapp_same_as_phone: false, whatsapp: restore };
+    });
+  }
+
   async function persistPartial() {
     const { data: u } = await supabase.auth.getUser();
     if (!u.user) return { ok: false, error: "not signed in" };
@@ -134,7 +162,10 @@ function CompleteProfilePage() {
       display_name: draft.display_name.trim() || null,
       birth_date: draft.birth_date || null,
       phone: draft.phone || null,
-      whatsapp: draft.whatsapp_same_as_phone ? null : (draft.whatsapp || null),
+      // Persistimos o WhatsApp sempre. Quando "igual ao celular", grava o
+      // celular normalizado — a coluna precisa estar preenchida para o
+      // `profile_completeness` considerar o campo válido.
+      whatsapp: (draft.whatsapp_same_as_phone ? draft.phone : draft.whatsapp) || null,
       whatsapp_same_as_phone: draft.whatsapp_same_as_phone,
       uf: parsedLoc.uf || null,
       city: parsedLoc.city || null,
@@ -203,9 +234,20 @@ function CompleteProfilePage() {
     const r = await persistPartial();
     if (!r.ok) { setSaving(false); if (r.error !== "conflict") toast.error(r.error ?? "Falha ao salvar"); return; }
     const { data: u } = await supabase.auth.getUser();
-    if (u.user) {
-      await supabase.from("profiles").update({ profile_completed_at: new Date().toISOString() }).eq("id", u.user.id);
+    if (!u.user) { setSaving(false); return; }
+    // Revalida completude no servidor — só marca `profile_completed_at`
+    // quando `missing` estiver vazio (fonte da verdade é o RPC).
+    const { data: comp } = await supabase.rpc("profile_completeness", { _user: u.user.id });
+    const remaining = (((comp ?? {}) as any).missing as string[] | undefined) ?? [];
+    if (remaining.length > 0) {
+      setSaving(false);
+      setMissing(remaining);
+      setPct(((comp ?? {}) as any).pct ?? pct);
+      const labels = remaining.map((m) => FIELD_LABELS[m] ?? m).join(", ");
+      toast.error(`Ainda faltam: ${labels}`);
+      return;
     }
+    await supabase.from("profiles").update({ profile_completed_at: new Date().toISOString() }).eq("id", u.user.id);
     setSaving(false);
     toast.success("Cadastro concluído!");
     navigate({ to: "/dashboard" as string });
@@ -296,7 +338,7 @@ function CompleteProfilePage() {
               <Checkbox
                 id="wa-same"
                 checked={draft.whatsapp_same_as_phone}
-                onCheckedChange={(c) => update("whatsapp_same_as_phone", !!c)}
+                onCheckedChange={(c) => toggleWhatsappSame(!!c)}
               />
               <Label htmlFor="wa-same" className="text-sm">Meu WhatsApp é igual ao celular</Label>
             </div>
