@@ -107,3 +107,40 @@ Certificados             1 emitido       [Ver certificados]
 - Compra por usuário externo com convite automático (usar fluxo existente `ownership_transfers` quando comprador não tem conta).
 
 Aguardo aprovação para iniciar.
+
+---
+
+## Fase 1.2 — Lifecycle oficial (implementado)
+
+Ciclo de vida corrigido conforme homologação:
+`draft → issued → awaiting_acceptance → completed`
+alternativos: `cancelled | superseded | revoked`
+
+### Backend (migração `smart_receipt_lifecycle`)
+- CHECK `status` cobre todos os estados oficiais.
+- Novas colunas: `original_pdf_path`, `signed_pdf_path`, `seller_accepted_at`, `buyer_accepted_at`, `completed_at`, `cancelled_reason`, `revoked_at`, `revoked_reason`, `external_buyer`.
+- Trigger `on_smart_receipt_completed` — **transferência acontece apenas em `completed`**. PDF gerado não muda `owner_id`, `ownership_history`, nem promove documento de origem.
+- Trigger `smart_receipts_supersede_previous` — supersede só quando NOVA versão concluir.
+- Idempotência: `UNIQUE (metadata->>'receipt_id')` em `events` para `ownership_transfer`; documentos e ownership guardados com `NOT EXISTS`.
+- Venda para comprador externo: fecha proprietário anterior e arquiva a moto — sem criar owner fictício.
+- View `public_receipt_validation` expande status + `has_signed_document`.
+- Storage RLS reconhece `original_pdf_path` e `signed_pdf_path`.
+
+### Server functions (`src/lib/smart-receipts.functions.ts`)
+`createReceiptDraft`, `updateReceiptDraft`, `generateReceiptPdf`, `attachSignedReceipt`, `acceptSignedReceipt`, `completeReceiptTransfer`, `cancelDraftReceipt`, `revokeSmartReceipt`, `getReceiptContext`, `getReceiptSignedUrl` (variant), `listReceiptsForMotorcycle`, `validateReceiptPublic`.
+
+### UI
+- `EmitReceiptDialog` reescrito como wizard de 5 etapas (partes → moto → valor → revisão → lifecycle). Suporta `receiptId` para retomada.
+- Painel do lifecycle mostra: baixar original · anexar assinado · aceites (vendedor e comprador quando TB) · concluir · cancelar.
+- `ActiveNegotiationCard` retoma o wizard no ponto correto (nunca vai para `/r/<code>`).
+- `useActiveNegotiation` retorna todos os estados abertos + flags de aceite/assinatura.
+
+### Homologação pendente (executar em preview)
+Fluxos que precisam ser validados em sessão real:
+1. TB → TB completo até `completed` (owner troca, evento aparece, moto vai para o comprador).
+2. Compra externa (moto nova/usada) — sem receber recibo.
+3. Venda para externo — moto arquivada; sem owner fictício.
+4. Cancelamento em cada estado antes de `completed`.
+5. Revogação após `completed`.
+6. Substituição (v2 concluído → v1 superseded).
+7. Idempotência do trigger (concluir 2× o mesmo recibo).
