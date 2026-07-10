@@ -20,8 +20,8 @@ import {
   getReceiptSignedUrl,
 } from "@/lib/smart-receipts.functions";
 import { toast } from "sonner";
-import { FileSignature, Search, ArrowLeft, ArrowRight, CheckCircle2, Upload, Download, XCircle } from "lucide-react";
-import { formatCurrencyBRL, RECEIPT_STATUS_LABEL, type ReceiptStatus } from "@/lib/smart-receipts";
+import { FileSignature, Search, ArrowLeft, ArrowRight, CheckCircle2, Upload, Download, XCircle, Eye, Share2, Printer, Clock } from "lucide-react";
+import { formatCurrencyBRL, publicReceiptUrl, RECEIPT_STATUS_LABEL, type ReceiptStatus } from "@/lib/smart-receipts";
 
 const PAYMENT_METHODS = ["Dinheiro", "PIX", "Transferência bancária", "Financiamento", "Cartão", "Outro"];
 
@@ -271,6 +271,63 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     }
   }
 
+  async function viewPdf() { await downloadOriginal(); }
+
+  async function downloadPdfBlob() {
+    if (!currentReceipt) return;
+    try {
+      const { url } = await signedUrlFn({ data: { code: currentReceipt.code, variant: "original" } });
+      if (!url) { toast.error("PDF indisponível"); return; }
+      const resp = await fetch(url);
+      const blob = await resp.blob();
+      const a = document.createElement("a");
+      const href = URL.createObjectURL(blob);
+      a.href = href;
+      a.download = `${currentReceipt.code}.pdf`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(href), 5_000);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha no download");
+    }
+  }
+
+  async function sharePdf() {
+    if (!currentReceipt) return;
+    const pageUrl = publicReceiptUrl(currentReceipt.code);
+    const data = {
+      title: `Recibo TrailBook ${currentReceipt.code}`,
+      text: `Recibo Inteligente TrailBook — valide em ${pageUrl}`,
+      url: pageUrl,
+    };
+    if (typeof navigator !== "undefined" && (navigator as Navigator & { share?: (d: ShareData) => Promise<void> }).share) {
+      try { await (navigator as Navigator & { share: (d: ShareData) => Promise<void> }).share(data); return; }
+      catch { /* usuário cancelou */ return; }
+    }
+    try {
+      await navigator.clipboard.writeText(pageUrl);
+      toast.success("Link do recibo copiado", { description: pageUrl });
+    } catch {
+      toast.info(pageUrl);
+    }
+  }
+
+  async function printPdf() {
+    if (!currentReceipt) return;
+    try {
+      const { url } = await signedUrlFn({ data: { code: currentReceipt.code, variant: "original" } });
+      if (!url) { toast.error("PDF indisponível"); return; }
+      const w = window.open(url, "_blank", "noopener,noreferrer");
+      if (!w) toast.info("Permita pop-ups para imprimir diretamente");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao imprimir");
+    }
+  }
+
+  function continueLater() {
+    toast.info("Você pode retomar em Central da Moto, Passaporte ou Histórico de Recibos.");
+    setOpen(false);
+  }
+
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
@@ -394,7 +451,10 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
           <ReceiptLifecyclePanel
             receipt={currentReceipt} userId={currentUserId} loading={loading}
             onUpload={onUploadSigned} onAccept={onAccept} onComplete={onComplete}
-            onCancel={onCancel} onDownloadOriginal={downloadOriginal}
+            onCancel={onCancel}
+            onView={viewPdf} onDownload={downloadPdfBlob}
+            onShare={sharePdf} onPrint={printPdf}
+            onContinueLater={continueLater}
           />
         )}
 
