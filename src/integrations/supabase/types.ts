@@ -2346,72 +2346,45 @@ export type Database = {
       }
       public_receipt_validation: {
         Row: {
-          amount: string | null
-          buyer_cpf_masked: string | null
-          buyer_name: string | null
           code: string | null
           completed_at: string | null
           external_buyer: boolean | null
           has_signed_document: boolean | null
           issued_at: string | null
           moto_brand: string | null
-          moto_chassis: string | null
           moto_model: string | null
           moto_year_model: string | null
-          negotiation_date: string | null
-          negotiation_location: string | null
-          payment_method: string | null
           previous_receipt_id: string | null
-          seller_cpf_masked: string | null
-          seller_name: string | null
           sha256: string | null
           signed_at: string | null
           status: string | null
           version: number | null
         }
         Insert: {
-          amount?: never
-          buyer_cpf_masked?: never
-          buyer_name?: never
           code?: string | null
           completed_at?: string | null
           external_buyer?: boolean | null
           has_signed_document?: never
           issued_at?: string | null
           moto_brand?: never
-          moto_chassis?: never
           moto_model?: never
           moto_year_model?: never
-          negotiation_date?: never
-          negotiation_location?: never
-          payment_method?: never
           previous_receipt_id?: string | null
-          seller_cpf_masked?: never
-          seller_name?: never
           sha256?: string | null
           signed_at?: string | null
           status?: string | null
           version?: number | null
         }
         Update: {
-          amount?: never
-          buyer_cpf_masked?: never
-          buyer_name?: never
           code?: string | null
           completed_at?: string | null
           external_buyer?: boolean | null
           has_signed_document?: never
           issued_at?: string | null
           moto_brand?: never
-          moto_chassis?: never
           moto_model?: never
           moto_year_model?: never
-          negotiation_date?: never
-          negotiation_location?: never
-          payment_method?: never
           previous_receipt_id?: string | null
-          seller_cpf_masked?: never
-          seller_name?: never
           sha256?: string | null
           signed_at?: string | null
           status?: string | null
@@ -2840,24 +2813,15 @@ export type Database = {
       get_public_receipt: {
         Args: { _code: string }
         Returns: {
-          amount: string | null
-          buyer_cpf_masked: string | null
-          buyer_name: string | null
           code: string | null
           completed_at: string | null
           external_buyer: boolean | null
           has_signed_document: boolean | null
           issued_at: string | null
           moto_brand: string | null
-          moto_chassis: string | null
           moto_model: string | null
           moto_year_model: string | null
-          negotiation_date: string | null
-          negotiation_location: string | null
-          payment_method: string | null
           previous_receipt_id: string | null
-          seller_cpf_masked: string | null
-          seller_name: string | null
           sha256: string | null
           signed_at: string | null
           status: string | null
