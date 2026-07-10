@@ -286,6 +286,16 @@ function Passport() {
         </div>
       </div>
 
+      {/* Resumo do Histórico de Propriedade */}
+      <section className="space-y-3">
+        <h2 className="font-display text-lg font-bold">Histórico de propriedade</h2>
+        <ReceiptsSummaryRow
+          motoId={m.id}
+          isOwner={!!currentUserId && (m as any).owner_id === currentUserId}
+          count={(receipts.data ?? []).length}
+        />
+      </section>
+
       {/* Painel de saúde por categoria */}
       <section className="space-y-3">
         <h2 className="font-display text-lg font-bold">Painel de saúde</h2>
