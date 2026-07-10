@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { isValidCPF, maskCPF, onlyDigits } from "@/lib/br-validators";
 import { CheckCircle2, ChevronLeft, ChevronRight, IdCard, Info, ShieldAlert, Upload } from "lucide-react";
-import { useProfileSnapshot, useInvalidateProfileSnapshot } from "@/hooks/useProfileSnapshot";
+import { useProfileSnapshot } from "@/hooks/useProfileSnapshot";
 
 /**
  * Fluxo excepcional de alteração de CPF via suporte (Fase E).
@@ -29,7 +29,6 @@ const ACCEPT = ["image/jpeg", "image/png", "application/pdf"];
 function CpfChangePage() {
   const navigate = useNavigate();
   const profile = useProfileSnapshot();
-  const invalidateSnapshot = useInvalidateProfileSnapshot();
   const [step, setStep] = useState(0);
   const [reason, setReason] = useState("");
   const [newCpf, setNewCpf] = useState("");
@@ -103,7 +102,9 @@ function CpfChangePage() {
         throw new Error(rpcErr.message);
       }
 
-      invalidateSnapshot();
+      // Não invalidamos o snapshot aqui: o CPF só muda após aprovação do admin.
+      // A invalidação real acontece via refetchOnMount/refetchOnWindowFocus do
+      // `useProfileSnapshot` na próxima abertura do perfil / retomada do app.
       toast.success("Solicitação enviada. Acompanhe no chamado.");
       navigate({ to: "/tickets/$id", params: { id: ticket.id } });
     } catch (e) {

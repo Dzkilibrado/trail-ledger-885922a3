@@ -1,6 +1,71 @@
-# Fase E — Alteração de CPF via Suporte
+# Cadastro Completo — Fases A · B · D · E — HOMOLOGADAS E ENCERRADAS
 
-Fluxo excepcional, auditado, com aprovação administrativa. Usuário nunca altera CPF direto no perfil.
+Entrega oficialmente encerrada em 2026-07-10. Detalhes técnicos em
+[ADR 0006](../docs/adr/0006-cadastro-completo-fases.md) e no
+[CHANGELOG 1.3](../CHANGELOG.md).
+
+## Status por fase
+
+| Fase | Escopo | Status |
+| --- | --- | --- |
+| A | Modelo de dados + imutabilidade do CPF (`profiles`, `is_profile_complete`, trigger `profiles_lock_cpf`, backfill) | HOMOLOGADA |
+| B | Wizard `/complete-profile` (4 passos) + gate global no `_authenticated` com rotas permitidas fixas | HOMOLOGADA |
+| D | Reutilização automática via `useProfileSnapshot` + `<ProfileDataChip />` — princípio "Informar uma vez. Reutilizar sempre." | HOMOLOGADA |
+| E | Alteração de CPF via Suporte (`cpf_change_requests` + wizard `/tickets/cpf-change` + painel admin + `admin_approve_cpf_change`) | HOMOLOGADA E ENCERRADA |
+| F | Documentação funcional final (este arquivo, CHANGELOG 1.3, ADR 0006, `mem://features/alteracao-cpf`, `mem://principles/informar-uma-vez`) | CONCLUÍDA |
+
+## Rotas permitidas pelo gate (perfil incompleto)
+
+`/complete-profile`, `/help`, `/tickets`, `/tickets/new`, `/tickets/$id`,
+`/tickets/cpf-change`, `/faq`, `/privacy`, `/terms`, `/settings`, `/logout`.
+
+## Princípios permanentes reafirmados
+
+- CPF já validado é **imutável** para o usuário final. Única alteração
+  legítima: `admin_approve_cpf_change` (auditada, mascarada, notificada).
+- Módulos operacionais **consomem** `useProfileSnapshot`; nunca reperguntam
+  nem escrevem de volta.
+- Toda entrega passa pelo APH antes de ser considerada homologada
+  (ADR 0005).
+- CPF nunca aparece em claro em logs, auditoria, mensagens ou URLs.
+
+## Resumo de migrações
+
+- `profiles` estendido com campos obrigatórios do cadastro completo,
+  `profile_completed_at`, `cpf_locked_at`.
+- Trigger `profiles_lock_cpf` + função `is_profile_complete(uid)`.
+- Enum `cpf_change_status` e valor `cpf_change` em `ticket_type`.
+- Tabela `public.cpf_change_requests` com RLS estrita e trigger de auditoria.
+- Bucket privado `cpf-change-docs` (owner read/write, admin read via signed URL).
+- Funções `SECURITY DEFINER`: `mask_cpf`, `hash_cpf`,
+  `submit_cpf_change_request`, `admin_list_cpf_requests`,
+  `admin_cpf_request_detail`, `admin_request_more_info_cpf`,
+  `admin_reject_cpf_change`, `admin_approve_cpf_change`.
+- Grants explícitos em toda tabela pública nova; `SELECT (new_cpf)` revogado
+  para `authenticated`.
+
+## Checklist final
+
+- [x] Fase A homologada no APH.
+- [x] Fase B homologada no APH (gate + wizard + fast-path sem flicker).
+- [x] Fase D homologada no APH (reutilização automática).
+- [x] Fase E homologada no APH (14 cenários) + sincronização pós-aprovação.
+- [x] Console sem erros; `tsgo --noEmit` limpo.
+- [x] CHANGELOG 1.3 publicado.
+- [x] ADR 0006 registrado.
+- [x] Memórias `mem://features/alteracao-cpf` e
+      `mem://principles/informar-uma-vez` atualizadas.
+- [x] Documentação do cadastro atualizada neste plano.
+
+## Status oficial
+
+**Entrega Cadastro Completo — HOMOLOGADA E ENCERRADA (v1.3, 2026-07-10).**
+Não realizar novas alterações no gate, no wizard, no trigger de imutabilidade
+ou no fluxo de alteração de CPF sem nova solicitação formal.
+
+---
+
+## Histórico da Fase E (referência)
 
 ## Arquitetura
 
