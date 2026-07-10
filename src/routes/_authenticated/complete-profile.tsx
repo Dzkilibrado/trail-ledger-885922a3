@@ -234,9 +234,20 @@ function CompleteProfilePage() {
     const r = await persistPartial();
     if (!r.ok) { setSaving(false); if (r.error !== "conflict") toast.error(r.error ?? "Falha ao salvar"); return; }
     const { data: u } = await supabase.auth.getUser();
-    if (u.user) {
-      await supabase.from("profiles").update({ profile_completed_at: new Date().toISOString() }).eq("id", u.user.id);
+    if (!u.user) { setSaving(false); return; }
+    // Revalida completude no servidor — só marca `profile_completed_at`
+    // quando `missing` estiver vazio (fonte da verdade é o RPC).
+    const { data: comp } = await supabase.rpc("profile_completeness", { _user: u.user.id });
+    const remaining = (((comp ?? {}) as any).missing as string[] | undefined) ?? [];
+    if (remaining.length > 0) {
+      setSaving(false);
+      setMissing(remaining);
+      setPct(((comp ?? {}) as any).pct ?? pct);
+      const labels = remaining.map((m) => FIELD_LABELS[m] ?? m).join(", ");
+      toast.error(`Ainda faltam: ${labels}`);
+      return;
     }
+    await supabase.from("profiles").update({ profile_completed_at: new Date().toISOString() }).eq("id", u.user.id);
     setSaving(false);
     toast.success("Cadastro concluído!");
     navigate({ to: "/dashboard" as string });
