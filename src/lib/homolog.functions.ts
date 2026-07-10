@@ -87,7 +87,9 @@ export const seedHomologEnvironment = createServerFn({ method: "POST" })
       users: Array<{ key: string; email: string; user_id: string; created: boolean }>;
       motorcycles: Array<{ slug: string; id: string; owner_key: string; created: boolean; scenario: string }>;
       warnings: string[];
-    } = { users: [], motorcycles: [], warnings: [] };
+      enrichment: { warnings: string[] };
+      passwords: { updated: number; skipped: boolean };
+    } = { users: [], motorcycles: [], warnings: [], enrichment: { warnings: [] }, passwords: { updated: 0, skipped: true } };
 
     // 1) Usuários — listUsers para buscar por email (idempotente)
     // Nota: a Auth Admin API não expõe getUserByEmail; usamos listUsers paginado.
@@ -167,6 +169,20 @@ export const seedHomologEnvironment = createServerFn({ method: "POST" })
         created = true;
       }
       report.motorcycles.push({ slug: m.slug, id: id!, owner_key: m.ownerKey, created, scenario: m.scenario });
+    }
+
+    // 3) Enriquecimento idempotente (ownership, documentos, recibos, timeline, planos, certificados)
+    const motoMap: Record<string, string> = {};
+    for (const r of report.motorcycles) motoMap[r.slug] = r.id;
+    const userMap = keyToId as Record<"A" | "B" | "C" | "D" | "E", string>;
+
+    try {
+      const { enrichHomologEnvironment, normalizeHomologPasswords } = await import("./homolog-enrich.server");
+      const enr = await enrichHomologEnvironment(supabaseAdmin as never, userMap, motoMap);
+      report.enrichment = enr;
+      report.passwords = await normalizeHomologPasswords(supabaseAdmin as never, userMap);
+    } catch (e) {
+      report.warnings.push(`enrichment: ${(e as Error).message}`);
     }
 
     return { ok: true as const, report };
