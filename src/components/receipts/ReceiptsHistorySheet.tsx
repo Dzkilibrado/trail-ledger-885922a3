@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
 import { TBBottomSheet } from "@/design-system/overlays/TBBottomSheet";
 import { Button } from "@/components/ui/button";
 import { ReceiptStatusBadge } from "@/components/receipts/ReceiptStatusBadge";
@@ -6,7 +7,9 @@ import { EmitReceiptDialog } from "@/components/receipts/EmitReceiptDialog";
 import { useReceiptsForMoto } from "@/hooks/useActiveNegotiation";
 import { formatCurrencyBRL, formatIssuedAt, formatVersion } from "@/lib/smart-receipts";
 import type { ReceiptStatus } from "@/lib/smart-receipts";
-import { FileSignature, ExternalLink, ChevronRight } from "lucide-react";
+import { FileSignature, ExternalLink, ChevronRight, Download } from "lucide-react";
+import { getReceiptSignedUrl } from "@/lib/smart-receipts.functions";
+import { toast } from "sonner";
 
 export function ReceiptsHistorySheet({
   motoId,
@@ -19,6 +22,17 @@ export function ReceiptsHistorySheet({
 }) {
   const [open, setOpen] = useState(false);
   const { data: rows, isLoading } = useReceiptsForMoto(open ? motoId : undefined);
+  const signedUrlFn = useServerFn(getReceiptSignedUrl);
+
+  async function openPdf(code: string, variant: "signed" | "original") {
+    try {
+      const { url } = await signedUrlFn({ data: { code, variant } });
+      if (url) window.open(url, "_blank", "noopener,noreferrer");
+      else toast.error("PDF indisponível para este recibo");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao abrir PDF");
+    }
+  }
 
   return (
     <>
@@ -72,11 +86,20 @@ export function ReceiptsHistorySheet({
                       {formatIssuedAt(r.issued_at)}
                     </div>
                   </div>
-                  <Button size="sm" variant="outline" asChild>
-                    <a href={`/r/${r.code}`} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-3.5 w-3.5" /> Ver
-                    </a>
-                  </Button>
+                  <div className="flex flex-wrap gap-1.5">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => openPdf(r.code, r.status === "completed" ? "signed" : "original")}
+                    >
+                      <Download className="h-3.5 w-3.5" /> PDF
+                    </Button>
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={`/r/${r.code}`} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-3.5 w-3.5" /> Ver
+                      </a>
+                    </Button>
+                  </div>
                 </div>
               </li>
             ))}

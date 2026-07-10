@@ -4,10 +4,15 @@
  * arquitetura para novos tipos sem refatoração.
  */
 export const DOC_TYPES = [
-  { value: "invoice", label: "Nota Fiscal de Compra", icon: "🧾" },
+  { value: "bill_of_sale", label: "Recibo de Compra e Venda", icon: "🖋️" },
+  { value: "invoice", label: "Nota Fiscal", icon: "🧾" },
   { value: "manual", label: "Manual do Proprietário", icon: "📘" },
   { value: "warranty", label: "Certificado de Garantia", icon: "🛡️" },
   { value: "import", label: "Documento de Importação", icon: "🌍" },
+  { value: "certificate", label: "Certificado", icon: "🏅" },
+  { value: "workshop_receipt", label: "Comprovante de Oficina", icon: "🔧" },
+  { value: "inspection_report", label: "Laudo", icon: "📋" },
+  { value: "photo", label: "Foto", icon: "🖼️" },
   { value: "contract", label: "Contrato", icon: "📝" },
   { value: "other", label: "Outro documento", icon: "📄" },
 ] as const;

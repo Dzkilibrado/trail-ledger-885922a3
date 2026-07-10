@@ -20,8 +20,8 @@ import {
   getReceiptSignedUrl,
 } from "@/lib/smart-receipts.functions";
 import { toast } from "sonner";
-import { FileSignature, Search, ArrowLeft, ArrowRight, CheckCircle2, Upload, Download, XCircle } from "lucide-react";
-import { formatCurrencyBRL, RECEIPT_STATUS_LABEL, type ReceiptStatus } from "@/lib/smart-receipts";
+import { FileSignature, Search, ArrowLeft, ArrowRight, CheckCircle2, Upload, Download, XCircle, Eye, Share2, Printer, Clock } from "lucide-react";
+import { formatCurrencyBRL, publicReceiptUrl, RECEIPT_STATUS_LABEL, type ReceiptStatus } from "@/lib/smart-receipts";
 
 const PAYMENT_METHODS = ["Dinheiro", "PIX", "Transferência bancária", "Financiamento", "Cartão", "Outro"];
 
@@ -271,6 +271,63 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     }
   }
 
+  async function viewPdf() { await downloadOriginal(); }
+
+  async function downloadPdfBlob() {
+    if (!currentReceipt) return;
+    try {
+      const { url } = await signedUrlFn({ data: { code: currentReceipt.code, variant: "original" } });
+      if (!url) { toast.error("PDF indisponível"); return; }
+      const resp = await fetch(url);
+      const blob = await resp.blob();
+      const a = document.createElement("a");
+      const href = URL.createObjectURL(blob);
+      a.href = href;
+      a.download = `${currentReceipt.code}.pdf`;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(href), 5_000);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha no download");
+    }
+  }
+
+  async function sharePdf() {
+    if (!currentReceipt) return;
+    const pageUrl = publicReceiptUrl(currentReceipt.code);
+    const data = {
+      title: `Recibo TrailBook ${currentReceipt.code}`,
+      text: `Recibo Inteligente TrailBook — valide em ${pageUrl}`,
+      url: pageUrl,
+    };
+    if (typeof navigator !== "undefined" && (navigator as Navigator & { share?: (d: ShareData) => Promise<void> }).share) {
+      try { await (navigator as Navigator & { share: (d: ShareData) => Promise<void> }).share(data); return; }
+      catch { /* usuário cancelou */ return; }
+    }
+    try {
+      await navigator.clipboard.writeText(pageUrl);
+      toast.success("Link do recibo copiado", { description: pageUrl });
+    } catch {
+      toast.info(pageUrl);
+    }
+  }
+
+  async function printPdf() {
+    if (!currentReceipt) return;
+    try {
+      const { url } = await signedUrlFn({ data: { code: currentReceipt.code, variant: "original" } });
+      if (!url) { toast.error("PDF indisponível"); return; }
+      const w = window.open(url, "_blank", "noopener,noreferrer");
+      if (!w) toast.info("Permita pop-ups para imprimir diretamente");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Falha ao imprimir");
+    }
+  }
+
+  function continueLater() {
+    toast.info("Você pode retomar em Central da Moto, Passaporte ou Histórico de Recibos.");
+    setOpen(false);
+  }
+
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
@@ -394,7 +451,10 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
           <ReceiptLifecyclePanel
             receipt={currentReceipt} userId={currentUserId} loading={loading}
             onUpload={onUploadSigned} onAccept={onAccept} onComplete={onComplete}
-            onCancel={onCancel} onDownloadOriginal={downloadOriginal}
+            onCancel={onCancel}
+            onView={viewPdf} onDownload={downloadPdfBlob}
+            onShare={sharePdf} onPrint={printPdf}
+            onContinueLater={continueLater}
           />
         )}
 
@@ -430,20 +490,61 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
 }
 
 function ReceiptLifecyclePanel({
-  receipt, userId, loading, onUpload, onAccept, onComplete, onCancel, onDownloadOriginal,
+  receipt, userId, loading, onUpload, onAccept, onComplete, onCancel,
+  onView, onDownload, onShare, onPrint, onContinueLater,
 }: {
   receipt: ReceiptRow; userId: string | null; loading: boolean;
   onUpload: (f: File) => void; onAccept: () => void; onComplete: () => void;
-  onCancel: () => void; onDownloadOriginal: () => void;
+  onCancel: () => void;
+  onView: () => void; onDownload: () => void; onShare: () => void; onPrint: () => void;
+  onContinueLater: () => void;
 }) {
   const isSeller = userId === receipt.seller_id;
   const isBuyer = userId === receipt.buyer_id;
   const needsBuyerAccept = !!receipt.buyer_id;
   const canComplete = !!receipt.signed_pdf_path && !!receipt.seller_accepted_at && (!needsBuyerAccept || !!receipt.buyer_accepted_at);
   const label = RECEIPT_STATUS_LABEL[(receipt.status as ReceiptStatus)] ?? receipt.status;
+  const justIssued = receipt.status === "issued" && !receipt.signed_pdf_path;
 
   return (
     <div className="space-y-4 text-sm">
+      {justIssued && (
+        <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-4">
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-full bg-emerald-500/20 text-emerald-300">
+              <CheckCircle2 className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="font-display text-base font-bold text-emerald-300">Recibo gerado com sucesso</div>
+              <div className="mt-0.5 text-xs text-muted-foreground">
+                Código <span className="font-mono font-semibold text-foreground">{receipt.code}</span>. O PDF já está salvo — você o encontra na Central da Moto, no Passaporte, na Timeline e no Histórico de Recibos.
+              </div>
+            </div>
+          </div>
+          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <Button size="sm" variant="outline" onClick={onView} disabled={loading} className="h-10 justify-start">
+              <Eye className="h-4 w-4" /> Visualizar PDF
+            </Button>
+            <Button size="sm" variant="outline" onClick={onDownload} disabled={loading} className="h-10 justify-start">
+              <Download className="h-4 w-4" /> Baixar PDF
+            </Button>
+            <Button size="sm" variant="outline" onClick={onShare} disabled={loading} className="h-10 justify-start">
+              <Share2 className="h-4 w-4" /> Compartilhar
+            </Button>
+            <Button size="sm" variant="outline" onClick={onPrint} disabled={loading} className="h-10 justify-start">
+              <Printer className="h-4 w-4" /> Imprimir
+            </Button>
+            <label className="inline-flex h-10 cursor-pointer items-center justify-start gap-2 rounded-md border border-border bg-background px-3 text-xs font-medium hover:bg-muted">
+              <Upload className="h-4 w-4" /> Anexar assinado
+              <input type="file" accept="application/pdf" hidden onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])} disabled={loading} />
+            </label>
+            <Button size="sm" variant="ghost" onClick={onContinueLater} disabled={loading} className="h-10 justify-start">
+              <Clock className="h-4 w-4" /> Continuar depois
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
         <div className="text-[11px] uppercase tracking-widest text-primary">Recibo {receipt.code}</div>
         <div className="mt-1 text-xs text-muted-foreground">Estado: <strong className="text-foreground">{label}</strong></div>
@@ -455,9 +556,20 @@ function ReceiptLifecyclePanel({
             <div className="font-semibold">1. Documento original (para assinar)</div>
             <div className="text-xs text-muted-foreground">PDF modelo — imprima ou assine digitalmente.</div>
           </div>
-          <Button size="sm" variant="outline" onClick={onDownloadOriginal}>
-            <Download className="h-4 w-4" /> Baixar
-          </Button>
+          <div className="flex flex-wrap gap-1.5">
+            <Button size="sm" variant="outline" onClick={onView}>
+              <Eye className="h-4 w-4" /> Ver
+            </Button>
+            <Button size="sm" variant="outline" onClick={onDownload}>
+              <Download className="h-4 w-4" /> Baixar
+            </Button>
+            <Button size="sm" variant="outline" onClick={onShare}>
+              <Share2 className="h-4 w-4" /> Compartilhar
+            </Button>
+            <Button size="sm" variant="outline" onClick={onPrint}>
+              <Printer className="h-4 w-4" /> Imprimir
+            </Button>
+          </div>
         </div>
       </div>
 
