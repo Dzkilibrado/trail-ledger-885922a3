@@ -454,6 +454,15 @@ export function MotoControlCenter({ id }: { id: string }) {
       <MotorcycleDocuments motorcycleId={m.id} />
 
       <section className="space-y-3">
+        <h2 className="font-display text-lg font-bold">Recibos & Transferências</h2>
+        <ReceiptsSummaryRow
+          motoId={m.id}
+          isOwner={isOwner && !isArchived}
+          count={(receiptsForMoto.data ?? []).length}
+        />
+      </section>
+
+      <section className="space-y-3">
         <div className="flex items-baseline justify-between">
           <h2 className="font-display text-lg font-bold">Saúde da moto</h2>
           <Link to="/motorcycles/$id/health" params={{ id: m.id }} className="text-xs text-primary hover:underline">
