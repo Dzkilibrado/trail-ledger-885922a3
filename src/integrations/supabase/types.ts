@@ -1851,75 +1851,102 @@ export type Database = {
       smart_receipts: {
         Row: {
           bucket: string | null
+          buyer_accepted_at: string | null
           buyer_id: string | null
           buyer_snapshot: Json
           cancel_reason: string | null
           cancelled_at: string | null
+          cancelled_reason: string | null
           code: string
+          completed_at: string | null
           created_at: string
           created_by: string
+          external_buyer: boolean
           id: string
           issued_at: string | null
           motorcycle_id: string
           motorcycle_snapshot: Json
           negotiation: Json
+          original_pdf_path: string | null
           pdf_path: string | null
           previous_receipt_id: string | null
           qr_path: string | null
+          revoked_at: string | null
+          revoked_reason: string | null
+          seller_accepted_at: string | null
           seller_id: string | null
           seller_snapshot: Json
           sha256: string | null
           signed_at: string | null
+          signed_pdf_path: string | null
           status: string
           updated_at: string
           version: number
         }
         Insert: {
           bucket?: string | null
+          buyer_accepted_at?: string | null
           buyer_id?: string | null
           buyer_snapshot?: Json
           cancel_reason?: string | null
           cancelled_at?: string | null
+          cancelled_reason?: string | null
           code: string
+          completed_at?: string | null
           created_at?: string
           created_by?: string
+          external_buyer?: boolean
           id?: string
           issued_at?: string | null
           motorcycle_id: string
           motorcycle_snapshot?: Json
           negotiation?: Json
+          original_pdf_path?: string | null
           pdf_path?: string | null
           previous_receipt_id?: string | null
           qr_path?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          seller_accepted_at?: string | null
           seller_id?: string | null
           seller_snapshot?: Json
           sha256?: string | null
           signed_at?: string | null
+          signed_pdf_path?: string | null
           status?: string
           updated_at?: string
           version?: number
         }
         Update: {
           bucket?: string | null
+          buyer_accepted_at?: string | null
           buyer_id?: string | null
           buyer_snapshot?: Json
           cancel_reason?: string | null
           cancelled_at?: string | null
+          cancelled_reason?: string | null
           code?: string
+          completed_at?: string | null
           created_at?: string
           created_by?: string
+          external_buyer?: boolean
           id?: string
           issued_at?: string | null
           motorcycle_id?: string
           motorcycle_snapshot?: Json
           negotiation?: Json
+          original_pdf_path?: string | null
           pdf_path?: string | null
           previous_receipt_id?: string | null
           qr_path?: string | null
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          seller_accepted_at?: string | null
           seller_id?: string | null
           seller_snapshot?: Json
           sha256?: string | null
           signed_at?: string | null
+          signed_pdf_path?: string | null
           status?: string
           updated_at?: string
           version?: number
@@ -2323,6 +2350,9 @@ export type Database = {
           buyer_cpf_masked: string | null
           buyer_name: string | null
           code: string | null
+          completed_at: string | null
+          external_buyer: boolean | null
+          has_signed_document: boolean | null
           issued_at: string | null
           moto_brand: string | null
           moto_chassis: string | null
@@ -2344,6 +2374,9 @@ export type Database = {
           buyer_cpf_masked?: never
           buyer_name?: never
           code?: string | null
+          completed_at?: string | null
+          external_buyer?: boolean | null
+          has_signed_document?: never
           issued_at?: string | null
           moto_brand?: never
           moto_chassis?: never
@@ -2365,6 +2398,9 @@ export type Database = {
           buyer_cpf_masked?: never
           buyer_name?: never
           code?: string | null
+          completed_at?: string | null
+          external_buyer?: boolean | null
+          has_signed_document?: never
           issued_at?: string | null
           moto_brand?: never
           moto_chassis?: never
@@ -2763,10 +2799,13 @@ export type Database = {
         Args: { _moto_id: string }
         Returns: {
           amount: number
+          buyer_accepted: boolean
           buyer_name: string
           code: string
           created_at: string
+          has_signed_document: boolean
           id: string
+          seller_accepted: boolean
           status: string
           version: number
         }[]
@@ -2804,6 +2843,9 @@ export type Database = {
           buyer_cpf_masked: string | null
           buyer_name: string | null
           code: string | null
+          completed_at: string | null
+          external_buyer: boolean | null
+          has_signed_document: boolean | null
           issued_at: string | null
           moto_brand: string | null
           moto_chassis: string | null
@@ -2827,7 +2869,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      get_receipt_pdf_path: { Args: { _code: string }; Returns: string }
+      get_receipt_pdf_path: {
+        Args: { _code: string; _prefer_signed?: boolean }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
