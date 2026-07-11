@@ -632,13 +632,18 @@ function UploadDialog({
         if (up.error) { toast.error(`${it.file.name}: ${up.error.message}`); continue; }
         const hash = await sha256Hex(it.file).catch(() => null);
         const isOrigin = originMode && ORIGIN_DOC_TYPES.includes(it.docType as OriginDocType);
-        // Se já existir um documento de origem ativo, desmarca-o para manter unicidade.
+        // Preservação de histórico (princípio TrailBook — Prontuário Digital):
+        // NUNCA excluímos, sobrescrevemos ou removemos o arquivo do documento
+        // de origem anterior. Apenas desmarcamos as flags de "atual" e "origem"
+        // — o registro, o arquivo, o autor, a data e a auditoria permanecem
+        // intactos e consultáveis na Central de Documentos / linha do tempo.
         if (isOrigin) {
           await supabase
             .from("motorcycle_documents" as never)
-            .update({ is_origin_document: false } as never)
+            .update({ is_origin_document: false, is_current: false } as never)
             .eq("motorcycle_id", motorcycleId)
-            .eq("is_origin_document", true as never);
+            .eq("is_origin_document", true as never)
+            .is("deleted_at", null);
         }
         const { error } = await supabase.from("motorcycle_documents" as never).insert({
           motorcycle_id: motorcycleId,
