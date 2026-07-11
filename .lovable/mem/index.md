@@ -12,6 +12,7 @@
 - Ambiente Permanente de Homologação (APH): contas `@homolog.trailbook.test` + motos `[HOMOLOG]` marcadas com `is_homologation=true`. Operado em `/admin/homolog`. Toda feature nova ganha ao menos um cenário aqui antes de homologar. NÃO confundir com Demo Mode (futuro, uso comercial).
 - Smart Receipt Fase 1.2 está HOMOLOGADA E ENCERRADA (2026-07-10). Não alterar `smart_receipts.*`, triggers `on_smart_receipt_completed` / `smart_receipts_supersede_previous` / `generate_smart_receipt_code`, RPC `get_public_receipt`, rota `/r/:code` nem `src/lib/smart-receipts*` sem nova solicitação formal. Detalhes em CHANGELOG.md.
 - Preservação de histórico é princípio permanente (`mem://principles/preservacao-historico`): substituir documento NUNCA apaga o anterior — só rebaixa `is_current`/`is_origin_document`. Arquivo, autor, data e auditoria permanecem intactos.
+- Selos de Qualidade do Histórico (`mem://features/selos-qualidade`, ADR 0007): registry declarativo em `src/lib/badges/registry.ts` + motor puro `evaluateBadges`. Selos são DERIVADOS de evidências (nunca armazenados/manuais); adicionar selo = adicionar objeto no registry, sem tocar em componentes.
 
 ## Memories
 - [Diretrizes de desenvolvimento](mem://standards/dev-directives) — Padrões obrigatórios (18 pontos) aplicáveis a toda nova funcionalidade v1.0.1+
@@ -23,3 +24,5 @@
 - [Alteração de CPF via Suporte](mem://features/alteracao-cpf) — fluxo excepcional auditado; `admin_approve_cpf_change` é a única forma legítima de trocar CPF já validado
 - [ADR 0006 — Cadastro Completo (Fases A · B · D · E)](docs/adr/0006-cadastro-completo-fases.md) — entrega v1.3 encerrada; gate, wizard, imutabilidade do CPF, reutilização automática e alteração via suporte
 - [Preservação de Histórico](mem://principles/preservacao-historico) — Prontuário Digital: substituição só alterna "atual", nunca destrói registro/arquivo/auditoria
+- [Selos de Qualidade do Histórico](mem://features/selos-qualidade) — Fase 1: registry + motor + hooks + UI reusável; integrado em Central, Passaporte, Saúde e Documentos
+- [ADR 0007 — Selos de Qualidade do Histórico](docs/adr/0007-selos-qualidade-historico.md) — fundação arquitetural, princípios invioláveis, roadmap Fase 2
