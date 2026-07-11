@@ -163,7 +163,7 @@ function QuickActions({ motoId }: { motoId: string }) {
     { to: "/motorcycles/$id/passport", icon: Award, label: "Selos" },
     { to: "/motorcycles/$id/health", icon: Heart, label: "Saúde" },
     { to: "/motorcycles/$id/plan", icon: Wrench, label: "Manutenções" },
-    { to: "/motorcycles/$id/index", icon: FolderOpen, label: "Histórico" },
+    { to: "/motorcycles/$id", icon: FolderOpen, label: "Cockpit" },
   ] as const;
   return (
     <section aria-label="Atalhos rápidos">

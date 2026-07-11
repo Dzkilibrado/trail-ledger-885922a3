@@ -26,3 +26,5 @@ Aplicar a TODA nova tela, módulo ou funcionalidade. Verificar antes de concluir
 18. **Inteligência de produto** — sugerir melhorias consistentes com o produto. Se não altera escopo, implementar e registrar no changelog. Se altera comportamento relevante, validar antes.
 
 **Objetivo:** TrailBook evolui com padrão único de arquitetura, segurança, UX e qualidade.
+
+**A partir de v1.5:** homologação exige também o checklist da [Regra Permanente de Qualidade](mem://standards/qualidade-oficial) (ADR 0008) e a [Linguagem oficial da UI](mem://principles/linguagem-oficial).
