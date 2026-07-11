@@ -1,8 +1,10 @@
 ---
 name: Selos de Qualidade do Histórico
-description: Registry declarativo + motor puro de avaliação; selos são DERIVADOS de evidências, nunca armazenados
+description: Fase 1 HOMOLOGADA E ENCERRADA — registry declarativo + motor puro; selos DERIVADOS de evidências
 type: feature
 ---
+
+> **Status:** Fase 1 homologada em 2026-07-11. Alterações futuras neste módulo devem entrar como nova fase.
 
 Selos de Qualidade do Histórico são um dos pilares estratégicos do
 TrailBook — traduzem evidências reais do banco em indicadores visuais de
@@ -48,16 +50,30 @@ confiança para o comprador ("Carfax das motos off-road brasileiras").
 
 ## Onde já está integrado
 
-- Central da Moto (`BadgeSection` compact)
-- Passaporte Digital (`BadgeSection` full — visão pública)
-- Saúde da Moto (`SingleBadgeChip` — Manutenção em Dia + Origem Comprovada)
-- Central de Documentos (`SingleBadgeChip` — Origem + Documentação Completa)
+- **Central da Moto**: `BadgeSection` compact — resumo enxuto + CTA "Ver todos os selos".
+- **Passaporte Digital**: `BadgeGrid` full — visão completa e pública dos selos.
+- **Saúde da Moto**: `SingleBadgeChip` — Manutenção em Dia + Origem Comprovada.
+- **Central de Documentos**: `SingleBadgeChip` — Origem + Documentação Completa.
+
+## Homologação Fase 1 — APROVADA
+
+Cenários validados no APH:
+
+- **M1** (moto nova sem histórico): nenhum selo conquistado; todos `locked`/`partial` com critérios claros; score 0. ✅
+- **M2** (histórico completo): conquista de origem, documentação, cadeia e `history_complete`; demais conforme dados. ✅
+- **M4** (pendências): selos parciais com critérios atendidos/pendentes + progresso. ✅
+- **M8** (manutenção vencida): perda imediata de `maintenance_on_track`; retorno após regularização. ✅
+
+Validado também: determinismo, reatividade automática, consistência entre
+superfícies, mobile, console limpo, typecheck e build de produção limpos.
 
 ## Fase 2 (planejada, não implementar sem solicitação)
 
 - Snapshot congelado em certificado imutável.
 - "Conquistado em" (data) com trilha de auditoria — apenas quando exigir
   histórico legal, ex.: certificação emitida.
+- Selos de validação humana/parceiros (incluindo eventual "Verificado pelo
+  TrailBook" quando existir processo real).
 - Integração com Índice de Conservação e Índice de Confiabilidade (fórmulas
   próprias — não misturar sem ADR).
 - Notificações "você acabou de conquistar o selo X".
