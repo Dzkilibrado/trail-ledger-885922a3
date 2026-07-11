@@ -1,6 +1,8 @@
-# Selos de Qualidade do Histórico — Fase 1 (Fundação)
+# Selos de Qualidade do Histórico — Fase 1 (Fundação) — **HOMOLOGADA E ENCERRADA**
 
 Entrega focada em **arquitetura escalável + primeiros selos reais**, integrada onde já há valor imediato. Nada de conquista manual — todos são avaliados automaticamente a partir de evidências que já existem no banco.
+
+> **Status:** Fase 1 homologada em 2026-07-11. Alterações futuras neste módulo devem entrar como nova fase.
 
 ## Princípios
 
@@ -16,11 +18,13 @@ Todos derivados de dados que já existem:
 
 1. **Origem Comprovada** — `is_origin_document = true` ativo. (Substitui o `OriginProvenBadge` atual usando o mesmo registry.)
 2. **Documentação Completa** — todos os `RECOMMENDED_DOC_TYPES` presentes e ativos.
-3. **Histórico Cronológico** — timeline com ≥ N eventos e sem lacunas grandes desde o cadastro.
-4. **Manutenção em Dia** — nenhum item do plano em atraso (usa `src/lib/til/health.ts`).
-5. **Cadeia de Propriedade Íntegra** — `ownership_history` sem gaps + toda transferência registrada.
-6. **Fotos Oficiais** — ao menos 1 foto por ângulo obrigatório.
-7. **Verificado pelo TrailBook** — combinação: Origem + Documentação Completa + Cadeia Íntegra (selo "gold" agregador).
+3. **Histórico Cronológico** — timeline com ≥ 5 eventos e primeiro evento registrado.
+4. **Manutenção em Dia** — nenhum item do plano em atraso e sem alerta alto (usa `src/lib/til/health.ts`).
+5. **Cadeia de Propriedade Íntegra** — `ownership_history` sem gaps + owner atual aberto.
+6. **Fotos Oficiais** — capa definida + ≥ 3 fotos.
+7. **Histórico Completo** — agregador automático: Origem + Documentação Completa + Cadeia Íntegra.
+
+> **Nota:** "Verificado pelo TrailBook" foi deliberadamente removido da Fase 1. Só retorna quando houver processo real de validação humana/parceiros.
 
 Cada selo publica critérios legíveis: "✔ Nota Fiscal anexada", "✖ Manual do proprietário pendente", etc.
 
@@ -75,32 +79,40 @@ type BadgeEvaluation = BadgeDefinition & ReturnType<BadgeDefinition["evaluate"]>
 
 ## Integrações desta fase
 
-- **Central da Moto**: `BadgeSection` com chips ganhos (colapsa parciais/bloqueados atrás de "ver todos").
+- **Central da Moto**: `BadgeSection` compact — resumo enxuto dos selos conquistados + CTA "Ver todos os selos" para o Passaporte.
 - **Passaporte Digital**: `BadgeGrid` completo (público — o que aumenta valor para comprador).
-- **Certificados**: chips embutidos no cabeçalho do certificado + linha detalhando cada selo no PDF (usa `src/lib/cert-pdf.ts`).
-- **Saúde da Moto**: destaque do selo "Manutenção em Dia" ligado ao índice atual da TIL.
+- **Saúde da Moto**: `SingleBadgeChip` de Manutenção em Dia + Origem Comprovada.
 - **Documentos**: substitui o `OriginProvenBadge` atual pelo chip do registry (mesma UI, fonte única).
 
-Índices de Conservação e Confiabilidade ficam para uma sub-entrega: exigem definição de fórmula própria e não devem entrar sem uma passada dedicada.
+> Certificados e Índices de Conservação/Confiabilidade ficam para Fase 2+: exigem definição de fórmula própria e não devem entrar sem uma passada dedicada.
 
 ## Fora de escopo (Fase 2+)
 
 - Persistência histórica de conquistas ("conquistado em"), notificações de novo selo, gamificação, ranking, badges pagos, compartilhamento social. Todos ficam viáveis sobre esta fundação sem refatorar.
 - Registrar snapshot em banco só quando surgir necessidade real (ex.: certificado imutável precisar congelar o selo naquela data).
 
-## Homologação
+## Homologação — **APROVADA**
 
-- Cenários no APH: M1 (nenhum selo), M2 (histórico completo — deve ganhar quase todos), M4 (pendências — parciais claros), M8 (manutenção vencida — perde "Manutenção em Dia").
+- **M1** (moto nova sem histórico): nenhum selo conquistado; todos em `locked`/`partial` com critérios claros; score 0.
+- **M2** (histórico completo): conquista de `origin_proven`, `documentation_complete`, `ownership_chain_intact` e `history_complete`; demais conforme dados.
+- **M4** (pendências): selos parciais exibem critérios atendidos/pendentes + progresso.
+- **M8** (manutenção vencida): perda imediata de `maintenance_on_track` ao vencer item; retorno após regularização.
 - Snapshot determinístico: dado o mesmo dado, mesma avaliação.
-- Typecheck + build de produção limpos.
+- Reatividade automática a mudanças de dados sem refresh manual.
+- Consistência entre Central, Passaporte, Saúde e Documentos.
+- Typecheck + build de produção limpos; console limpo; mobile sem cortes.
 - Sem regressão em Central, Passaporte, Documentos, Smart Receipt.
 
-## Entregáveis
+## Entregáveis concluídos
 
-1. `src/lib/badges/*` (registry + evaluator + critérios).
+1. `src/lib/badges/*` (registry + evaluator).
 2. `useMotorcycleEvidence` + `useMotorcycleBadges`.
-3. `BadgeChip / BadgeGrid / BadgeTooltip / BadgeSection`.
-4. Integração nas 5 superfícies acima.
-5. Migração do atual `OriginProvenBadge` para consumir o registry (sem duplicidade).
-6. ADR novo: **ADR 0007 — Selos de Qualidade do Histórico** documentando registry, motor e princípio "selos são derivados de evidências".
+3. `BadgeChip / BadgeGrid / BadgeTooltip / BadgeSection / SingleBadgeChip`.
+4. Integração em Central, Passaporte, Saúde e Documentos.
+5. Migração do `OriginProvenBadge` para o registry.
+6. **ADR 0007** documentando registry, motor e princípios.
 7. Registro em memória: `mem://features/selos-qualidade` + entrada no core do índice.
+
+## Próximas fases (não implementar sem solicitação)
+
+- Fase 2: persistência histórica de conquistas, notificações, snapshot em certificado imutável, selos de validação humana/parceiros (incluindo eventual "Verificado pelo TrailBook"), índices de Conservação/Confiabilidade.

@@ -1,9 +1,10 @@
 # ADR 0007 — Selos de Qualidade do Histórico
 
-**Status:** Aceito · v1.0 (Fase 1 — Fundação)
+**Status:** Aceito · v1.1 (Fase 1 — Fundação) — **HOMOLOGADA E ENCERRADA**
 **Data:** 2026-07-11
 
-**Revisão v1.1 (2026-07-11)** — Homologação Fase 1:
+## Revisão v1.1 (2026-07-11) — Homologação Fase 1
+
 - Removido o selo `trailbook_verified` ("Verificado pelo TrailBook") do
   Registry desta fase. Ele transmitia ao usuário e ao comprador que a moto
   passou por processo oficial de validação (conferência documental,
@@ -17,6 +18,8 @@
 - Rótulos de tier (Bronze/Prata/Ouro/Signature) não são exibidos na UI
   nesta fase — a arquitetura permanece pronta para reintroduzí-los junto
   com selos futuros de validação real.
+- **Fase 1 homologada** no APH com os cenários M1, M2, M4 e M8. Alterações
+  futuras neste módulo devem entrar como nova fase.
 
 ## Contexto
 
@@ -65,9 +68,12 @@ Introduzir **Selos de Qualidade do Histórico** como uma camada derivada:
 
 ## Consequência
 
-- Passaporte Digital agora exibe a grade completa como diferencial público
-  para o comprador.
-- Central, Saúde e Documentos usam chips do mesmo registry — visual único.
+- Passaporte Digital exibe a grade completa (`BadgeGrid`) como diferencial
+  público para o comprador — visão completa dos selos.
+- Central da Moto e Saúde da Moto usam resumo enxuto (`BadgeSection`
+  compact / `SingleBadgeChip`) com CTA para o Passaporte.
+- Central de Documentos usa `SingleBadgeChip` para Origem + Documentação
+  Completa.
 - `OriginProvenBadge` foi removido em favor do chip `origin_proven` do
   registry (fonte única).
 - Persistência de conquista, notificações e integração com Certificados PDF
@@ -89,3 +95,30 @@ Introduzir **Selos de Qualidade do Histórico** como uma camada derivada:
   inspeção técnica ou auditoria oficial. Enquanto não existir, o selo
   **não** aparece na UI, **não** é concedido automaticamente, **não** vai
   para Certificados nem Passaporte.
+
+## Homologação
+
+Fase 1 homologada no **Ambiente Permanente de Homologação (APH)** em
+2026-07-11. Cenários validados:
+
+| Cenário | Moto | Resultado esperado | Resultado obtido |
+|---|---|---|---|
+| M1 | Nova, sem histórico | Nenhum selo conquistado; todos `locked`/`partial` com critérios claros; score 0 | ✅ Aprovado |
+| M2 | Histórico completo | Conquista de origem, documentação, cadeia e agregador `history_complete`; demais conforme dados | ✅ Aprovado |
+| M4 | Pendências diversas | Selos parciais com critérios atendidos/pendentes + barra de progresso | ✅ Aprovado |
+| M8 | Manutenção vencida | Perda imediata de `maintenance_on_track` ao vencer item; retorno após regularização | ✅ Aprovado |
+
+Validado adicionalmente: determinismo do snapshot, reatividade automática a
+mudanças de dados, consistência entre Central/Passaporte/Saúde/Documentos,
+mobile sem cortes, console limpo, `tsgo --noEmit` limpo e build de produção
+limpa.
+
+## Regras permanentes
+
+1. Selos são **derivados**, nunca armazenados em tabela (Fase 1).
+2. Nunca criar endpoint / ação para conceder ou revogar selo manualmente.
+3. Novo selo = novo objeto no registry. Se um selo exigir mudança em
+   `BadgeChip`/`BadgeGrid`/`BadgeSection`, o design do registry falhou.
+4. "Verificado pelo TrailBook" só volta com processo real de validação
+   humana/parceiros.
+5. Alterações futuras neste módulo devem entrar como **nova fase**.
