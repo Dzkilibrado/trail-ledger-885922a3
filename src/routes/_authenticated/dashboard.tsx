@@ -1,22 +1,28 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, Activity, Wrench, Calendar, TrendingUp, ChevronDown, ChevronUp, Bike } from "lucide-react";
+import { Plus, Activity, ChevronDown, ChevronUp, Bike, Share2, ShieldCheck, FileSignature, Award, FolderOpen, Heart, Wrench, HelpCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StoragePhoto } from "@/components/StoragePhoto";
 import { EventTypeIcon } from "@/components/EventTypeIcon";
-import { brl, EVENT_TYPE_LABEL, formatDate } from "@/lib/trailbook";
+import { EVENT_TYPE_LABEL, formatDate, brl } from "@/lib/trailbook";
 import { ActiveMotoCard } from "@/components/ActiveMotoCard";
 import { DocumentPendenciesCard } from "@/components/DocumentPendenciesCard";
+import { WhatsNewCard } from "@/components/WhatsNewCard";
+import { useActiveMotorcycle } from "@/hooks/useActiveMotorcycle";
 import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — TrailBook" }] }),
+  head: () => ({ meta: [
+    { title: "Início — TrailBook" },
+    { name: "description", content: "Seu painel do TrailBook: motos, pendências, novidades e atalhos rápidos." },
+  ] }),
   component: Dashboard,
 });
 
 function Dashboard() {
   const [showAll, setShowAll] = useState(false);
+  const { activeId } = useActiveMotorcycle();
   const motos = useQuery({
     queryKey: ["motorcycles"],
     queryFn: async () => {
@@ -42,9 +48,13 @@ function Dashboard() {
     },
   });
 
-  const totalHours = motos.data?.reduce((s, m) => s + Number(m.hours_total), 0) ?? 0;
-  const totalKm = motos.data?.reduce((s, m) => s + Number(m.km_total), 0) ?? 0;
+  const totalMotos = motos.data?.length ?? 0;
   const totalCost = events.data?.reduce((s, e) => s + (Number(e.cost) || 0), 0) ?? 0;
+
+  // Prioridade: moto ativa; fallback: primeira moto.
+  const focusMotoId = activeId && motos.data?.some((m) => m.id === activeId)
+    ? activeId
+    : motos.data?.[0]?.id ?? null;
 
   if (motos.isLoading) return <div className="text-muted-foreground">Carregando…</div>;
 
@@ -53,25 +63,32 @@ function Dashboard() {
       <div className="surface-elevated rounded-2xl p-10 text-center">
         <h2 className="font-display text-2xl font-bold">Bem-vindo ao TrailBook</h2>
         <p className="mt-2 text-muted-foreground">Cadastre sua primeira moto para começar o histórico.</p>
-        <Link to="/motorcycles/new" className="mt-6 inline-block">
-          <Button className="btn-glow"><Plus className="h-4 w-4" /> Cadastrar moto</Button>
-        </Link>
+        <div className="mt-6 flex flex-wrap justify-center gap-2">
+          <Link to="/motorcycles/new">
+            <Button className="btn-glow"><Plus className="h-4 w-4" /> Cadastrar moto</Button>
+          </Link>
+          <Link to="/como-funciona">
+            <Button variant="outline"><HelpCircle className="h-4 w-4" /> Como funciona</Button>
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-8">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricCard icon={Activity} label="Motos" value={String(motos.data?.length ?? 0)} />
-        <MetricCard icon={TrendingUp} label="Horas totais" value={`${totalHours.toFixed(1)} h`} />
-        <MetricCard icon={Calendar} label="Km totais" value={totalKm.toFixed(0)} />
-        <MetricCard icon={Wrench} label="Investido" value={brl(totalCost)} />
-      </div>
+      <WhatsNewCard />
 
       <ActiveMotoCard motos={motos.data as any} />
 
       <DocumentPendenciesCard />
+
+      {focusMotoId && <QuickActions motoId={focusMotoId} />}
+
+      <div className="grid gap-3 sm:grid-cols-2">
+        <MetricCard icon={Activity} label="Motos ativas" value={String(totalMotos)} />
+        <MetricCard icon={Wrench} label="Investido no histórico" value={brl(totalCost)} />
+      </div>
 
       {(motos.data?.length ?? 0) > 1 && (
         <section>
@@ -115,7 +132,7 @@ function Dashboard() {
       )}
 
       <section>
-        <h2 className="mb-3 font-display text-lg font-bold">Últimos eventos</h2>
+        <h2 className="mb-3 font-display text-lg font-bold">Últimas atualizações</h2>
         <div className="surface-elevated divide-y divide-border rounded-2xl">
           {events.data && events.data.length > 0 ? events.data.map((e) => (
             <div key={e.id} className="flex items-center gap-3 p-4">
@@ -135,6 +152,38 @@ function Dashboard() {
         </div>
       </section>
     </div>
+  );
+}
+
+function QuickActions({ motoId }: { motoId: string }) {
+  const items = [
+    { to: "/motorcycles/$id/passport", icon: Share2, label: "Passaporte" },
+    { to: "/motorcycles/$id/control", icon: ShieldCheck, label: "Documentos" },
+    { to: "/motorcycles/$id/control", icon: FileSignature, label: "Recibo" },
+    { to: "/motorcycles/$id/passport", icon: Award, label: "Selos" },
+    { to: "/motorcycles/$id/health", icon: Heart, label: "Saúde" },
+    { to: "/motorcycles/$id/plan", icon: Wrench, label: "Manutenções" },
+    { to: "/motorcycles/$id/index", icon: FolderOpen, label: "Histórico" },
+  ] as const;
+  return (
+    <section aria-label="Atalhos rápidos">
+      <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-widest text-muted-foreground">Atalhos</h2>
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+        {items.map((it) => (
+          <Link
+            key={it.label + it.to}
+            to={it.to as any}
+            params={{ id: motoId } as any}
+            className="group flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-border bg-card px-2 py-3 text-center transition-colors hover:border-primary/40 hover:bg-accent/40"
+          >
+            <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
+              <it.icon className="h-4 w-4" />
+            </span>
+            <span className="text-[11px] font-semibold leading-tight sm:text-xs">{it.label}</span>
+          </Link>
+        ))}
+      </div>
+    </section>
   );
 }
 
