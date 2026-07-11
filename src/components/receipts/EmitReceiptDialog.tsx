@@ -220,7 +220,18 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
       await reloadReceipt(id!);
       setStep(5);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao emitir");
+      // Log técnico (sem dados sensíveis) para diagnóstico; mostra mensagem amigável.
+      const raw = e instanceof Error ? e.message : String(e);
+      console.error("[SmartReceipt] Falha na emissão do PDF:", raw);
+      const isRuntime = /__extends|__toESM|is not a function|Cannot destructure|undefined \(reading/i.test(raw);
+      const isBusiness = !isRuntime && raw && raw.length < 200 && !/\bat\b|\n/.test(raw);
+      const msg = isBusiness
+        ? raw
+        : "Não foi possível gerar o PDF agora. Atualize a página e tente novamente.";
+      toast.error(msg, {
+        action: { label: "Tentar novamente", onClick: () => { void saveAndIssue(); } },
+        cancel: { label: "Fechar", onClick: () => { /* dismiss */ } },
+      });
     } finally { setLoading(false); }
   }
 
