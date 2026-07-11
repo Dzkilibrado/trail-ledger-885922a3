@@ -3,6 +3,15 @@ import { getRequestHeader } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
+import { nextReceiptCode } from "./smart-receipts";
+import {
+  errorDiagnostics,
+  makeRequestId,
+  makeSupportCode,
+  maskUserId,
+  sanitizeReceiptPayloadForLog,
+  type IssueStage,
+} from "./smart-receipts-diagnostics";
 
 /** Fetch pública (sem auth) do recibo pelo código — usado pela página /r/$code. */
 export const validateReceiptPublic = createServerFn({ method: "GET" })
@@ -66,6 +75,11 @@ export interface DraftInput {
   previous_receipt_id?: string | null;
 }
 
+interface ReceiptIssueInput {
+  id: string;
+  request_id?: string | null;
+}
+
 function validateDraftInput(data: DraftInput): DraftInput {
   if (!data?.motorcycle_id) throw new Error("motorcycle_id obrigatório");
   if (!data?.buyer?.full_name?.trim()) throw new Error("Nome do comprador obrigatório");
@@ -107,7 +121,6 @@ export const createReceiptDraft = createServerFn({ method: "POST" })
       if (prev?.version) version = prev.version + 1;
     }
 
-    const { nextReceiptCode } = await import("./smart-receipts.server");
     const code = nextReceiptCode(lastByYear?.code ?? null);
 
     const isExternal = data.external_buyer === true || !data.buyer.user_id;
@@ -188,56 +201,122 @@ export const updateReceiptDraft = createServerFn({ method: "POST" })
 /** Gera o PDF do recibo a partir do rascunho e transiciona para 'issued'. */
 export const generateReceiptPdf = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
-  .inputValidator((data: { id: string }) => ({ id: String(data.id) }))
+  .inputValidator((data: ReceiptIssueInput) => ({
+    id: String(data.id),
+    request_id: data.request_id ? String(data.request_id) : null,
+  }))
   .handler(async ({ data, context }) => {
     const { supabase, userId } = context;
-    const { data: r, error: rErr } = await supabase
-      .from("smart_receipts")
-      .select("*")
-      .eq("id", data.id).single();
-    if (rErr || !r) throw new Error("Recibo não encontrado");
-    if (r.seller_id !== userId) throw new Error("Apenas o vendedor pode emitir o PDF");
-    if (r.status !== "draft") throw new Error(`Recibo em estado '${r.status}' — PDF já emitido`);
+    const requestId = data.request_id || makeRequestId();
+    const supportCode = makeSupportCode(requestId);
+    const timestamp = new Date().toISOString();
+    let stage: IssueStage = "load_receipt";
+    let receiptForLog: Record<string, unknown> | null = null;
 
-    const { buildReceiptPdf } = await import("./smart-receipts.server");
-    const originHeader = getRequestHeader("origin") || getRequestHeader("host") || "trailbook.com.br";
-    const origin = originHeader.startsWith("http") ? originHeader : `https://${originHeader}`;
-    const issuedAt = new Date().toISOString();
-    const moto = r.motorcycle_snapshot as {
-      brand: string; model: string; year_model?: number | null; chassis?: string | null;
-      plate?: string | null; hours_total?: number | null; km_total?: number | null;
-    };
-    const seller = r.seller_snapshot as { full_name: string; cpf?: string | null; email?: string | null };
-    const buyer = r.buyer_snapshot as { full_name: string; cpf?: string | null; email?: string | null };
-    const neg = r.negotiation as {
-      amount: number; payment_method: string; date: string; location?: string | null; notes?: string | null;
-    };
+    try {
+      const { data: r, error: rErr } = await supabase
+        .from("smart_receipts")
+        .select("*")
+        .eq("id", data.id).single();
+      receiptForLog = (r ?? null) as Record<string, unknown> | null;
+      if (rErr || !r) throw new Error("Recibo não encontrado");
 
-    const { pdfBytes, sha256 } = await buildReceiptPdf({
-      code: r.code, version: r.version, issuedAt,
-      motorcycle: moto, seller, buyer, negotiation: neg,
-    }, origin);
+      stage = "authorize";
+      if (r.seller_id !== userId) throw new Error("Apenas o vendedor pode emitir o PDF");
 
-    const pdfPath = `motorcycles/${r.motorcycle_id}/${r.code}-v${r.version}-original.pdf`;
-    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
-    const { error: upErr } = await supabaseAdmin.storage
-      .from("smart-receipts")
-      .upload(pdfPath, pdfBytes, { contentType: "application/pdf", upsert: true });
-    if (upErr) throw new Error(`Falha no upload do PDF: ${upErr.message}`);
+      if (r.status !== "draft") {
+        if (r.status === "issued" && r.original_pdf_path) {
+          console.info(`[SmartReceipt][${supportCode}] retry_idempotent`, JSON.stringify({
+            request_id: requestId,
+            support_code: supportCode,
+            receipt_id: r.id,
+            motorcycle_id: r.motorcycle_id,
+            user: maskUserId(userId),
+            stage,
+            timestamp,
+            status: r.status,
+          }));
+          return { ok: true as const, code: r.code, url: `/r/${r.code}`, request_id: requestId, support_code: supportCode };
+        }
+        throw new Error(`Recibo em estado '${r.status}' — PDF já emitido`);
+      }
 
-    const { error: uErr } = await supabase
-      .from("smart_receipts")
-      .update({
-        status: "issued",
-        sha256,
-        pdf_path: pdfPath,
-        original_pdf_path: pdfPath,
-        issued_at: issuedAt,
-      } as never)
-      .eq("id", r.id);
-    if (uErr) throw new Error(uErr.message);
+      stage = "import_pdf_builder";
+      const { buildReceiptPdf } = await import("./smart-receipts.server");
+      const originHeader = getRequestHeader("origin") || getRequestHeader("host") || "trailbook.com.br";
+      const origin = originHeader.startsWith("http") ? originHeader : `https://${originHeader}`;
+      const issuedAt = new Date().toISOString();
 
-    return { ok: true as const, code: r.code, url: `/r/${r.code}` };
+      stage = "prepare_payload";
+      const moto = r.motorcycle_snapshot as {
+        brand: string; model: string; year_model?: number | null; chassis?: string | null;
+        plate?: string | null; hours_total?: number | null; km_total?: number | null;
+      };
+      const seller = r.seller_snapshot as { full_name: string; cpf?: string | null; email?: string | null };
+      const buyer = r.buyer_snapshot as { full_name: string; cpf?: string | null; email?: string | null };
+      const neg = r.negotiation as {
+        amount: number; payment_method: string; date: string; location?: string | null; notes?: string | null;
+      };
+
+      stage = "generate_pdf_bytes";
+      const { pdfBytes, sha256 } = await buildReceiptPdf({
+        code: r.code, version: r.version, issuedAt,
+        motorcycle: moto, seller, buyer, negotiation: neg,
+      }, origin);
+
+      stage = "upload_pdf";
+      const pdfPath = `motorcycles/${r.motorcycle_id}/${r.code}-v${r.version}-original.pdf`;
+      const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+      const { error: upErr } = await supabaseAdmin.storage
+        .from("smart-receipts")
+        .upload(pdfPath, pdfBytes, { contentType: "application/pdf", upsert: true });
+      if (upErr) throw new Error(`Falha no upload do PDF: ${upErr.message}`);
+
+      stage = "update_receipt_status";
+      const { error: uErr } = await supabase
+        .from("smart_receipts")
+        .update({
+          status: "issued",
+          sha256,
+          pdf_path: pdfPath,
+          original_pdf_path: pdfPath,
+          issued_at: issuedAt,
+        } as never)
+        .eq("id", r.id)
+        .eq("status", "draft");
+      if (uErr) throw new Error(uErr.message);
+
+      stage = "done";
+      console.info(`[SmartReceipt][${supportCode}] issued`, JSON.stringify({
+        request_id: requestId,
+        support_code: supportCode,
+        receipt_id: r.id,
+        motorcycle_id: r.motorcycle_id,
+        user: maskUserId(userId),
+        stage,
+        timestamp,
+        status_before: "draft",
+        status_after: "issued",
+        pdf_bytes: pdfBytes.byteLength,
+        sha256_present: Boolean(sha256),
+      }));
+
+      return { ok: true as const, code: r.code, url: `/r/${r.code}`, request_id: requestId, support_code: supportCode };
+    } catch (error) {
+      const details = errorDiagnostics(error);
+      console.error(`[SmartReceipt][${supportCode}] issue_failed`, JSON.stringify({
+        request_id: requestId,
+        support_code: supportCode,
+        receipt_id: data.id,
+        motorcycle_id: receiptForLog?.motorcycle_id ?? null,
+        user: maskUserId(userId),
+        stage,
+        timestamp,
+        error: details,
+        payload: sanitizeReceiptPayloadForLog(receiptForLog),
+      }));
+      throw new Error(`Não foi possível gerar o PDF. Código: ${supportCode}`);
+    }
   });
 
 /** Anexa o PDF assinado (base64) e transiciona para 'awaiting_acceptance'. */

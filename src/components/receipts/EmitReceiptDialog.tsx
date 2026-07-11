@@ -39,6 +39,22 @@ type ReceiptRow = {
   buyer_accepted_at: string | null;
 };
 
+function makeReceiptRequestId(): string {
+  return typeof crypto !== "undefined" && "randomUUID" in crypto
+    ? crypto.randomUUID()
+    : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function supportCodeFromRequestId(requestId: string): string {
+  const compact = requestId.replace(/[^a-z0-9]/gi, "").toUpperCase();
+  return `SR-${compact.slice(0, 8).padEnd(8, "0")}`;
+}
+
+function extractSupportMessage(message: string, requestId: string): string {
+  if (/Código:\s*SR-[A-Z0-9]+/i.test(message)) return message;
+  return `Não foi possível gerar o PDF. Código: ${supportCodeFromRequestId(requestId)}`;
+}
+
 export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: controlledOpen, onOpenChange, onIssued }: {
   motorcycleId: string;
   receiptId?: string;
@@ -191,6 +207,9 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     if (!validatePartes() || !validateValor()) return;
     if (!lgpd) { toast.error("Aceite o consentimento LGPD"); return; }
     setLoading(true);
+    const requestId = makeReceiptRequestId();
+    const startedAt = new Date().toISOString();
+    let stage = "create_or_update_draft";
     try {
       let id = currentReceiptId;
       const buyerPayload = {
@@ -213,21 +232,30 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
       } else if (currentReceipt?.status === "draft") {
         await updateDraft({ data: { id, patch: { buyer: buyerPayload, external_buyer: buyerMode === "external", negotiation: negPayload } } });
       }
-      const pdfRes = await genPdf({ data: { id: id! } });
+      stage = "generate_pdf";
+      const pdfRes = await genPdf({ data: { id: id!, request_id: requestId } });
       toast.success(`Recibo ${pdfRes.code} emitido. Assine e anexe o PDF para concluir.`);
       invalidateAll();
       onIssued?.(pdfRes.url);
       await reloadReceipt(id!);
       setStep(5);
     } catch (e) {
-      // Log técnico (sem dados sensíveis) para diagnóstico; mostra mensagem amigável.
+      // Log técnico de correlação (sem PII). O detalhe real fica no Worker/server pelo mesmo código.
       const raw = e instanceof Error ? e.message : String(e);
-      console.error("[SmartReceipt] Falha na emissão do PDF:", raw);
+      console.error("[SmartReceipt] Falha na emissão do PDF:", {
+        request_id: requestId,
+        support_code: supportCodeFromRequestId(requestId),
+        receipt_id: currentReceiptId,
+        motorcycle_id: motorcycleId,
+        stage,
+        timestamp: startedAt,
+        error: raw,
+      });
       const isRuntime = /__extends|__toESM|is not a function|Cannot destructure|undefined \(reading/i.test(raw);
       const isBusiness = !isRuntime && raw && raw.length < 200 && !/\bat\b|\n/.test(raw);
       const msg = isBusiness
         ? raw
-        : "Não foi possível gerar o PDF agora. Atualize a página e tente novamente.";
+        : extractSupportMessage(raw, requestId);
       toast.error(msg, {
         action: { label: "Tentar novamente", onClick: () => { void saveAndIssue(); } },
         cancel: { label: "Fechar", onClick: () => { /* dismiss */ } },
