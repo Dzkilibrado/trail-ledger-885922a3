@@ -249,6 +249,11 @@ function Passport() {
           <h2 className="mb-3 flex items-center gap-2 font-display font-bold">
             <ShieldAlert className="h-4 w-4 text-amber-400" /> Pendências
           </h2>
+          {isOriginProven(pendency.data) && (
+            <div className="mb-3">
+              <OriginProvenBadge variant="card" />
+            </div>
+          )}
           {pending.length === 0 ? (
             <div className="text-sm text-muted-foreground">Nenhuma pendência. Excelente cuidado!</div>
           ) : (
