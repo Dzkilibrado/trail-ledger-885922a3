@@ -69,6 +69,19 @@ export function formatCurrencyBRL(v: number | string | null | undefined): string
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(n as number);
 }
 
+/** Gera o próximo código sequencial TB-RCV-YYYY-NNNNNN a partir do último emitido no ano. */
+export function nextReceiptCode(lastCode: string | null | undefined): string {
+  const year = new Date().getFullYear();
+  const prefix = `TB-RCV-${year}-`;
+  let n = 1;
+  if (lastCode && lastCode.startsWith(prefix)) {
+    const suffix = lastCode.slice(prefix.length);
+    const parsed = parseInt(suffix, 10);
+    if (Number.isFinite(parsed)) n = parsed + 1;
+  }
+  return `${prefix}${String(n).padStart(6, "0")}`;
+}
+
 /** Hash SHA-256 de bytes usando Web Crypto (browser e Worker). */
 export async function sha256HexBytes(bytes: Uint8Array): Promise<string> {
   const ab = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;

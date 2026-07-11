@@ -2,9 +2,9 @@
  * Helpers server-only para geração do Recibo Inteligente (PDF + QR Code).
  * NUNCA importar de client/route directly — sempre via server function handler.
  */
-import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from "pdf-lib";
+import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from "pdf-lib/dist/pdf-lib.esm.js";
 import QRCode from "qrcode";
-import { formatCurrencyBRL, formatIssuedAt, formatVersion, publicReceiptUrl } from "./smart-receipts";
+import { formatCurrencyBRL, formatIssuedAt, formatVersion, nextReceiptCode, publicReceiptUrl } from "./smart-receipts";
 
 export interface ReceiptPayload {
   code: string;
@@ -180,15 +180,4 @@ export async function buildReceiptPdf(payload: ReceiptPayload, origin: string): 
   return { pdfBytes, sha256 };
 }
 
-/** Gera o próximo código sequencial TB-RCV-YYYY-NNNNNN a partir do último emitido no ano. */
-export function nextReceiptCode(lastCode: string | null | undefined): string {
-  const year = new Date().getFullYear();
-  const prefix = `TB-RCV-${year}-`;
-  let n = 1;
-  if (lastCode && lastCode.startsWith(prefix)) {
-    const suffix = lastCode.slice(prefix.length);
-    const parsed = parseInt(suffix, 10);
-    if (Number.isFinite(parsed)) n = parsed + 1;
-  }
-  return `${prefix}${String(n).padStart(6, "0")}`;
-}
+export { nextReceiptCode };
