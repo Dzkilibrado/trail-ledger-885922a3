@@ -26,6 +26,9 @@ import { toast } from "sonner";
 import { ReceiptsSummaryRow } from "@/components/receipts/ReceiptsHistorySheet";
 import { useReceiptsForMoto } from "@/hooks/useActiveNegotiation";
 import { useEffect } from "react";
+import { useMotoDocumentPendency } from "@/hooks/useDocumentPendencies";
+import { OriginProvenBadge } from "@/components/OriginProvenBadge";
+import { isOriginProven } from "@/lib/origin-status";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id/passport")({
   head: () => ({ meta: [{ title: "Passaporte Digital — TrailBook" }] }),
@@ -105,6 +108,7 @@ function Passport() {
     queryFn: async () => (await supabase.from("workshops").select("id, name")).data ?? [],
   });
   const receipts = useReceiptsForMoto(id);
+  const pendency = useMotoDocumentPendency(id);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
