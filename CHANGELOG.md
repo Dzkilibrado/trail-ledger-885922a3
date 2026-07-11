@@ -2,6 +2,40 @@
 
 Todas as entregas oficialmente homologadas do TrailBook. Formato inspirado em Keep a Changelog.
 
+## [1.4] — 2026-07-11 — Selos de Qualidade do Histórico (Fase 1 — Fundação) — **HOMOLOGADA E ENCERRADA**
+
+Entrega focada em arquitetura escalável + primeiros selos reais derivados de evidências. Detalhes técnicos em [ADR 0007](docs/adr/0007-selos-qualidade-historico.md).
+
+### Escopo entregue
+- **Registry declarativo** (`src/lib/badges/registry.ts`): cada selo é uma definição pura (`id`, `tier`, `glyph`, `title`, `description`, `evaluate`). Adicionar um novo selo = adicionar um objeto no registry, sem tocar em componentes.
+- **Motor puro e determinístico** (`src/lib/badges/evaluator.ts`): `evaluateBadges(evidence)` e `summarize(...)` — zero side-effects, sem I/O, testável. Único ponto de verdade para Central, Passaporte, Saúde e Documentos.
+- **Evidências agregadas** (`src/hooks/useMotorcycleEvidence.ts`): snapshot montado a partir de documentos, timeline, plano/TIL, `ownership_history` e fotos. Nenhuma tabela nova criada nesta fase.
+- **UI reutilizável** (`src/components/badges/`): `BadgeChip`, `BadgeGrid`, `BadgeSection`, `SingleBadgeChip` e `BadgeTooltip` compartilhados por todas as superfícies.
+- **Selos derivados de evidências reais**: conquista é consequência — não existe endpoint nem ação de usuário para conceder/revogar selo.
+- **Histórico Completo** (`history_complete`) como agregador automático: origem + documentação completa + cadeia de propriedade íntegra. Nome descritivo, sem implicar auditoria oficial.
+- **"Verificado pelo TrailBook" reservado**: não implementado nesta fase. Só poderá ser reintroduzido quando existir processo real de validação humana (conferência documental, oficina homologada, inspeção técnica ou auditoria oficial).
+- **Tiers ocultos na UI**: Bronze/Prata/Ouro/Signature permanecem no dado para peso do score e evolução futura, mas não são exibidos textualmente — evita hierarquização gamificada sem lastro em validação real.
+- **Integrações**: Central da Moto (resumo enxuto), Passaporte Digital (grade completa pública), Saúde da Moto (`SingleBadgeChip` de Manutenção + Origem), Central de Documentos (`SingleBadgeChip` de Origem + Documentação Completa).
+- **Preservação integral do histórico**: substituição/rebaixamento de documento reflete imediatamente nos selos — nunca cachear conquista antiga.
+- **Migração do `OriginProvenBadge`**: componente legado removido; origem comprovada agora vem do registry.
+
+### Homologação
+Executada no **Ambiente Permanente de Homologação (APH)** — ver ADR 0005. Cenários E2E aprovados:
+
+1. **M1 — Moto nova sem histórico**: nenhum selo conquistado; todos em `locked` ou `partial` com critérios claros; score 0.
+2. **M2 — Histórico completo**: conquista de `origin_proven`, `documentation_complete`, `ownership_chain_intact` e `history_complete`; `timeline_rich` e `official_photos` conforme dados; `maintenance_on_track` reflete TIL.
+3. **M4 — Pendências diversas**: selos parciais exibem critérios atendidos e pendentes; progresso visível na barra; tooltip explica o que falta.
+4. **M8 — Manutenção vencida**: perda imediata do selo `maintenance_on_track` ao vencer item do plano; recomposição automática após regularização.
+
+Validado também: determinismo (mesmo snapshot → mesma avaliação), reatividade a mudanças de dados sem refresh manual, consistência entre Central/Passaporte/Saúde/Documentos, mobile sem cortes, console limpo, `tsgo --noEmit` limpo e build de produção limpa.
+
+### Regras permanentes
+- Selos são **derivados**, nunca armazenados em tabela (Fase 1).
+- Nunca criar endpoint / ação para conceder ou revogar selo manualmente.
+- Novo selo = novo objeto no registry. Se um selo exigir mudança em `BadgeChip`/`BadgeGrid`/`BadgeSection`, o design do registry falhou.
+- "Verificado pelo TrailBook" só volta com processo real de validação humana/parceiros.
+- Alterações futuras neste módulo devem entrar como **nova fase**.
+
 ## [1.3] — 2026-07-10 — Cadastro Completo (Fases A · B · D · E) — **HOMOLOGADA E ENCERRADA**
 
 Entrega composta em quatro fases homologadas separadamente no APH. Detalhes técnicos em [ADR 0006](docs/adr/0006-cadastro-completo-fases.md).
