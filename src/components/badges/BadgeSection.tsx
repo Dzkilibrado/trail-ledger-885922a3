@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Award, ChevronDown, ChevronUp } from "lucide-react";
+import { Award, ArrowRight } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 import { BadgeChip } from "./BadgeChip";
 import { BadgeGrid } from "./BadgeGrid";
 import { useMotorcycleBadges } from "@/hooks/useMotorcycleBadges";
@@ -20,7 +20,6 @@ export function BadgeSection({
   className?: string;
 }) {
   const { summary, isLoading } = useMotorcycleBadges(motorcycleId);
-  const [expanded, setExpanded] = useState(variant === "full");
 
   if (isLoading || !summary) {
     return (
@@ -35,7 +34,7 @@ export function BadgeSection({
     );
   }
 
-  const isFull = variant === "full" || expanded;
+  const isFull = variant === "full";
 
   return (
     <section className={cn("surface-elevated rounded-2xl p-4", className)}>
@@ -49,15 +48,15 @@ export function BadgeSection({
             {summary.earned.length} de {summary.all.length}
           </span>
         </div>
-        {variant === "compact" && summary.all.length > summary.earned.length && (
-          <button
-            type="button"
-            onClick={() => setExpanded((v) => !v)}
+        {variant === "compact" && (
+          <Link
+            to="/motorcycles/$id/passport"
+            params={{ id: motorcycleId }}
             className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
           >
-            {expanded ? "Ver menos" : "Ver todos"}
-            {expanded ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-          </button>
+            Ver todos os selos
+            <ArrowRight className="h-3 w-3" />
+          </Link>
         )}
       </div>
 
