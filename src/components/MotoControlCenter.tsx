@@ -118,13 +118,22 @@ export function MotoControlCenter({ id }: { id: string }) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("ownership_history")
-        .select("id, owner_id, started_at, ended_at, method, profiles:owner_id(full_name)")
+        .select("id, owner_id, started_at, ended_at, method")
         .eq("motorcycle_id", id)
         .order("started_at", { ascending: true });
       if (error) throw error;
+      const ownerIds = Array.from(new Set((data ?? []).map((r: any) => r.owner_id).filter(Boolean)));
+      let names = new Map<string, string | null>();
+      if (ownerIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", ownerIds);
+        names = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name ?? null]));
+      }
       return (data ?? []).map((r: any) => ({
         id: r.id, started_at: r.started_at, ended_at: r.ended_at, method: r.method,
-        owner_name: r.profiles?.full_name ?? null,
+        owner_name: names.get(r.owner_id) ?? null,
       }));
     },
   });
