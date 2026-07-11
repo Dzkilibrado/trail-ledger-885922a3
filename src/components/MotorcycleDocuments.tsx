@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   FileText, Upload, Eye, Download, Replace, Trash2, RotateCcw, History, Pencil,
-  ShieldCheck, CheckCircle2, XCircle, Filter, Search, Layers, Inbox, X,
+  ShieldCheck, CheckCircle2, XCircle, Filter, Search, Layers, Inbox, X, Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -27,6 +27,12 @@ import {
 } from "@/lib/motorcycle-documents";
 import { brl, formatDate } from "@/lib/trailbook";
 import { cn } from "@/lib/utils";
+import { useMotoDocumentPendency } from "@/hooks/useDocumentPendencies";
+import {
+  ORIGIN_DOC_TYPES, clearOriginSnooze, isOriginProven, suggestOriginDocType,
+  type OriginDocType,
+} from "@/lib/origin-status";
+import { OriginProvenBadge } from "@/components/OriginProvenBadge";
 
 type Doc = {
   id: string;
@@ -57,9 +63,16 @@ type Doc = {
 
 const TRASH_TTL_DAYS = 30;
 
-export function MotorcycleDocuments({ motorcycleId }: { motorcycleId: string }) {
+export function MotorcycleDocuments({
+  motorcycleId,
+  openOriginUpload = false,
+}: {
+  motorcycleId: string;
+  /** Quando `true`, abre automaticamente o fluxo de anexo do documento de origem. */
+  openOriginUpload?: boolean;
+}) {
   const qc = useQueryClient();
-  const [upload, setUpload] = useState<{ files: File[] } | null>(null);
+  const [upload, setUpload] = useState<{ files: File[]; originMode?: boolean } | null>(null);
   const [editing, setEditing] = useState<Doc | null>(null);
   const [replacing, setReplacing] = useState<Doc | null>(null);
   const [timeline, setTimeline] = useState<Doc | null>(null);
@@ -68,6 +81,22 @@ export function MotorcycleDocuments({ motorcycleId }: { motorcycleId: string }) 
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"recent" | "old" | "name" | "type">("recent");
   const [profiles, setProfiles] = useState<Record<string, string>>({});
+  const [uid, setUid] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUid(data.user?.id ?? null));
+  }, []);
+
+  const pendency = useMotoDocumentPendency(motorcycleId);
+  const originSuggestedType: OriginDocType = suggestOriginDocType(pendency.data?.origin_type ?? null);
+
+  // Abre automaticamente o upload em modo "origem" quando chegar via ?kind=origin.
+  const [autoOpened, setAutoOpened] = useState(false);
+  useEffect(() => {
+    if (openOriginUpload && !autoOpened) {
+      setUpload({ files: [], originMode: true });
+      setAutoOpened(true);
+    }
+  }, [openOriginUpload, autoOpened]);
 
   const docs = useQuery({
     queryKey: ["motorcycle-documents", motorcycleId],
@@ -140,6 +169,8 @@ export function MotorcycleDocuments({ motorcycleId }: { motorcycleId: string }) 
   function invalidate() {
     qc.invalidateQueries({ queryKey: ["motorcycle-documents", motorcycleId] });
     qc.invalidateQueries({ queryKey: ["audit", motorcycleId] });
+    qc.invalidateQueries({ queryKey: ["document-pendencies"] });
+    qc.invalidateQueries({ queryKey: ["document-pendencies", motorcycleId] });
   }
 
   async function openFile(doc: Doc, download = false) {
@@ -216,6 +247,8 @@ export function MotorcycleDocuments({ motorcycleId }: { motorcycleId: string }) 
           <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Storage privado · URL assinada · SHA-256
         </div>
       </div>
+
+      {isOriginProven(pendency.data) && <OriginProvenBadge variant="card" />}
 
       {/* Dashboard */}
       <div className="surface-elevated rounded-2xl p-4 md:p-5">
@@ -362,6 +395,9 @@ export function MotorcycleDocuments({ motorcycleId }: { motorcycleId: string }) 
         <UploadDialog
           motorcycleId={motorcycleId}
           initialFiles={upload.files}
+          originMode={upload.originMode ?? false}
+          suggestedOriginType={originSuggestedType}
+          userId={uid}
           onClose={() => setUpload(null)}
           onDone={() => { setUpload(null); invalidate(); }}
         />
