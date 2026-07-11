@@ -29,10 +29,10 @@ import { brl, formatDate } from "@/lib/trailbook";
 import { cn } from "@/lib/utils";
 import { useMotoDocumentPendency } from "@/hooks/useDocumentPendencies";
 import {
-  ORIGIN_DOC_TYPES, clearOriginSnooze, isOriginProven, suggestOriginDocType,
+  ORIGIN_DOC_TYPES, clearOriginSnooze, suggestOriginDocType,
   type OriginDocType,
 } from "@/lib/origin-status";
-import { OriginProvenBadge } from "@/components/OriginProvenBadge";
+import { SingleBadgeChip } from "@/components/badges/BadgeSection";
 
 type Doc = {
   id: string;
@@ -248,7 +248,10 @@ export function MotorcycleDocuments({
         </div>
       </div>
 
-      {isOriginProven(pendency.data) && <OriginProvenBadge variant="card" />}
+      <div className="flex flex-wrap items-center gap-2">
+        <SingleBadgeChip motorcycleId={motorcycleId} badgeId="origin_proven" />
+        <SingleBadgeChip motorcycleId={motorcycleId} badgeId="documentation_complete" />
+      </div>
 
       {/* Dashboard */}
       <div className="surface-elevated rounded-2xl p-4 md:p-5">

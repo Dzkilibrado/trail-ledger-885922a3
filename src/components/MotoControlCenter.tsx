@@ -39,8 +39,7 @@ import { AdminMotoDangerZone } from "@/components/AdminMotoDangerZone";
 import { EventActionsMenu } from "@/components/EventActionsMenu";
 import { useMotoDocumentPendency } from "@/hooks/useDocumentPendencies";
 import { OriginPendencyBanner } from "@/components/OriginPendencyBanner";
-import { OriginProvenBadge } from "@/components/OriginProvenBadge";
-import { isOriginProven } from "@/lib/origin-status";
+import { BadgeSection } from "@/components/badges/BadgeSection";
 import { useActiveNegotiation } from "@/hooks/useActiveNegotiation";
 import { ActiveNegotiationCard } from "@/components/ActiveNegotiationCard";
 import { EmitReceiptDialog } from "@/components/receipts/EmitReceiptDialog";
@@ -311,8 +310,8 @@ export function MotoControlCenter({ id }: { id: string }) {
                 pendency={pendency.data}
               />
             )}
-            {isOwner && !isArchived && isOriginProven(pendency.data) && (
-              <OriginProvenBadge variant="card" />
+            {!isArchived && (
+              <BadgeSection motorcycleId={m.id} variant="compact" />
             )}
             <div className="grid grid-cols-3 gap-3">
               <Stat label="Horas" value={`${Number(m.hours_total).toFixed(1)} h`} />

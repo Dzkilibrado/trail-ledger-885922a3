@@ -26,9 +26,7 @@ import { toast } from "sonner";
 import { ReceiptsSummaryRow } from "@/components/receipts/ReceiptsHistorySheet";
 import { useReceiptsForMoto } from "@/hooks/useActiveNegotiation";
 import { useEffect } from "react";
-import { useMotoDocumentPendency } from "@/hooks/useDocumentPendencies";
-import { OriginProvenBadge } from "@/components/OriginProvenBadge";
-import { isOriginProven } from "@/lib/origin-status";
+import { BadgeSection } from "@/components/badges/BadgeSection";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id/passport")({
   head: () => ({ meta: [{ title: "Passaporte Digital — TrailBook" }] }),
@@ -108,7 +106,6 @@ function Passport() {
     queryFn: async () => (await supabase.from("workshops").select("id, name")).data ?? [],
   });
   const receipts = useReceiptsForMoto(id);
-  const pendency = useMotoDocumentPendency(id);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
@@ -249,11 +246,6 @@ function Passport() {
           <h2 className="mb-3 flex items-center gap-2 font-display font-bold">
             <ShieldAlert className="h-4 w-4 text-amber-400" /> Pendências
           </h2>
-          {isOriginProven(pendency.data) && (
-            <div className="mb-3">
-              <OriginProvenBadge variant="card" />
-            </div>
-          )}
           {pending.length === 0 ? (
             <div className="text-sm text-muted-foreground">Nenhuma pendência. Excelente cuidado!</div>
           ) : (
