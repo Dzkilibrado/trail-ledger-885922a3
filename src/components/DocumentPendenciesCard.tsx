@@ -1,7 +1,10 @@
+import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { FileWarning, ChevronRight } from "lucide-react";
+import { FileWarning, ChevronRight, Paperclip } from "lucide-react";
 import { useDocumentPendencies } from "@/hooks/useDocumentPendencies";
-import { EXPECTED_DOC_LABEL, findOrigin } from "@/lib/motorcycle-origin";
+import { findOrigin } from "@/lib/motorcycle-origin";
+import { isOriginSnoozed } from "@/lib/origin-status";
+import { supabase } from "@/integrations/supabase/client";
 
 /**
  * Card do Dashboard: Pendências Documentais.
@@ -10,7 +13,13 @@ import { EXPECTED_DOC_LABEL, findOrigin } from "@/lib/motorcycle-origin";
  */
 export function DocumentPendenciesCard() {
   const q = useDocumentPendencies();
-  const rows = q.data ?? [];
+  const [uid, setUid] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUid(data.user?.id ?? null));
+  }, []);
+  const rawRows = q.data ?? [];
+  // Respeita o "Lembrar mais tarde" (silêncio local por 7 dias, por usuário + moto).
+  const rows = rawRows.filter((r) => !isOriginSnoozed(uid, r.motorcycle_id));
   if (q.isLoading || rows.length === 0) return null;
 
   return (
@@ -20,11 +29,11 @@ export function DocumentPendenciesCard() {
           <FileWarning className="h-4 w-4" />
         </div>
         <div>
-          <h2 className="text-sm font-semibold text-amber-100">Pendências documentais</h2>
+          <h2 className="text-sm font-semibold text-amber-100">🟠 Documento de origem pendente</h2>
           <p className="text-xs text-amber-200/70">
             {rows.length === 1
-              ? "1 moto sem documento de origem anexado."
-              : `${rows.length} motos sem documento de origem anexado.`}
+              ? "1 moto ainda sem Nota Fiscal ou Recibo de Compra e Venda anexado."
+              : `${rows.length} motos ainda sem Nota Fiscal ou Recibo de Compra e Venda anexado.`}
           </p>
         </div>
       </header>
@@ -38,8 +47,9 @@ export function DocumentPendenciesCard() {
           return (
             <li key={r.motorcycle_id}>
               <Link
-                to="/motorcycles/$id/control"
+                to="/documents/$id"
                 params={{ id: r.motorcycle_id }}
+                search={{ kind: "origin" }}
                 className="flex items-center gap-3 rounded-xl border border-amber-500/20 bg-background/40 p-3 transition hover:border-amber-400/40"
               >
                 <div className="min-w-0 flex-1">
@@ -51,11 +61,11 @@ export function DocumentPendenciesCard() {
                   </div>
                   <div className="truncate text-[11px] text-amber-200/70">
                     {originInfo ? `${originInfo.short} · ` : ""}
-                    {EXPECTED_DOC_LABEL[r.expected_kind]} pendente
+                    Nota Fiscal ou Recibo de Compra e Venda
                   </div>
                 </div>
-                <span className="rounded-lg bg-amber-500/20 px-2 py-1 text-[11px] font-semibold text-amber-200">
-                  Resolver
+                <span className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-2 py-1 text-[11px] font-semibold text-amber-950">
+                  <Paperclip className="h-3 w-3" /> Anexar
                 </span>
                 <ChevronRight className="h-4 w-4 text-amber-300/60" />
               </Link>
