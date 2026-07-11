@@ -38,8 +38,9 @@ import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { AdminMotoDangerZone } from "@/components/AdminMotoDangerZone";
 import { EventActionsMenu } from "@/components/EventActionsMenu";
 import { useMotoDocumentPendency } from "@/hooks/useDocumentPendencies";
-import { EXPECTED_DOC_LABEL, findOrigin } from "@/lib/motorcycle-origin";
-import { FileWarning } from "lucide-react";
+import { OriginPendencyBanner } from "@/components/OriginPendencyBanner";
+import { OriginProvenBadge } from "@/components/OriginProvenBadge";
+import { isOriginProven } from "@/lib/origin-status";
 import { useActiveNegotiation } from "@/hooks/useActiveNegotiation";
 import { ActiveNegotiationCard } from "@/components/ActiveNegotiationCard";
 import { EmitReceiptDialog } from "@/components/receipts/EmitReceiptDialog";
@@ -304,23 +305,14 @@ export function MotoControlCenter({ id }: { id: string }) {
               </div>
             )}
             {isOwner && !isArchived && pendency.data?.has_origin_pendency && (
-              <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 font-semibold text-amber-200">
-                      <FileWarning className="h-4 w-4" /> Documento de origem pendente
-                    </div>
-                    <p className="mt-1 text-amber-100/80">
-                      {findOrigin(pendency.data.origin_type)?.short ?? "Origem"} — anexe {EXPECTED_DOC_LABEL[pendency.data.expected_kind]} para completar o histórico da moto. Nada bloqueia o uso.
-                    </p>
-                  </div>
-                  <Button size="sm" variant="outline" asChild>
-                    <Link to="/documents/$id" params={{ id: m.id }}>
-                      Anexar agora
-                    </Link>
-                  </Button>
-                </div>
-              </div>
+              <OriginPendencyBanner
+                motoId={m.id}
+                userId={currentUserId}
+                pendency={pendency.data}
+              />
+            )}
+            {isOwner && !isArchived && isOriginProven(pendency.data) && (
+              <OriginProvenBadge variant="card" />
             )}
             <div className="grid grid-cols-3 gap-3">
               <Stat label="Horas" value={`${Number(m.hours_total).toFixed(1)} h`} />

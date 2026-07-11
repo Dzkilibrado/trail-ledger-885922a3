@@ -6,13 +6,22 @@ import { MotorcycleDocuments } from "@/components/MotorcycleDocuments";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Bike } from "lucide-react";
 
+type DocsSearch = { kind?: "origin" };
+
 export const Route = createFileRoute("/_authenticated/documents/$id")({
   head: () => ({ meta: [{ title: "Documentos — TrailBook" }] }),
+  // Aceita ?kind=origin para abrir o fluxo de anexo do documento de origem.
+  validateSearch: (raw: Record<string, unknown>): DocsSearch => {
+    const kind = raw?.kind;
+    return kind === "origin" ? { kind: "origin" } : {};
+  },
   component: MotoDocs,
 });
 
 function MotoDocs() {
   const { id } = Route.useParams();
+  const search = Route.useSearch();
+  const openOriginUpload = search.kind === "origin";
   const moto = useQuery({
     queryKey: ["moto-header", id],
     queryFn: async () => {
@@ -45,7 +54,7 @@ function MotoDocs() {
         </Link>
       )}
 
-      <MotorcycleDocuments motorcycleId={id} />
+      <MotorcycleDocuments motorcycleId={id} openOriginUpload={openOriginUpload} />
     </div>
   );
 }

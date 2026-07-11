@@ -10,6 +10,9 @@ import { CheckCircle2, AlertTriangle, Clock, HelpCircle, Heart, ChevronRight, Se
 import { TBBottomSheet } from "@/design-system/overlays/TBBottomSheet";
 import { Input } from "@/components/ui/input";
 import type { ComponentView } from "@/lib/til/components";
+import { useMotoDocumentPendency } from "@/hooks/useDocumentPendencies";
+import { OriginProvenBadge } from "@/components/OriginProvenBadge";
+import { isOriginProven } from "@/lib/origin-status";
 
 /**
  * Saúde da Moto — check-up visual do estado atual, alimentado 100% pela TIL.
@@ -19,6 +22,7 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [openBucket, setOpenBucket] = useState<BucketKey | null>(null);
   const [query, setQuery] = useState("");
+  const pendency = useMotoDocumentPendency(moto.id);
 
   const events = useQuery({
     queryKey: ["events", moto.id],
@@ -101,6 +105,7 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
 
   return (
     <div className="space-y-5">
+      {isOriginProven(pendency.data) && <OriginProvenBadge variant="chip" />}
       {/* Diagnóstico geral */}
       <section
         aria-label="Diagnóstico geral"

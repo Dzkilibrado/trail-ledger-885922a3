@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -18,7 +18,7 @@ import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   FileText, Upload, Eye, Download, Replace, Trash2, RotateCcw, History, Pencil,
-  ShieldCheck, CheckCircle2, XCircle, Filter, Search, Layers, Inbox, X,
+  ShieldCheck, CheckCircle2, XCircle, Filter, Search, Layers, Inbox, X, Sparkles,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -27,6 +27,12 @@ import {
 } from "@/lib/motorcycle-documents";
 import { brl, formatDate } from "@/lib/trailbook";
 import { cn } from "@/lib/utils";
+import { useMotoDocumentPendency } from "@/hooks/useDocumentPendencies";
+import {
+  ORIGIN_DOC_TYPES, clearOriginSnooze, isOriginProven, suggestOriginDocType,
+  type OriginDocType,
+} from "@/lib/origin-status";
+import { OriginProvenBadge } from "@/components/OriginProvenBadge";
 
 type Doc = {
   id: string;
@@ -57,9 +63,16 @@ type Doc = {
 
 const TRASH_TTL_DAYS = 30;
 
-export function MotorcycleDocuments({ motorcycleId }: { motorcycleId: string }) {
+export function MotorcycleDocuments({
+  motorcycleId,
+  openOriginUpload = false,
+}: {
+  motorcycleId: string;
+  /** Quando `true`, abre automaticamente o fluxo de anexo do documento de origem. */
+  openOriginUpload?: boolean;
+}) {
   const qc = useQueryClient();
-  const [upload, setUpload] = useState<{ files: File[] } | null>(null);
+  const [upload, setUpload] = useState<{ files: File[]; originMode?: boolean } | null>(null);
   const [editing, setEditing] = useState<Doc | null>(null);
   const [replacing, setReplacing] = useState<Doc | null>(null);
   const [timeline, setTimeline] = useState<Doc | null>(null);
@@ -68,6 +81,22 @@ export function MotorcycleDocuments({ motorcycleId }: { motorcycleId: string }) 
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"recent" | "old" | "name" | "type">("recent");
   const [profiles, setProfiles] = useState<Record<string, string>>({});
+  const [uid, setUid] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => setUid(data.user?.id ?? null));
+  }, []);
+
+  const pendency = useMotoDocumentPendency(motorcycleId);
+  const originSuggestedType: OriginDocType = suggestOriginDocType(pendency.data?.origin_type ?? null);
+
+  // Abre automaticamente o upload em modo "origem" quando chegar via ?kind=origin.
+  const [autoOpened, setAutoOpened] = useState(false);
+  useEffect(() => {
+    if (openOriginUpload && !autoOpened) {
+      setUpload({ files: [], originMode: true });
+      setAutoOpened(true);
+    }
+  }, [openOriginUpload, autoOpened]);
 
   const docs = useQuery({
     queryKey: ["motorcycle-documents", motorcycleId],
@@ -140,6 +169,8 @@ export function MotorcycleDocuments({ motorcycleId }: { motorcycleId: string }) 
   function invalidate() {
     qc.invalidateQueries({ queryKey: ["motorcycle-documents", motorcycleId] });
     qc.invalidateQueries({ queryKey: ["audit", motorcycleId] });
+    qc.invalidateQueries({ queryKey: ["document-pendencies"] });
+    qc.invalidateQueries({ queryKey: ["document-pendencies", motorcycleId] });
   }
 
   async function openFile(doc: Doc, download = false) {
@@ -216,6 +247,8 @@ export function MotorcycleDocuments({ motorcycleId }: { motorcycleId: string }) 
           <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Storage privado · URL assinada · SHA-256
         </div>
       </div>
+
+      {isOriginProven(pendency.data) && <OriginProvenBadge variant="card" />}
 
       {/* Dashboard */}
       <div className="surface-elevated rounded-2xl p-4 md:p-5">
@@ -362,6 +395,9 @@ export function MotorcycleDocuments({ motorcycleId }: { motorcycleId: string }) 
         <UploadDialog
           motorcycleId={motorcycleId}
           initialFiles={upload.files}
+          originMode={upload.originMode ?? false}
+          suggestedOriginType={originSuggestedType}
+          userId={uid}
           onClose={() => setUpload(null)}
           onDone={() => { setUpload(null); invalidate(); }}
         />
@@ -533,11 +569,27 @@ type PendingItem = {
 
 function UploadDialog({
   motorcycleId, initialFiles, onClose, onDone,
-}: { motorcycleId: string; initialFiles: File[]; onClose: () => void; onDone: () => void }) {
+  originMode = false, suggestedOriginType = "bill_of_sale", userId = null,
+}: {
+  motorcycleId: string;
+  initialFiles: File[];
+  onClose: () => void;
+  onDone: () => void;
+  originMode?: boolean;
+  suggestedOriginType?: OriginDocType;
+  userId?: string | null;
+}) {
   const [items, setItems] = useState<PendingItem[]>(
-    initialFiles.map((f) => ({ file: f, docType: guessType(f), customLabel: "", notes: "" })),
+    initialFiles.map((f) => ({
+      file: f,
+      docType: originMode ? suggestedOriginType : guessType(f),
+      customLabel: "",
+      notes: "",
+    })),
   );
   const [saving, setSaving] = useState(false);
+  // No modo origem, o próximo arquivo entra já como documento de origem.
+  const defaultTypeForNew: DocType = originMode ? suggestedOriginType : "other";
 
   function addFiles(list: FileList | null) {
     if (!list) return;
@@ -547,13 +599,22 @@ function UploadDialog({
       if (!ACCEPTED_MIME.some((m) => f.type === m || f.type.startsWith("image/"))) {
         toast.error(`"${f.name}" tem formato não suportado.`); continue;
       }
-      next.push({ file: f, docType: guessType(f), customLabel: "", notes: "" });
+      next.push({ file: f, docType: originMode ? defaultTypeForNew : guessType(f), customLabel: "", notes: "" });
     }
-    setItems((p) => [...p, ...next]);
+    // Origem exige exatamente um arquivo (NF ou Recibo).
+    if (originMode) setItems(next.slice(0, 1));
+    else setItems((p) => [...p, ...next]);
   }
 
   async function submit() {
     if (items.length === 0) { toast.error("Selecione ao menos um arquivo."); return; }
+    if (originMode) {
+      const it = items[0];
+      if (!ORIGIN_DOC_TYPES.includes(it.docType as OriginDocType)) {
+        toast.error("Selecione Nota Fiscal ou Recibo de Compra e Venda para comprovar a origem.");
+        return;
+      }
+    }
     for (const it of items) {
       if (it.docType === "other" && !it.customLabel.trim()) {
         toast.error("Informe uma descrição para os documentos do tipo 'Outros'."); return;
@@ -570,6 +631,15 @@ function UploadDialog({
         const up = await supabase.storage.from("documents").upload(path, it.file, { upsert: false });
         if (up.error) { toast.error(`${it.file.name}: ${up.error.message}`); continue; }
         const hash = await sha256Hex(it.file).catch(() => null);
+        const isOrigin = originMode && ORIGIN_DOC_TYPES.includes(it.docType as OriginDocType);
+        // Se já existir um documento de origem ativo, desmarca-o para manter unicidade.
+        if (isOrigin) {
+          await supabase
+            .from("motorcycle_documents" as never)
+            .update({ is_origin_document: false } as never)
+            .eq("motorcycle_id", motorcycleId)
+            .eq("is_origin_document", true as never);
+        }
         const { error } = await supabase.from("motorcycle_documents" as never).insert({
           motorcycle_id: motorcycleId,
           doc_type: it.docType,
@@ -584,11 +654,21 @@ function UploadDialog({
           created_by: uid,
           version: 1,
           is_current: true,
+          is_origin_document: isOrigin,
         } as never);
         if (error) { toast.error(`${it.file.name}: ${error.message}`); continue; }
         ok++;
       }
-      if (ok > 0) toast.success(`${ok} documento(s) anexado(s) com sucesso.`);
+      if (ok > 0) {
+        if (originMode) {
+          clearOriginSnooze(userId, motorcycleId);
+          toast.success("Documento de origem anexado com sucesso.", {
+            description: "🟢 Origem comprovada — o histórico da motocicleta agora está mais confiável.",
+          });
+        } else {
+          toast.success(`${ok} documento(s) anexado(s) com sucesso.`);
+        }
+      }
       onDone();
     } finally { setSaving(false); }
   }
@@ -597,9 +677,23 @@ function UploadDialog({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Anexar Documentos</DialogTitle>
-          <DialogDescription>Selecione um ou vários arquivos. Depois classifique cada um. Tamanho máximo por arquivo: 25 MB.</DialogDescription>
+          <DialogTitle>{originMode ? "Anexar Documento de Origem" : "Anexar Documentos"}</DialogTitle>
+          <DialogDescription>
+            {originMode
+              ? "Envie a Nota Fiscal ou o Recibo de Compra e Venda desta motocicleta. Qualquer um dos dois resolve a pendência."
+              : "Selecione um ou vários arquivos. Depois classifique cada um. Tamanho máximo por arquivo: 25 MB."}
+          </DialogDescription>
         </DialogHeader>
+
+        {originMode && (
+          <div className="flex items-start gap-2 rounded-xl border border-emerald-500/25 bg-emerald-500/5 px-3 py-2 text-[11px] text-emerald-200/90">
+            <Sparkles className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-300" />
+            <span>
+              Após o envio, a pendência é resolvida automaticamente e a moto passa a exibir o selo
+              <strong className="mx-1">Origem comprovada</strong>.
+            </span>
+          </div>
+        )}
 
         <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-border bg-card p-4 transition hover:border-primary/50">
           <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary"><Upload className="h-4 w-4" /></div>
@@ -607,8 +701,13 @@ function UploadDialog({
             <div className="font-medium">Selecionar arquivos</div>
             <div className="text-[11px] text-muted-foreground">PDF, JPG, PNG, WEBP · até 25 MB cada</div>
           </div>
-          <input type="file" multiple accept="application/pdf,image/*" className="sr-only"
-                 onChange={(e) => { addFiles(e.target.files); e.currentTarget.value = ""; }} />
+          <input
+            type="file"
+            multiple={!originMode}
+            accept="application/pdf,image/*"
+            className="sr-only"
+            onChange={(e) => { addFiles(e.target.files); e.currentTarget.value = ""; }}
+          />
         </label>
 
         <div className="space-y-2">
@@ -626,7 +725,12 @@ function UploadDialog({
                 <Select value={it.docType} onValueChange={(v) => setItems((p) => p.map((x, i) => i === idx ? { ...x, docType: v as DocType } : x))}>
                   <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {DOC_TYPES.map((d) => <SelectItem key={d.value} value={d.value}>{d.icon} {d.label}</SelectItem>)}
+                    {(originMode
+                      ? DOC_TYPES.filter((d) => (ORIGIN_DOC_TYPES as readonly string[]).includes(d.value))
+                      : DOC_TYPES
+                    ).map((d) => (
+                      <SelectItem key={d.value} value={d.value}>{d.icon} {d.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 {it.docType === "other" && (
@@ -638,7 +742,9 @@ function UploadDialog({
           ))}
           {items.length === 0 && (
             <div className="rounded-xl border border-dashed border-border p-6 text-center text-xs text-muted-foreground">
-              Nenhum arquivo selecionado ainda.
+              {originMode
+                ? "Selecione o arquivo da Nota Fiscal ou do Recibo de Compra e Venda."
+                : "Nenhum arquivo selecionado ainda."}
             </div>
           )}
         </div>
@@ -646,7 +752,11 @@ function UploadDialog({
         <DialogFooter>
           <Button variant="ghost" onClick={onClose}>Cancelar</Button>
           <Button className="btn-glow" onClick={submit} disabled={saving || items.length === 0}>
-            {saving ? "Enviando…" : `Enviar ${items.length || ""}`.trim()}
+            {saving
+              ? "Enviando…"
+              : originMode
+                ? "Anexar documento de origem"
+                : `Enviar ${items.length || ""}`.trim()}
           </Button>
         </DialogFooter>
       </DialogContent>
