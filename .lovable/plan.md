@@ -1,118 +1,137 @@
-# Selos de Qualidade do Histórico — Fase 1 (Fundação) — **HOMOLOGADA E ENCERRADA**
+# Revisão de UX v1.5 — TrailBook mais intuitivo
 
-Entrega focada em **arquitetura escalável + primeiros selos reais**, integrada onde já há valor imediato. Nada de conquista manual — todos são avaliados automaticamente a partir de evidências que já existem no banco.
+Sem novas funcionalidades. Foco em linguagem simples, descoberta, navegação, mobile e padronização visual. Uma entrega grande, dividida em blocos coerentes.
 
-> **Status:** Fase 1 homologada em 2026-07-11. Alterações futuras neste módulo devem entrar como nova fase.
+## 1. Princípio oficial de linguagem (base de tudo)
 
-## Princípios
+Registrar em `mem://principles/linguagem-oficial` e citar no Core do `.lovable/mem/index.md`:
 
-- **Registry central**: cada selo é uma definição declarativa (id, título, tooltip, ícone, tier, critérios). Adicionar um novo selo = adicionar um objeto no registry, sem tocar em componentes.
-- **Motor puro e determinístico**: recebe um `MotorcycleEvidence` snapshot e retorna `BadgeEvaluation[]` (earned / partial / locked + critérios atendidos/pendentes). Zero side-effects, testável.
-- **Evidências agregadas**: um único hook `useMotorcycleEvidence(motoId)` monta o snapshot a partir do que já existe (documentos, manutenções, timeline, transferências, fotos, cadastro). Nunca cria tabelas novas nessa fase.
-- **UI reutilizável**: um `BadgeChip` + `BadgeGrid` + `BadgeTooltip` compartilhados por Central, Passaporte, Certificados e Saúde. Sem duplicar visual.
-- **Conquista é consequência**: selos não são armazenados; são derivados. Isso garante que dados apagados/rebaixados (respeitando `mem://principles/preservacao-historico`) reflitam imediatamente no selo.
+- Toda UI em português simples, objetivo, amigável.
+- Sem termos técnicos quando existir equivalente claro.
+- Nomes técnicos ficam restritos a código, docs, ADR e arquitetura.
+- Glossário oficial de substituições:
+  - "Smart Receipt" → "Recibo de Compra e Venda"
+  - "Emit Smart Receipt" → "Gerar Recibo"
+  - "Smart Receipt History" → "Histórico de Recibos"
+  - "Smart Receipt Status" → "Status do Recibo"
+  - "Dashboard" → "Início"
+  - "Timeline" → "Histórico"
+  - "Passport" (rótulos de UI) → "Passaporte Digital"
+  - "Selos" mantém "Selos de Qualidade"
 
-## Selos iniciais (Fase 1)
+Auditoria e substituição em toda a UI (componentes, dialogs, toasts, menus, sidebar, PageHeader, breadcrumbs). Arquivos-alvo principais: `MotoControlCenter`, `MotorcycleDocuments`, `HealthOverview`, `receipts/*`, `cockpit/*`, `PageHeader`, `router.tsx` (labels da sidebar), rotas em `_authenticated/*`.
 
-Todos derivados de dados que já existem:
+## 2. Home (rota `/dashboard`) — painel executivo
 
-1. **Origem Comprovada** — `is_origin_document = true` ativo. (Substitui o `OriginProvenBadge` atual usando o mesmo registry.)
-2. **Documentação Completa** — todos os `RECOMMENDED_DOC_TYPES` presentes e ativos.
-3. **Histórico Cronológico** — timeline com ≥ 5 eventos e primeiro evento registrado.
-4. **Manutenção em Dia** — nenhum item do plano em atraso e sem alerta alto (usa `src/lib/til/health.ts`).
-5. **Cadeia de Propriedade Íntegra** — `ownership_history` sem gaps + owner atual aberto.
-6. **Fotos Oficiais** — capa definida + ≥ 3 fotos.
-7. **Histórico Completo** — agregador automático: Origem + Documentação Completa + Cadeia Íntegra.
+Reorganizar `src/routes/_authenticated/dashboard.tsx` como painel enxuto, mobile-first:
 
-> **Nota:** "Verificado pelo TrailBook" foi deliberadamente removido da Fase 1. Só retorna quando houver processo real de validação humana/parceiros.
+1. Saudação curta + Moto Ativa (mantém `ActiveMotoCard`).
+2. **Banner Novidades** (novo componente `WhatsNewCard`) — dismissível por sessão, com CTA "Saiba mais" abrindo modal `WhatsNewDialog` listando: Recibo, Documento de Origem, Selos, Passaporte, Melhorias no Cadastro.
+3. **Pendências** (mantém `DocumentPendenciesCard`, texto revisado).
+4. **Resumo da Moto Ativa** — chips clicáveis, cada um leva à seção correta:
+   - Passaporte Digital · Documento de Origem · Recibo · Selos · Certificados · Histórico · Próximas Manutenções.
+5. **Últimas atualizações** (eventos recentes já existe — só renomear seção e enxugar).
+6. Lista "Suas motos" mantida colapsada como hoje.
 
-Cada selo publica critérios legíveis: "✔ Nota Fiscal anexada", "✖ Manual do proprietário pendente", etc.
+Remover métricas de topo (4 KPIs) — ruído para o usuário comum. Manter só "Motos" + investido opcional dentro do card ativo.
 
-## Arquitetura técnica
+Novo componente `HomeQuickActions` reaproveitando tokens do design system (`TBActionCard`).
 
-```text
-src/lib/badges/
-  types.ts             BadgeId, BadgeDefinition, Criterion,
-                       BadgeEvaluation, EvidenceSnapshot, BadgeTier
-  registry.ts          BADGES: BadgeDefinition[]  (declarativo)
-  evaluator.ts         evaluateBadges(evidence) -> BadgeEvaluation[]
-  criteria/            um arquivo por família de critérios
-    origin.ts
-    documentation.ts
-    timeline.ts
-    maintenance.ts
-    ownership.ts
-    photos.ts
+## 3. FAQ (rota `/help`)
 
-src/hooks/
-  useMotorcycleEvidence.ts   snapshot agregado (React Query)
-  useMotorcycleBadges.ts     evidence -> evaluations (memoizado)
+Reescrever `src/routes/help.tsx` com as 7 seções pedidas (Cadastro, Motocicleta, Recibo, Passaporte, Selos, Segurança, Como funciona). Estrutura acordeon (shadcn `Accordion`), busca simples por texto, âncoras por seção. Todo conteúdo em português claro, sem jargão.
 
-src/components/badges/
-  BadgeChip.tsx        pílula compacta (usada em headers)
-  BadgeGrid.tsx        grade de selos com estado (earned/partial/locked)
-  BadgeTooltip.tsx     conteúdo do tooltip: significado + atendidos + pendentes
-  BadgeSection.tsx     bloco "Selos de Qualidade" reusável
-```
+## 4. Página "Como funciona" (`/help/como-funciona`)
 
-### Contratos essenciais
+Nova rota `src/routes/help.como-funciona.tsx` com fluxo vertical (passos numerados em cards) — mobile-first. Sem novas funcionalidades, só explicação visual do fluxo Cadastro → Moto → Origem → Manutenções → Recibo → Passaporte → Selos. Link visível na FAQ e no onboarding.
 
-```ts
-type BadgeTier = "bronze" | "silver" | "gold" | "signature";
-type CriterionState = "met" | "unmet" | "n/a";
+## 5. Tooltips contextuais
 
-type BadgeDefinition = {
-  id: BadgeId;
-  title: string;
-  short: string;         // chip label
-  tier: BadgeTier;
-  icon: LucideIcon | string;
-  description: string;   // "o que significa"
-  evaluate: (e: EvidenceSnapshot) => {
-    state: "earned" | "partial" | "locked";
-    criteria: { label: string; state: CriterionState }[];
-  };
-};
+Criar helper `src/components/HelpTooltip.tsx` (wrapper do shadcn `Tooltip` + ícone `Info`, acessível via touch com `Popover` no mobile). Aplicar em:
 
-type BadgeEvaluation = BadgeDefinition & ReturnType<BadgeDefinition["evaluate"]>;
-```
+- Documento de Origem (card e formulário).
+- Histórico Completo (BadgeChip já tem tooltip — padronizar texto).
+- Recibo de Compra e Venda (botão gerar).
+- Passaporte Digital (Central da Moto).
+- Selos de Qualidade (seções resumo).
 
-## Integrações desta fase
+Textos oficiais no plano do usuário.
 
-- **Central da Moto**: `BadgeSection` compact — resumo enxuto dos selos conquistados + CTA "Ver todos os selos" para o Passaporte.
-- **Passaporte Digital**: `BadgeGrid` completo (público — o que aumenta valor para comprador).
-- **Saúde da Moto**: `SingleBadgeChip` de Manutenção em Dia + Origem Comprovada.
-- **Documentos**: substitui o `OriginProvenBadge` atual pelo chip do registry (mesma UI, fonte única).
+## 6. Onboarding de primeiro acesso
 
-> Certificados e Índices de Conservação/Confiabilidade ficam para Fase 2+: exigem definição de fórmula própria e não devem entrar sem uma passada dedicada.
+Novo componente `src/components/onboarding/WelcomeTour.tsx` — 4 telas em bottom sheet (mobile) / dialog (desktop):
 
-## Fora de escopo (Fase 2+)
+1. Bem-vindo ao TrailBook.
+2. Cadastre sua motocicleta e o Documento de Origem.
+3. Registre manutenções e conquiste Selos.
+4. Compartilhe o Passaporte Digital e gere Recibos.
 
-- Persistência histórica de conquistas ("conquistado em"), notificações de novo selo, gamificação, ranking, badges pagos, compartilhamento social. Todos ficam viáveis sobre esta fundação sem refatorar.
-- Registrar snapshot em banco só quando surgir necessidade real (ex.: certificado imutável precisar congelar o selo naquela data).
+Trigger: primeiro login sem flag `tb_onboarding_v1_done` em `localStorage`. Botões "Pular" e "Começar". Reabrir via `Configurações → Ver tour novamente` (adicionar item em `settings.tsx`).
 
-## Homologação — **APROVADA**
+Sem tabela nova — persistência apenas em `localStorage` por enquanto (consistente com "Sem novas funcionalidades / sem novas tabelas").
 
-- **M1** (moto nova sem histórico): nenhum selo conquistado; todos em `locked`/`partial` com critérios claros; score 0.
-- **M2** (histórico completo): conquista de `origin_proven`, `documentation_complete`, `ownership_chain_intact` e `history_complete`; demais conforme dados.
-- **M4** (pendências): selos parciais exibem critérios atendidos/pendentes + progresso.
-- **M8** (manutenção vencida): perda imediata de `maintenance_on_track` ao vencer item; retorno após regularização.
-- Snapshot determinístico: dado o mesmo dado, mesma avaliação.
-- Reatividade automática a mudanças de dados sem refresh manual.
-- Consistência entre Central, Passaporte, Saúde e Documentos.
-- Typecheck + build de produção limpos; console limpo; mobile sem cortes.
-- Sem regressão em Central, Passaporte, Documentos, Smart Receipt.
+## 7. Revisão de textos globais
 
-## Entregáveis concluídos
+Sweep com `rg` por strings a substituir e ajustar em lote. Foco em:
+- Toasts (`sonner`) — mensagens curtas, verbo no imperativo positivo.
+- Títulos de dialogs e sheets.
+- Labels de sidebar (`router.tsx` / layout).
+- CTAs duplicadas.
 
-1. `src/lib/badges/*` (registry + evaluator).
-2. `useMotorcycleEvidence` + `useMotorcycleBadges`.
-3. `BadgeChip / BadgeGrid / BadgeTooltip / BadgeSection / SingleBadgeChip`.
-4. Integração em Central, Passaporte, Saúde e Documentos.
-5. Migração do `OriginProvenBadge` para o registry.
-6. **ADR 0007** documentando registry, motor e princípios.
-7. Registro em memória: `mem://features/selos-qualidade` + entrada no core do índice.
+## 8. Mobile QA
 
-## Próximas fases (não implementar sem solicitação)
+Passar Playwright em 384×703 nas telas principais (Home, Central da Moto, Passaporte, Documentos, Saúde, Recibos, FAQ, Como funciona, Onboarding). Corrigir qualquer texto cortado / scroll horizontal aplicando os padrões `responsive-layout-patterns` (grid + `min-w-0` + `truncate` + `shrink-0`). Screenshots em `/tmp/browser/ux-v15/`.
 
-- Fase 2: persistência histórica de conquistas, notificações, snapshot em certificado imutável, selos de validação humana/parceiros (incluindo eventual "Verificado pelo TrailBook"), índices de Conservação/Confiabilidade.
+## 9. Padronização visual
+
+Consolidar via design system existente (`TBPageHeader`, `TBSectionHeader`, `TBCard`, `TBButton`, `TBChip`). Substituir usos ad-hoc encontrados durante a revisão. Sem novo token de cor — só coerência.
+
+## 10. Regra permanente de qualidade
+
+Registrar oficialmente:
+
+- **ADR 0008** — `docs/adr/0008-regra-permanente-qualidade.md`: as 5 etapas (Funcional, UX, Mobile, Comunicação, Final) obrigatórias antes de qualquer homologação.
+- Memória: `.lovable/mem/standards/qualidade-oficial.md` + referência no Core do índice.
+- `CHANGELOG.md` — nova versão `[1.5] Revisão de UX`.
+- `.lovable/plan.md` — bloco "Revisão de UX v1.5" concluído.
+- Atualizar `.lovable/mem/standards/dev-directives.md` referenciando a nova regra.
+
+## Homologação (entregável final)
+
+- Typecheck `bunx tsgo --noEmit` limpo.
+- Console limpo em Playwright.
+- Screenshots mobile das principais telas anexadas ao relatório.
+- Lista de textos substituídos, tooltips adicionados, telas revisadas.
+
+---
+
+## Detalhamento técnico (para o dev)
+
+Arquivos a criar:
+- `src/components/WhatsNewCard.tsx`, `src/components/WhatsNewDialog.tsx`
+- `src/components/HelpTooltip.tsx`
+- `src/components/onboarding/WelcomeTour.tsx`
+- `src/routes/help.como-funciona.tsx`
+- `docs/adr/0008-regra-permanente-qualidade.md`
+- `.lovable/mem/principles/linguagem-oficial.md`
+- `.lovable/mem/standards/qualidade-oficial.md`
+
+Arquivos a editar (principais):
+- `src/routes/_authenticated/dashboard.tsx` (reorganização Home)
+- `src/routes/help.tsx` (FAQ nova)
+- `src/routes/_authenticated/settings.tsx` (item "Ver tour novamente")
+- `src/routes/__root.tsx` / `router.tsx` (labels)
+- `src/components/receipts/*` (renomeações de UI)
+- `src/components/MotoControlCenter.tsx`, `MotorcycleDocuments.tsx`, `PageHeader.tsx`
+- `.lovable/mem/index.md`, `.lovable/plan.md`, `CHANGELOG.md`, `.lovable/mem/standards/dev-directives.md`
+
+Sem migrações de banco. Sem novas tabelas. Sem novas dependências (usar shadcn já disponível).
+
+## Escopo explicitamente FORA
+
+- Nenhuma nova funcionalidade de negócio.
+- Nada em `smart_receipts.*` do backend (Fase 1.2 encerrada).
+- Sem alterar evaluator de Selos.
+- Sem mudar RLS/roles.
+
+Aprovar para eu executar em uma única entrega, ou pedir para dividir em fases (ex.: Fase A = linguagem+Home+regra permanente; Fase B = FAQ+Como funciona+Onboarding+Tooltips; Fase C = QA mobile e polimento).

@@ -25,9 +25,11 @@ import { Route as AuthenticatedPlansRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated/messages'
 import { Route as AuthenticatedFinancialRouteImport } from './routes/_authenticated/financial'
+import { Route as AuthenticatedFaqRouteImport } from './routes/_authenticated/faq'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedComunicacaoRouteImport } from './routes/_authenticated/comunicacao'
 import { Route as AuthenticatedCompleteProfileRouteImport } from './routes/_authenticated/complete-profile'
+import { Route as AuthenticatedComoFuncionaRouteImport } from './routes/_authenticated/como-funciona'
 import { Route as AuthenticatedCertificatesRouteImport } from './routes/_authenticated/certificates'
 import { Route as AuthenticatedCentralRouteImport } from './routes/_authenticated/central'
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated/agenda'
@@ -133,6 +135,11 @@ const AuthenticatedFinancialRoute = AuthenticatedFinancialRouteImport.update({
   path: '/financial',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedFaqRoute = AuthenticatedFaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -148,6 +155,12 @@ const AuthenticatedCompleteProfileRoute =
   AuthenticatedCompleteProfileRouteImport.update({
     id: '/complete-profile',
     path: '/complete-profile',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedComoFuncionaRoute =
+  AuthenticatedComoFuncionaRouteImport.update({
+    id: '/como-funciona',
+    path: '/como-funciona',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedCertificatesRoute =
@@ -303,9 +316,11 @@ export interface FileRoutesByFullPath {
   '/agenda': typeof AuthenticatedAgendaRoute
   '/central': typeof AuthenticatedCentralRoute
   '/certificates': typeof AuthenticatedCertificatesRoute
+  '/como-funciona': typeof AuthenticatedComoFuncionaRoute
   '/complete-profile': typeof AuthenticatedCompleteProfileRoute
   '/comunicacao': typeof AuthenticatedComunicacaoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/faq': typeof AuthenticatedFaqRoute
   '/financial': typeof AuthenticatedFinancialRoute
   '/messages': typeof AuthenticatedMessagesRoute
   '/perfil': typeof AuthenticatedPerfilRoute
@@ -347,9 +362,11 @@ export interface FileRoutesByTo {
   '/agenda': typeof AuthenticatedAgendaRoute
   '/central': typeof AuthenticatedCentralRoute
   '/certificates': typeof AuthenticatedCertificatesRoute
+  '/como-funciona': typeof AuthenticatedComoFuncionaRoute
   '/complete-profile': typeof AuthenticatedCompleteProfileRoute
   '/comunicacao': typeof AuthenticatedComunicacaoRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/faq': typeof AuthenticatedFaqRoute
   '/financial': typeof AuthenticatedFinancialRoute
   '/messages': typeof AuthenticatedMessagesRoute
   '/perfil': typeof AuthenticatedPerfilRoute
@@ -393,9 +410,11 @@ export interface FileRoutesById {
   '/_authenticated/agenda': typeof AuthenticatedAgendaRoute
   '/_authenticated/central': typeof AuthenticatedCentralRoute
   '/_authenticated/certificates': typeof AuthenticatedCertificatesRoute
+  '/_authenticated/como-funciona': typeof AuthenticatedComoFuncionaRoute
   '/_authenticated/complete-profile': typeof AuthenticatedCompleteProfileRoute
   '/_authenticated/comunicacao': typeof AuthenticatedComunicacaoRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/faq': typeof AuthenticatedFaqRoute
   '/_authenticated/financial': typeof AuthenticatedFinancialRoute
   '/_authenticated/messages': typeof AuthenticatedMessagesRoute
   '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
@@ -440,9 +459,11 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/central'
     | '/certificates'
+    | '/como-funciona'
     | '/complete-profile'
     | '/comunicacao'
     | '/dashboard'
+    | '/faq'
     | '/financial'
     | '/messages'
     | '/perfil'
@@ -484,9 +505,11 @@ export interface FileRouteTypes {
     | '/agenda'
     | '/central'
     | '/certificates'
+    | '/como-funciona'
     | '/complete-profile'
     | '/comunicacao'
     | '/dashboard'
+    | '/faq'
     | '/financial'
     | '/messages'
     | '/perfil'
@@ -529,9 +552,11 @@ export interface FileRouteTypes {
     | '/_authenticated/agenda'
     | '/_authenticated/central'
     | '/_authenticated/certificates'
+    | '/_authenticated/como-funciona'
     | '/_authenticated/complete-profile'
     | '/_authenticated/comunicacao'
     | '/_authenticated/dashboard'
+    | '/_authenticated/faq'
     | '/_authenticated/financial'
     | '/_authenticated/messages'
     | '/_authenticated/perfil'
@@ -690,6 +715,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedFinancialRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/faq': {
+      id: '/_authenticated/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof AuthenticatedFaqRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -709,6 +741,13 @@ declare module '@tanstack/react-router' {
       path: '/complete-profile'
       fullPath: '/complete-profile'
       preLoaderRoute: typeof AuthenticatedCompleteProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/como-funciona': {
+      id: '/_authenticated/como-funciona'
+      path: '/como-funciona'
+      fullPath: '/como-funciona'
+      preLoaderRoute: typeof AuthenticatedComoFuncionaRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/certificates': {
@@ -960,9 +999,11 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRoute
   AuthenticatedCentralRoute: typeof AuthenticatedCentralRoute
   AuthenticatedCertificatesRoute: typeof AuthenticatedCertificatesRoute
+  AuthenticatedComoFuncionaRoute: typeof AuthenticatedComoFuncionaRoute
   AuthenticatedCompleteProfileRoute: typeof AuthenticatedCompleteProfileRoute
   AuthenticatedComunicacaoRoute: typeof AuthenticatedComunicacaoRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedFaqRoute: typeof AuthenticatedFaqRoute
   AuthenticatedFinancialRoute: typeof AuthenticatedFinancialRoute
   AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
   AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
@@ -984,9 +1025,11 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAgendaRoute: AuthenticatedAgendaRoute,
   AuthenticatedCentralRoute: AuthenticatedCentralRoute,
   AuthenticatedCertificatesRoute: AuthenticatedCertificatesRoute,
+  AuthenticatedComoFuncionaRoute: AuthenticatedComoFuncionaRoute,
   AuthenticatedCompleteProfileRoute: AuthenticatedCompleteProfileRoute,
   AuthenticatedComunicacaoRoute: AuthenticatedComunicacaoRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedFaqRoute: AuthenticatedFaqRoute,
   AuthenticatedFinancialRoute: AuthenticatedFinancialRoute,
   AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
   AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
@@ -1018,13 +1061,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

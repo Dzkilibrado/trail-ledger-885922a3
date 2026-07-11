@@ -15,6 +15,7 @@ import { useViewAsUser } from "@/hooks/useViewAsUser";
 import { useModules } from "@/hooks/useModules";
 import { ROUTE_TO_MODULE } from "@/lib/modules";
 import { ModuleGate } from "@/components/ModuleGate";
+import { WelcomeTour } from "@/components/onboarding/WelcomeTour";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -221,6 +222,7 @@ function AuthedLayout() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <WelcomeTour />
     </div>
   );
 }

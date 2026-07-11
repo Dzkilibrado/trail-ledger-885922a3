@@ -2,6 +2,36 @@
 
 Todas as entregas oficialmente homologadas do TrailBook. Formato inspirado em Keep a Changelog.
 
+## [1.5] — 2026-07-11 — Revisão de UX, Linguagem oficial e Regra Permanente de Qualidade
+
+Sem novas funcionalidades. Entrega focada em tornar o TrailBook mais intuitivo, com linguagem simples, descoberta clara das funcionalidades e mobile como prioridade.
+
+### UX / Descoberta
+- **Home reorganizada** (`/dashboard`): banner de Novidades, resumo da moto ativa, pendências, atalhos rápidos, últimas atualizações. Métricas técnicas (horas/km/investido) enxugadas.
+- **Banner "Novidades do TrailBook"** (`WhatsNewCard` + `WhatsNewDialog`) — dismissível por sessão, com resumo de Recibo, Documento de Origem, Selos, Passaporte Digital e Melhorias no Cadastro.
+- **Onboarding de primeiro acesso** (`WelcomeTour`) — 4 telas explicando cadastro, moto/origem, manutenções/selos, passaporte/recibo. Reabrível em Configurações → "Ver tour de boas-vindas".
+- **Nova página "Como funciona"** (`/como-funciona`) — passo a passo do fluxo TrailBook em linguagem simples.
+- **Nova FAQ** (`/faq`) — 7 seções (Cadastro, Motocicleta, Recibo, Passaporte, Selos, Segurança) com busca por palavra-chave. `/help` continua sendo o chamado ao suporte.
+- **Tooltip contextual** (`HelpTooltip`) — helper acessível por toque (Popover) para explicar termos como Documento de Origem, Histórico Completo, Recibo e Passaporte.
+- **Configurações** ganhou atalhos: "Como o TrailBook funciona", "Perguntas frequentes" e "Ver tour de boas-vindas".
+
+### Linguagem oficial ([mem](/.lovable/mem/principles/linguagem-oficial.md))
+- Toda UI em português simples e amigável, sem termos técnicos quando houver equivalente claro.
+- Glossário oficial: Smart Receipt → Recibo de Compra e Venda; Dashboard → Início; Timeline → Histórico; Passport → Passaporte Digital.
+- Nomes técnicos ficam restritos a código, ADR e documentação.
+- Título da Home passa a ser "Início — TrailBook".
+
+### Governança — Regra Permanente de Qualidade
+- **[ADR 0008](docs/adr/0008-regra-permanente-qualidade.md)** — 5 revisões obrigatórias antes de qualquer homologação:
+  1. Funcional, 2. UX, 3. Mobile, 4. Comunicação, 5. Final (console/typecheck/build/docs/CHANGELOG).
+- Vigora a partir desta versão para toda funcionalidade nova.
+- Registrada em `mem://standards/qualidade-oficial` e referenciada em `dev-directives`.
+
+### Não entrou nesta versão (fora do escopo)
+- Novas funcionalidades de negócio.
+- Alteração no evaluator dos Selos (Fase 1 encerrada).
+- Alteração em RLS, roles ou banco.
+
 ## [1.4] — 2026-07-11 — Selos de Qualidade do Histórico (Fase 1 — Fundação) — **HOMOLOGADA E ENCERRADA**
 
 Entrega focada em arquitetura escalável + primeiros selos reais derivados de evidências. Detalhes técnicos em [ADR 0007](docs/adr/0007-selos-qualidade-historico.md).

@@ -13,6 +13,8 @@
 - Smart Receipt Fase 1.2 está HOMOLOGADA E ENCERRADA (2026-07-10). Não alterar `smart_receipts.*`, triggers `on_smart_receipt_completed` / `smart_receipts_supersede_previous` / `generate_smart_receipt_code`, RPC `get_public_receipt`, rota `/r/:code` nem `src/lib/smart-receipts*` sem nova solicitação formal. Detalhes em CHANGELOG.md.
 - Preservação de histórico é princípio permanente (`mem://principles/preservacao-historico`): substituir documento NUNCA apaga o anterior — só rebaixa `is_current`/`is_origin_document`. Arquivo, autor, data e auditoria permanecem intactos.
 - Selos de Qualidade do Histórico — Fase 1 **HOMOLOGADA E ENCERRADA** (`mem://features/selos-qualidade`, ADR 0007): registry declarativo em `src/lib/badges/registry.ts` + motor puro `evaluateBadges`. Selos são DERIVADOS de evidências (nunca armazenados/manuais); adicionar selo = adicionar objeto no registry, sem tocar em componentes. Alterações futuras entram como nova fase.
+- Linguagem oficial da UI: português simples e amigável, sem termos técnicos quando houver alternativa clara. Glossário e regras em `mem://principles/linguagem-oficial`. Nomes técnicos ficam restritos a código, ADR e docs.
+- Regra Permanente de Qualidade (`mem://standards/qualidade-oficial`, ADR 0008): toda funcionalidade nova precisa passar pelas 5 revisões (Funcional, UX, Mobile, Comunicação, Final) antes de ser homologada. Vigora a partir da v1.5.
 
 ## Memories
 - [Diretrizes de desenvolvimento](mem://standards/dev-directives) — Padrões obrigatórios (18 pontos) aplicáveis a toda nova funcionalidade v1.0.1+
@@ -26,3 +28,6 @@
 - [Preservação de Histórico](mem://principles/preservacao-historico) — Prontuário Digital: substituição só alterna "atual", nunca destrói registro/arquivo/auditoria
 - [Selos de Qualidade do Histórico](mem://features/selos-qualidade) — Fase 1: registry + motor + hooks + UI reusável; integrado em Central, Passaporte, Saúde e Documentos
 - [ADR 0007 — Selos de Qualidade do Histórico](docs/adr/0007-selos-qualidade-historico.md) — fundação arquitetural, princípios invioláveis, roadmap Fase 2
+- [Linguagem oficial da UI](mem://principles/linguagem-oficial) — português simples, glossário e regras de aplicação
+- [Regra Permanente de Qualidade](mem://standards/qualidade-oficial) — 5 revisões obrigatórias antes de qualquer homologação
+- [ADR 0008 — Regra Permanente de Qualidade](docs/adr/0008-regra-permanente-qualidade.md) — portão final de homologação
