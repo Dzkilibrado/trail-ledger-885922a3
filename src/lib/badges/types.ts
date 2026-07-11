@@ -19,7 +19,7 @@ export type BadgeId =
   | "maintenance_on_track"
   | "ownership_chain_intact"
   | "official_photos"
-  | "trailbook_verified";
+  | "history_complete";
 
 export type BadgeTier = "bronze" | "silver" | "gold" | "signature";
 

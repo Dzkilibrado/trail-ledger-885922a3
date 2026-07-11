@@ -170,13 +170,13 @@ export const BADGES: BadgeDefinition[] = [
     },
   },
   {
-    id: "trailbook_verified",
-    title: "Verificado pelo TrailBook",
-    short: "Verificado",
+    id: "history_complete",
+    title: "Histórico Completo",
+    short: "Completo",
     tier: "signature",
-    glyph: "🏆",
+    glyph: "🟢",
     description:
-      "Selo agregador de máxima confiança: origem comprovada, documentação completa e cadeia de propriedade íntegra — o padrão-ouro para compra e venda de motos off-road.",
+      "A motocicleta possui um histórico consistente, completo e bem documentado — origem comprovada, documentação completa e cadeia de propriedade íntegra, conforme as regras automáticas do sistema. Este selo é derivado de evidências reais e não representa validação presencial ou auditoria oficial do TrailBook.",
     evaluate: (e) => {
       // Este selo depende de outros — reavalia inline para manter o motor puro.
       const origin = BADGES.find((b) => b.id === "origin_proven")!.evaluate(e);
