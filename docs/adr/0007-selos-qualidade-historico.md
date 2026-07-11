@@ -3,6 +3,21 @@
 **Status:** Aceito · v1.0 (Fase 1 — Fundação)
 **Data:** 2026-07-11
 
+**Revisão v1.1 (2026-07-11)** — Homologação Fase 1:
+- Removido o selo `trailbook_verified` ("Verificado pelo TrailBook") do
+  Registry desta fase. Ele transmitia ao usuário e ao comprador que a moto
+  passou por processo oficial de validação (conferência documental,
+  inspeção técnica, auditoria) — processo que ainda não existe. Para
+  preservar a credibilidade da plataforma, o selo só poderá voltar quando
+  houver validação real da equipe/parceiros TrailBook.
+- Introduzido em seu lugar o selo `history_complete` ("Histórico
+  Completo"), agregador puramente derivado das mesmas evidências (origem
+  + documentação + cadeia de propriedade). Este selo é declaradamente
+  **automático** e não implica auditoria oficial.
+- Rótulos de tier (Bronze/Prata/Ouro/Signature) não são exibidos na UI
+  nesta fase — a arquitetura permanece pronta para reintroduzí-los junto
+  com selos futuros de validação real.
+
 ## Contexto
 
 O TrailBook armazena documentos, timeline, plano de manutenção, cadeia de
@@ -36,7 +51,7 @@ Introduzir **Selos de Qualidade do Histórico** como uma camada derivada:
 | `maintenance_on_track` | gold | Sem vencidos + sem alerta alto |
 | `ownership_chain_intact` | silver | Cadeia sem lacunas + owner atual aberto |
 | `official_photos` | bronze | Capa definida + ≥ 3 fotos |
-| `trailbook_verified` | signature | Origem + Docs + Cadeia (agregador) |
+| `history_complete` | signature | Origem + Docs + Cadeia (agregador automático) |
 
 ### Princípios invioláveis
 
@@ -68,3 +83,9 @@ Introduzir **Selos de Qualidade do Histórico** como uma camada derivada:
   probatório e vira gamificação vazia.
 - **Motor com side-effects (fetch dentro de `evaluate`)** — rejeitado: quebra
   determinismo, dificulta testes e SSR.
+- **Selo "Verificado pelo TrailBook" automático** — rejeitado nesta fase:
+  o nome implica validação humana/oficial que ainda não ocorre. Reservado
+  para futura fase que combine conferência documental, oficina homologada,
+  inspeção técnica ou auditoria oficial. Enquanto não existir, o selo
+  **não** aparece na UI, **não** é concedido automaticamente, **não** vai
+  para Certificados nem Passaporte.
