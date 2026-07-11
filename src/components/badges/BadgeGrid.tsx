@@ -46,12 +46,7 @@ export function BadgeGrid({ evaluations }: { evaluations: BadgeEvaluation[] }) {
                     {b.glyph}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <div className="truncate text-sm font-semibold">{b.title}</div>
-                      <span className="rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                        {b.tier}
-                      </span>
-                    </div>
+                    <div className="truncate text-sm font-semibold">{b.title}</div>
                     <p className="mt-0.5 line-clamp-2 text-[11px] text-muted-foreground">
                       {b.description}
                     </p>

@@ -12,7 +12,7 @@ export function BadgeTooltipContent({ evaluation }: { evaluation: BadgeEvaluatio
         <div className="min-w-0">
           <div className="font-semibold text-foreground">{b.title}</div>
           <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
-            {STATE_LABEL[evaluation.state]} · tier {b.tier}
+            {STATE_LABEL[evaluation.state]}
           </div>
         </div>
       </div>
