@@ -240,7 +240,10 @@ function Passport() {
         </div>
       </div>
 
-      {/* Pendências e Selo */}
+      {/* Selos de Qualidade do Histórico — evidências reais transformadas em confiança pública. */}
+      <BadgeSection motorcycleId={m.id} variant="full" />
+
+      {/* Pendências e Selo TrailBook Certified */}
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         <div className="surface-elevated rounded-2xl p-5">
           <h2 className="mb-3 flex items-center gap-2 font-display font-bold">
