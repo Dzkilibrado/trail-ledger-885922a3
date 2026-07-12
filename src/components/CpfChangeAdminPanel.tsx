@@ -17,12 +17,12 @@ const STATUS_LABEL: Record<string, string> = {
   approved: "Aprovada", rejected: "Rejeitada", cancelled: "Cancelada",
 };
 const STATUS_TONE: Record<string, string> = {
-  open: "bg-primary/15 text-primary border-primary/30",
-  in_review: "bg-sky-500/15 text-sky-400 border-sky-500/30",
-  awaiting_info: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  approved: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  rejected: "bg-destructive/15 text-destructive border-destructive/30",
-  cancelled: "bg-muted text-muted-foreground border-border",
+  open: TONE.primary,
+  in_review: TONE.sky,
+  awaiting_info: TONE.amber,
+  approved: TONE.emerald,
+  rejected: TONE.destructive,
+  cancelled: TONE.muted,
 };
 
 /**
