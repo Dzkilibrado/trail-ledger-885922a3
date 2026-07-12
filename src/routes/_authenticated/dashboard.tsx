@@ -153,7 +153,7 @@ function Dashboard() {
   );
 }
 
-function QuickActions({ motoId }: { motoId: string }) {
+const QuickActions = memo(function QuickActions({ motoId }: { motoId: string }) {
   const items = [
     { to: "/motorcycles/$id/passport", icon: Share2, label: "Passaporte" },
     { to: "/motorcycles/$id/control", icon: ShieldCheck, label: "Documentos" },
@@ -186,6 +186,6 @@ function QuickActions({ motoId }: { motoId: string }) {
       </div>
     </section>
   );
-}
+});
 
 // MetricCard removido na Sprint v1.6 — as métricas duplicavam o card da moto ativa.
