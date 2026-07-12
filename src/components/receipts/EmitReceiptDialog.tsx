@@ -406,14 +406,19 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
         {step === 1 && (
           <div className="space-y-4">
             <div className="rounded-xl border border-border bg-muted/20 p-3">
-              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Comprador</Label>
+              <div className="flex items-center gap-1.5">
+                <Label className="text-xs uppercase tracking-widest text-muted-foreground">Comprador</Label>
+                <HelpTooltip label="Fluxo da negociação" text={HELP.negotiationFlow} />
+              </div>
               <div className="mt-2 flex gap-2">
                 <Button type="button" size="sm" variant={buyerMode === "tb" ? "default" : "outline"} onClick={() => setBuyerMode("tb")}>
                   Usuário TrailBook
                 </Button>
+                <HelpTooltip label="Comprador TrailBook" text={HELP.buyerTrailBook} />
                 <Button type="button" size="sm" variant={buyerMode === "external" ? "default" : "outline"} onClick={() => { setBuyerMode("external"); setBuyerFound(null); }}>
                   Comprador externo
                 </Button>
+                <HelpTooltip label="Comprador externo" text={HELP.buyerExternal} />
               </div>
               {buyerMode === "tb" ? (
                 <div className="mt-3 flex gap-2">
