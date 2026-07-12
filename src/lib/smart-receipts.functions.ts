@@ -365,7 +365,7 @@ export const attachSignedReceipt = createServerFn({ method: "POST" })
       .select("id, code, status, version, buyer_id, seller_id, external_buyer, buyer_snapshot, negotiation, signed_pdf_path, seller_accepted_at, buyer_accepted_at")
       .single();
     if (uErr) throw new Error(uErr.message);
-    if (!updated) throw new Error("Falha ao persistir anexo (sem permissão ou estado inválido)");
+    if (!updated) throw new Error("STALE_STATE: O recibo mudou de estado antes do anexo ser registrado.");
     return { ok: true as const, receipt: updated };
   });
 
@@ -400,7 +400,7 @@ export const acceptSignedReceipt = createServerFn({ method: "POST" })
       .select("id, code, status, version, buyer_id, seller_id, external_buyer, buyer_snapshot, negotiation, signed_pdf_path, seller_accepted_at, buyer_accepted_at")
       .single();
     if (error) throw new Error(error.message);
-    if (!updated) throw new Error("Aceite não persistido — estado do recibo mudou. Recarregue a página e tente novamente.");
+    if (!updated) throw new Error("STALE_STATE: Este recibo já foi atualizado por outra ação.");
     return { ok: true as const, receipt: updated };
   });
 
@@ -432,7 +432,7 @@ export const completeReceiptTransfer = createServerFn({ method: "POST" })
       .select("id, code, status, version, buyer_id, seller_id, external_buyer, buyer_snapshot, negotiation, signed_pdf_path, seller_accepted_at, buyer_accepted_at")
       .single();
     if (error) throw new Error(error.message);
-    if (!updated) throw new Error("Conclusão não persistida — estado mudou. Recarregue e tente novamente.");
+    if (!updated) throw new Error("STALE_STATE: A negociação foi alterada antes da conclusão.");
     return { ok: true as const, receipt: updated };
   });
 
