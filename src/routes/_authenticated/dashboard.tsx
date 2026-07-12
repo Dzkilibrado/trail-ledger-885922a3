@@ -10,6 +10,8 @@ import { ActiveMotoCard } from "@/components/ActiveMotoCard";
 import { DocumentPendenciesCard } from "@/components/DocumentPendenciesCard";
 import { WhatsNewCard } from "@/components/WhatsNewCard";
 import { useActiveMotorcycle } from "@/hooks/useActiveMotorcycle";
+import { HelpTooltip } from "@/components/HelpTooltip";
+import { HELP } from "@/lib/help/texts";
 import { useState } from "react";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -167,7 +169,10 @@ function QuickActions({ motoId }: { motoId: string }) {
   ] as const;
   return (
     <section aria-label="Atalhos rápidos">
-      <h2 className="mb-3 font-display text-sm font-bold uppercase tracking-widest text-muted-foreground">Atalhos</h2>
+      <div className="mb-3 flex items-center gap-1.5">
+        <h2 className="font-display text-sm font-bold uppercase tracking-widest text-muted-foreground">Atalhos</h2>
+        <HelpTooltip label="Atalhos" text={HELP.quickShortcuts} />
+      </div>
       <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
         {items.map((it) => (
           <Link
