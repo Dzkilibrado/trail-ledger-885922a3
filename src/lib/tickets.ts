@@ -46,19 +46,21 @@ export function labelFor<T extends { value: string; label: string }>(list: reado
   return list.find((x) => x.value === v)?.label ?? v;
 }
 
+import { TONE } from "@/lib/ui/status-styles";
+
 export const PRIORITY_TONE: Record<string, string> = {
-  low: "bg-muted text-muted-foreground border-border",
-  medium: "bg-sky-500/15 text-sky-400 border-sky-500/30",
-  high: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  critical: "bg-destructive/15 text-destructive border-destructive/30",
+  low: TONE.muted,
+  medium: TONE.sky,
+  high: TONE.amber,
+  critical: TONE.destructive,
 };
 
 export const STATUS_TONE: Record<string, string> = {
-  open: "bg-primary/15 text-primary border-primary/30",
-  in_analysis: "bg-sky-500/15 text-sky-400 border-sky-500/30",
-  awaiting_user: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  in_progress: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
-  resolved: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  closed: "bg-muted text-muted-foreground border-border",
-  cancelled: "bg-muted text-muted-foreground border-border",
+  open: TONE.primary,
+  in_analysis: TONE.sky,
+  awaiting_user: TONE.amber,
+  in_progress: TONE.indigo,
+  resolved: TONE.emerald,
+  closed: TONE.muted,
+  cancelled: TONE.muted,
 };
