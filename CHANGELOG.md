@@ -2,6 +2,41 @@
 
 Todas as entregas oficialmente homologadas do TrailBook. Formato inspirado em Keep a Changelog.
 
+## [1.5.1] — 2026-07-12 — Help Tooltips oficiais e Princípio da Descoberta em Um Toque
+
+Sem novas funcionalidades. Padronização definitiva do uso de `HelpTooltip`
+em todo o TrailBook e registro do princípio permanente de UX que rege
+esse comportamento.
+
+### UX / Descoberta
+- **Registry único de textos de ajuda** (`src/lib/help/texts.ts`) — fonte
+  única para toda a UI (`HELP.passport`, `HELP.originDoc`, etc.).
+- **HelpTooltip endurecido para Mobile:** `collisionPadding`, largura
+  responsiva (`w-[min(18rem,calc(100vw-1rem))]`), `sideOffset`, ícone
+  maior e área de toque de 28×28.
+- **Tooltips adicionados** em: Dashboard (Atalhos, banner de Documento de
+  origem), Passaporte (Passaporte, Compartilhar, Pendências, Selo
+  Certified, Histórico de propriedade, Saúde, Linha do tempo),
+  `BadgeSection` (Selos de Qualidade — aparece em Dashboard/Central/
+  Passaporte), Central de Documentos, Recibo (Fluxo, Comprador
+  TrailBook, Comprador externo), Cadastro (`complete-profile`: CPF,
+  Celular, WhatsApp, Estado/Cidade).
+- Cada **selo individual** continua explicado pelo `BadgeTooltip` do
+  chip (significado, critérios atendidos e pendentes) — atende ao
+  requisito de tooltip por selo sem duplicar componente.
+- **Reservado:** o rótulo "Verificado pelo TrailBook" ganhou tooltip
+  explicando que é fase futura (validação humana).
+
+### Governança — Princípio da Descoberta em Um Toque
+- **[ADR 0009](docs/adr/0009-help-tooltips-e-descoberta.md)** — registra
+  o princípio: "o usuário deve compreender qualquer funcionalidade em
+  até um toque". Toda funcionalidade nova entrega
+  (a) nome autoexplicativo **ou** (b) `HelpTooltip` correspondente.
+- Registrado em `mem://principles/descoberta-um-toque` e
+  `mem://standards/help-tooltips`.
+- ADR 0008 (Regra Permanente de Qualidade) passa a verificar tooltips na
+  etapa de Comunicação.
+
 ## [1.5] — 2026-07-11 — Revisão de UX, Linguagem oficial e Regra Permanente de Qualidade
 
 Sem novas funcionalidades. Entrega focada em tornar o TrailBook mais intuitivo, com linguagem simples, descoberta clara das funcionalidades e mobile como prioridade.
