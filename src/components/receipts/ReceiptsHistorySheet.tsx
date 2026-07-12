@@ -1,3 +1,4 @@
+import { ListRowsSkeleton } from "@/components/Skeletons";
 import { useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { TBBottomSheet } from "@/design-system/overlays/TBBottomSheet";
@@ -56,7 +57,7 @@ export function ReceiptsHistorySheet({
         }
       >
         {isLoading ? (
-          <div className="py-8 text-center text-sm text-muted-foreground">Carregando…</div>
+          <div className="py-4"><ListRowsSkeleton rows={3} /></div>
         ) : !rows || rows.length === 0 ? (
           <div className="py-8 text-center text-sm text-muted-foreground">
             Nenhum recibo emitido ainda.
