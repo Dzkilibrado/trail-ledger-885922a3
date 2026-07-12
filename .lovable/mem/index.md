@@ -18,6 +18,7 @@
 - Descoberta em um toque (`mem://principles/descoberta-um-toque`, ADR 0009): todo termo ambíguo é (a) renomeado ou (b) explicado por `HelpTooltip`. Componente único e textos vindos SEMPRE do registry `src/lib/help/texts.ts` (`HELP`). FAQ e suporte são complementos, nunca a primeira porta.
 - Descoberta progressiva (`mem://principles/descoberta-progressiva`, ADR 0010): TrailBook ensina em camadas — Interface → HelpTooltip → Como funciona → FAQ → Suporte. Toda funcionalidade nova responde às 6 perguntas (Home, FAQ, Onboarding, Tooltip, Como funciona, Novidades) na etapa Comunicação da ADR 0008; SIM = item obrigatório.
 - Padrões visuais e loading (Sprint v1.6 encerrada, 2026-07-12): fonte única de tones em `src/lib/ui/status-styles.ts` (`TONE`, `BADGE_TIER_STYLE`, `SCORE_TIER_STYLE`) — nunca redeclarar dicionários locais. Loading padronizado: skeletons em `src/components/Skeletons.tsx`, spinner em `src/components/InlineSpinner.tsx`, empty state em `src/components/EmptyState.tsx`. Nunca usar texto "Carregando…" em tela cheia — sempre skeleton. `signedUrl` (`src/lib/trailbook.ts`) tem cache com TTL; router usa `defaultPreload: "intent"`.
+- Sucesso só após sincronia da UI (`mem://principles/sucesso-apos-sincronia`, ADR 0011): nenhuma mensagem de sucesso pode aparecer antes da interface refletir o novo estado. Toda mutação em `createServerFn` retorna a linha atualizada via `.update().eq().select().single()`; cliente aplica estado + aguarda `invalidateQueries` antes do toast. 0 linhas = erro. Sem optimistic updates em aceites/transferências/conclusões.
 
 ## Memories
 - [Diretrizes de desenvolvimento](mem://standards/dev-directives) — Padrões obrigatórios (18 pontos) aplicáveis a toda nova funcionalidade v1.0.1+
@@ -39,3 +40,5 @@
 - [ADR 0009 — Help Tooltips e Descoberta em Um Toque](docs/adr/0009-help-tooltips-e-descoberta.md) — regras operacionais e reservas (Verificado pelo TrailBook)
 - [Descoberta progressiva](mem://principles/descoberta-progressiva) — camadas de aprendizado + checklist de 6 perguntas
 - [ADR 0010 — Descoberta Progressiva](docs/adr/0010-descoberta-progressiva.md) — encerramento da Revisão de UX v1.5
+- [Sucesso só após sincronia da UI](mem://principles/sucesso-apos-sincronia) — princípio permanente para fluxos assíncronos
+- [ADR 0011 — Sucesso só após sincronia da UI](docs/adr/0011-sucesso-apos-sincronia.md) — causa raiz do bug de aceite do Recibo e correção estrutural
