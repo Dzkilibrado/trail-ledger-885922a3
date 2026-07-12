@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { CheckCircle2, FileDown, MessageSquareWarning, ShieldAlert, XCircle } from "lucide-react";
+import { TONE } from "@/lib/ui/status-styles";
 
 const STATUS_LABEL: Record<string, string> = {
   open: "Aberta", in_review: "Em análise", awaiting_info: "Aguardando informação",
