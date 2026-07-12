@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Activity, Wrench, Camera, Video, FileText, ShoppingCart, Tag, RefreshCw, AlertTriangle, Shield, StickyNote, Plus, Bike, ShieldAlert, FileCheck2 } from "lucide-react";
 import type { EventType } from "@/lib/trailbook";
 import { cn } from "@/lib/utils";
@@ -20,7 +21,7 @@ const MAP: Record<EventType, { icon: React.ComponentType<{ className?: string }>
   declaration: { icon: FileCheck2, tone: "text-primary bg-primary/15" },
 };
 
-export function EventTypeIcon({ type, className }: { type: EventType; className?: string }) {
+function EventTypeIconImpl({ type, className }: { type: EventType; className?: string }) {
   const { icon: Icon, tone } = MAP[type];
   return (
     <div className={cn("grid h-10 w-10 place-items-center rounded-xl", tone, className)}>
@@ -28,3 +29,6 @@ export function EventTypeIcon({ type, className }: { type: EventType; className?
     </div>
   );
 }
+
+/** Memoizado — aparece em listas longas (timeline, dashboard). */
+export const EventTypeIcon = memo(EventTypeIconImpl);
