@@ -329,9 +329,9 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     setLoading(true);
     try {
       await cancelDraft({ data: { id: currentReceiptId, reason: "Cancelado pelo vendedor" } });
-      toast.success("Negociação cancelada");
-      invalidateAll();
+      await invalidateAll();
       setOpen(false); resetForm();
+      toast.success("Negociação cancelada");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao cancelar");
     } finally { setLoading(false); }
