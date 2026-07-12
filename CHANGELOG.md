@@ -2,6 +2,39 @@
 
 Todas as entregas oficialmente homologadas do TrailBook. Formato inspirado em Keep a Changelog.
 
+## [1.6.4] — 2026-07-12 — Erro com Recuperação (princípio permanente + Recibo)
+
+**Novo princípio permanente do TrailBook.** Complementa o par de ADRs
+0011/0012: agora falhas por estado desatualizado disparam sincronia
+automática antes de qualquer mensagem ao usuário — nunca mais "recarregue
+a página".
+
+### Backend (`src/lib/smart-receipts.functions.ts`)
+- `attachSignedReceipt`, `acceptSignedReceipt`, `completeReceiptTransfer`
+  passam a lançar erro com prefixo estável `STALE_STATE:` quando
+  `.select().single()` retorna 0 linhas (RLS/estado divergente).
+- Mensagens de negócio curtas e sem detalhes técnicos.
+
+### Frontend (`src/components/receipts/EmitReceiptDialog.tsx`)
+- Novo `handleReceiptError(err, operation)` compartilhado por `onAccept`,
+  `onUploadSigned`, `onComplete` e `onCancel`.
+- Ao detectar `STALE_STATE:` via `isStaleStateError()`: (1) `reloadReceipt`,
+  (2) `await invalidateAll()` (Central, Passaporte, Timeline, Indicadores,
+  Documentos, Recibos), (3) só então `toast.info` com mensagem amigável.
+- Erros técnicos exibem "Não foi possível concluir esta ação agora."
+  Stack trace, mensagens de banco e textos de RLS ficam apenas no log.
+
+### Helper compartilhado (`src/lib/errors/stale-state.ts`)
+- `staleStateError()`, `isStaleStateError()`, `staleStateUserMessage()`,
+  `stripStaleStatePrefix()` — reutilizáveis por todos os fluxos futuros
+  (documentos, certificados, transferências, chamados, uploads, etc).
+
+### Governança
+- Memória: `mem://principles/erro-com-recuperacao`.
+- ADR 0012: `docs/adr/0012-erro-com-recuperacao.md`.
+- Sem alteração de RLS, migrations, regras de negócio ou fluxos
+  homologados. Sem regressões visuais.
+
 ## [1.6.3] — 2026-07-12 — Correção estrutural do aceite do Recibo Inteligente + Princípio permanente
 
 **Bug corrigido.** No fluxo de aceite do Recibo o toast "Aceite registrado"
