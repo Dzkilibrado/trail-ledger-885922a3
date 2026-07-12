@@ -49,7 +49,7 @@ function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen surface-hero grid place-items-center px-4 py-10">
+    <div className="min-h-dvh surface-hero grid place-items-center px-4 py-10">
       <div className="w-full max-w-md">
         <Link to="/" className="mb-6 flex items-center justify-center gap-2">
           <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground btn-glow">

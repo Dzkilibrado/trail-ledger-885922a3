@@ -78,7 +78,7 @@ function HelpPage() {
   }
 
   return (
-    <div className="min-h-screen surface-hero px-4 py-10">
+    <div className="min-h-dvh surface-hero px-4 py-10">
       <div className="mx-auto max-w-2xl">
         <Link to="/" className="mb-6 flex items-center justify-center gap-2">
           <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground btn-glow">

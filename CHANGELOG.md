@@ -2,6 +2,42 @@
 
 Todas as entregas oficialmente homologadas do TrailBook. Formato inspirado em Keep a Changelog.
 
+## [1.6.0] — 2026-07-12 — Polish Sprint (Bloco A + defaults de performance)
+
+Sem novas funcionalidades. Sprint oficial de polimento — foco em UX,
+Mobile, textos e desempenho percebido. Nenhuma regra de negócio
+homologada foi alterada.
+
+### UX / Mobile
+- **Dashboard reordenado:** Moto ativa → Pendências → Atalhos →
+  Últimas atividades → Novidades. Métricas duplicadas removidas — o
+  "Investido" já aparece no card da moto ativa.
+- **Keyboard-safe:** todas as telas full-height migradas de `min-h-screen`
+  para `min-h-dvh` (Auth, Root, Reset, Help, `/c/:token`, `/r/:code`,
+  layout autenticado). Teclado do celular não corta mais o conteúdo.
+- **EmitReceiptDialog:** viewport dinâmica (`max-h-[90dvh]`) para não
+  exceder a tela com teclado aberto.
+- **Textos técnicos removidos da UI visível:** "Storage privado · URL
+  assinada · SHA-256" no cabeçalho da Central de Documentos virou
+  "Cofre seguro". Tooltip de Documentos reescrito em linguagem simples.
+
+### Performance
+- **QueryClient com defaults sensatos** (`src/router.tsx`):
+  `staleTime` 30s, `gcTime` 5min, `retry` 1, `refetchOnWindowFocus`
+  false. Menos refetch e menos jitter em Mobile, sem alterar semântica.
+- **`React.memo`** em componentes usados em listas longas
+  (`BadgeChip`, `EventTypeIcon`).
+
+### Fora de escopo (mantido intacto)
+- `smart_receipts.*`, `evaluator` de selos, RLS/roles, migrations,
+  edge functions, `client*.ts`, `types.ts`.
+
+### Blocos seguintes (planejados)
+- **Bloco B:** skeletons unificados, lazy-load de rotas administrativas,
+  preload da foto da moto ativa.
+- **Bloco C:** limpeza técnica (imports órfãos, `TIER_STYLE`/`SEVERITY_STYLE`
+  consolidados em `src/lib/ui/status-styles.ts`).
+
 ## [1.5.1] — 2026-07-12 — Help Tooltips oficiais e Princípio da Descoberta em Um Toque
 
 Sem novas funcionalidades. Padronização definitiva do uso de `HelpTooltip`

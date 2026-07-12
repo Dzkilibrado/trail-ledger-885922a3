@@ -99,9 +99,9 @@ function PublicCert() {
     return { statuses, conservation, health };
   }, [data]);
 
-  if (loading) return <div className="grid min-h-screen place-items-center text-muted-foreground">Carregando certificado…</div>;
+  if (loading) return <div className="grid min-h-dvh place-items-center text-muted-foreground">Carregando certificado…</div>;
   if (error || !data || !computed) return (
-    <div className="grid min-h-screen place-items-center px-6">
+    <div className="grid min-h-dvh place-items-center px-6">
       <div className="surface-elevated max-w-md rounded-3xl p-8 text-center">
         <AlertTriangle className="mx-auto h-10 w-10 text-destructive" />
         <h1 className="mt-4 font-display text-2xl font-bold">Certificado indisponível</h1>
@@ -153,7 +153,7 @@ function PublicCert() {
   }
 
   return (
-    <div className="min-h-screen surface-hero">
+    <div className="min-h-dvh surface-hero">
       <div className="container mx-auto max-w-5xl px-4 py-8 sm:py-12">
         {/* Header */}
         <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:justify-between">
