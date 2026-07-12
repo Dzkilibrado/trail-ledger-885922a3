@@ -187,18 +187,4 @@ function QuickActions({ motoId }: { motoId: string }) {
   );
 }
 
-function MetricCard({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
-  return (
-    <div className="surface-elevated rounded-2xl p-5">
-      <div className="flex items-center gap-3">
-        <div className="grid h-10 w-10 place-items-center rounded-xl bg-primary/15 text-primary">
-          <Icon className="h-5 w-5" />
-        </div>
-        <div>
-          <div className="text-xs uppercase tracking-widest text-muted-foreground">{label}</div>
-          <div className="font-display text-xl font-bold">{value}</div>
-        </div>
-      </div>
-    </div>
-  );
-}
+// MetricCard removido na Sprint v1.6 — as métricas duplicavam o card da moto ativa.
