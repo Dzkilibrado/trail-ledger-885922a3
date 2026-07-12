@@ -10,6 +10,7 @@ import { CertificateSettingsDialog } from "@/components/CertificateSettingsDialo
 import { CertificateAccessLogDialog } from "@/components/CertificateAccessLogDialog";
 import { effectiveStatus, STATUS_LABEL, STATUS_TONE, AUDIENCE_LABEL, type CertAudience } from "@/lib/cert-sections";
 import { PageHeader } from "@/components/PageHeader";
+import { ListRowsSkeleton } from "@/components/Skeletons";
 
 export const Route = createFileRoute("/_authenticated/certificates")({
   head: () => ({ meta: [{ title: "Certificados — TrailBook" }] }),
@@ -50,7 +51,7 @@ function Certificates() {
         description="Compartilhe o histórico autorizado da sua moto via link público com QR Code. Qualquer pessoa com o link pode abrir as seções que você liberar."
       />
       {isLoading ? (
-        <div className="text-muted-foreground">Carregando…</div>
+        <ListRowsSkeleton rows={3} />
       ) : data && data.length > 0 ? (
         <div className="space-y-3">
           {data.map((c) => {
