@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { StoragePhoto } from "@/components/StoragePhoto";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
+import { MotoGridSkeleton } from "@/components/Skeletons";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/")({
   head: () => ({ meta: [{ title: "Motos — TrailBook" }] }),
@@ -41,7 +42,7 @@ function MotorcyclesList() {
           <TabsTrigger value="archived"><Archive className="mr-1 h-3.5 w-3.5" /> Arquivadas ({archived.length})</TabsTrigger>
         </TabsList>
       </Tabs>
-      {isLoading ? <div className="text-muted-foreground">Carregando…</div> : (
+      {isLoading ? <MotoGridSkeleton /> : (
         list.length > 0 ? (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {list.map((m: any) => (
