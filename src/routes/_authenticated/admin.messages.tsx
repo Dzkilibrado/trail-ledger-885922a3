@@ -1,3 +1,4 @@
+import { PageLineSkeleton } from "@/components/Skeletons";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -319,7 +320,7 @@ function ThreadDialog({ id, onOpenChange }: { id: string | null; onOpenChange: (
     <Dialog open={!!id} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl">
         <DialogHeader><DialogTitle>{t?.message?.subject_text ?? "Mensagem"}</DialogTitle></DialogHeader>
-        {!t ? <div className="text-sm text-muted-foreground">Carregando…</div> : (
+        {!t ? <PageLineSkeleton /> : (
           <div className="space-y-3">
             <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
               {(t.thread ?? []).map((m: any) => (
