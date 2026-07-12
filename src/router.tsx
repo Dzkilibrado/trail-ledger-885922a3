@@ -25,6 +25,13 @@ export const getRouter = () => {
     context: { queryClient },
     scrollRestoration: true,
     defaultPreloadStaleTime: 0,
+    // Pré-carrega chunk + loader da rota ao passar o mouse ou tocar (intent).
+    // Melhora a percepção de velocidade nas transições de tela sem consumir
+    // banda de forma agressiva.
+    defaultPreload: "intent",
+    // Evita "flash" de estado pendente em navegações rápidas.
+    defaultPendingMs: 200,
+    defaultPendingMinMs: 300,
   });
 
   return router;
