@@ -4,6 +4,8 @@ import { BadgeChip } from "./BadgeChip";
 import { BadgeGrid } from "./BadgeGrid";
 import { useMotorcycleBadges } from "@/hooks/useMotorcycleBadges";
 import { cn } from "@/lib/utils";
+import { HelpTooltip } from "@/components/HelpTooltip";
+import { HELP } from "@/lib/help/texts";
 
 /**
  * Bloco reutilizável "Selos de Qualidade do Histórico".
@@ -44,6 +46,7 @@ export function BadgeSection({
           <h3 className="font-display text-sm font-bold uppercase tracking-widest">
             Selos de Qualidade
           </h3>
+          <HelpTooltip label="Selos de Qualidade" text={HELP.badges} />
           <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
             {summary.earned.length} de {summary.all.length}
           </span>
