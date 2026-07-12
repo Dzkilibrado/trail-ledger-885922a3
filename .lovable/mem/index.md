@@ -16,6 +16,7 @@
 - Linguagem oficial da UI: português simples e amigável, sem termos técnicos quando houver alternativa clara. Glossário e regras em `mem://principles/linguagem-oficial`. Nomes técnicos ficam restritos a código, ADR e docs.
 - Regra Permanente de Qualidade (`mem://standards/qualidade-oficial`, ADR 0008): toda funcionalidade nova precisa passar pelas 5 revisões (Funcional, UX, Mobile, Comunicação, Final) antes de ser homologada. Vigora a partir da v1.5.
 - Descoberta em um toque (`mem://principles/descoberta-um-toque`, ADR 0009): todo termo ambíguo é (a) renomeado ou (b) explicado por `HelpTooltip`. Componente único e textos vindos SEMPRE do registry `src/lib/help/texts.ts` (`HELP`). FAQ e suporte são complementos, nunca a primeira porta.
+- Descoberta progressiva (`mem://principles/descoberta-progressiva`, ADR 0010): TrailBook ensina em camadas — Interface → HelpTooltip → Como funciona → FAQ → Suporte. Toda funcionalidade nova responde às 6 perguntas (Home, FAQ, Onboarding, Tooltip, Como funciona, Novidades) na etapa Comunicação da ADR 0008; SIM = item obrigatório.
 
 ## Memories
 - [Diretrizes de desenvolvimento](mem://standards/dev-directives) — Padrões obrigatórios (18 pontos) aplicáveis a toda nova funcionalidade v1.0.1+
@@ -35,3 +36,5 @@
 - [Descoberta em um toque](mem://principles/descoberta-um-toque) — princípio permanente de UX (compreensão em até um toque)
 - [Padrão oficial de Help Tooltips](mem://standards/help-tooltips) — componente único, registry único, onde aplicar
 - [ADR 0009 — Help Tooltips e Descoberta em Um Toque](docs/adr/0009-help-tooltips-e-descoberta.md) — regras operacionais e reservas (Verificado pelo TrailBook)
+- [Descoberta progressiva](mem://principles/descoberta-progressiva) — camadas de aprendizado + checklist de 6 perguntas
+- [ADR 0010 — Descoberta Progressiva](docs/adr/0010-descoberta-progressiva.md) — encerramento da Revisão de UX v1.5
