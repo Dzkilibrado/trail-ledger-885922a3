@@ -13,11 +13,12 @@ export const Route = createFileRoute("/_authenticated/transfers")({
   component: TransfersPage,
 });
 
+import { TONE } from "@/lib/ui/status-styles";
 const STATUS_TONE: Record<string, string> = {
-  pending: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  approved: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  rejected: "bg-destructive/15 text-destructive border-destructive/30",
-  cancelled: "bg-muted text-muted-foreground border-border",
+  pending: TONE.amber,
+  approved: TONE.emerald,
+  rejected: TONE.destructive,
+  cancelled: TONE.muted,
 };
 const STATUS_LABEL: Record<string, string> = { pending: "Pendente", approved: "Aprovada", rejected: "Recusada", cancelled: "Cancelada" };
 
