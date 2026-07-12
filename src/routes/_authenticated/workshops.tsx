@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { brl, EVENT_TYPE_LABEL, formatDate } from "@/lib/trailbook";
 import { ExportMenu } from "@/components/ExportMenu";
 import type { ExportColumn } from "@/lib/exports";
+import { CardBlockSkeleton } from "@/components/Skeletons";
 
 export const Route = createFileRoute("/_authenticated/workshops")({
   head: () => ({ meta: [{ title: "Oficinas — TrailBook" }] }),
