@@ -3,6 +3,12 @@
 > **Fase 1.5.1 encerrada (2026-07-12):** padronização oficial de
 > `HelpTooltip`, registry `HELP` e ADR 0009 (Descoberta em Um Toque).
 > Ver CHANGELOG [1.5.1] e `mem://standards/help-tooltips`.
+>
+> **Revisão de UX v1.5 ENCERRADA (2026-07-12):** ADR 0010 registra o
+> Princípio da Descoberta Progressiva (5 camadas + checklist de 6
+> perguntas para toda nova funcionalidade). Roadmap seguinte: novas
+> funcionalidades entram como novas fases, sempre passando pelo
+> checklist na etapa Comunicação da ADR 0008.
 
 Sem novas funcionalidades. Foco em linguagem simples, descoberta, navegação, mobile e padronização visual. Uma entrega grande, dividida em blocos coerentes.
 
