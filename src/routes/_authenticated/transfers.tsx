@@ -7,13 +7,13 @@ import { ArrowRightLeft, Check, X, Inbox, Send, Mail, ShieldCheck } from "lucide
 import { toast } from "sonner";
 import { formatDate } from "@/lib/trailbook";
 import { PageHeader } from "@/components/PageHeader";
+import { TONE } from "@/lib/ui/status-styles";
 
 export const Route = createFileRoute("/_authenticated/transfers")({
   head: () => ({ meta: [{ title: "Transferências — TrailBook" }] }),
   component: TransfersPage,
 });
 
-import { TONE } from "@/lib/ui/status-styles";
 const STATUS_TONE: Record<string, string> = {
   pending: TONE.amber,
   approved: TONE.emerald,
