@@ -35,7 +35,7 @@ export const HELP = {
   documentsHistory:
     "Todas as versões já anexadas de cada documento. Você pode restaurar, comparar e auditar quando quiser.",
   documentsVault:
-    "Cofre digital privado da sua moto. Só você enxerga. Armazenamento seguro, com URL assinada e checagem de integridade.",
+    "Cofre digital privado da sua moto. Só você enxerga. Armazenamento seguro, com checagem de integridade de cada arquivo.",
 
   // ============ Selos ============
   badges:
