@@ -2,6 +2,51 @@
 
 Todas as entregas oficialmente homologadas do TrailBook. Formato inspirado em Keep a Changelog.
 
+## [1.6.3] — 2026-07-12 — Correção estrutural do aceite do Recibo Inteligente + Princípio permanente
+
+**Bug corrigido.** No fluxo de aceite do Recibo o toast "Aceite registrado"
+aparecia mesmo quando a interface continuava exibindo "Aguardando aceite",
+"Comprador pendente" e o botão "Aceitar" disponível.
+
+### Causa raiz
+`acceptSignedReceipt`, `attachSignedReceipt` e `completeReceiptTransfer`
+finalizavam com `.update(...).eq(...)` sem `.select().single()`. O Postgres
+retorna sucesso mesmo quando a RLS filtra 0 linhas — o cliente exibia o
+toast de sucesso e a UI seguia refletindo o estado antigo.
+
+### Correção aplicada
+- **Backend (`src/lib/smart-receipts.functions.ts`):** as três funções
+  passam a terminar em `.update(...).eq(...).select("... ").single()` e
+  retornam a linha atualizada (`{ ok: true, receipt }`). 0 linhas viram
+  erro de negócio explícito ("Aceite não persistido — estado do recibo
+  mudou. Recarregue e tente novamente.").
+- **Frontend (`src/components/receipts/EmitReceiptDialog.tsx`):**
+  `onAccept`, `onUploadSigned`, `onComplete` e `onCancel` agora
+  (1) aplicam a linha retornada como fonte única (`setCurrentReceipt`),
+  (2) aguardam `Promise.all` de todas as `invalidateQueries` correlatas
+  (Central, Passaporte, Timeline, Indicadores, Documentos, Recibos) e
+  (3) só então exibem o toast de sucesso. `invalidateAll` foi convertida
+  em `Promise.all(...)`.
+- Sem alteração de RLS, migrations, regras de negócio ou fluxos
+  homologados.
+
+### Princípio permanente registrado
+**"Nenhuma mensagem de sucesso poderá ser apresentada ao usuário antes
+que a interface reflita completamente o novo estado da operação."**
+
+- Memória: `mem://principles/sucesso-apos-sincronia`.
+- ADR 0011: `docs/adr/0011-sucesso-apos-sincronia.md`.
+- Vale para todos os fluxos assíncronos: aceites, transferências,
+  conclusões, cancelamentos, aprovações, pagamentos, emissões.
+- Toda mutação em `createServerFn` deve retornar a linha atualizada;
+  toda invalidação relevante deve ser aguardada antes do toast.
+
+### Homologação
+- Typecheck limpo, build limpo.
+- Fluxos revalidados: vendedor aceita · comprador aceita · ambos
+  aceitaram · reanexar PDF (reset de aceites) · concluir · cancelar ·
+  reabrir dialog · refresh · logout/login · 2 dispositivos simultâneos.
+
 ## [1.6.2] — 2026-07-12 — Polish Sprint (Bloco C — Limpeza técnica e encerramento)
 
 **Sprint v1.6 oficialmente encerrada.** Sem novas funcionalidades. Sem

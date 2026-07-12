@@ -197,12 +197,18 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
   }
 
   function invalidateAll() {
-    qc.invalidateQueries({ queryKey: ["smart-receipts", motorcycleId] });
-    qc.invalidateQueries({ queryKey: ["active-negotiation", motorcycleId] });
-    qc.invalidateQueries({ queryKey: ["events", motorcycleId] });
-    qc.invalidateQueries({ queryKey: ["ownership", motorcycleId] });
-    qc.invalidateQueries({ queryKey: ["motorcycle", motorcycleId] });
-    qc.invalidateQueries({ queryKey: ["document-pendencies"] });
+    // Governança v1.6 (princípio "sucesso só após UI sincronizada"):
+    // aguardar invalidações para garantir que consumidores externos
+    // (Central da Moto, Passaporte, Timeline, Indicadores) refetchem
+    // ANTES do toast de sucesso.
+    return Promise.all([
+      qc.invalidateQueries({ queryKey: ["smart-receipts", motorcycleId] }),
+      qc.invalidateQueries({ queryKey: ["active-negotiation", motorcycleId] }),
+      qc.invalidateQueries({ queryKey: ["events", motorcycleId] }),
+      qc.invalidateQueries({ queryKey: ["ownership", motorcycleId] }),
+      qc.invalidateQueries({ queryKey: ["motorcycle", motorcycleId] }),
+      qc.invalidateQueries({ queryKey: ["document-pendencies"] }),
+    ]);
   }
 
   async function saveAndIssue() {
@@ -236,11 +242,11 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
       }
       stage = "generate_pdf";
       const pdfRes = await genPdf({ data: { id: id!, request_id: requestId } });
-      toast.success(`Recibo ${pdfRes.code} emitido. Assine e anexe o PDF para concluir.`);
-      invalidateAll();
-      onIssued?.(pdfRes.url);
       await reloadReceipt(id!);
       setStep(5);
+      await invalidateAll();
+      onIssued?.(pdfRes.url);
+      toast.success(`Recibo ${pdfRes.code} emitido. Assine e anexe o PDF para concluir.`);
     } catch (e) {
       // Log técnico de correlação (sem PII). O detalhe real fica no Worker/server pelo mesmo código.
       const raw = e instanceof Error ? e.message : String(e);
@@ -273,10 +279,12 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
       const buf = new Uint8Array(await file.arrayBuffer());
       let bin = ""; for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
       const b64 = btoa(bin);
-      await attach({ data: { id: currentReceiptId, pdf_base64: b64 } });
+      const res = await attach({ data: { id: currentReceiptId, pdf_base64: b64 } });
+      // Princípio v1.6: aplicar novo estado ANTES do toast
+      if (res?.receipt) setCurrentReceipt(res.receipt as ReceiptRow);
+      else await reloadReceipt(currentReceiptId);
+      await invalidateAll();
       toast.success("Documento assinado anexado.");
-      await reloadReceipt(currentReceiptId);
-      invalidateAll();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha no upload");
     } finally { setLoading(false); }
@@ -286,10 +294,16 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     if (!currentReceiptId) return;
     setLoading(true);
     try {
-      await accept({ data: { id: currentReceiptId } });
+      const res = await accept({ data: { id: currentReceiptId } });
+      // Princípio v1.6 (sucesso só após UI refletir novo estado):
+      // aplicamos o registro retornado pelo backend (fonte única) ANTES
+      // de exibir toast. Antes usávamos update sem .select() — RLS podia
+      // filtrar 0 linhas silenciosamente e o toast "sucesso" aparecia
+      // com a tela ainda em "pendente / Aguardando aceite".
+      if (res?.receipt) setCurrentReceipt(res.receipt as ReceiptRow);
+      else await reloadReceipt(currentReceiptId);
+      await invalidateAll();
       toast.success("Aceite registrado");
-      await reloadReceipt(currentReceiptId);
-      invalidateAll();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha no aceite");
     } finally { setLoading(false); }
@@ -299,10 +313,11 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     if (!currentReceiptId) return;
     setLoading(true);
     try {
-      await complete({ data: { id: currentReceiptId } });
-      toast.success("Transferência concluída. Histórico atualizado.");
-      invalidateAll();
+      const res = await complete({ data: { id: currentReceiptId } });
+      if (res?.receipt) setCurrentReceipt(res.receipt as ReceiptRow);
+      await invalidateAll();
       setOpen(false); resetForm();
+      toast.success("Transferência concluída. Histórico atualizado.");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao concluir");
     } finally { setLoading(false); }
@@ -314,9 +329,9 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     setLoading(true);
     try {
       await cancelDraft({ data: { id: currentReceiptId, reason: "Cancelado pelo vendedor" } });
-      toast.success("Negociação cancelada");
-      invalidateAll();
+      await invalidateAll();
       setOpen(false); resetForm();
+      toast.success("Negociação cancelada");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao cancelar");
     } finally { setLoading(false); }
