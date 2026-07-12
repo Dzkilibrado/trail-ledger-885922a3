@@ -22,6 +22,8 @@ import {
 import { toast } from "sonner";
 import { FileSignature, Search, ArrowLeft, ArrowRight, CheckCircle2, Upload, Download, XCircle, Eye, Share2, Printer, Clock } from "lucide-react";
 import { formatCurrencyBRL, publicReceiptUrl, RECEIPT_STATUS_LABEL, type ReceiptStatus } from "@/lib/smart-receipts";
+import { HelpTooltip } from "@/components/HelpTooltip";
+import { HELP } from "@/lib/help/texts";
 import { LocationPicker } from "@/components/LocationPicker";
 import { useProfileSnapshot } from "@/hooks/useProfileSnapshot";
 import { ProfileDataChip } from "@/components/ProfileDataChip";
