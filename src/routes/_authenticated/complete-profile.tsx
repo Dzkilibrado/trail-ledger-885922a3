@@ -445,12 +445,15 @@ function StepHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
   );
 }
 
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+function Field({ label, required, help, children }: { label: string; required?: boolean; help?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs uppercase tracking-widest text-muted-foreground">
-        {label}{required ? " *" : ""}
-      </Label>
+      <div className="flex items-center gap-1.5">
+        <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+          {label}{required ? " *" : ""}
+        </Label>
+        {help && <HelpTooltip label={label} text={help} />}
+      </div>
       {children}
     </div>
   );
