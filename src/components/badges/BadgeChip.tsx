@@ -3,13 +3,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import type { BadgeEvaluation } from "@/lib/badges";
 import { cn } from "@/lib/utils";
 import { BadgeTooltipContent } from "./BadgeTooltip";
-
-const TIER_STYLE = {
-  bronze: "border-amber-700/40 bg-amber-900/20 text-amber-200",
-  silver: "border-slate-400/40 bg-slate-500/15 text-slate-100",
-  gold: "border-yellow-500/50 bg-yellow-500/15 text-yellow-200",
-  signature: "border-fuchsia-400/50 bg-gradient-to-r from-fuchsia-500/20 to-cyan-400/20 text-white",
-} as const;
+import { BADGE_TIER_STYLE } from "@/lib/ui/status-styles";
 
 const LOCKED_STYLE = "border-border/60 bg-muted/40 text-muted-foreground opacity-70";
 const PARTIAL_STYLE = "border-amber-500/30 bg-amber-500/5 text-amber-200/80";
@@ -27,7 +21,7 @@ function BadgeChipImpl({
 }) {
   const { definition: b, state } = evaluation;
   const style =
-    state === "earned" ? TIER_STYLE[b.tier]
+    state === "earned" ? BADGE_TIER_STYLE[b.tier]
     : state === "partial" ? PARTIAL_STYLE
     : LOCKED_STYLE;
 
