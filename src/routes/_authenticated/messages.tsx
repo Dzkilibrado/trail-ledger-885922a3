@@ -10,6 +10,7 @@ import { Mail, MailOpen, Archive, MessageSquare, LifeBuoy } from "lucide-react";
 import { toast } from "sonner";
 import { MESSAGE_TYPES, MESSAGE_PRIORITIES, PRIORITY_TONE, labelOf, RECIPIENT_STATUS_LABEL } from "@/lib/comm";
 import { cn } from "@/lib/utils";
+import { ListRowsSkeleton } from "@/components/Skeletons";
 
 export const Route = createFileRoute("/_authenticated/messages")({
   component: MessagesInbox,
@@ -101,7 +102,7 @@ function MessagesInbox() {
       </div>
 
       {q.isLoading ? (
-        <div className="text-sm text-muted-foreground">Carregando…</div>
+        <ListRowsSkeleton rows={4} />
       ) : rows.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-10 text-center text-muted-foreground">
           Nenhuma mensagem recebida.
