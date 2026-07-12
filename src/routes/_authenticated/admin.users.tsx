@@ -18,6 +18,7 @@ import { Switch } from "@/components/ui/switch";
 import { Bike, Clock, Eye, FileText, KeyRound, Pencil, ScrollText, ShieldAlert, ShieldCheck, Ticket, Trash2, UserX } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { TONE } from "@/lib/ui/status-styles";
 import { formatDate } from "@/lib/trailbook";
 import { adminSendPasswordReset, adminDeleteHomologUser } from "@/lib/admin-users.functions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
