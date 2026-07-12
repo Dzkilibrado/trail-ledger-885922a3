@@ -33,6 +33,8 @@ import {
   type OriginDocType,
 } from "@/lib/origin-status";
 import { SingleBadgeChip } from "@/components/badges/BadgeSection";
+import { HelpTooltip } from "@/components/HelpTooltip";
+import { HELP } from "@/lib/help/texts";
 
 type Doc = {
   id: string;
@@ -238,6 +240,7 @@ export function MotorcycleDocuments({
         <div className="min-w-0">
           <h2 className="font-display text-lg font-bold flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" /> Central de Documentos
+            <HelpTooltip label="Documentos" text={HELP.documentsVault} />
           </h2>
           <p className="text-xs text-muted-foreground">
             Cofre digital privado da motocicleta. Versionado, auditado e protegido — visível apenas para você.
