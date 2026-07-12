@@ -5,6 +5,8 @@ import { useDocumentPendencies } from "@/hooks/useDocumentPendencies";
 import { findOrigin } from "@/lib/motorcycle-origin";
 import { isOriginSnoozed } from "@/lib/origin-status";
 import { supabase } from "@/integrations/supabase/client";
+import { HelpTooltip } from "@/components/HelpTooltip";
+import { HELP } from "@/lib/help/texts";
 
 /**
  * Card do Dashboard: Pendências Documentais.
@@ -29,7 +31,10 @@ export function DocumentPendenciesCard() {
           <FileWarning className="h-4 w-4" />
         </div>
         <div>
-          <h2 className="text-sm font-semibold text-amber-100">🟠 Documento de origem pendente</h2>
+          <div className="flex items-center gap-1.5">
+            <h2 className="text-sm font-semibold text-amber-100">Documento de origem pendente</h2>
+            <HelpTooltip label="Documento de origem" text={HELP.originDoc} />
+          </div>
           <p className="text-xs text-amber-200/70">
             {rows.length === 1
               ? "1 moto ainda sem Nota Fiscal ou Recibo de Compra e Venda anexado."
