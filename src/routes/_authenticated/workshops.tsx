@@ -146,7 +146,12 @@ function Workshops() {
         </div>
       )}
 
-      {isLoading ? <div className="text-muted-foreground">Carregando…</div> : data && data.length > 0 ? (
+      {isLoading ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          <CardBlockSkeleton />
+          <CardBlockSkeleton />
+        </div>
+      ) : data && data.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2">
           {stats.map(({ workshop: w, services, bikes, revenue, lastService }) => (
             <button
