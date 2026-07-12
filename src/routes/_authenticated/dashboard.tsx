@@ -12,7 +12,8 @@ import { WhatsNewCard } from "@/components/WhatsNewCard";
 import { useActiveMotorcycle } from "@/hooks/useActiveMotorcycle";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";
-import { useState } from "react";
+import { memo, useState } from "react";
+import { DashboardSkeleton } from "@/components/Skeletons";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({ meta: [
@@ -55,7 +56,7 @@ function Dashboard() {
     ? activeId
     : motos.data?.[0]?.id ?? null;
 
-  if (motos.isLoading) return <div className="text-muted-foreground">Carregando…</div>;
+  if (motos.isLoading) return <DashboardSkeleton />;
 
   if ((motos.data?.length ?? 0) === 0) {
     return (
