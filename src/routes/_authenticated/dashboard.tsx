@@ -79,18 +79,35 @@ function Dashboard() {
 
   return (
     <div className="space-y-8">
-      <WhatsNewCard />
-
+      {/* Ordem Sprint v1.6 (polimento):
+          Moto ativa → Pendências → Atalhos → Últimas atividades → Novidades.
+          "Investido" já aparece no card da moto ativa; métrica duplicada removida. */}
       <ActiveMotoCard motos={motos.data as any} />
 
       <DocumentPendenciesCard />
 
       {focusMotoId && <QuickActions motoId={focusMotoId} />}
 
-      <div className="grid gap-3 sm:grid-cols-2">
-        <MetricCard icon={Activity} label="Motos ativas" value={String(totalMotos)} />
-        <MetricCard icon={Wrench} label="Investido no histórico" value={brl(totalCost)} />
-      </div>
+      <section>
+        <h2 className="mb-3 font-display text-lg font-bold">Últimas atualizações</h2>
+        <div className="surface-elevated divide-y divide-border rounded-2xl">
+          {events.data && events.data.length > 0 ? events.data.map((e) => (
+            <div key={e.id} className="flex items-center gap-3 p-4">
+              <EventTypeIcon type={e.type} />
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-medium">{e.title}</div>
+                <div className="truncate text-xs text-muted-foreground">
+                  {EVENT_TYPE_LABEL[e.type]} · {formatDate(e.occurred_at)}
+                  {e.motorcycles && ` · ${(e.motorcycles as any).nickname || (e.motorcycles as any).model}`}
+                </div>
+              </div>
+              {e.cost != null && <div className="shrink-0 text-sm font-semibold text-primary">{brl(Number(e.cost))}</div>}
+            </div>
+          )) : (
+            <div className="p-6 text-center text-sm text-muted-foreground">Sem atividades ainda. Registre a primeira na página da moto.</div>
+          )}
+        </div>
+      </section>
 
       {(motos.data?.length ?? 0) > 1 && (
         <section>
@@ -133,26 +150,7 @@ function Dashboard() {
         </section>
       )}
 
-      <section>
-        <h2 className="mb-3 font-display text-lg font-bold">Últimas atualizações</h2>
-        <div className="surface-elevated divide-y divide-border rounded-2xl">
-          {events.data && events.data.length > 0 ? events.data.map((e) => (
-            <div key={e.id} className="flex items-center gap-3 p-4">
-              <EventTypeIcon type={e.type} />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium">{e.title}</div>
-                <div className="text-xs text-muted-foreground">
-                  {EVENT_TYPE_LABEL[e.type]} · {formatDate(e.occurred_at)}
-                  {e.motorcycles && ` · ${(e.motorcycles as any).nickname || (e.motorcycles as any).model}`}
-                </div>
-              </div>
-              {e.cost != null && <div className="text-sm font-semibold text-primary">{brl(Number(e.cost))}</div>}
-            </div>
-          )) : (
-            <div className="p-6 text-center text-sm text-muted-foreground">Sem eventos ainda. Registre o primeiro na página da moto.</div>
-          )}
-        </div>
-      </section>
+      <WhatsNewCard />
     </div>
   );
 }
