@@ -37,6 +37,17 @@ esse comportamento.
 - ADR 0008 (Regra Permanente de Qualidade) passa a verificar tooltips na
   etapa de Comunicação.
 
+### Encerramento da Revisão de UX v1.5 — Descoberta Progressiva
+- **[ADR 0010](docs/adr/0010-descoberta-progressiva.md)** — Princípio
+  permanente: TrailBook ensina em 5 camadas (Interface → HelpTooltip →
+  Como funciona → FAQ → Suporte).
+- **Checklist obrigatório** para toda funcionalidade nova, executado na
+  etapa Comunicação da ADR 0008 — 6 perguntas: Home, FAQ, Onboarding,
+  HelpTooltip, "Como funciona", Novidades. Qualquer SIM = item
+  obrigatório da entrega.
+- Registrado em `mem://principles/descoberta-progressiva`.
+- **Revisão de UX v1.5 oficialmente encerrada.**
+
 ## [1.5] — 2026-07-11 — Revisão de UX, Linguagem oficial e Regra Permanente de Qualidade
 
 Sem novas funcionalidades. Entrega focada em tornar o TrailBook mais intuitivo, com linguagem simples, descoberta clara das funcionalidades e mobile como prioridade.
