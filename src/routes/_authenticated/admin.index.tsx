@@ -1,3 +1,4 @@
+import { PageLineSkeleton } from "@/components/Skeletons";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -51,7 +52,7 @@ function AdminHome() {
     },
   });
 
-  if (loading) return <div className="text-muted-foreground">Carregando…</div>;
+  if (loading) return <PageLineSkeleton />;
   if (!isAdmin) return <AccessDenied />;
 
   const s = (stats.data ?? {}) as Record<string, number | undefined>;

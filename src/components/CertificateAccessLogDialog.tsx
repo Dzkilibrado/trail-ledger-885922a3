@@ -1,3 +1,4 @@
+import { ListRowsSkeleton } from "@/components/Skeletons";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -42,7 +43,7 @@ export function CertificateAccessLogDialog({ certificateId, trigger }: Props) {
           </DialogDescription>
         </DialogHeader>
         {isLoading ? (
-          <div className="p-6 text-sm text-muted-foreground">Carregando…</div>
+          <div className="p-4"><ListRowsSkeleton rows={3} /></div>
         ) : !data || data.length === 0 ? (
           <div className="p-6 text-center text-sm text-muted-foreground">Nenhum acesso registrado ainda.</div>
         ) : (

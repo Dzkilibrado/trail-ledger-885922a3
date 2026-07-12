@@ -1,3 +1,4 @@
+import { PageLineSkeleton } from "@/components/Skeletons";
 import { ReactNode } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { Lock, Wrench, ArrowLeft, Home } from "lucide-react";
@@ -16,7 +17,7 @@ export function ModuleGate({ moduleKey, children }: Props) {
   const { isAdmin } = useIsAdmin();
   const navigate = useNavigate();
 
-  if (loading) return <div className="text-sm text-muted-foreground">Carregando…</div>;
+  if (loading) return <PageLineSkeleton />;
   if (!mod) return <>{children}</>;
 
   // Admin always sees the module

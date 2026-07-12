@@ -1,3 +1,4 @@
+import { PageLineSkeleton } from "@/components/Skeletons";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,6 +19,7 @@ import { Switch } from "@/components/ui/switch";
 import { Bike, Clock, Eye, FileText, KeyRound, Pencil, ScrollText, ShieldAlert, ShieldCheck, Ticket, Trash2, UserX } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { TONE } from "@/lib/ui/status-styles";
 import { formatDate } from "@/lib/trailbook";
 import { adminSendPasswordReset, adminDeleteHomologUser } from "@/lib/admin-users.functions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -63,10 +65,10 @@ const YESNO = [
   { value: "no", label: "Não" },
 ];
 const STATUS_TONE: Record<string, string> = {
-  active: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  pending: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  blocked: "bg-destructive/15 text-destructive border-destructive/30",
-  inactive: "bg-muted text-muted-foreground border-border",
+  active: TONE.emerald,
+  pending: TONE.amber,
+  blocked: TONE.destructive,
+  inactive: TONE.muted,
 };
 const BLOCK_REASONS = [
   "Solicitação do usuário",
@@ -156,7 +158,7 @@ function AdminUsers() {
     qc.invalidateQueries({ queryKey: ["admin", "users"] });
   }
 
-  if (loading) return <div className="text-muted-foreground">Carregando…</div>;
+  if (loading) return <PageLineSkeleton />;
   if (!isAdmin) return <AccessDenied />;
 
   return (

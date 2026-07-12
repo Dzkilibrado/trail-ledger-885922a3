@@ -17,6 +17,7 @@
 - Regra Permanente de Qualidade (`mem://standards/qualidade-oficial`, ADR 0008): toda funcionalidade nova precisa passar pelas 5 revisões (Funcional, UX, Mobile, Comunicação, Final) antes de ser homologada. Vigora a partir da v1.5.
 - Descoberta em um toque (`mem://principles/descoberta-um-toque`, ADR 0009): todo termo ambíguo é (a) renomeado ou (b) explicado por `HelpTooltip`. Componente único e textos vindos SEMPRE do registry `src/lib/help/texts.ts` (`HELP`). FAQ e suporte são complementos, nunca a primeira porta.
 - Descoberta progressiva (`mem://principles/descoberta-progressiva`, ADR 0010): TrailBook ensina em camadas — Interface → HelpTooltip → Como funciona → FAQ → Suporte. Toda funcionalidade nova responde às 6 perguntas (Home, FAQ, Onboarding, Tooltip, Como funciona, Novidades) na etapa Comunicação da ADR 0008; SIM = item obrigatório.
+- Padrões visuais e loading (Sprint v1.6 encerrada, 2026-07-12): fonte única de tones em `src/lib/ui/status-styles.ts` (`TONE`, `BADGE_TIER_STYLE`, `SCORE_TIER_STYLE`) — nunca redeclarar dicionários locais. Loading padronizado: skeletons em `src/components/Skeletons.tsx`, spinner em `src/components/InlineSpinner.tsx`, empty state em `src/components/EmptyState.tsx`. Nunca usar texto "Carregando…" em tela cheia — sempre skeleton. `signedUrl` (`src/lib/trailbook.ts`) tem cache com TTL; router usa `defaultPreload: "intent"`.
 
 ## Memories
 - [Diretrizes de desenvolvimento](mem://standards/dev-directives) — Padrões obrigatórios (18 pontos) aplicáveis a toda nova funcionalidade v1.0.1+

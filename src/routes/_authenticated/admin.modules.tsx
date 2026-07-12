@@ -1,3 +1,4 @@
+import { PageLineSkeleton } from "@/components/Skeletons";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState, useEffect } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -26,7 +27,7 @@ function AdminModules() {
   const { isAdmin, loading } = useIsAdmin();
   const modulesQ = useModules();
 
-  if (loading || modulesQ.isLoading) return <div className="text-muted-foreground">Carregando…</div>;
+  if (loading || modulesQ.isLoading) return <PageLineSkeleton />;
   if (!isAdmin) return <AccessDenied />;
 
   return (

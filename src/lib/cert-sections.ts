@@ -95,9 +95,11 @@ export const STATUS_LABEL: Record<CertStatus, string> = {
   revoked: "Revogado",
 };
 
+import { TONE } from "@/lib/ui/status-styles";
+
 export const STATUS_TONE: Record<CertStatus, string> = {
-  active: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  private: "bg-muted text-muted-foreground border-border",
-  expired: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  revoked: "bg-destructive/15 text-destructive border-destructive/30",
+  active: TONE.emerald,
+  private: TONE.muted,
+  expired: TONE.amber,
+  revoked: TONE.destructive,
 };

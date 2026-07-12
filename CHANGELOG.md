@@ -2,6 +2,58 @@
 
 Todas as entregas oficialmente homologadas do TrailBook. Formato inspirado em Keep a Changelog.
 
+## [1.6.2] — 2026-07-12 — Polish Sprint (Bloco C — Limpeza técnica e encerramento)
+
+**Sprint v1.6 oficialmente encerrada.** Sem novas funcionalidades. Sem
+alteração de RLS, migrations, storage, autenticação, permissões, edge
+functions ou regras de negócio. Foco: consolidar padrões visuais,
+eliminar duplicações e padronizar estados de loading/vazio.
+
+### Consolidação de padrões visuais
+- **Fonte única de estilos:** novo módulo `src/lib/ui/status-styles.ts`
+  com `TONE` (paleta canônica de chips), `BADGE_TIER_STYLE` (selos v2)
+  e `SCORE_TIER_STYLE` (tier de conservação do Passaporte).
+- **Deduplicação:** `PRIORITY_TONE` e `STATUS_TONE` deixam de ser
+  redeclarados em 7 arquivos. Agora `tickets.ts`, `comm.ts`,
+  `cert-sections.ts`, `transfers.tsx`, `admin.users.tsx`,
+  `CpfChangeAdminPanel.tsx` referenciam `TONE.*` — output em classes
+  permanece idêntico ao anterior (nenhuma regressão visual).
+- **`TIER_STYLE`:** as duas variações (selos v2 e escala do Passaporte)
+  agora vivem em `BADGE_TIER_STYLE` e `SCORE_TIER_STYLE`, importadas de
+  `BadgeChip` e `Passport`.
+
+### Padronização de estados
+- **`InlineSpinner`** (`src/components/InlineSpinner.tsx`) — spinner
+  padrão para botões/ações. Nunca para carregamento de tela cheia.
+- **`EmptyState`** (`src/components/EmptyState.tsx`) — bloco reutilizável
+  para listas vazias, com ícone + título + descrição + ação opcional.
+- **Skeletons no Admin:** substituído "Carregando…" residual por
+  `PageLineSkeleton` em `admin.index`, `admin.homolog`, `admin.tickets`,
+  `admin.modules`, `admin.users`, `admin.messages`, `complete-profile`,
+  `ModuleGate`. Dialogs `CertificateAccessLogDialog` e
+  `ReceiptsHistorySheet` migrados para `ListRowsSkeleton`.
+- Placeholders textuais de `<Select>` mantidos (são texto de input
+  legítimo, não estado de carregamento de tela).
+
+### Fora de escopo (mantido intacto)
+- `smart_receipts.*`, `evaluator` de selos, RLS, roles, storage,
+  migrations, edge functions, `client*.ts`, `types.ts`,
+  `auth-middleware.ts`, `auth-attacher.ts`.
+
+### Regressão
+- Fluxos revalidados (semântica preservada): Cadastro, Documento de
+  Origem, Recibo de Compra e Venda, Passaporte, Selos, Certificados,
+  Compartilhamento público (`/c/:token`, `/r/:code`), Timeline,
+  Dashboard. Nenhuma alteração de rota ou API.
+
+### Oportunidades futuras (não implementadas nesta Sprint)
+- Unificar `RECEIPT_STATUS_TONE` em `TONE.*` — hoje usa tons `-300`
+  em vez de `-400`; mudar exigiria homologação visual dedicada.
+- Extrair `MotoControlCenter` (645 linhas) em subcomponentes por seção.
+- Lazy-load das rotas administrativas por `codeSplitGroupings` dedicado.
+- `<Toaster />` unificado com variantes tonais (`TONE`) para uniformizar
+  toasts de erro/sucesso.
+
 ## [1.6.1] — 2026-07-12 — Polish Sprint (Bloco B — Performance percebida)
 
 Sem novas funcionalidades, sem alterações de regras de negócio, RLS ou

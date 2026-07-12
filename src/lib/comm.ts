@@ -52,12 +52,9 @@ export const RECIPIENT_STATUS_LABEL: Record<string, string> = {
   archived: "Arquivada",
 };
 
-export const PRIORITY_TONE: Record<string, string> = {
-  low: "bg-muted text-muted-foreground border-border",
-  medium: "bg-sky-500/15 text-sky-400 border-sky-500/30",
-  high: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  critical: "bg-destructive/15 text-destructive border-destructive/30",
-};
+// Compat: mantido export para uso já existente nas telas de mensagens.
+// A paleta agora vive em `@/lib/ui/status-styles` (Sprint v1.6 — Bloco C).
+export { PRIORITY_TONE } from "@/lib/tickets";
 
 export function labelOf<T extends { value: string; label: string }>(list: readonly T[], v?: string | null): string {
   if (!v) return "—";

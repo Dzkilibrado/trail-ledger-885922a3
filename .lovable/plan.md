@@ -1,11 +1,15 @@
 # TrailBook v1.6 — Polish Sprint
 
-> **Bloco A entregue (2026-07-12) — CHANGELOG [1.6.0]:**
-> Dashboard reordenado, migração `min-h-screen → min-h-dvh` (7 rotas),
-> `EmitReceiptDialog` com viewport dinâmica, textos técnicos removidos
-> da UI, QueryClient com defaults, `React.memo` em `BadgeChip` e
-> `EventTypeIcon`. Typecheck limpo. Blocos B (performance profunda) e
-> C (limpeza técnica) seguem no plano abaixo.
+> **STATUS: ✅ HOMOLOGADA E ENCERRADA (2026-07-12).**
+>
+> - **Bloco A — UX/Mobile/Visual** (CHANGELOG `[1.6.0]`).
+> - **Bloco B — Performance percebida** (CHANGELOG `[1.6.1]`).
+> - **Bloco C — Limpeza técnica e padronização** (CHANGELOG `[1.6.2]`).
+>
+> Nenhuma regra de negócio, RLS, migration, edge function ou fluxo
+> homologado foi alterada nos três blocos. A Sprint consolida qualidade,
+> organização, performance, UX e padronização antes das próximas
+> grandes evoluções do produto.
 
 Sprint de polimento, sem novas funcionalidades e sem tocar em regras de negócio homologadas. Entrego em **3 blocos coerentes**, do maior impacto percebido para o mais técnico. Cada bloco fecha em si mesmo (typecheck limpo, screenshots mobile, sem regressões).
 
