@@ -247,7 +247,7 @@ export function MotorcycleDocuments({
           </p>
         </div>
         <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Storage privado · URL assinada · SHA-256
+          <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Cofre seguro
         </div>
       </div>
 
