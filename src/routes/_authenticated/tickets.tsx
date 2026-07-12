@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, LifeBuoy } from "lucide-react";
 import { formatDate } from "@/lib/trailbook";
 import { labelFor, TICKET_STATUSES, TICKET_TYPES, STATUS_TONE, PRIORITY_TONE, TICKET_PRIORITIES } from "@/lib/tickets";
+import { ListRowsSkeleton } from "@/components/Skeletons";
 
 export const Route = createFileRoute("/_authenticated/tickets")({
   head: () => ({ meta: [{ title: "Meus chamados — TrailBook" }] }),
@@ -38,7 +39,7 @@ function MyTickets() {
       />
 
       {isLoading ? (
-        <div className="text-muted-foreground">Carregando…</div>
+        <ListRowsSkeleton rows={3} />
       ) : !data || data.length === 0 ? (
         <div className="rounded-xl border border-dashed border-border p-10 text-center">
           <LifeBuoy className="mx-auto h-10 w-10 text-muted-foreground" />

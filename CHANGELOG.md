@@ -2,6 +2,44 @@
 
 Todas as entregas oficialmente homologadas do TrailBook. Formato inspirado em Keep a Changelog.
 
+## [1.6.1] — 2026-07-12 — Polish Sprint (Bloco B — Performance percebida)
+
+Sem novas funcionalidades, sem alterações de regras de negócio, RLS ou
+migrations. Foco em reduzir flicker, unificar estados de loading e melhorar
+a percepção de velocidade — principalmente Mobile.
+
+### Performance
+- **Cache de `signedUrl`** (`src/lib/trailbook.ts`): dedup de requisições em
+  vôo + cache em memória com TTL (expires − 5 min). A mesma foto de moto
+  não é mais re-assinada a cada navegação entre Início, Motos, Cockpit,
+  Saúde e Plano. Nova função `getCachedSignedUrl` permite entrada síncrona.
+- **`StoragePhoto`**: entrada síncrona quando a URL já está em cache
+  (elimina o placeholder cinza intermediário), `memo` para evitar
+  re-render em listas, `decoding="async"` além de `loading="lazy"`.
+- **Router com `defaultPreload: "intent"`**: chunk + loader da rota
+  pré-carregados ao hover/toque no link, tornando a transição quase
+  instantânea. `defaultPendingMs` 200ms evita flash de pending em
+  navegações rápidas.
+
+### Skeletons unificados
+- Novo módulo `src/components/Skeletons.tsx` com
+  `ListRowsSkeleton`, `MotoGridSkeleton`, `CardBlockSkeleton`,
+  `DashboardSkeleton`, `PageLineSkeleton`.
+- Substituído texto "Carregando…" por skeletons nas telas mais visíveis:
+  Início (Dashboard), Motos, Chamados (lista e detalhe), Mensagens,
+  Certificados, Oficinas, Linha do tempo do Cockpit.
+
+### Re-renderizações desnecessárias
+- `QuickActions` do Dashboard envolto em `memo`.
+
+### Fora de escopo (mantido intacto)
+- `smart_receipts.*`, `evaluator`, RLS/roles, migrations, edge functions,
+  `client*.ts`, `types.ts`, layouts autenticados.
+
+### Próximo
+- **Bloco C:** limpeza técnica (imports órfãos, componentes duplicados,
+  consolidação de styles), encerrando oficialmente a Sprint v1.6.
+
 ## [1.6.0] — 2026-07-12 — Polish Sprint (Bloco A + defaults de performance)
 
 Sem novas funcionalidades. Sprint oficial de polimento — foco em UX,

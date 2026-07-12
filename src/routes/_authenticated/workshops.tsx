@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { brl, EVENT_TYPE_LABEL, formatDate } from "@/lib/trailbook";
 import { ExportMenu } from "@/components/ExportMenu";
 import type { ExportColumn } from "@/lib/exports";
+import { CardBlockSkeleton } from "@/components/Skeletons";
 
 export const Route = createFileRoute("/_authenticated/workshops")({
   head: () => ({ meta: [{ title: "Oficinas — TrailBook" }] }),
@@ -145,7 +146,12 @@ function Workshops() {
         </div>
       )}
 
-      {isLoading ? <div className="text-muted-foreground">Carregando…</div> : data && data.length > 0 ? (
+      {isLoading ? (
+        <div className="grid gap-4 md:grid-cols-2">
+          <CardBlockSkeleton />
+          <CardBlockSkeleton />
+        </div>
+      ) : data && data.length > 0 ? (
         <div className="grid gap-4 md:grid-cols-2">
           {stats.map(({ workshop: w, services, bikes, revenue, lastService }) => (
             <button

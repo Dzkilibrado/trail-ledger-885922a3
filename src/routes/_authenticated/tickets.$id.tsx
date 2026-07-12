@@ -16,6 +16,7 @@ import { labelFor, PRIORITY_TONE, STATUS_TONE, TICKET_MODULES, TICKET_PRIORITIES
 import { Shield, Send, CheckCircle2, RotateCcw, XCircle } from "lucide-react";
 import { TicketAttachments } from "@/components/TicketAttachments";
 import { CpfChangeAdminPanel } from "@/components/CpfChangeAdminPanel";
+import { PageLineSkeleton } from "@/components/Skeletons";
 
 export const Route = createFileRoute("/_authenticated/tickets/$id")({
   head: () => ({ meta: [{ title: "Chamado — TrailBook" }] }),
@@ -91,7 +92,7 @@ function TicketDetail() {
     qc.invalidateQueries({ queryKey: ["ticket", id] });
   }
 
-  if (ticket.isLoading) return <div className="text-muted-foreground">Carregando…</div>;
+  if (ticket.isLoading) return <PageLineSkeleton />;
   const t = ticket.data as any;
   if (!t) return <div className="text-muted-foreground">Chamado não encontrado.</div>;
 

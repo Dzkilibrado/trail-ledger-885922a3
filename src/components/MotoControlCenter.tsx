@@ -536,7 +536,18 @@ export function MotoControlCenter({ id }: { id: string }) {
       <section>
         <h2 className="mb-4 font-display text-lg font-bold">Linha do tempo</h2>
         {events.isLoading ? (
-          <div className="text-muted-foreground">Carregando…</div>
+          <ol className="relative space-y-4 border-l border-border pl-6" aria-hidden="true">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <li key={i} className="relative">
+                <span className="absolute -left-[34px] top-2 h-3 w-3 rounded-full bg-primary/40 ring-4 ring-background" />
+                <div className="surface-elevated rounded-2xl p-4">
+                  <div className="h-4 w-1/3 animate-pulse rounded bg-primary/10" />
+                  <div className="mt-2 h-3 w-1/4 animate-pulse rounded bg-primary/10" />
+                  <div className="mt-3 h-3 w-2/3 animate-pulse rounded bg-primary/10" />
+                </div>
+              </li>
+            ))}
+          </ol>
         ) : events.data && events.data.length > 0 ? (
           <ol className="relative space-y-4 border-l border-border pl-6">
             {events.data.map((e) => (
