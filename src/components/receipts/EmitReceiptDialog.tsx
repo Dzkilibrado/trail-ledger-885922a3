@@ -27,6 +27,7 @@ import { HELP } from "@/lib/help/texts";
 import { LocationPicker } from "@/components/LocationPicker";
 import { useProfileSnapshot } from "@/hooks/useProfileSnapshot";
 import { ProfileDataChip } from "@/components/ProfileDataChip";
+import { isStaleStateError, staleStateUserMessage, stripStaleStatePrefix } from "@/lib/errors/stale-state";
 
 const PAYMENT_METHODS = ["Dinheiro", "PIX", "Transferência bancária", "Financiamento", "Cartão", "Outro"];
 
@@ -286,7 +287,7 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
       await invalidateAll();
       toast.success("Documento assinado anexado.");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha no upload");
+      await handleReceiptError(e, "anexar documento assinado");
     } finally { setLoading(false); }
   }
 
@@ -305,7 +306,7 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
       await invalidateAll();
       toast.success("Aceite registrado");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha no aceite");
+      await handleReceiptError(e, "registrar aceite");
     } finally { setLoading(false); }
   }
 
@@ -319,7 +320,7 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
       setOpen(false); resetForm();
       toast.success("Transferência concluída. Histórico atualizado.");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao concluir");
+      await handleReceiptError(e, "concluir a transferência");
     } finally { setLoading(false); }
   }
 
@@ -333,8 +334,39 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
       setOpen(false); resetForm();
       toast.success("Negociação cancelada");
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao cancelar");
+      await handleReceiptError(e, "cancelar a negociação");
     } finally { setLoading(false); }
+  }
+
+  /**
+   * Erro com Recuperação (ADR 0012). Quando o backend detectar que o estado
+   * mudou (`STALE_STATE:` prefix), sincronizamos o recibo + queries
+   * correlatas ANTES de mostrar a mensagem — a UI reflete o estado real e o
+   * usuário não precisa dar refresh manual. Erros de negócio comuns
+   * (mensagem curta) e técnicos (stack) mantêm o comportamento anterior.
+   */
+  async function handleReceiptError(err: unknown, operation: string) {
+    if (isStaleStateError(err)) {
+      const supportCode = `SR-${Math.random().toString(36).slice(2, 10).toUpperCase()}`;
+      console.warn(`[SmartReceipt][${supportCode}] stale_state_recovered`, {
+        operation,
+        receipt_id: currentReceiptId,
+        motorcycle_id: motorcycleId,
+        detail: stripStaleStatePrefix(err),
+        timestamp: new Date().toISOString(),
+      });
+      // 1. sincroniza fonte única (recibo) 2. invalida consumidores
+      // 3. só então mostra mensagem — nenhum botão fica com estado obsoleto.
+      if (currentReceiptId) await reloadReceipt(currentReceiptId);
+      await invalidateAll();
+      toast.info(staleStateUserMessage(operation), {
+        description: "Revise o status atualizado antes de tentar novamente.",
+      });
+      return;
+    }
+    const raw = err instanceof Error ? err.message : String(err);
+    const isTechnical = /\bat\b|\n|Cannot|undefined \(reading|is not a function/.test(raw);
+    toast.error(isTechnical ? "Não foi possível concluir esta ação agora. Tente novamente em instantes." : raw);
   }
 
   async function downloadOriginal() {
