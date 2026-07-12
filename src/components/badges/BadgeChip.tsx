@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import type { BadgeEvaluation } from "@/lib/badges";
 import { cn } from "@/lib/utils";
@@ -17,7 +18,7 @@ const PARTIAL_STYLE = "border-amber-500/30 bg-amber-500/5 text-amber-200/80";
  * Pílula compacta reutilizada em headers (Central, Passaporte, Saúde, Docs).
  * Tooltip mostra significado + critérios atendidos/pendentes.
  */
-export function BadgeChip({
+function BadgeChipImpl({
   evaluation,
   size = "md",
 }: {
@@ -54,3 +55,6 @@ export function BadgeChip({
     </TooltipProvider>
   );
 }
+
+/** Memoizado — renderizado em listas (Passaporte, Central, Documentos). */
+export const BadgeChip = memo(BadgeChipImpl);
