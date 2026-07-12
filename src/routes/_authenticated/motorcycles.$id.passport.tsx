@@ -27,6 +27,8 @@ import { ReceiptsSummaryRow } from "@/components/receipts/ReceiptsHistorySheet";
 import { useReceiptsForMoto } from "@/hooks/useActiveNegotiation";
 import { useEffect } from "react";
 import { BadgeSection } from "@/components/badges/BadgeSection";
+import { HelpTooltip } from "@/components/HelpTooltip";
+import { HELP } from "@/lib/help/texts";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id/passport")({
   head: () => ({ meta: [{ title: "Passaporte Digital — TrailBook" }] }),
@@ -174,6 +176,7 @@ function Passport() {
     <div className="space-y-6">
       <PageHeader
         title="Passaporte Digital"
+        titleExtra={<HelpTooltip label="Passaporte Digital" text={HELP.passport} side="bottom" />}
         crumbs={[
           { label: "Motos", to: "/motorcycles" },
           { label: m.nickname || m.model, to: `/motorcycles/${m.id}` },
@@ -186,6 +189,7 @@ function Passport() {
                 <ArrowLeft className="h-4 w-4" /> Voltar à moto
               </Link>
             </Button>
+            <HelpTooltip label="Compartilhar" text={HELP.passportShare} side="bottom" />
             <CertificateSettingsDialog
               motorcycleId={m.id}
               trigger={<Button className="btn-glow"><Share2 className="h-4 w-4" /> Compartilhar / Certificado</Button>}
@@ -248,6 +252,7 @@ function Passport() {
         <div className="surface-elevated rounded-2xl p-5">
           <h2 className="mb-3 flex items-center gap-2 font-display font-bold">
             <ShieldAlert className="h-4 w-4 text-amber-400" /> Pendências
+            <HelpTooltip label="Pendências" text={HELP.pending} />
           </h2>
           {pending.length === 0 ? (
             <div className="text-sm text-muted-foreground">Nenhuma pendência. Excelente cuidado!</div>
@@ -278,6 +283,7 @@ function Passport() {
         <div className="surface-elevated rounded-2xl p-5">
           <h2 className="mb-3 flex items-center gap-2 font-display font-bold">
             <BadgeCheck className="h-4 w-4 text-primary" /> Selo TrailBook Certified
+            <HelpTooltip label="Verificado pelo TrailBook" text={HELP.badgeVerified} />
           </h2>
           <div className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold ${TIER_STYLE[tier]}`}>
             {CERTIFIED_TIER_LABEL[tier]}
@@ -292,7 +298,10 @@ function Passport() {
 
       {/* Resumo do Histórico de Propriedade */}
       <section className="space-y-3">
-        <h2 className="font-display text-lg font-bold">Histórico de propriedade</h2>
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold">
+          Histórico de propriedade
+          <HelpTooltip label="Histórico Completo" text={HELP.historyFull} />
+        </h2>
         <ReceiptsSummaryRow
           motoId={m.id}
           isOwner={!!currentUserId && (m as any).owner_id === currentUserId}
@@ -302,14 +311,20 @@ function Passport() {
 
       {/* Painel de saúde por categoria */}
       <section className="space-y-3">
-        <h2 className="font-display text-lg font-bold">Painel de saúde</h2>
+        <h2 className="flex items-center gap-2 font-display text-lg font-bold">
+          Painel de saúde
+          <HelpTooltip label="Saúde da moto" text={HELP.healthMoto} />
+        </h2>
         <HealthPanel items={health} />
       </section>
 
       {/* Timeline consolidada */}
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="font-display text-lg font-bold">Linha do tempo</h2>
+          <h2 className="flex items-center gap-2 font-display text-lg font-bold">
+            Linha do tempo
+            <HelpTooltip label="Linha do tempo" text={HELP.timeline} />
+          </h2>
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">{filteredTimeline.length} de {timeline.length}</span>
             <Select value={filter} onValueChange={setFilter}>
