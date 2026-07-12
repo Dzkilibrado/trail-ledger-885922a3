@@ -262,7 +262,7 @@ function CompleteProfilePage() {
 
   const missingLabels = useMemo(() => missing.map((m) => FIELD_LABELS[m] ?? m), [missing]);
 
-  if (checking) return <p className="text-sm text-muted-foreground">Carregando…</p>;
+  if (checking) return <PageLineSkeleton />;
 
   return (
     <div className="mx-auto max-w-lg">

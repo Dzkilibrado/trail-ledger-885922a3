@@ -27,7 +27,7 @@ function AdminModules() {
   const { isAdmin, loading } = useIsAdmin();
   const modulesQ = useModules();
 
-  if (loading || modulesQ.isLoading) return <div className="text-muted-foreground">Carregando…</div>;
+  if (loading || modulesQ.isLoading) return <PageLineSkeleton />;
   if (!isAdmin) return <AccessDenied />;
 
   return (

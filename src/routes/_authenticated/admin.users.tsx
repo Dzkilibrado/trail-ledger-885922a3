@@ -158,7 +158,7 @@ function AdminUsers() {
     qc.invalidateQueries({ queryKey: ["admin", "users"] });
   }
 
-  if (loading) return <div className="text-muted-foreground">Carregando…</div>;
+  if (loading) return <PageLineSkeleton />;
   if (!isAdmin) return <AccessDenied />;
 
   return (

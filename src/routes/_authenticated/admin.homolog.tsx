@@ -58,7 +58,7 @@ function HomologAdmin() {
     onError: (e: Error) => toast.error(e.message),
   });
 
-  if (loading) return <div className="text-muted-foreground">Carregando…</div>;
+  if (loading) return <PageLineSkeleton />;
   if (!isAdmin) return <AccessDenied />;
 
   const users = summary.data?.users ?? [];
