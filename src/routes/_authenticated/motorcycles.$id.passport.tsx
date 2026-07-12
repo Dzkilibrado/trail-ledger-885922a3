@@ -29,6 +29,7 @@ import { useEffect } from "react";
 import { BadgeSection } from "@/components/badges/BadgeSection";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";
+import { SCORE_TIER_STYLE as TIER_STYLE } from "@/lib/ui/status-styles";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id/passport")({
   head: () => ({ meta: [{ title: "Passaporte Digital — TrailBook" }] }),
@@ -52,8 +53,6 @@ const KIND_LABEL: Record<PassportEntryKind, string> = {
   photo: "Foto",
   certificate: "Certificado emitido",
 };
-
-import { SCORE_TIER_STYLE as TIER_STYLE } from "@/lib/ui/status-styles";
 
 function Passport() {
   const { id } = Route.useParams();
