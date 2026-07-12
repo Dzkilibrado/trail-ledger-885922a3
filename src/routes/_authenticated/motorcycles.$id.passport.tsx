@@ -176,7 +176,6 @@ function Passport() {
     <div className="space-y-6">
       <PageHeader
         title="Passaporte Digital"
-        titleExtra={<HelpTooltip label="Passaporte Digital" text={HELP.passport} side="bottom" />}
         crumbs={[
           { label: "Motos", to: "/motorcycles" },
           { label: m.nickname || m.model, to: `/motorcycles/${m.id}` },
@@ -184,6 +183,7 @@ function Passport() {
         ]}
         actions={
           <div className="flex flex-wrap items-center gap-2">
+            <HelpTooltip label="Passaporte Digital" text={HELP.passport} side="bottom" />
             <Button variant="outline" asChild>
               <Link to="/motorcycles/$id" params={{ id: m.id }}>
                 <ArrowLeft className="h-4 w-4" /> Voltar à moto
