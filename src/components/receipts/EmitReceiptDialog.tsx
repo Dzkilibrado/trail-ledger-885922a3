@@ -393,7 +393,9 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
   return (
     <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
-      <DialogContent className="max-w-lg max-h-[92vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90dvh] overflow-y-auto p-0">
+        <div className="flex max-h-[90dvh] flex-col">
+          <div className="flex-1 overflow-y-auto p-6 pb-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileSignature className="h-5 w-5 text-primary" /> Recibo Inteligente
