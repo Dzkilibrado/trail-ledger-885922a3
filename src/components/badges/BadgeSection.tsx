@@ -38,43 +38,77 @@ export function BadgeSection({
 
   const isFull = variant === "full";
 
+  const earnedCount = summary.earned.length;
+  const totalCount = summary.all.length;
+  const progressPct = totalCount === 0 ? 0 : Math.round((earnedCount / totalCount) * 100);
+
   return (
     <section className={cn("surface-elevated rounded-2xl p-4", className)}>
-      <div className="mb-3 flex items-baseline justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <Award className="h-4 w-4 text-primary" />
-          <h3 className="font-display text-sm font-bold uppercase tracking-widest">
-            Selos de Qualidade
-          </h3>
-          <HelpTooltip label="Selos de Qualidade" text={HELP.badges} />
-          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
-            {summary.earned.length} de {summary.all.length}
-          </span>
-        </div>
-        {variant === "compact" && (
-          <Link
-            to="/motorcycles/$id/passport"
-            params={{ id: motorcycleId }}
-            className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
-          >
-            Ver todos os selos
-            <ArrowRight className="h-3 w-3" />
-          </Link>
-        )}
+      <div className="mb-3 flex items-center gap-2">
+        <Award className="h-4 w-4 shrink-0 text-primary" />
+        <h3 className="font-display text-sm font-bold uppercase tracking-widest">
+          Selos de Qualidade
+        </h3>
+        <HelpTooltip label="Selos de Qualidade" text={HELP.badges} />
       </div>
+
+      {variant === "compact" && (
+        <div className="mb-3 space-y-2">
+          <div className="flex items-center gap-2 text-sm">
+            <span aria-hidden>🏅</span>
+            <span className="font-semibold">
+              <span className="text-primary">{earnedCount}</span>
+              <span className="text-muted-foreground"> de {totalCount}</span>
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {earnedCount === 1 ? "selo conquistado" : "selos conquistados"}
+            </span>
+          </div>
+          <div
+            className="h-1.5 w-full overflow-hidden rounded-full bg-muted"
+            role="progressbar"
+            aria-valuenow={earnedCount}
+            aria-valuemin={0}
+            aria-valuemax={totalCount}
+            aria-label={`${earnedCount} de ${totalCount} selos conquistados`}
+          >
+            <div
+              className="h-full rounded-full bg-primary transition-all duration-500"
+              style={{ width: `${progressPct}%` }}
+            />
+          </div>
+        </div>
+      )}
 
       {isFull ? (
         <BadgeGrid evaluations={summary.all} />
-      ) : summary.earned.length === 0 ? (
-        <p className="text-xs text-muted-foreground">
-          Nenhum selo conquistado ainda. Complete a documentação e a manutenção para começar.
-        </p>
       ) : (
-        <div className="flex flex-wrap gap-1.5">
-          {summary.earned.map((ev) => (
-            <BadgeChip key={ev.definition.id} evaluation={ev} />
-          ))}
-        </div>
+        <>
+          {earnedCount === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              Nenhum selo conquistado ainda. Complete a documentação e a manutenção para começar.
+            </p>
+          ) : (
+            <div className="mb-3">
+              <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                Selos conquistados
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {summary.earned.map((ev) => (
+                  <BadgeChip key={ev.definition.id} evaluation={ev} label="full" />
+                ))}
+              </div>
+            </div>
+          )}
+          <Link
+            to="/motorcycles/$id/passport"
+            params={{ id: motorcycleId }}
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-3 py-2.5 text-xs font-semibold text-primary transition-colors hover:bg-accent/40 active:bg-accent/60"
+          >
+            Ver todos os selos
+            <ArrowRight className="h-3.5 w-3.5" />
+          </Link>
+        </>
       )}
 
       <p className="mt-3 text-[10px] text-muted-foreground">

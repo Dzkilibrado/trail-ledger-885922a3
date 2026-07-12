@@ -15,9 +15,11 @@ const PARTIAL_STYLE = "border-amber-500/30 bg-amber-500/5 text-amber-200/80";
 function BadgeChipImpl({
   evaluation,
   size = "md",
+  label = "short",
 }: {
   evaluation: BadgeEvaluation;
   size?: "sm" | "md";
+  label?: "short" | "full";
 }) {
   const { definition: b, state } = evaluation;
   const style =
@@ -39,7 +41,7 @@ function BadgeChipImpl({
         <TooltipTrigger asChild>
           <span className={cls} role="img" aria-label={`Selo ${b.title} — ${state}`}>
             <span aria-hidden>{b.glyph}</span>
-            <span>{b.short}</span>
+            <span>{label === "full" ? b.title : b.short}</span>
           </span>
         </TooltipTrigger>
         <TooltipContent side="top" className="p-3">
