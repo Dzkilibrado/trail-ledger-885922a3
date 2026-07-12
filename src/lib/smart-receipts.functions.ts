@@ -351,7 +351,7 @@ export const attachSignedReceipt = createServerFn({ method: "POST" })
       .upload(path, bytes, { contentType: "application/pdf", upsert: true });
     if (upErr) throw new Error(`Falha no upload do assinado: ${upErr.message}`);
 
-    const { error: uErr } = await supabase
+    const { data: updated, error: uErr } = await supabase
       .from("smart_receipts")
       .update({
         signed_pdf_path: path,
@@ -361,10 +361,12 @@ export const attachSignedReceipt = createServerFn({ method: "POST" })
         seller_accepted_at: null,
         buyer_accepted_at: null,
       } as never)
-      .eq("id", r.id);
+      .eq("id", r.id)
+      .select("id, code, status, version, buyer_id, seller_id, external_buyer, buyer_snapshot, negotiation, signed_pdf_path, seller_accepted_at, buyer_accepted_at")
+      .single();
     if (uErr) throw new Error(uErr.message);
-
-    return { ok: true as const };
+    if (!updated) throw new Error("Falha ao persistir anexo (sem permissão ou estado inválido)");
+    return { ok: true as const, receipt: updated };
   });
 
 /** Registra aceite do vendedor OU comprador (a função identifica pelo userId). */
@@ -387,9 +389,19 @@ export const acceptSignedReceipt = createServerFn({ method: "POST" })
     else if (userId === r.buyer_id) patch.buyer_accepted_at = new Date().toISOString();
     else throw new Error("Apenas as partes envolvidas podem aceitar");
 
-    const { error } = await supabase.from("smart_receipts").update(patch as never).eq("id", data.id);
+    // Governança (princípio v1.6): confirmar persistência lendo a linha
+    // atualizada. Sem .select().single(), a RLS pode filtrar 0 linhas sem
+    // gerar erro — o cliente exibiria "sucesso" com estado inalterado.
+    const { data: updated, error } = await supabase
+      .from("smart_receipts")
+      .update(patch as never)
+      .eq("id", data.id)
+      .eq("status", "awaiting_acceptance")
+      .select("id, code, status, version, buyer_id, seller_id, external_buyer, buyer_snapshot, negotiation, signed_pdf_path, seller_accepted_at, buyer_accepted_at")
+      .single();
     if (error) throw new Error(error.message);
-    return { ok: true as const };
+    if (!updated) throw new Error("Aceite não persistido — estado do recibo mudou. Recarregue a página e tente novamente.");
+    return { ok: true as const, receipt: updated };
   });
 
 /** Conclui a transferência quando todas as condições estiverem satisfeitas. */
@@ -412,13 +424,16 @@ export const completeReceiptTransfer = createServerFn({ method: "POST" })
     if (r.buyer_id && !r.buyer_accepted_at) throw new Error("Aguardando aceite do comprador");
 
     const now = new Date().toISOString();
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from("smart_receipts")
       .update({ status: "completed", completed_at: now } as never)
       .eq("id", data.id)
-      .eq("status", "awaiting_acceptance"); // idempotência otimista
+      .eq("status", "awaiting_acceptance") // idempotência otimista
+      .select("id, code, status, version, buyer_id, seller_id, external_buyer, buyer_snapshot, negotiation, signed_pdf_path, seller_accepted_at, buyer_accepted_at")
+      .single();
     if (error) throw new Error(error.message);
-    return { ok: true as const };
+    if (!updated) throw new Error("Conclusão não persistida — estado mudou. Recarregue e tente novamente.");
+    return { ok: true as const, receipt: updated };
   });
 
 /** Cancela um recibo aberto (draft/issued/awaiting_acceptance). Só vendedor. */
