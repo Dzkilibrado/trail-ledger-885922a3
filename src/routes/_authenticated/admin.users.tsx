@@ -63,10 +63,10 @@ const YESNO = [
   { value: "no", label: "Não" },
 ];
 const STATUS_TONE: Record<string, string> = {
-  active: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
-  pending: "bg-amber-500/15 text-amber-400 border-amber-500/30",
-  blocked: "bg-destructive/15 text-destructive border-destructive/30",
-  inactive: "bg-muted text-muted-foreground border-border",
+  active: TONE.emerald,
+  pending: TONE.amber,
+  blocked: TONE.destructive,
+  inactive: TONE.muted,
 };
 const BLOCK_REASONS = [
   "Solicitação do usuário",
