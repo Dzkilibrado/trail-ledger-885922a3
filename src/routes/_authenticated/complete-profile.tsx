@@ -12,6 +12,8 @@ import { LocationPicker } from "@/components/LocationPicker";
 import { parseLocation } from "@/lib/br-locations";
 import { useInvalidateProfileSnapshot } from "@/hooks/useProfileSnapshot";
 import { CheckCircle2, ChevronLeft, ChevronRight, MapPin, Phone, User } from "lucide-react";
+import { HelpTooltip } from "@/components/HelpTooltip";
+import { HELP } from "@/lib/help/texts";
 
 /**
  * Wizard oficial de cadastro do TrailBook.
@@ -310,7 +312,7 @@ function CompleteProfilePage() {
               <Input value={draft.display_name} onChange={(e) => update("display_name", e.target.value)} placeholder="Apelido" />
             </Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="CPF" required>
+              <Field label="CPF" required help={HELP.cpf}>
                 <Input
                   inputMode="numeric" placeholder="000.000.000-00" maxLength={14}
                   value={draft.cpf}
@@ -334,7 +336,7 @@ function CompleteProfilePage() {
             <Field label="E-mail" required>
               <Input value={draft.email} disabled />
             </Field>
-            <Field label="Celular" required>
+            <Field label="Celular" required help={HELP.phone}>
               <Input inputMode="tel" placeholder="(11) 99999-9999" maxLength={16}
                 value={draft.phone} onChange={(e) => update("phone", maskPhone(e.target.value))} />
             </Field>
@@ -347,7 +349,7 @@ function CompleteProfilePage() {
               <Label htmlFor="wa-same" className="text-sm">Meu WhatsApp é igual ao celular</Label>
             </div>
             {!draft.whatsapp_same_as_phone && (
-              <Field label="WhatsApp" required>
+              <Field label="WhatsApp" required help={HELP.whatsapp}>
                 <Input inputMode="tel" placeholder="(11) 99999-9999" maxLength={16}
                   value={draft.whatsapp} onChange={(e) => update("whatsapp", maskPhone(e.target.value))} />
               </Field>
@@ -358,7 +360,13 @@ function CompleteProfilePage() {
         {step === 2 && (
           <>
             <StepHeader icon={<MapPin className="h-4 w-4" />} title="Localização" />
-            <LocationPicker value={draft.location} onChange={(v) => update("location", v)} label="Estado e Cidade *" />
+            <div>
+              <div className="mb-1.5 flex items-center gap-1.5">
+                <span className="text-xs uppercase tracking-widest text-muted-foreground">Estado e Cidade *</span>
+                <HelpTooltip label="Estado e Cidade" text={HELP.stateField + " Também é reutilizado em documentos oficiais."} />
+              </div>
+              <LocationPicker value={draft.location} onChange={(v) => update("location", v)} label="" />
+            </div>
 
             <button
               type="button"
@@ -445,12 +453,15 @@ function StepHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
   );
 }
 
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+function Field({ label, required, help, children }: { label: string; required?: boolean; help?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs uppercase tracking-widest text-muted-foreground">
-        {label}{required ? " *" : ""}
-      </Label>
+      <div className="flex items-center gap-1.5">
+        <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+          {label}{required ? " *" : ""}
+        </Label>
+        {help && <HelpTooltip label={label} text={help} />}
+      </div>
       {children}
     </div>
   );

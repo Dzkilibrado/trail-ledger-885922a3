@@ -15,6 +15,7 @@
 - Selos de Qualidade do Histórico — Fase 1 **HOMOLOGADA E ENCERRADA** (`mem://features/selos-qualidade`, ADR 0007): registry declarativo em `src/lib/badges/registry.ts` + motor puro `evaluateBadges`. Selos são DERIVADOS de evidências (nunca armazenados/manuais); adicionar selo = adicionar objeto no registry, sem tocar em componentes. Alterações futuras entram como nova fase.
 - Linguagem oficial da UI: português simples e amigável, sem termos técnicos quando houver alternativa clara. Glossário e regras em `mem://principles/linguagem-oficial`. Nomes técnicos ficam restritos a código, ADR e docs.
 - Regra Permanente de Qualidade (`mem://standards/qualidade-oficial`, ADR 0008): toda funcionalidade nova precisa passar pelas 5 revisões (Funcional, UX, Mobile, Comunicação, Final) antes de ser homologada. Vigora a partir da v1.5.
+- Descoberta em um toque (`mem://principles/descoberta-um-toque`, ADR 0009): todo termo ambíguo é (a) renomeado ou (b) explicado por `HelpTooltip`. Componente único e textos vindos SEMPRE do registry `src/lib/help/texts.ts` (`HELP`). FAQ e suporte são complementos, nunca a primeira porta.
 
 ## Memories
 - [Diretrizes de desenvolvimento](mem://standards/dev-directives) — Padrões obrigatórios (18 pontos) aplicáveis a toda nova funcionalidade v1.0.1+
@@ -31,3 +32,6 @@
 - [Linguagem oficial da UI](mem://principles/linguagem-oficial) — português simples, glossário e regras de aplicação
 - [Regra Permanente de Qualidade](mem://standards/qualidade-oficial) — 5 revisões obrigatórias antes de qualquer homologação
 - [ADR 0008 — Regra Permanente de Qualidade](docs/adr/0008-regra-permanente-qualidade.md) — portão final de homologação
+- [Descoberta em um toque](mem://principles/descoberta-um-toque) — princípio permanente de UX (compreensão em até um toque)
+- [Padrão oficial de Help Tooltips](mem://standards/help-tooltips) — componente único, registry único, onde aplicar
+- [ADR 0009 — Help Tooltips e Descoberta em Um Toque](docs/adr/0009-help-tooltips-e-descoberta.md) — regras operacionais e reservas (Verificado pelo TrailBook)

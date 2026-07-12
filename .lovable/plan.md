@@ -1,5 +1,9 @@
 # Revisão de UX v1.5 — TrailBook mais intuitivo
 
+> **Fase 1.5.1 encerrada (2026-07-12):** padronização oficial de
+> `HelpTooltip`, registry `HELP` e ADR 0009 (Descoberta em Um Toque).
+> Ver CHANGELOG [1.5.1] e `mem://standards/help-tooltips`.
+
 Sem novas funcionalidades. Foco em linguagem simples, descoberta, navegação, mobile e padronização visual. Uma entrega grande, dividida em blocos coerentes.
 
 ## 1. Princípio oficial de linguagem (base de tudo)
