@@ -1,28 +1,15 @@
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
   Bike,
   Shield,
-  QrCode,
-  Wrench,
-  Activity,
-  FileCheck2,
-  Bell,
   FileText,
-  Camera,
-  TrendingUp,
-  ArrowLeftRight,
-  Users,
-  DollarSign,
-  Store,
-  ChevronRight,
-  Check,
-  Lock,
-  Sparkles,
-  ArrowRight,
-  Heart,
-  Eye,
-  Target,
+  QrCode,
+  Award,
   Handshake,
+  ArrowRight,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -38,17 +25,17 @@ import certificateImage from "@/assets/landing-certificate.jpg";
 export const Route = createFileRoute("/")({
   head: () => ({
     meta: [
-      { title: "TrailBook — Gestão inteligente da sua moto off-road" },
+      { title: "TrailBook — O histórico completo da sua moto" },
       {
         name: "description",
         content:
-          "O histórico da sua moto. A confiança da sua próxima negociação. Organize manutenções, documentos, inspeções e compartilhe um histórico confiável com TrailBook Certified.",
+          "Organize manutenções, documentos e proprietários em um Passaporte Digital que acompanha a sua motocicleta off-road.",
       },
-      { property: "og:title", content: "TrailBook — Gestão inteligente da sua moto off-road" },
+      { property: "og:title", content: "TrailBook — O histórico completo da sua moto" },
       {
         property: "og:description",
         content:
-          "A plataforma inteligente para gestão do ciclo de vida da sua motocicleta off-road.",
+          "Passaporte Digital, documentos organizados e Recibo de Compra e Venda em um só app.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -61,24 +48,14 @@ function Landing() {
   return (
     <div className="min-h-dvh bg-background text-foreground">
       <SiteHeader />
-      <Hero />
-      <HowItWorks />
-      <Lifecycle />
-      <Benefits />
-      <Features />
-      <Audience />
-      <ValueDrivers />
-      <DocumentsVault />
-      <SmartAgenda />
-      <ConservationScore />
-      <CertifiedSection />
-      <SecuritySection />
-      <Plans />
-      <FAQ />
-      <BrandStory />
-      <MissionVision />
-      <BrandValues />
-      <FinalCTA />
+      <main>
+        <Hero />
+        <Benefits />
+        <HowItWorks />
+        <AppShowcase />
+        <FAQ />
+        <FinalCTA />
+      </main>
       <SiteFooter />
     </div>
   );
