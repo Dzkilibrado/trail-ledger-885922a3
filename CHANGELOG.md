@@ -2,6 +2,55 @@
 
 Todas as entregas oficialmente homologadas do TrailBook. Formato inspirado em Keep a Changelog.
 
+## [1.6.5] — 2026-07-13 — Redesign da Landing Page pública
+
+**Missão oficial da landing:** converter visitantes em usuários
+cadastrados. Divulgação progressiva — o site vende a ideia, o app ensina
+o uso. Nenhuma mudança em regras de negócio, fluxos autenticados,
+RLS ou migrations.
+
+### Estrutura anterior → nova (`src/routes/index.tsx`)
+- Antes: 19 seções, ~1.060 linhas — Hero → HowItWorks → Lifecycle →
+  Benefits → Features → Audience → ValueDrivers → DocumentsVault →
+  SmartAgenda → ConservationScore → CertifiedSection → SecuritySection →
+  Plans → FAQ → BrandStory → MissionVision → BrandValues → FinalCTA →
+  Footer 4 colunas.
+- Depois: 6 seções em `<main>` — Hero → Benefícios (5) → Como funciona
+  (4) → Carrossel (3 slides) → FAQ (5) → CTA final → Rodapé mínimo.
+- Redução estimada de altura no mobile: ~65–70%.
+
+### Blocos removidos
+- Lifecycle, ValueDrivers, DocumentsVault, SmartAgenda,
+  ConservationScore, CertifiedSection, SecuritySection, Plans,
+  BrandStory, MissionVision, BrandValues (movidos para `/como-funciona`,
+  `/faq` ou material fora do fluxo de conversão).
+
+### Blocos resumidos
+- Hero: sem eyebrow, sem trust chips, sem card flutuante — apenas
+  título curto, subtítulo de 2 linhas, dois CTAs.
+- Como funciona: 5 → 4 passos.
+- Benefícios: 6 cards genéricos → 5 focados no valor real (Histórico,
+  Passaporte Digital, Documentos, Recibo, Selos).
+- FAQ: mantidos 5 itens de maior impacto.
+- Rodapé: 4 colunas → linha única (logo + links essenciais + copyright).
+
+### Carrossel do aplicativo (novo)
+- 3 slides (máx. 4 permitido) com scroll-snap horizontal nativo — sem
+  autoplay, sem áudio, sem rotação automática, sem bloquear CTAs.
+- Indicador "X de N" com `aria-live="polite"`, botões prev/next com
+  `aria-label`, `role="region"` + `aria-roledescription="carrossel"`.
+- Zero dependências novas.
+
+### Performance
+- Hero: `fetchPriority="high"`; demais imagens `loading="lazy"`.
+- Dimensões `width/height` reservadas para evitar layout shift.
+- Removidos vídeos, GIFs e blocos redundantes.
+
+### Governança
+- ADR 0013 — `docs/adr/0013-landing-page-conversao.md`.
+- Memória — `.lovable/mem/principles/landing-page-conversao.md`.
+- `mem://index.md` — princípio adicionado ao Core.
+
 ## [1.6.4] — 2026-07-12 — Erro com Recuperação (princípio permanente + Recibo)
 
 **Novo princípio permanente do TrailBook.** Complementa o par de ADRs
