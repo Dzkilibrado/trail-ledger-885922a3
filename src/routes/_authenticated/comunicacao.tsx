@@ -29,11 +29,25 @@ function ComunicacaoHub() {
     },
     staleTime: 30_000,
   });
+  const openTickets = useQuery({
+    queryKey: ["tickets", "open-count"],
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      if (!u.user) return 0;
+      const { count } = await supabase
+        .from("tickets")
+        .select("id", { count: "exact", head: true })
+        .eq("user_id", u.user.id)
+        .neq("status", "closed");
+      return count ?? 0;
+    },
+    staleTime: 30_000,
+  });
 
   const items = [
     { to: "/messages", label: "Mensagens", desc: "Conversas com suporte e oficinas", icon: Mail, badge: unreadMsgs.data ?? 0 },
-    { to: "/tickets", label: "Chamados", desc: "Solicitações de suporte", icon: LifeBuoy, badge: unreadNotifs.data ?? 0 },
-    { to: "/tickets", label: "Notificações", desc: "Alertas e avisos do sistema", icon: Bell, badge: 0 },
+    { to: "/tickets", label: "Chamados", desc: "Solicitações de suporte", icon: LifeBuoy, badge: openTickets.data ?? 0 },
+    { to: "/notifications", label: "Notificações", desc: "Alertas e avisos do sistema", icon: Bell, badge: unreadNotifs.data ?? 0 },
   ] as const;
 
   return (
