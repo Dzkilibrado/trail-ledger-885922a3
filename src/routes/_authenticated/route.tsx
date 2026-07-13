@@ -495,7 +495,7 @@ function NotificationsBell() {
   });
   const count = data ?? 0;
   return (
-    <Link to="/tickets" aria-label="Notificações" className="relative rounded-md p-2 hover:bg-muted">
+    <Link to="/notifications" aria-label="Notificações" className="relative rounded-md p-2 hover:bg-muted">
       <Bell className="h-4 w-4" />
       {count > 0 && (
         <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
@@ -536,7 +536,8 @@ function HomologChip({ onExit }: { onExit: () => void }) {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-4 right-4 z-40 inline-flex items-center gap-1.5 rounded-full border border-amber-500/60 bg-amber-500/95 px-3 py-1.5 text-xs font-semibold text-amber-950 shadow-lg backdrop-blur hover:bg-amber-400"
+        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 1rem)" }}
+        className="fixed right-4 z-40 inline-flex items-center gap-1.5 rounded-full border border-amber-500/60 bg-amber-500/95 px-3 py-1.5 text-xs font-semibold text-amber-950 shadow-lg backdrop-blur hover:bg-amber-400"
         aria-label="Modo Homologação — abrir detalhes"
       >
         <span aria-hidden>🟡</span>
