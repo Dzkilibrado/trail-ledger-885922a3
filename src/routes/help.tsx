@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Bike, LifeBuoy, CheckCircle2 } from "lucide-react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
@@ -15,8 +15,8 @@ export const Route = createFileRoute("/help")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Preciso de ajuda para acessar minha conta — TrailBook" },
-      { name: "description", content: "Abra um chamado de suporte para recuperar seu acesso ao TrailBook." },
+      { title: "Central de Atendimento — TrailBook" },
+      { name: "description", content: "Abra um chamado para qualquer assunto relacionado ao TrailBook — acesso, dúvidas, suporte técnico e mais." },
     ],
   }),
   component: HelpPage,
@@ -50,6 +50,13 @@ function HelpPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [ticketCode, setTicketCode] = useState<string | null>(null);
+  const [isAuthed, setIsAuthed] = useState(false);
+  useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => { if (mounted) setIsAuthed(!!data.session?.user); });
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => setIsAuthed(!!s?.user));
+    return () => { mounted = false; sub.subscription.unsubscribe(); };
+  }, []);
   const [form, setForm] = useState({
     fullName: "", birthDate: "", cpf: "", phone: "", email: "",
     problemType: "", problemOther: "", description: "",
@@ -100,11 +107,15 @@ function HelpPage() {
                 Nossa equipe vai avaliar sua solicitação e entrar em contato pelo e-mail ou WhatsApp informado.
                 Por segurança, nunca compartilhamos dados de conta neste canal — o atendimento é manual.
               </p>
-              <div className="mt-6 flex justify-center gap-2">
+              <div className="mt-6 flex flex-wrap justify-center gap-2">
                 <Button variant="outline" onClick={() => { setTicketCode(null); setForm({ fullName: "", birthDate: "", cpf: "", phone: "", email: "", problemType: "", problemOther: "", description: "" }); }}>
                   Abrir outro chamado
                 </Button>
-                <Button className="btn-glow" onClick={() => navigate({ to: "/auth" })}>Voltar ao login</Button>
+                {isAuthed ? (
+                  <Button className="btn-glow" onClick={() => navigate({ to: "/dashboard" })}>Voltar ao início</Button>
+                ) : (
+                  <Button className="btn-glow" onClick={() => navigate({ to: "/auth" })}>Voltar ao login</Button>
+                )}
               </div>
             </div>
           ) : (
@@ -114,9 +125,9 @@ function HelpPage() {
                   <LifeBuoy className="h-5 w-5" />
                 </div>
                 <div>
-                  <h1 className="font-display text-2xl font-bold">Preciso de ajuda para acessar minha conta</h1>
+                  <h1 className="font-display text-2xl font-bold">Central de Atendimento</h1>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Preencha os dados abaixo e nossa equipe entrará em contato. Este canal não expõe dados da sua conta — todo atendimento é feito manualmente por um administrador.
+                    Abra um chamado para qualquer assunto relacionado ao TrailBook — acesso, dúvidas, suporte técnico, feedback ou problemas com sua conta. Nossa equipe entrará em contato pelo canal informado. Todo atendimento é manual e nenhum dado sensível é exposto neste formulário.
                   </p>
                 </div>
               </div>
@@ -164,7 +175,14 @@ function HelpPage() {
                     value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
                 </Field>
                 <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                  <Button type="button" variant="outline" className="sm:w-40" onClick={() => navigate({ to: "/auth" })}>Voltar ao login</Button>
+                  {isAuthed ? (
+                    <>
+                      <Button type="button" variant="ghost" className="sm:w-28" onClick={() => { if (typeof window !== "undefined" && window.history.length > 1) window.history.back(); else navigate({ to: "/dashboard" }); }}>Fechar</Button>
+                      <Button type="button" variant="outline" className="sm:w-44" onClick={() => navigate({ to: "/dashboard" })}>Voltar ao início</Button>
+                    </>
+                  ) : (
+                    <Button type="button" variant="outline" className="sm:w-40" onClick={() => navigate({ to: "/auth" })}>Voltar ao login</Button>
+                  )}
                   <Button type="submit" className="flex-1 btn-glow" disabled={loading}>
                     {loading ? "Enviando…" : "Enviar chamado"}
                   </Button>
