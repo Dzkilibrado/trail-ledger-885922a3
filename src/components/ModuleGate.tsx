@@ -52,9 +52,9 @@ export function ModuleGate({ moduleKey, children }: Props) {
           <Button variant="outline" onClick={() => navigate({ to: "/dashboard" })}>
             <ArrowLeft className="h-4 w-4" /> Voltar
           </Button>
-          <Link to="/dashboard">
-            <Button><Home className="h-4 w-4" /> Página inicial</Button>
-          </Link>
+          <Button asChild>
+            <Link to="/dashboard"><Home className="h-4 w-4" /> Página inicial</Link>
+          </Button>
         </div>
       </div>
     );
@@ -67,7 +67,9 @@ export function ModuleGate({ moduleKey, children }: Props) {
         <h2 className="mt-3 font-display text-lg font-semibold">Módulo indisponível</h2>
         <p className="mt-1 text-sm text-muted-foreground">Esta funcionalidade não está disponível no momento.</p>
         <div className="mt-6">
-          <Link to="/dashboard"><Button variant="outline"><Home className="h-4 w-4" /> Ir para o início</Button></Link>
+          <Button asChild variant="outline">
+            <Link to="/dashboard"><Home className="h-4 w-4" /> Ir para o início</Link>
+          </Button>
         </div>
       </div>
     );

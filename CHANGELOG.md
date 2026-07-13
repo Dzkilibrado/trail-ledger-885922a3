@@ -2,6 +2,17 @@
 
 Todas as entregas oficialmente homologadas do TrailBook. Formato inspirado em Keep a Changelog.
 
+## [1.6.8] — 2026-07-13 — Reabertura do Fluxo Abrir Chamado
+
+### Correções críticas
+- **Rota `/tickets/new`**: corrigida a arquitetura de rotas. `/tickets` voltou a ser apenas layout com `<Outlet />`, e a lista foi movida para a rota índice `/tickets/`. Assim `/tickets/new` renderiza o formulário e nunca fica preso na lista de chamados.
+- **Tour inicial em fluxos de suporte**: o onboarding automático deixa de abrir sobre Chamados, Mensagens e Notificações. Isso evita bloqueio silencioso de botões críticos de atendimento.
+- **Envio de chamado**: removida dependência de validação remota da sessão no submit. O formulário usa a sessão local já autenticada, trata exceções com mensagem amigável e código de suporte, e sempre encerra o estado "Enviando…".
+- **Sucesso após sincronia**: o toast de sucesso não é mais emitido no formulário. Ele só aparece quando a rota de detalhe monta com o chamado carregado.
+
+### UX
+- O clique em "Abrir chamado" volta a produzir navegação perceptível para o formulário, preservando a rota estática `/tickets/new` antes da rota dinâmica `/tickets/$id`; o tour também não bloqueia a Central de Comunicação.
+
 ## [1.6.7] — 2026-07-13 — UX de Navegação, Comunicação e Central de Atendimento
 
 ### Correções críticas

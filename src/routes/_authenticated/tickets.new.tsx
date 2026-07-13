@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
@@ -19,6 +19,7 @@ export const Route = createFileRoute("/_authenticated/tickets/new")({
 
 function NewTicketPage() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [type, setType] = useState<string>("question");
   const [module, setModule] = useState<string>("other");
   const [priority, setPriority] = useState<string>("medium");
@@ -31,8 +32,9 @@ function NewTicketPage() {
   const motos = useQuery({
     queryKey: ["my-motos-min"],
     queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user?.id;
+      const { data: sessionData, error } = await supabase.auth.getSession();
+      if (error) throw error;
+      const uid = sessionData.session?.user.id;
       if (!uid) return [];
       const { data } = await supabase.from("motorcycles").select("id, brand, model, nickname").eq("owner_id", uid).order("created_at", { ascending: false });
       return data ?? [];
@@ -43,31 +45,51 @@ function NewTicketPage() {
     e.preventDefault();
     if (!title.trim() || !description.trim()) return toast.error("Preencha título e descrição");
     setSaving(true);
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) { setSaving(false); return; }
-    const { data, error } = await supabase.from("tickets").insert({
-      user_id: u.user.id,
-      type: type as any, module: module as any, priority: priority as any,
-      motorcycle_id: motoId !== "none" ? motoId : null,
-      title: title.trim(), description: description.trim(),
-    }).select("id").single();
-    if (error) { setSaving(false); return toast.error(error.message); }
-    // Upload de anexos, se houver
-    for (const f of files) {
-      if (f.size > 10 * 1024 * 1024) { toast.error(`${f.name}: máx 10 MB`); continue; }
-      const ext = f.name.split(".").pop() ?? "bin";
-      const path = `${u.user.id}/${data.id}/${crypto.randomUUID()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from("ticket-attachments").upload(path, f);
-      if (upErr) { toast.error(upErr.message); continue; }
-      await supabase.from("ticket_attachments").insert({
-        ticket_id: data.id, uploaded_by: u.user.id,
-        bucket: "ticket-attachments", storage_path: path,
-        file_name: f.name, mime_type: f.type || null, size_bytes: f.size,
-      });
+    try {
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      const userId = sessionData.session?.user.id;
+      if (!userId) {
+        toast.error("Sua sessão expirou. Entre novamente para abrir o chamado.");
+        navigate({ to: "/auth" });
+        return;
+      }
+
+      const { data, error } = await supabase.from("tickets").insert({
+        user_id: userId,
+        type: type as any, module: module as any, priority: priority as any,
+        motorcycle_id: motoId !== "none" ? motoId : null,
+        title: title.trim(), description: description.trim(),
+      }).select("id, code, status, user_id").single();
+      if (error) throw error;
+
+      // Upload de anexos, se houver
+      for (const f of files) {
+        if (f.size > 10 * 1024 * 1024) { toast.error(`${f.name}: máx 10 MB`); continue; }
+        const ext = f.name.split(".").pop() ?? "bin";
+        const path = `${userId}/${data.id}/${crypto.randomUUID()}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("ticket-attachments").upload(path, f);
+        if (upErr) { toast.error(upErr.message); continue; }
+        const { error: attachErr } = await supabase.from("ticket_attachments").insert({
+          ticket_id: data.id, uploaded_by: userId,
+          bucket: "ticket-attachments", storage_path: path,
+          file_name: f.name, mime_type: f.type || null, size_bytes: f.size,
+        });
+        if (attachErr) toast.error(`Anexo ${f.name}: não foi possível vincular ao chamado.`);
+      }
+
+      await qc.invalidateQueries({ queryKey: ["tickets"] });
+      try {
+        sessionStorage.setItem("tb_ticket_created", data.id);
+      } catch { /* noop */ }
+      navigate({ to: "/tickets/$id", params: { id: data.id } });
+    } catch (err) {
+      const supportCode = crypto.randomUUID().slice(0, 8).toUpperCase();
+      console.error("[tickets:new] Falha ao abrir chamado", { supportCode, err });
+      toast.error(`Não foi possível abrir o chamado agora. Código de suporte: ${supportCode}`);
+    } finally {
+      setSaving(false);
     }
-    setSaving(false);
-    toast.success("Chamado aberto! Nossa equipe entrará em contato por aqui.");
-    navigate({ to: "/tickets/$id", params: { id: data.id } });
   }
 
   return (

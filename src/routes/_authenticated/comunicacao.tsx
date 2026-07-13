@@ -32,12 +32,14 @@ function ComunicacaoHub() {
   const openTickets = useQuery({
     queryKey: ["tickets", "open-count"],
     queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return 0;
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
+      const userId = sessionData.session?.user.id;
+      if (!userId) return 0;
       const { count } = await supabase
         .from("tickets")
         .select("id", { count: "exact", head: true })
-        .eq("user_id", u.user.id)
+        .eq("user_id", userId)
         .neq("status", "closed");
       return count ?? 0;
     },
