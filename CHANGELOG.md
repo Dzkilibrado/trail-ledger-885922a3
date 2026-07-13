@@ -2,6 +2,22 @@
 
 Todas as entregas oficialmente homologadas do TrailBook. Formato inspirado em Keep a Changelog.
 
+## [1.6.7] — 2026-07-13 — UX de Navegação, Comunicação e Central de Atendimento
+
+### Correções críticas
+- **Rota "Notificações"**: o hub `/comunicacao` e o sino do header apontavam para `/tickets`, abrindo a tela de Chamados. Criada rota real `/_authenticated/notifications` que lê a tabela `notifications`, marca como lida ao abrir e permite "Marcar todas como lidas". Sino e tile agora apontam para `/notifications`.
+- **Badges da Central de Comunicação**: o cartão "Chamados" mostrava contagem de notificações não lidas. Passou a exibir o total real de chamados abertos do usuário; "Notificações" ganhou o badge correto de não lidas.
+- **Botões "Novo chamado" / "Abrir chamado"**: aninhamento `<Link><Button/></Link>` (HTML inválido — `<button>` dentro de `<a>`) trocado por `<Button asChild><Link/></Button>`. Clique, foco, cmd-click e preload voltam a funcionar de forma consistente em todos os navegadores.
+
+### Melhorias de UX
+- **Módulo Mensagens**: adicionado `PageHeader` com botão "Voltar" contextual e breadcrumb "Comunicação › Mensagens". Usuário deixa de ficar preso na inbox.
+- **Chip do Modo Homologação**: respeita `env(safe-area-inset-bottom)` para não colidir com a home indicator do iOS nem com FAB/toast.
+- **Central de Atendimento autenticada**: validada com sessão ativa — título, texto amplo, botões "Fechar" e "Voltar ao início" presentes; "Voltar ao login" corretamente ausente para autenticados.
+
+### Governança
+- **Princípio permanente** — *Nenhuma ação do usuário pode terminar sem retorno perceptível* (`mem://principles/retorno-perceptivel`).
+- **ADR 0014** — Retorno Perceptível a Toda Ação (`docs/adr/0014-retorno-perceptivel.md`). Complementa ADR 0011 (sucesso após sincronia) e 0012 (erro com recuperação).
+
 ## [1.6.6] — 2026-07-13 — Sprint UX: Central de Atendimento, Modo Homologação e Breadcrumbs Mobile
 
 ### Mudanças
