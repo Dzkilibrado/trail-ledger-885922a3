@@ -47,14 +47,15 @@ export function PageHeader({
             onClick={goBack}
             className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-muted hover:text-foreground"
           >
-            <ArrowLeft className="h-3.5 w-3.5" /> Voltar
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>{crumbs && crumbs.length > 0 ? (crumbs[crumbs.length - 1]?.label ?? "Voltar") : "Voltar"}</span>
           </button>
         )}
-        <Link to="/dashboard" className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-muted hover:text-foreground">
+        <Link to="/dashboard" className="hidden sm:inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-muted hover:text-foreground">
           <Home className="h-3.5 w-3.5" /> Início
         </Link>
         {crumbs && crumbs.length > 0 && (
-          <span className="flex flex-wrap items-center gap-1">
+          <span className="hidden sm:flex flex-wrap items-center gap-1">
             {crumbs.map((c, i) => (
               <span key={i} className="flex items-center gap-1">
                 <ChevronRight className="h-3 w-3 opacity-50" />

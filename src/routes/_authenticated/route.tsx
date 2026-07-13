@@ -16,6 +16,7 @@ import { useModules } from "@/hooks/useModules";
 import { ROUTE_TO_MODULE } from "@/lib/modules";
 import { ModuleGate } from "@/components/ModuleGate";
 import { WelcomeTour } from "@/components/onboarding/WelcomeTour";
+import { TBBottomSheet } from "@/design-system/overlays/TBBottomSheet";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -148,29 +149,9 @@ function AuthedLayout() {
 
   return (
     <div className="flex min-h-dvh w-full bg-background text-foreground">
-      {viewingAsUser && (
-        <div className="fixed inset-x-0 top-0 z-50 flex items-start justify-between gap-3 border-b border-amber-500/50 bg-amber-500/95 px-4 py-2 text-amber-950 shadow-md">
-          <div className="flex min-w-0 items-start gap-2 text-xs sm:text-sm">
-            <span aria-hidden className="mt-0.5 text-base leading-none">🟡</span>
-            <div className="min-w-0">
-              <div className="font-bold uppercase tracking-wide">Modo Homologação</div>
-              <div className="text-[11px] leading-snug text-amber-950/85 sm:text-xs">
-                Você está visualizando o sistema como um usuário comum. Todos os testes utilizam apenas os dados da sua própria conta.
-              </div>
-            </div>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="shrink-0 border-amber-950/40 bg-amber-950/10 text-amber-950 hover:bg-amber-950/20"
-            onClick={() => viewAs.exit()}
-          >
-            <ShieldCheck className="h-4 w-4" /> <span className="hidden sm:inline">Voltar para Administração</span><span className="sm:hidden">Voltar</span>
-          </Button>
-        </div>
-      )}
+      {viewingAsUser && <HomologChip onExit={() => viewAs.exit()} />}
       {/* Sidebar desktop */}
-      <aside className={cn("hidden w-64 shrink-0 flex-col border-r border-border bg-sidebar md:flex", viewingAsUser && "mt-10")}>
+      <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-sidebar md:flex">
         <SidebarBody pathname={pathname} onSignOut={askSignOut} isAdmin={isAdmin} realIsAdmin={realIsAdmin} viewingAsUser={viewingAsUser} viewAs={viewAs} />
       </aside>
 
@@ -178,13 +159,13 @@ function AuthedLayout() {
       {mobileOpen && (
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
-          <aside className={cn("absolute left-0 top-0 flex h-full w-[86%] max-w-sm flex-col border-r border-border bg-sidebar", viewingAsUser && "pt-10")}>
+          <aside className="absolute left-0 top-0 flex h-full w-[86%] max-w-sm flex-col border-r border-border bg-sidebar">
             <SidebarBody pathname={pathname} onSignOut={askSignOut} onClose={() => setMobileOpen(false)} isAdmin={isAdmin} realIsAdmin={realIsAdmin} viewingAsUser={viewingAsUser} viewAs={viewAs} />
           </aside>
         </div>
       )}
 
-      <div className={cn("flex min-w-0 flex-1 flex-col", viewingAsUser && "mt-10")}>
+      <div className="flex min-w-0 flex-1 flex-col">
         <header className="sticky top-0 z-30 flex h-14 items-center justify-between gap-3 border-b border-border bg-background/80 px-4 backdrop-blur md:px-6">
           <button className="md:hidden" onClick={() => setMobileOpen(true)} aria-label="Abrir menu">
             <Menu className="h-5 w-5" />
@@ -545,5 +526,44 @@ function MessagesBell() {
         </span>
       )}
     </Link>
+  );
+}
+
+function HomologChip({ onExit }: { onExit: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="fixed bottom-4 right-4 z-40 inline-flex items-center gap-1.5 rounded-full border border-amber-500/60 bg-amber-500/95 px-3 py-1.5 text-xs font-semibold text-amber-950 shadow-lg backdrop-blur hover:bg-amber-400"
+        aria-label="Modo Homologação — abrir detalhes"
+      >
+        <span aria-hidden>🟡</span>
+        <span>Modo Homologação</span>
+      </button>
+      <TBBottomSheet
+        open={open}
+        onOpenChange={setOpen}
+        title="Modo Homologação ativo"
+        description="Você está visualizando o sistema como um usuário comum."
+        footer={
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button variant="outline" onClick={() => setOpen(false)}>Continuar homologando</Button>
+            <Button
+              className="btn-glow"
+              onClick={async () => { setOpen(false); await onExit(); }}
+            >
+              <ShieldCheck className="h-4 w-4" /> Voltar para Administração
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-2 text-sm text-muted-foreground">
+          <p>Todos os testes utilizam apenas os dados da sua própria conta — nenhum dado de outros usuários é acessado.</p>
+          <p>Nenhuma permissão real é alterada. A entrada e a saída ficam registradas na auditoria.</p>
+        </div>
+      </TBBottomSheet>
+    </>
   );
 }

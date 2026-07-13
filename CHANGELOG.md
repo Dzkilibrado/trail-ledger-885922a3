@@ -2,6 +2,14 @@
 
 Todas as entregas oficialmente homologadas do TrailBook. Formato inspirado em Keep a Changelog.
 
+## [1.6.6] — 2026-07-13 — Sprint UX: Central de Atendimento, Modo Homologação e Breadcrumbs Mobile
+
+### Mudanças
+- **Central de Atendimento (`/help`)**: título trocado de "Preciso de ajuda para acessar minha conta" para **"Central de Atendimento"**; texto introdutório reescrito para deixar claro que qualquer assunto pode ser tratado (acesso, dúvidas, suporte técnico, feedback).
+- **Fluxo de saída contextual (`/help`)**: usuários autenticados agora veem **"Fechar"** e **"Voltar ao início"** (dashboard). Usuários sem sessão continuam com **"Voltar ao login"**. Nunca mais um autenticado é redirecionado para a tela de login.
+- **Modo Homologação**: barra fixa superior removida. Substituída por um **chip flutuante discreto** no canto inferior direito (`🟡 Modo Homologação`) que abre um **Bottom Sheet** com explicação e ação "Voltar para Administração". Menu superior, header e área útil deixam de ser bloqueados.
+- **Breadcrumbs Mobile (`PageHeader`)**: em telas <sm o breadcrumb completo (Início > … > Página atual) fica oculto. Mantido apenas o botão **"← Página atual"**, usando o rótulo da última migalha para dar contexto sem ocupar largura. Desktop segue com breadcrumb completo.
+
 ## [1.6.5] — 2026-07-13 — Redesign da Landing Page pública
 
 **Missão oficial da landing:** converter visitantes em usuários
