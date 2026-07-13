@@ -35,7 +35,11 @@ function MyTickets() {
       <PageHeader
         title="Meus chamados"
         description="Relate erros, tire dúvidas ou envie sugestões. Nossa equipe responde por aqui."
-        actions={<Link to="/tickets/new"><Button className="btn-glow"><Plus className="h-4 w-4" /> Novo chamado</Button></Link>}
+        actions={
+          <Button asChild className="btn-glow">
+            <Link to="/tickets/new"><Plus className="h-4 w-4" /> Novo chamado</Link>
+          </Button>
+        }
       />
 
       {isLoading ? (
@@ -44,7 +48,9 @@ function MyTickets() {
         <div className="rounded-xl border border-dashed border-border p-10 text-center">
           <LifeBuoy className="mx-auto h-10 w-10 text-muted-foreground" />
           <p className="mt-3 text-sm text-muted-foreground">Você ainda não abriu chamados.</p>
-          <Link to="/tickets/new"><Button className="mt-4"><Plus className="h-4 w-4" /> Abrir chamado</Button></Link>
+          <Button asChild className="mt-4">
+            <Link to="/tickets/new"><Plus className="h-4 w-4" /> Abrir chamado</Link>
+          </Button>
         </div>
       ) : (
         <div className="space-y-3">
