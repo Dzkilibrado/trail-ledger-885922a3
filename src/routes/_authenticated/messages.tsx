@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { MESSAGE_TYPES, MESSAGE_PRIORITIES, PRIORITY_TONE, labelOf, RECIPIENT_STATUS_LABEL } from "@/lib/comm";
 import { cn } from "@/lib/utils";
 import { ListRowsSkeleton } from "@/components/Skeletons";
+import { PageHeader } from "@/components/PageHeader";
 
 export const Route = createFileRoute("/_authenticated/messages")({
   component: MessagesInbox,
@@ -69,18 +70,17 @@ function MessagesInbox() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-5">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-display text-2xl font-bold">Minhas mensagens</h1>
-          <p className="text-sm text-muted-foreground">Central de comunicação do TrailBook.</p>
-        </div>
-        <div className="flex gap-2">
-          {(["inbox", "unread", "archived"] as const).map((k) => (
-            <Button key={k} size="sm" variant={filter === k ? "default" : "outline"} onClick={() => setFilter(k)}>
-              {k === "inbox" ? "Recebidas" : k === "unread" ? "Não lidas" : "Arquivadas"}
-            </Button>
-          ))}
-        </div>
+      <PageHeader
+        title="Minhas mensagens"
+        description="Central de comunicação do TrailBook."
+        crumbs={[{ label: "Comunicação", to: "/comunicacao" }, { label: "Mensagens" }]}
+      />
+      <div className="flex flex-wrap gap-2">
+        {(["inbox", "unread", "archived"] as const).map((k) => (
+          <Button key={k} size="sm" variant={filter === k ? "default" : "outline"} onClick={() => setFilter(k)}>
+            {k === "inbox" ? "Recebidas" : k === "unread" ? "Não lidas" : "Arquivadas"}
+          </Button>
+        ))}
       </div>
 
       <div className="grid gap-2 md:grid-cols-4">
