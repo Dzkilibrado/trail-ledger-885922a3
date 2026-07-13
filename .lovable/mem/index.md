@@ -48,3 +48,5 @@
 - [ADR 0012 — Erro com recuperação](docs/adr/0012-erro-com-recuperacao.md) — padrão oficial de tratamento de estados desatualizados
 - [Landing Page — conversão](mem://principles/landing-page-conversao) — estrutura fixa e divulgação progressiva
 - [ADR 0013 — Landing Page: conversão e divulgação progressiva](docs/adr/0013-landing-page-conversao.md) — redesign v1.6.5
+- [Retorno perceptível a toda ação](mem://principles/retorno-perceptivel) — nenhum clique pode terminar em silêncio
+- [ADR 0014 — Retorno Perceptível a Toda Ação](docs/adr/0014-retorno-perceptivel.md) — Sprint v1.6.7 de navegação, comunicação e atendimento
