@@ -20,6 +20,7 @@
 - Padrões visuais e loading (Sprint v1.6 encerrada, 2026-07-12): fonte única de tones em `src/lib/ui/status-styles.ts` (`TONE`, `BADGE_TIER_STYLE`, `SCORE_TIER_STYLE`) — nunca redeclarar dicionários locais. Loading padronizado: skeletons em `src/components/Skeletons.tsx`, spinner em `src/components/InlineSpinner.tsx`, empty state em `src/components/EmptyState.tsx`. Nunca usar texto "Carregando…" em tela cheia — sempre skeleton. `signedUrl` (`src/lib/trailbook.ts`) tem cache com TTL; router usa `defaultPreload: "intent"`.
 - Sucesso só após sincronia da UI (`mem://principles/sucesso-apos-sincronia`, ADR 0011): nenhuma mensagem de sucesso pode aparecer antes da interface refletir o novo estado. Toda mutação em `createServerFn` retorna a linha atualizada via `.update().eq().select().single()`; cliente aplica estado + aguarda `invalidateQueries` antes do toast. 0 linhas = erro. Sem optimistic updates em aceites/transferências/conclusões.
 - Erro com recuperação (`mem://principles/erro-com-recuperacao`, ADR 0012): falhas por estado desatualizado disparam sincronia automática (refetch + invalidate) ANTES de qualquer mensagem. Backend lança `STALE_STATE:` (helper `src/lib/errors/stale-state.ts`), frontend sincroniza e só então mostra mensagem amigável — nunca "recarregue a página". Retry só habilita após sincronia e é idempotente. Par permanente com ADR 0011.
+- Landing pública (`mem://principles/landing-page-conversao`, ADR 0013): missão = converter, não ensinar. Estrutura fixa em `src/routes/index.tsx`: Hero → Benefícios (≤5) → Como funciona (≤4) → Carrossel (≤4 telas, scroll-snap, sem autoplay) → FAQ (5) → CTA final → Rodapé mínimo. Detalhes vão para `/como-funciona`, `/faq` ou app. Proibido vídeo/autoplay/tour animado/bibliotecas pesadas de carrossel. Nova seção só entra passando pelas 3 perguntas de UX + ADR 0008.
 
 ## Memories
 - [Diretrizes de desenvolvimento](mem://standards/dev-directives) — Padrões obrigatórios (18 pontos) aplicáveis a toda nova funcionalidade v1.0.1+
@@ -45,3 +46,5 @@
 - [ADR 0011 — Sucesso só após sincronia da UI](docs/adr/0011-sucesso-apos-sincronia.md) — causa raiz do bug de aceite do Recibo e correção estrutural
 - [Erro com recuperação](mem://principles/erro-com-recuperacao) — sincronia automática antes de qualquer pedido manual ao usuário
 - [ADR 0012 — Erro com recuperação](docs/adr/0012-erro-com-recuperacao.md) — padrão oficial de tratamento de estados desatualizados
+- [Landing Page — conversão](mem://principles/landing-page-conversao) — estrutura fixa e divulgação progressiva
+- [ADR 0013 — Landing Page: conversão e divulgação progressiva](docs/adr/0013-landing-page-conversao.md) — redesign v1.6.5
