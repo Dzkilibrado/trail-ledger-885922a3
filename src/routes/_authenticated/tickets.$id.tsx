@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/trailbook";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -53,6 +53,16 @@ function TicketDetail() {
   const [body, setBody] = useState("");
   const [internal, setInternal] = useState(false);
   const [sending, setSending] = useState(false);
+
+  useEffect(() => {
+    if (!ticket.data) return;
+    try {
+      if (sessionStorage.getItem("tb_ticket_created") === id) {
+        sessionStorage.removeItem("tb_ticket_created");
+        toast.success("Chamado aberto! Nossa equipe entrará em contato por aqui.");
+      }
+    } catch { /* noop */ }
+  }, [id, ticket.data]);
 
   async function send() {
     if (!body.trim()) return;

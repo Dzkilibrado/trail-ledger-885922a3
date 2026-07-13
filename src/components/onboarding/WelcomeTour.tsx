@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useRouterState } from "@tanstack/react-router";
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Bike, ShieldCheck, Wrench, Share2 } from "lucide-react";
@@ -37,8 +38,15 @@ export function useOpenWelcomeTour() {
 }
 
 export function WelcomeTour() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [open, setOpen] = useState(false);
   const [step, setStep] = useState(0);
+
+  const suppressAutoOpen = pathname === "/tickets" || pathname.startsWith("/tickets/") || pathname === "/messages" || pathname === "/notifications" || pathname === "/comunicacao";
+
+  useEffect(() => {
+    if (suppressAutoOpen) setOpen(false);
+  }, [suppressAutoOpen]);
 
   useEffect(() => {
     let done = false;
@@ -51,7 +59,7 @@ export function WelcomeTour() {
       try { localStorage.removeItem(FORCE_KEY); } catch { /* noop */ }
       setStep(0);
       setOpen(true);
-    } else if (!done) {
+    } else if (!done && !suppressAutoOpen) {
       setStep(0);
       setOpen(true);
     }
@@ -61,7 +69,7 @@ export function WelcomeTour() {
     }
     window.addEventListener("tb:onboarding:open", onForce);
     return () => window.removeEventListener("tb:onboarding:open", onForce);
-  }, []);
+  }, [suppressAutoOpen]);
 
   function finish() {
     try { localStorage.setItem(STORAGE_KEY, "1"); } catch { /* noop */ }
@@ -70,6 +78,8 @@ export function WelcomeTour() {
 
   const s = STEPS[step];
   const isLast = step === STEPS.length - 1;
+
+  if (suppressAutoOpen) return null;
 
   return (
     <Dialog open={open} onOpenChange={(v) => { if (!v) finish(); }}>
