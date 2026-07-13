@@ -528,3 +528,42 @@ function MessagesBell() {
     </Link>
   );
 }
+
+function HomologChip({ onExit }: { onExit: () => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="fixed bottom-4 right-4 z-40 inline-flex items-center gap-1.5 rounded-full border border-amber-500/60 bg-amber-500/95 px-3 py-1.5 text-xs font-semibold text-amber-950 shadow-lg backdrop-blur hover:bg-amber-400"
+        aria-label="Modo Homologação — abrir detalhes"
+      >
+        <span aria-hidden>🟡</span>
+        <span>Modo Homologação</span>
+      </button>
+      <TBBottomSheet
+        open={open}
+        onOpenChange={setOpen}
+        title="Modo Homologação ativo"
+        description="Você está visualizando o sistema como um usuário comum."
+        footer={
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button variant="outline" onClick={() => setOpen(false)}>Continuar homologando</Button>
+            <Button
+              className="btn-glow"
+              onClick={async () => { setOpen(false); await onExit(); }}
+            >
+              <ShieldCheck className="h-4 w-4" /> Voltar para Administração
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-2 text-sm text-muted-foreground">
+          <p>Todos os testes utilizam apenas os dados da sua própria conta — nenhum dado de outros usuários é acessado.</p>
+          <p>Nenhuma permissão real é alterada. A entrada e a saída ficam registradas na auditoria.</p>
+        </div>
+      </TBBottomSheet>
+    </>
+  );
+}
