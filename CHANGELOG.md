@@ -1,3 +1,12 @@
+## [1.6.10] — Fase 2: Notificações (caixa de entrada)
+
+- Filtros rápidos: Todas / Não lidas / Lidas com contagem.
+- Busca por título, mensagem e tipo (debounce 250ms).
+- Marcar uma como lida/não lida; marcar todas como lidas.
+- Excluir individual e em massa (com confirmação); seleção múltipla com barra flutuante.
+- Paginação incremental "Carregar mais" (20 por vez).
+- Estados de carregando, vazio, sem resultado e erro.
+- Exclusão física de notificações do próprio usuário (política RLS DELETE adicionada).
 # Changelog — TrailBook
 
 Todas as entregas oficialmente homologadas do TrailBook. Formato inspirado em Keep a Changelog.
