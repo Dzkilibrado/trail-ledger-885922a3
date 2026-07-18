@@ -1,11 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, ChevronDown, ChevronUp, Bike, Share2, ShieldCheck, FileSignature, Award, FolderOpen, Heart, Wrench, HelpCircle } from "lucide-react";
+import { Plus, ChevronDown, ChevronUp, Bike, Share2, ShieldCheck, FileSignature, Award, FolderOpen, Heart, Wrench, HelpCircle, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StoragePhoto } from "@/components/StoragePhoto";
-import { EventTypeIcon } from "@/components/EventTypeIcon";
-import { EVENT_TYPE_LABEL, formatDate, brl } from "@/lib/trailbook";
 import { ActiveMotoCard } from "@/components/ActiveMotoCard";
 import { DocumentPendenciesCard } from "@/components/DocumentPendenciesCard";
 import { WhatsNewCard } from "@/components/WhatsNewCard";
@@ -33,19 +31,6 @@ function Dashboard() {
       const uid = u.user?.id;
       if (!uid) return [];
       const { data, error } = await supabase.from("motorcycles").select("*").eq("owner_id", uid).eq("status" as never, "active" as never).order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const events = useQuery({
-    queryKey: ["events", "recent"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("events")
-        .select("*, motorcycles(nickname, brand, model)")
-        .order("occurred_at", { ascending: false })
-        .limit(8);
       if (error) throw error;
       return data;
     },
@@ -85,27 +70,6 @@ function Dashboard() {
       <DocumentPendenciesCard />
 
       {focusMotoId && <QuickActions motoId={focusMotoId} />}
-
-      <section>
-        <h2 className="mb-3 font-display text-lg font-bold">Últimas atualizações</h2>
-        <div className="surface-elevated divide-y divide-border rounded-2xl">
-          {events.data && events.data.length > 0 ? events.data.map((e) => (
-            <div key={e.id} className="flex items-center gap-3 p-4">
-              <EventTypeIcon type={e.type} />
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium">{e.title}</div>
-                <div className="truncate text-xs text-muted-foreground">
-                  {EVENT_TYPE_LABEL[e.type]} · {formatDate(e.occurred_at)}
-                  {e.motorcycles && ` · ${(e.motorcycles as any).nickname || (e.motorcycles as any).model}`}
-                </div>
-              </div>
-              {e.cost != null && <div className="shrink-0 text-sm font-semibold text-primary">{brl(Number(e.cost))}</div>}
-            </div>
-          )) : (
-            <div className="p-6 text-center text-sm text-muted-foreground">Sem atividades ainda. Registre a primeira na página da moto.</div>
-          )}
-        </div>
-      </section>
 
       {(motos.data?.length ?? 0) > 1 && (
         <section>
