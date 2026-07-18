@@ -8,6 +8,7 @@ import { ActiveMotoCard } from "@/components/ActiveMotoCard";
 import { DocumentPendenciesCard } from "@/components/DocumentPendenciesCard";
 import { WhatsNewCard } from "@/components/WhatsNewCard";
 import { useActiveMotorcycle } from "@/hooks/useActiveMotorcycle";
+import { useDocumentPendencies } from "@/hooks/useDocumentPendencies";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";
 import { memo, useState } from "react";
@@ -24,6 +25,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 function Dashboard() {
   const [showAll, setShowAll] = useState(false);
   const { activeId } = useActiveMotorcycle();
+  const pendencies = useDocumentPendencies();
   const motos = useQuery({
     queryKey: ["motorcycles"],
     queryFn: async () => {
@@ -68,6 +70,21 @@ function Dashboard() {
       <ActiveMotoCard motos={motos.data as any} />
 
       <DocumentPendenciesCard />
+
+      {!pendencies.isLoading && (pendencies.data?.length ?? 0) === 0 && (
+        <section
+          aria-label="Sem pendências"
+          className="flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4"
+        >
+          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-500/15 text-emerald-400">
+            <CheckCircle2 className="h-4 w-4" />
+          </div>
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-emerald-100">Tudo em dia por aqui.</div>
+            <div className="text-xs text-emerald-200/70">Você não possui pendências no momento.</div>
+          </div>
+        </section>
+      )}
 
       {focusMotoId && <QuickActions motoId={focusMotoId} />}
 
