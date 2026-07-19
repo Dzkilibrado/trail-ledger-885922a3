@@ -29,10 +29,14 @@ export function PageHeader({
   const router = useRouter();
 
   function goBack() {
-    if (typeof window !== "undefined" && window.history.length > 1) {
-      router.history.back();
-    } else if (backTo) {
+    // Preferir destino explícito quando fornecido (fallback previsível),
+    // já que window.history.length costuma ser > 1 mesmo em acesso direto
+    // (redirecionamentos internos), e history.back() pode devolver o
+    // usuário para uma rota irrelevante (ex.: /auth).
+    if (backTo) {
       router.navigate({ to: backTo });
+    } else if (typeof window !== "undefined" && window.history.length > 1) {
+      router.history.back();
     } else {
       router.navigate({ to: "/dashboard" });
     }
@@ -48,7 +52,7 @@ export function PageHeader({
             className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-muted hover:text-foreground"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>{crumbs && crumbs.length > 0 ? (crumbs[crumbs.length - 1]?.label ?? "Voltar") : "Voltar"}</span>
+            <span>Voltar</span>
           </button>
         )}
         <Link to="/dashboard" className="hidden sm:inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-muted hover:text-foreground">
