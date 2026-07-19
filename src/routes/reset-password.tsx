@@ -76,6 +76,12 @@ function ResetPasswordPage() {
                 <Input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required autoComplete="new-password" />
               </div>
               <Button disabled={loading} type="submit" className="w-full btn-glow">Salvar nova senha</Button>
+              <Link
+                to="/perfil"
+                className="block text-center text-xs text-muted-foreground hover:text-foreground"
+              >
+                Cancelar e voltar
+              </Link>
             </form>
           )}
         </div>

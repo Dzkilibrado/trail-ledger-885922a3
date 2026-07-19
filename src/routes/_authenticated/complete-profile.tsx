@@ -15,6 +15,7 @@ import { useInvalidateProfileSnapshot } from "@/hooks/useProfileSnapshot";
 import { CheckCircle2, ChevronLeft, ChevronRight, MapPin, Phone, User } from "lucide-react";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";
+import { PageHeader } from "@/components/PageHeader";
 
 /**
  * Wizard oficial de cadastro do TrailBook.
@@ -266,10 +267,12 @@ function CompleteProfilePage() {
 
   return (
     <div className="mx-auto max-w-lg">
-      <h1 className="font-display text-2xl font-bold mb-1">Complete seu cadastro</h1>
-      <p className="text-sm text-muted-foreground mb-4">
-        Informe uma vez — o TrailBook reaproveita seus dados em todos os módulos.
-      </p>
+      <PageHeader
+        title="Complete seu cadastro"
+        description="Informe uma vez — o TrailBook reaproveita seus dados em todos os módulos."
+        backTo="/settings"
+        crumbs={[{ label: "Configurações", to: "/settings" }, { label: "Dados de perfil" }]}
+      />
 
       {/* Barra de progresso */}
       <div className="mb-4 rounded-2xl border border-border bg-card p-4">
@@ -414,8 +417,16 @@ function CompleteProfilePage() {
         )}
 
         <div className="flex items-center justify-between pt-2">
-          <Button variant="ghost" size="sm" disabled={step === 0 || saving} onClick={() => setStep(step - 1)}>
-            <ChevronLeft className="h-4 w-4" /> Voltar
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={saving}
+            onClick={() => {
+              if (step === 0) navigate({ to: "/settings" });
+              else setStep(step - 1);
+            }}
+          >
+            <ChevronLeft className="h-4 w-4" /> {step === 0 ? "Sair" : "Voltar"}
           </Button>
           {step < 3 ? (
             <Button disabled={saving} onClick={next} className="btn-glow">
