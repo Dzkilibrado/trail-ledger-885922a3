@@ -73,7 +73,8 @@ function MessagesInbox() {
       <PageHeader
         title="Minhas mensagens"
         description="Central de comunicação do TrailBook."
-        crumbs={[{ label: "Comunicação", to: "/comunicacao" }, { label: "Mensagens" }]}
+        backTo="/central"
+        crumbs={[{ label: "Central", to: "/central" }, { label: "Mensagens" }]}
       />
       <div className="flex flex-wrap gap-2">
         {(["inbox", "unread", "archived"] as const).map((k) => (
