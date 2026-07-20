@@ -30,17 +30,11 @@ function CentralHub() {
     staleTime: 30_000,
   });
   const openTickets = useQuery({
-    queryKey: ["tickets", "open-count"],
+    queryKey: ["tickets", "attention-count"],
     queryFn: async () => {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const uid = sessionData.session?.user.id;
-      if (!uid) return 0;
-      const { count } = await supabase
-        .from("tickets")
-        .select("id", { count: "exact", head: true })
-        .eq("user_id", uid)
-        .neq("status", "closed");
-      return count ?? 0;
+      const { data, error } = await supabase.rpc("user_attention_tickets_count" as any);
+      if (error) return 0;
+      return Number(data ?? 0);
     },
     staleTime: 30_000,
   });

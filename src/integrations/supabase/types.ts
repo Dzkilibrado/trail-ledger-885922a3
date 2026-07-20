@@ -2171,6 +2171,7 @@ export type Database = {
       }
       tickets: {
         Row: {
+          admin_last_read_at: string | null
           assigned_to: string | null
           closed_at: string | null
           code: string | null
@@ -2187,8 +2188,10 @@ export type Database = {
           type: Database["public"]["Enums"]["ticket_type"]
           updated_at: string
           user_id: string
+          user_last_read_at: string | null
         }
         Insert: {
+          admin_last_read_at?: string | null
           assigned_to?: string | null
           closed_at?: string | null
           code?: string | null
@@ -2205,8 +2208,10 @@ export type Database = {
           type?: Database["public"]["Enums"]["ticket_type"]
           updated_at?: string
           user_id: string
+          user_last_read_at?: string | null
         }
         Update: {
+          admin_last_read_at?: string | null
           assigned_to?: string | null
           closed_at?: string | null
           code?: string | null
@@ -2223,6 +2228,7 @@ export type Database = {
           type?: Database["public"]["Enums"]["ticket_type"]
           updated_at?: string
           user_id?: string
+          user_last_read_at?: string | null
         }
         Relationships: [
           {
@@ -2505,6 +2511,7 @@ export type Database = {
         Args: { _id: string; _notes?: string }
         Returns: undefined
       }
+      admin_attention_tickets_count: { Args: never; Returns: number }
       admin_block_user: {
         Args: { _notes?: string; _reason: string; _user: string }
         Returns: undefined
@@ -3030,6 +3037,7 @@ export type Database = {
         Returns: string
       }
       unarchive_motorcycle: { Args: { _moto_id: string }; Returns: Json }
+      user_attention_tickets_count: { Args: never; Returns: number }
       user_list_messages: {
         Args: { _filter?: string }
         Returns: {
