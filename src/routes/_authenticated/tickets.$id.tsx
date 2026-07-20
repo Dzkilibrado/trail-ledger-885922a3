@@ -64,6 +64,23 @@ function TicketDetail() {
     } catch { /* noop */ }
   }, [id, ticket.data]);
 
+  // Marca a atualização como visualizada assim que o detalhe carrega.
+  // Usuário e admin gravam em colunas distintas para não interferirem no badge um do outro.
+  useEffect(() => {
+    if (!ticket.data) return;
+    const field = isAdmin ? "admin_last_read_at" : "user_last_read_at";
+    (async () => {
+      const { error } = await supabase
+        .from("tickets")
+        .update({ [field]: new Date().toISOString() } as any)
+        .eq("id", id);
+      if (error) return;
+      qc.invalidateQueries({ queryKey: ["tickets", "attention-count"] });
+      qc.invalidateQueries({ queryKey: ["tickets", "admin-attention-count"] });
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, ticket.data?.id, isAdmin]);
+
   async function send() {
     if (!body.trim()) return;
     setSending(true);
@@ -77,6 +94,9 @@ function TicketDetail() {
     setBody(""); setInternal(false);
     qc.invalidateQueries({ queryKey: ["ticket-msgs", id] });
     qc.invalidateQueries({ queryKey: ["ticket", id] });
+    qc.invalidateQueries({ queryKey: ["tickets", "attention-count"] });
+    qc.invalidateQueries({ queryKey: ["tickets", "admin-attention-count"] });
+    qc.invalidateQueries({ queryKey: ["tickets", "mine"] });
   }
 
   async function updateField(field: "status" | "priority", value: string) {
@@ -84,6 +104,9 @@ function TicketDetail() {
     if (error) return toast.error(error.message);
     toast.success("Atualizado");
     qc.invalidateQueries({ queryKey: ["ticket", id] });
+    qc.invalidateQueries({ queryKey: ["tickets", "attention-count"] });
+    qc.invalidateQueries({ queryKey: ["tickets", "admin-attention-count"] });
+    qc.invalidateQueries({ queryKey: ["tickets", "mine"] });
   }
 
   async function assignToMe() {
@@ -93,6 +116,7 @@ function TicketDetail() {
     if (error) return toast.error(error.message);
     toast.success("Chamado atribuído a você");
     qc.invalidateQueries({ queryKey: ["ticket", id] });
+    qc.invalidateQueries({ queryKey: ["tickets", "admin-attention-count"] });
   }
 
   async function userUpdateStatus(next: "resolved" | "open" | "cancelled") {
@@ -100,6 +124,9 @@ function TicketDetail() {
     if (error) return toast.error(error.message);
     toast.success(next === "resolved" ? "Marcado como resolvido" : next === "cancelled" ? "Chamado cancelado" : "Chamado reaberto");
     qc.invalidateQueries({ queryKey: ["ticket", id] });
+    qc.invalidateQueries({ queryKey: ["tickets", "attention-count"] });
+    qc.invalidateQueries({ queryKey: ["tickets", "admin-attention-count"] });
+    qc.invalidateQueries({ queryKey: ["tickets", "mine"] });
   }
 
   if (ticket.isLoading) return <PageLineSkeleton />;
