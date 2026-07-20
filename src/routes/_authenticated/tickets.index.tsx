@@ -28,7 +28,15 @@ function MyTickets() {
         .eq("user_id", userId)
         .order("last_activity_at", { ascending: false });
       if (error) throw error;
-      return data ?? [];
+      // Concluídos (resolvido/encerrado/cancelado) descem para o final para não
+      // parecerem pendentes na visão principal.
+      const CLOSED = new Set(["resolved", "closed", "cancelled"]);
+      return (data ?? []).slice().sort((a: any, b: any) => {
+        const ac = CLOSED.has(a.status) ? 1 : 0;
+        const bc = CLOSED.has(b.status) ? 1 : 0;
+        if (ac !== bc) return ac - bc;
+        return 0;
+      });
     },
   });
 
