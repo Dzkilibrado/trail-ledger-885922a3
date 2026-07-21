@@ -55,7 +55,15 @@ function Agenda() {
       const { data: u } = await supabase.auth.getUser();
       const uid = u.user?.id;
       if (!uid) return [];
-      return (await supabase.from("motorcycles").select("*").eq("owner_id", uid)).data ?? [];
+      // Contexto operacional: motos arquivadas ficam de fora da agenda.
+      // O histórico continua íntegro no banco (ADR 0007) e volta ao reativar.
+      return (
+        await supabase
+          .from("motorcycles")
+          .select("*")
+          .eq("owner_id", uid)
+          .neq("status" as never, "archived" as never)
+      ).data ?? [];
     },
   });
   const schedules = useQuery({
