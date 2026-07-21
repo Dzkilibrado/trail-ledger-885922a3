@@ -60,6 +60,11 @@ function Financial() {
     const thirty = now.getTime() - 30 * 86400000;
     const q = search.trim().toLowerCase();
     return (events.data ?? []).filter((e) => {
+      // Motos arquivadas não entram no financeiro operacional.
+      // Se `motos` já carregou, exige que o event.motorcycle_id esteja
+      // entre as motos ativas do usuário.
+      const activeIds = motos.data ? new Set(motos.data.map((m) => m.id)) : null;
+      if (activeIds && !activeIds.has(e.motorcycle_id as string)) return false;
       if (motoId !== "all" && e.motorcycle_id !== motoId) return false;
       if (typeFilter !== "all" && e.type !== typeFilter) return false;
       if (workshopId !== "all" && e.workshop_id !== workshopId) return false;
