@@ -36,7 +36,12 @@ function NewTicketPage() {
       if (error) throw error;
       const uid = sessionData.session?.user.id;
       if (!uid) return [];
-      const { data } = await supabase.from("motorcycles").select("id, brand, model, nickname").eq("owner_id", uid).order("created_at", { ascending: false });
+      const { data } = await supabase
+        .from("motorcycles")
+        .select("id, brand, model, nickname")
+        .eq("owner_id", uid)
+        .neq("status" as never, "archived" as never)
+        .order("created_at", { ascending: false });
       return data ?? [];
     },
   });
