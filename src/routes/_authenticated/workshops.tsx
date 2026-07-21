@@ -88,7 +88,7 @@ function Workshops() {
   }, [allStats, search]);
 
   const detailWorkshop = data?.find((w) => w.id === detailId) ?? null;
-  const detailEvents = (events.data ?? [])
+  const detailEvents = scopedEvents
     .filter((e) => e.workshop_id === detailId)
     .sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime());
 
