@@ -35,14 +35,39 @@ function Workshops() {
       ).data ?? [],
   });
 
+  // Motos ativas do usuário — usadas para excluir eventos de motos arquivadas
+  // dos KPIs operacionais das oficinas (histórico permanece íntegro).
+  const activeMotos = useQuery({
+    queryKey: ["motorcycles", "active-ids"],
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      const uid = u.user?.id;
+      if (!uid) return [] as { id: string }[];
+      return (
+        await supabase
+          .from("motorcycles")
+          .select("id")
+          .eq("owner_id", uid)
+          .neq("status" as never, "archived" as never)
+      ).data ?? [];
+    },
+  });
   const events = useQuery({
     queryKey: ["events", "with-workshop"],
     queryFn: async () => (await supabase.from("events").select("id, workshop_id, motorcycle_id, cost, occurred_at, title, type, motorcycles(nickname, model)").not("workshop_id", "is", null)).data ?? [],
   });
+  const activeMotoIds = useMemo(
+    () => (activeMotos.data ? new Set(activeMotos.data.map((m) => m.id)) : null),
+    [activeMotos.data],
+  );
+  const scopedEvents = useMemo(
+    () => (activeMotoIds ? (events.data ?? []).filter((e) => activeMotoIds.has(e.motorcycle_id as string)) : (events.data ?? [])),
+    [events.data, activeMotoIds],
+  );
 
   // KPIs por oficina
   const allStats = (data ?? []).map((w) => {
-    const evs = (events.data ?? []).filter((e) => e.workshop_id === w.id);
+    const evs = scopedEvents.filter((e) => e.workshop_id === w.id);
     const motoIds = new Set(evs.map((e) => e.motorcycle_id));
     const last = evs.sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime())[0];
     return {
@@ -63,7 +88,7 @@ function Workshops() {
   }, [allStats, search]);
 
   const detailWorkshop = data?.find((w) => w.id === detailId) ?? null;
-  const detailEvents = (events.data ?? [])
+  const detailEvents = scopedEvents
     .filter((e) => e.workshop_id === detailId)
     .sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime());
 

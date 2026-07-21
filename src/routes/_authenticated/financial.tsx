@@ -31,7 +31,14 @@ function Financial() {
       const { data: u } = await supabase.auth.getUser();
       const uid = u.user?.id;
       if (!uid) return [];
-      return (await supabase.from("motorcycles").select("id, nickname, model").eq("owner_id", uid)).data ?? [];
+      // Contexto operacional: financeiro ignora motos arquivadas.
+      return (
+        await supabase
+          .from("motorcycles")
+          .select("id, nickname, model")
+          .eq("owner_id", uid)
+          .neq("status" as never, "archived" as never)
+      ).data ?? [];
     },
   });
   const workshops = useQuery({
@@ -53,6 +60,11 @@ function Financial() {
     const thirty = now.getTime() - 30 * 86400000;
     const q = search.trim().toLowerCase();
     return (events.data ?? []).filter((e) => {
+      // Motos arquivadas não entram no financeiro operacional.
+      // Se `motos` já carregou, exige que o event.motorcycle_id esteja
+      // entre as motos ativas do usuário.
+      const activeIds = motos.data ? new Set(motos.data.map((m) => m.id)) : null;
+      if (activeIds && !activeIds.has(e.motorcycle_id as string)) return false;
       if (motoId !== "all" && e.motorcycle_id !== motoId) return false;
       if (typeFilter !== "all" && e.type !== typeFilter) return false;
       if (workshopId !== "all" && e.workshop_id !== workshopId) return false;
@@ -66,17 +78,26 @@ function Financial() {
       }
       return true;
     });
-  }, [events.data, period, motoId, typeFilter, workshopId, search]);
+  }, [events.data, motos.data, period, motoId, typeFilter, workshopId, search]);
 
+  // KPIs também respeitam o filtro de motos arquivadas.
+  const activeIds = useMemo(
+    () => (motos.data ? new Set(motos.data.map((m) => m.id)) : null),
+    [motos.data],
+  );
+  const activeEvents = useMemo(
+    () => (activeIds ? (events.data ?? []).filter((e) => activeIds.has(e.motorcycle_id as string)) : (events.data ?? [])),
+    [events.data, activeIds],
+  );
   const total = filtered.reduce((s, e) => s + Number(e.cost), 0);
   const now = new Date();
-  const monthTotal = (events.data ?? []).filter((e) => {
+  const monthTotal = activeEvents.filter((e) => {
     const d = new Date(e.occurred_at);
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }).reduce((s, e) => s + Number(e.cost), 0);
-  const yearTotal = (events.data ?? []).filter((e) => new Date(e.occurred_at).getFullYear() === now.getFullYear())
+  const yearTotal = activeEvents.filter((e) => new Date(e.occurred_at).getFullYear() === now.getFullYear())
     .reduce((s, e) => s + Number(e.cost), 0);
-  const allTotal = (events.data ?? []).reduce((s, e) => s + Number(e.cost), 0);
+  const allTotal = activeEvents.reduce((s, e) => s + Number(e.cost), 0);
 
   const byType: Record<string, number> = {};
   filtered.forEach((e) => { byType[e.type] = (byType[e.type] || 0) + Number(e.cost); });

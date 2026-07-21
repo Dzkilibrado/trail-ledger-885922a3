@@ -21,6 +21,7 @@ function DocumentsHub() {
       const { data: motos } = await supabase.from("motorcycles")
         .select("id, brand, model, year_model, nickname, trailbook_id")
         .eq("owner_id", uid)
+        .neq("status" as never, "archived" as never)
         .order("created_at", { ascending: false });
       const { data: docs } = await supabase.from("motorcycle_documents" as never)
         .select("motorcycle_id, doc_type, is_current, deleted_at, updated_at");
