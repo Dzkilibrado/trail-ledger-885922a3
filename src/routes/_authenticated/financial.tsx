@@ -31,7 +31,14 @@ function Financial() {
       const { data: u } = await supabase.auth.getUser();
       const uid = u.user?.id;
       if (!uid) return [];
-      return (await supabase.from("motorcycles").select("id, nickname, model").eq("owner_id", uid)).data ?? [];
+      // Contexto operacional: financeiro ignora motos arquivadas.
+      return (
+        await supabase
+          .from("motorcycles")
+          .select("id, nickname, model")
+          .eq("owner_id", uid)
+          .neq("status" as never, "archived" as never)
+      ).data ?? [];
     },
   });
   const workshops = useQuery({
