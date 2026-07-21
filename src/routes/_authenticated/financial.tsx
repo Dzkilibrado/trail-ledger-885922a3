@@ -78,17 +78,26 @@ function Financial() {
       }
       return true;
     });
-  }, [events.data, period, motoId, typeFilter, workshopId, search]);
+  }, [events.data, motos.data, period, motoId, typeFilter, workshopId, search]);
 
+  // KPIs também respeitam o filtro de motos arquivadas.
+  const activeIds = useMemo(
+    () => (motos.data ? new Set(motos.data.map((m) => m.id)) : null),
+    [motos.data],
+  );
+  const activeEvents = useMemo(
+    () => (activeIds ? (events.data ?? []).filter((e) => activeIds.has(e.motorcycle_id as string)) : (events.data ?? [])),
+    [events.data, activeIds],
+  );
   const total = filtered.reduce((s, e) => s + Number(e.cost), 0);
   const now = new Date();
-  const monthTotal = (events.data ?? []).filter((e) => {
+  const monthTotal = activeEvents.filter((e) => {
     const d = new Date(e.occurred_at);
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
   }).reduce((s, e) => s + Number(e.cost), 0);
-  const yearTotal = (events.data ?? []).filter((e) => new Date(e.occurred_at).getFullYear() === now.getFullYear())
+  const yearTotal = activeEvents.filter((e) => new Date(e.occurred_at).getFullYear() === now.getFullYear())
     .reduce((s, e) => s + Number(e.cost), 0);
-  const allTotal = (events.data ?? []).reduce((s, e) => s + Number(e.cost), 0);
+  const allTotal = activeEvents.reduce((s, e) => s + Number(e.cost), 0);
 
   const byType: Record<string, number> = {};
   filtered.forEach((e) => { byType[e.type] = (byType[e.type] || 0) + Number(e.cost); });
