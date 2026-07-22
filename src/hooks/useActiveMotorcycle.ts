@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { useQuery, type QueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { Motorcycle } from "@/lib/trailbook";
 
 const KEY = "trailbook:active-motorcycle-id";
 const EVT = "trailbook:active-motorcycle-changed";
@@ -11,17 +12,7 @@ export const motorcycleQueryKeys = {
   archivedCount: ["motorcycles", "archived-count"] as const,
 };
 
-export type ActiveMotorcycle = {
-  id: string;
-  brand: string | null;
-  model: string | null;
-  nickname: string | null;
-  main_photo_url: string | null;
-  hours_total: number | string | null;
-  km_total: number | string | null;
-  conservation_score: number | string | null;
-  status?: string | null;
-};
+export type ActiveMotorcycle = Motorcycle;
 
 function read(): string | null {
   if (typeof window === "undefined") return null;
