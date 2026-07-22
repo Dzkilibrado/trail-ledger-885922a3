@@ -16,6 +16,17 @@ import { supabase } from "@/integrations/supabase/client";
  */
 
 export async function recomposeTimeline(motoId: string): Promise<{ hours: number; km: number }> {
+  // Baseline preservada (informada no cadastro / backfill).
+  // Sem essa leitura, a recomposição zeraria o horímetro de motos usadas
+  // que já foram cadastradas com valor inicial > 0 (bug crítico corrigido).
+  const { data: moto } = await supabase
+    .from("motorcycles")
+    .select("hours_initial, km_initial")
+    .eq("id", motoId)
+    .single();
+  const h0 = Number((moto as any)?.hours_initial) || 0;
+  const k0 = Number((moto as any)?.km_initial) || 0;
+
   const { data: evs } = await supabase
     .from("events")
     .select("id, occurred_at, created_at, hours_delta, km_delta")
@@ -23,8 +34,8 @@ export async function recomposeTimeline(motoId: string): Promise<{ hours: number
     .order("occurred_at", { ascending: true })
     .order("created_at", { ascending: true });
 
-  let hours = 0;
-  let km = 0;
+  let hours = h0;
+  let km = k0;
   for (const e of evs ?? []) {
     hours += Number((e as any).hours_delta) || 0;
     km += Number((e as any).km_delta) || 0;
@@ -34,10 +45,11 @@ export async function recomposeTimeline(motoId: string): Promise<{ hours: number
       .update({ hours_at_event: hours, km_at_event: km } as never)
       .eq("id", (e as any).id);
   }
-  await supabase
-    .from("motorcycles")
-    .update({ hours_total: hours, km_total: km } as never)
-    .eq("id", motoId);
+  // Escrita autorizada via RPC (respeita baseline e libera a trava
+  // BEFORE UPDATE que bloqueia regressões silenciosas de horímetro/KM).
+  await supabase.rpc("apply_recomposed_totals" as never, {
+    _moto: motoId, _hours: hours, _km: km,
+  } as never);
 
   // Recomputa cada schedule a partir do histórico já normalizado.
   const { data: schs } = await supabase
@@ -51,13 +63,22 @@ export async function recomposeTimeline(motoId: string): Promise<{ hours: number
 }
 
 export async function recalcTotals(motoId: string): Promise<{ hours: number; km: number }> {
+  const { data: moto } = await supabase
+    .from("motorcycles")
+    .select("hours_initial, km_initial")
+    .eq("id", motoId)
+    .single();
+  const h0 = Number((moto as any)?.hours_initial) || 0;
+  const k0 = Number((moto as any)?.km_initial) || 0;
   const { data: evs } = await supabase
     .from("events")
     .select("hours_delta, km_delta")
     .eq("motorcycle_id", motoId);
-  const hours = (evs ?? []).reduce((s, e) => s + (Number((e as any).hours_delta) || 0), 0);
-  const km = (evs ?? []).reduce((s, e) => s + (Number((e as any).km_delta) || 0), 0);
-  await supabase.from("motorcycles").update({ hours_total: hours, km_total: km } as never).eq("id", motoId);
+  const hours = h0 + (evs ?? []).reduce((s, e) => s + (Number((e as any).hours_delta) || 0), 0);
+  const km    = k0 + (evs ?? []).reduce((s, e) => s + (Number((e as any).km_delta) || 0), 0);
+  await supabase.rpc("apply_recomposed_totals" as never, {
+    _moto: motoId, _hours: hours, _km: km,
+  } as never);
   return { hours, km };
 }
 
