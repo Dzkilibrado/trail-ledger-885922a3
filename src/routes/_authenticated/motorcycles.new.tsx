@@ -19,9 +19,10 @@ import { PageHeader } from "@/components/PageHeader";
 import { toast } from "sonner";
 import { usePlan } from "@/hooks/usePlan";
 import { canCreateMotorcycle } from "@/lib/plans";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Crown, ShieldAlert, CheckCircle2, Pencil, Info } from "lucide-react";
 import { ORIGIN_OPTIONS, type OriginType } from "@/lib/motorcycle-origin";
+import { invalidateMotorcycleState, setStoredActiveMotorcycleId } from "@/hooks/useActiveMotorcycle";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/new")({
   head: () => ({ meta: [{ title: "Nova moto — TrailBook" }] }),
@@ -48,6 +49,7 @@ const schema = z.object({
 
 function NewMotorcycle() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [photo, setPhoto] = useState<File | null>(null);
   const [motoType, setMotoType] = useState<string>("");
@@ -220,6 +222,8 @@ function NewMotorcycle() {
           occurred_at: new Date().toISOString(),
         } as never);
       }
+      setStoredActiveMotorcycleId(data.id);
+      await invalidateMotorcycleState(qc);
       toast.success("Moto cadastrada!");
       if (applyPlan === "skip" || applyPlan === "auto") {
         // "auto" também não abre wizard — aplicaremos o plano padrão em segundo plano no futuro.

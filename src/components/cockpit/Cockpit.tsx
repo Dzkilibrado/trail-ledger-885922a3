@@ -26,10 +26,6 @@ export function Cockpit({ motoId }: { motoId: string }) {
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
   }, []);
-  useEffect(() => {
-    if (motoId) setActiveId(motoId);
-  }, [motoId, setActiveId]);
-
   const moto = useQuery({
     queryKey: ["motorcycle", motoId],
     queryFn: async () => {
@@ -70,6 +66,10 @@ export function Cockpit({ motoId }: { motoId: string }) {
   });
 
   const isOwner = !!moto.data && !!currentUserId && (moto.data as any).owner_id === currentUserId;
+
+  useEffect(() => {
+    if (moto.data && (moto.data as any).status !== "archived") setActiveId(moto.data.id);
+  }, [moto.data, setActiveId]);
 
   const snapshot = useMemo(() => {
     if (!moto.data || !events.data || !schedules.data) return null;

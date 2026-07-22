@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { AlertTriangle, FlaskConical, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { clearActiveMotorcycleIfMatches, invalidateMotorcycleState } from "@/hooks/useActiveMotorcycle";
 
 const REASONS = [
   "Limpeza de homologação",
@@ -74,7 +75,8 @@ export function AdminMotoDangerZone({
       const miss = res?.storage?.missing_count ?? 0;
       toast.success(`Moto excluída. Arquivos removidos: ${rem}${miss ? ` (não encontrados: ${miss})` : ""}.`);
       setOpen(false);
-      qc.invalidateQueries();
+      clearActiveMotorcycleIfMatches(motoId);
+      await invalidateMotorcycleState(qc);
       navigate({ to: "/motorcycles" });
     } catch (e: any) {
       toast.error(e?.message ?? "Falha ao excluir moto de homologação");

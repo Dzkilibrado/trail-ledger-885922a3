@@ -1,13 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Plus, ChevronDown, ChevronUp, Bike, Share2, ShieldCheck, FileSignature, Award, FolderOpen, Heart, Wrench, HelpCircle, CheckCircle2, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StoragePhoto } from "@/components/StoragePhoto";
 import { ActiveMotoCard } from "@/components/ActiveMotoCard";
 import { DocumentPendenciesCard } from "@/components/DocumentPendenciesCard";
 import { WhatsNewCard } from "@/components/WhatsNewCard";
-import { useActiveMotorcycle } from "@/hooks/useActiveMotorcycle";
+import { useActiveMotorcycle, useArchivedMotorcyclesCount } from "@/hooks/useActiveMotorcycle";
 import { useDocumentPendencies } from "@/hooks/useDocumentPendencies";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";
@@ -24,43 +22,19 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function Dashboard() {
   const [showAll, setShowAll] = useState(false);
-  const { activeId } = useActiveMotorcycle();
+  const { activeId, activeMotos, isLoading } = useActiveMotorcycle();
   const pendencies = useDocumentPendencies();
-  const motos = useQuery({
-    queryKey: ["motorcycles"],
-    queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user?.id;
-      if (!uid) return [];
-      const { data, error } = await supabase.from("motorcycles").select("*").eq("owner_id", uid).eq("status" as never, "active" as never).order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
+  const motos = activeMotos;
   // Conta motos arquivadas para orientar o usuário quando a garagem estiver vazia.
-  const archivedCount = useQuery({
-    queryKey: ["motorcycles-archived-count"],
-    queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user?.id;
-      if (!uid) return 0;
-      const { count } = await supabase
-        .from("motorcycles")
-        .select("id", { count: "exact", head: true })
-        .eq("owner_id", uid)
-        .eq("status" as never, "archived" as never);
-      return count ?? 0;
-    },
-  });
+  const archivedCount = useArchivedMotorcyclesCount();
 
-  // Prioridade: moto ativa; fallback: primeira moto.
-  const focusMotoId = activeId && motos.data?.some((m) => m.id === activeId)
-    ? activeId
-    : motos.data?.[0]?.id ?? null;
+  // Fonte oficial do Dashboard: useActiveMotorcycle valida o localStorage
+  // contra a lista ativa do banco e limpa automaticamente motos arquivadas.
+  const focusMotoId = activeId;
 
-  if (motos.isLoading) return <DashboardSkeleton />;
+  if (isLoading) return <DashboardSkeleton />;
 
-  if ((motos.data?.length ?? 0) === 0) {
+  if (motos.length === 0) {
     return (
       <div className="surface-elevated rounded-2xl p-10 text-center">
         <h2 className="font-display text-2xl font-bold">Bem-vindo ao TrailBook</h2>
@@ -91,7 +65,7 @@ function Dashboard() {
       {/* Ordem Sprint v1.6 (polimento):
           Moto ativa → Pendências → Atalhos → Últimas atividades → Novidades.
           "Investido" já aparece no card da moto ativa; métrica duplicada removida. */}
-      <ActiveMotoCard motos={motos.data as any} />
+        <ActiveMotoCard motos={motos} />
 
       {/* Pendências do card da moto em foco — nunca mistura motos (v1.6.11). */}
       <DocumentPendenciesCard scopeMotoId={focusMotoId} />
@@ -115,19 +89,19 @@ function Dashboard() {
 
       {focusMotoId && <QuickActions motoId={focusMotoId} />}
 
-      {(motos.data?.length ?? 0) > 1 && (
+      {motos.length > 1 && (
         <section>
           <button
             type="button"
             onClick={() => setShowAll((v) => !v)}
             className="flex w-full items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 text-left text-sm font-semibold transition-colors hover:bg-accent/40"
           >
-            <span>Suas motos ({motos.data!.length})</span>
+            <span>Suas motos ({motos.length})</span>
             {showAll ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
           </button>
           {showAll && (
             <ul className="mt-3 space-y-2">
-              {motos.data!.map((m) => (
+              {motos.map((m) => (
                 <li key={m.id}>
                   <Link
                     to="/motorcycles/$id"
@@ -142,9 +116,9 @@ function Dashboard() {
                       </div>
                     )}
                     <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold">{m.nickname || m.model}</div>
+                      <div className="truncate text-sm font-semibold">{m.nickname || m.model || "Motocicleta"}</div>
                       <div className="truncate text-xs text-muted-foreground">
-                        {m.brand} · {Number(m.hours_total).toFixed(1)} h · {Number(m.km_total).toFixed(0)} km
+                        {m.brand || "Moto"} · {Number(m.hours_total).toFixed(1)} h · {Number(m.km_total).toFixed(0)} km
                       </div>
                     </div>
                     <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">{m.conservation_score}%</span>

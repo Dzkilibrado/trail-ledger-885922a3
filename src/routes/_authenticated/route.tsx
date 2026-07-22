@@ -17,6 +17,7 @@ import { ROUTE_TO_MODULE } from "@/lib/modules";
 import { ModuleGate } from "@/components/ModuleGate";
 import { WelcomeTour } from "@/components/onboarding/WelcomeTour";
 import { TBBottomSheet } from "@/design-system/overlays/TBBottomSheet";
+import { useActiveMotorcycle } from "@/hooks/useActiveMotorcycle";
 
 export const Route = createFileRoute("/_authenticated")({
   ssr: false,
@@ -251,24 +252,7 @@ function SidebarBody({
     staleTime: 60_000,
   });
 
-  const activeMotoQ = useQuery({
-    queryKey: ["sidebar", "active-moto"],
-    queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user?.id;
-      if (!uid) return null;
-      const { data } = await supabase
-        .from("motorcycles")
-        .select("id, brand, model, nickname, main_photo_url, status")
-        .eq("owner_id", uid)
-        .neq("status", "archived")
-        .order("updated_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-      return data;
-    },
-    staleTime: 60_000,
-  });
+  const { activeMoto } = useActiveMotorcycle();
 
   const fullName = meQ.data?.full_name || meQ.data?.email || "Usuário";
   const initials = fullName
@@ -278,7 +262,7 @@ function SidebarBody({
     .map((s: string) => s[0]?.toUpperCase() ?? "")
     .join("") || "?";
   const roleLabel = isAdmin ? "Administrador" : "Usuário";
-  const moto = activeMotoQ.data;
+  const moto = activeMoto;
   const motoLabel = moto ? (moto.nickname || `${moto.brand ?? ""} ${moto.model ?? ""}`.trim() || "Moto ativa") : null;
 
   function NavLink({ to, label, icon: Icon, activeStrict }: { to: string; label: string; icon: any; activeStrict?: boolean }) {

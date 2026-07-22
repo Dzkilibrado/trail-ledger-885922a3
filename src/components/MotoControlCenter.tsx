@@ -48,6 +48,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { getReceiptSignedUrl } from "@/lib/smart-receipts.functions";
 import { ReceiptsSummaryRow } from "@/components/receipts/ReceiptsHistorySheet";
 import { useReceiptsForMoto } from "@/hooks/useActiveNegotiation";
+import { clearActiveMotorcycleIfMatches, invalidateMotorcycleState, setStoredActiveMotorcycleId } from "@/hooks/useActiveMotorcycle";
 
 export function MotoControlCenter({ id }: { id: string }) {
   const qc = useQueryClient();
@@ -176,15 +177,17 @@ export function MotoControlCenter({ id }: { id: string }) {
       : archiveReason;
     const { error } = await supabase.rpc("archive_motorcycle" as never, { _moto_id: id, _reason: finalReason || null } as never);
     if (error) { toast.error(error.message || "Falha ao arquivar"); return; }
+    clearActiveMotorcycleIfMatches(id);
+    await invalidateMotorcycleState(qc);
     toast.success("Moto arquivada. Histórico preservado para auditoria.");
-    qc.invalidateQueries();
     navigate({ to: "/motorcycles" });
   }
   async function unarchiveMoto() {
     const { error } = await supabase.rpc("unarchive_motorcycle" as never, { _moto_id: id } as never);
     if (error) { toast.error(error.message || "Falha ao reativar"); return; }
+    setStoredActiveMotorcycleId(id);
+    await invalidateMotorcycleState(qc);
     toast.success("Moto reativada na sua garagem.");
-    qc.invalidateQueries();
     setUnarchiveOpen(false);
   }
 

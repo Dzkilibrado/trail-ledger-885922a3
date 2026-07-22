@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { DollarSign, TrendingUp, Calendar, Bike, Search, X } from "lucide-react";
 import { ExportMenu } from "@/components/ExportMenu";
 import type { ExportColumn } from "@/lib/exports";
+import { useActiveMotorcycles } from "@/hooks/useActiveMotorcycle";
 
 export const Route = createFileRoute("/_authenticated/financial")({
   head: () => ({ meta: [{ title: "Financeiro — TrailBook" }] }),
@@ -25,22 +26,7 @@ function Financial() {
   const [workshopId, setWorkshopId] = useState<string>("all");
   const [search, setSearch] = useState("");
 
-  const motos = useQuery({
-    queryKey: ["motorcycles"],
-    queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user?.id;
-      if (!uid) return [];
-      // Contexto operacional: financeiro ignora motos arquivadas.
-      return (
-        await supabase
-          .from("motorcycles")
-          .select("id, nickname, model")
-          .eq("owner_id", uid)
-          .neq("status" as never, "archived" as never)
-      ).data ?? [];
-    },
-  });
+  const motos = useActiveMotorcycles();
   const workshops = useQuery({
     queryKey: ["workshops", "list"],
     queryFn: async () => (await supabase.from("workshops").select("id, name").order("name")).data ?? [],

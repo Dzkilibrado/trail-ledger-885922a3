@@ -8,6 +8,7 @@ import { MAINT_CATEGORY_LABEL, formatDate, type MaintenanceCategory } from "@/li
 import { PageHeader } from "@/components/PageHeader";
 import { ScheduleActionsMenu } from "@/components/ScheduleActionsMenu";
 import { NewEventDialog } from "@/components/NewEventDialog";
+import { useActiveMotorcycles } from "@/hooks/useActiveMotorcycle";
 
 export const Route = createFileRoute("/_authenticated/agenda")({
   head: () => ({ meta: [{ title: "Agenda — TrailBook" }] }),
@@ -49,23 +50,7 @@ function Agenda() {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [completeFor, setCompleteFor] = useState<{ moto: any; schedule: any } | null>(null);
 
-  const motos = useQuery({
-    queryKey: ["motorcycles"],
-    queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user?.id;
-      if (!uid) return [];
-      // Contexto operacional: motos arquivadas ficam de fora da agenda.
-      // O histórico continua íntegro no banco (ADR 0007) e volta ao reativar.
-      return (
-        await supabase
-          .from("motorcycles")
-          .select("*")
-          .eq("owner_id", uid)
-          .neq("status" as never, "archived" as never)
-      ).data ?? [];
-    },
-  });
+  const motos = useActiveMotorcycles();
   const schedules = useQuery({
     queryKey: ["schedules"],
     queryFn: async () => (await supabase.from("maintenance_schedules").select("*").eq("active", true)).data ?? [],
