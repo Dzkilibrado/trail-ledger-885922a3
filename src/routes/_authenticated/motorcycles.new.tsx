@@ -143,6 +143,9 @@ function NewMotorcycle() {
       catalog_model_id: modelId,
       hours_total: parsedHours,
       km_total: parsedKm,
+      // Baseline preservada — nunca sobrescrita por recomposição futura.
+      hours_initial: parsedHours,
+      km_initial: parsedKm,
     };
     const parsed = schema.safeParse(raw);
     if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
