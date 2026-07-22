@@ -1,8 +1,8 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import {
-  Pencil, Settings, Bell, Crown, KeyRound, ShieldCheck,
-  HelpCircle, Info, FileText, LogOut, ChevronRight, UserRound,
+  Pencil, Settings, Crown, KeyRound, ShieldCheck,
+  HelpCircle, FileText, LogOut, ChevronRight, UserRound,
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -25,18 +25,15 @@ type Row = { to: string; label: string; icon: any; hint?: string; external?: boo
 
 const PREFERENCES: Row[] = [
   { to: "/settings", label: "Configurações", icon: Settings, hint: "Tema e preferências gerais" },
-  { to: "/settings", label: "Notificações", icon: Bell, hint: "Alertas e comunicações" },
   { to: "/plans", label: "Plano atual", icon: Crown, hint: "Seu plano e benefícios" },
 ];
 
 const SECURITY: Row[] = [
   { to: "/reset-password", label: "Alterar senha", icon: KeyRound },
-  { to: "/settings", label: "Privacidade", icon: ShieldCheck, hint: "Dados e visibilidade" },
 ];
 
 const SUPPORT: Row[] = [
-  { to: "/help", label: "Ajuda", icon: HelpCircle, hint: "Central de ajuda e FAQ" },
-  { to: "/help", label: "Sobre o TrailBook", icon: Info },
+  { to: "/faq", label: "Perguntas frequentes", icon: HelpCircle, hint: "Dúvidas comuns sobre o TrailBook" },
 ];
 
 function SectionHeader({ icon: Icon, title }: { icon: any; title: string }) {
