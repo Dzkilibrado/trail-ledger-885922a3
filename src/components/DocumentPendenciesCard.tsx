@@ -7,19 +7,25 @@ import { isOriginSnoozed } from "@/lib/origin-status";
 import { supabase } from "@/integrations/supabase/client";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";
+import { useActiveMotorcycle } from "@/hooks/useActiveMotorcycle";
 
 /**
  * Card do Dashboard: Pendências Documentais.
  * Só renderiza quando há pelo menos uma moto com pendência de documento
  * de origem. Nunca bloqueia — apenas convida a resolver.
  */
-export function DocumentPendenciesCard() {
+export function DocumentPendenciesCard({ scopeMotoId }: { scopeMotoId?: string | null } = {}) {
   const q = useDocumentPendencies();
   const [uid, setUid] = useState<string | null>(null);
+  const { activeId } = useActiveMotorcycle();
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUid(data.user?.id ?? null));
   }, []);
-  const rawRows = q.data ?? [];
+  // Cada Dashboard representa apenas UMA moto (v1.6.11): filtra pendências
+  // pela moto em foco. Se nenhuma foi indicada, cai para a moto ativa.
+  const focusId = scopeMotoId ?? activeId ?? null;
+  const allRows = q.data ?? [];
+  const rawRows = focusId ? allRows.filter((r) => r.motorcycle_id === focusId) : allRows;
   // Respeita o "Lembrar mais tarde" (silêncio local por 7 dias, por usuário + moto).
   const rows = rawRows.filter((r) => !isOriginSnoozed(uid, r.motorcycle_id));
   if (q.isLoading || rows.length === 0) return null;
