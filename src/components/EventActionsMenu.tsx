@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { recomposeTimeline, toDecimalHours } from "@/lib/activity-recalc";
+import { toDecimalHours } from "@/lib/activity-recalc";
 
 type EventRow = {
   id: string;
@@ -54,41 +54,32 @@ export function EventActionsMenu({ event, onChanged }: { event: EventRow; onChan
   async function save() {
     setSaving(true);
     try {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user?.id ?? null;
-      const newHoursDelta = (hoursInt || minutes) ? toDecimalHours(Number(hoursInt || 0), Number(minutes || 0)) : null;
-      const newKmDelta = km ? Number(km) : null;
-      const newCost = cost ? Number(cost) : null;
+      // v1.7: diferencia campo vazio (null legítimo) de valor inválido.
+      const hasHours = hoursInt !== "" || minutes !== "";
+      const hasKm = km !== "";
+      const hasCost = cost !== "";
+      const newHoursDelta = hasHours ? toDecimalHours(Number(hoursInt || 0), Number(minutes || 0)) : null;
+      const newKmDelta = hasKm ? Number(km) : null;
+      const newCost = hasCost ? Number(cost) : null;
+      if (newHoursDelta != null && (!Number.isFinite(newHoursDelta) || newHoursDelta < 0)) throw new Error("Duração inválida");
+      if (newKmDelta != null && (!Number.isFinite(newKmDelta) || newKmDelta < 0)) throw new Error("Distância inválida");
+      if (newCost != null && !Number.isFinite(newCost)) throw new Error("Custo inválido");
       const newOccurred = new Date(occurredAt).toISOString();
 
-      const oldValues = {
-        title: event.title, description: event.description, occurred_at: event.occurred_at,
-        hours_delta: event.hours_delta, km_delta: event.km_delta, cost: event.cost,
-      };
-      const newValues = {
-        title, description: description || null, occurred_at: newOccurred,
-        hours_delta: newHoursDelta, km_delta: newKmDelta, cost: newCost,
-      };
-
-      const { error } = await supabase.from("events").update({
-        ...newValues,
-      } as never).eq("id", event.id);
+      // Atômico: UPDATE + recomposição na mesma transação, com advisory lock.
+      const { error } = await supabase.rpc(
+        "update_event_and_recompose" as never,
+        {
+          _event_id: event.id,
+          _title: title,
+          _description: description || "",
+          _occurred_at: newOccurred,
+          _hours_delta: newHoursDelta,
+          _km_delta: newKmDelta,
+          _cost: newCost,
+        } as never,
+      );
       if (error) throw error;
-
-      await supabase.from("audit_log").insert({
-        table_name: "events",
-        record_id: event.id,
-        motorcycle_id: event.motorcycle_id,
-        actor_id: uid,
-        action: "update",
-        old_values: oldValues,
-        new_values: newValues,
-      } as never);
-
-      // Recomposição cronológica exata: reescreve hours_at_event/km_at_event
-      // de todos os eventos em ordem, atualiza totais da moto e last_done_*
-      // de cada programação. Não há mais snapshot "best-effort".
-      await recomposeTimeline(event.motorcycle_id);
       toast.success("Atividade atualizada. Histórico e agenda recalculados.");
       setEditing(false);
       qc.invalidateQueries();
@@ -101,31 +92,14 @@ export function EventActionsMenu({ event, onChanged }: { event: EventRow; onChan
   async function remove() {
     setSaving(true);
     try {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user?.id ?? null;
-
-      // Auditoria antes da exclusão (guarda o old_values)
-      await supabase.from("audit_log").insert({
-        table_name: "events",
-        record_id: event.id,
-        motorcycle_id: event.motorcycle_id,
-        actor_id: uid,
-        action: "delete",
-        old_values: {
-          type: event.type, title: event.title, occurred_at: event.occurred_at,
-          hours_delta: event.hours_delta, km_delta: event.km_delta, cost: event.cost,
-        },
-      } as never);
-
-      // Exclusão em cascata: maintenance_items e attachments ficam órfãos
-      // apenas se não houver ON DELETE CASCADE no banco. Apagamos manualmente
-      // para garantir integridade e recálculo correto.
-      await supabase.from("maintenance_items").delete().eq("event_id", event.id);
-      await supabase.from("event_attachments").delete().eq("event_id", event.id);
-      const { error } = await supabase.from("events").delete().eq("id", event.id);
+      // v1.7: DELETE + recomposição atômica no servidor.
+      // Trigger `write_audit` já registra a exclusão em audit_log.
+      // maintenance_items e event_attachments têm ON DELETE CASCADE.
+      const { error } = await supabase.rpc(
+        "delete_event_and_recompose" as never,
+        { _event_id: event.id } as never,
+      );
       if (error) throw error;
-
-      await recomposeTimeline(event.motorcycle_id);
 
       toast.success("Atividade excluída. Histórico, agenda e saúde recalculados.");
       setConfirming(false);

@@ -2528,6 +2528,28 @@ export type Database = {
         Args: { _notes?: string; _reason: string; _user: string }
         Returns: undefined
       }
+      admin_diagnose_baseline_consistency: {
+        Args: never
+        Returns: {
+          brand: string
+          classification: string
+          event_count: number
+          hours_diff: number
+          hours_expected: number
+          hours_initial: number
+          hours_sum_deltas: number
+          hours_total: number
+          km_diff: number
+          km_expected: number
+          km_initial: number
+          km_sum_deltas: number
+          km_total: number
+          model: string
+          motorcycle_id: string
+          recommendation: string
+          trailbook_id: string
+        }[]
+      }
       admin_execute_homolog_moto_deletion: {
         Args: { _moto: string; _reason: string; _storage_report?: Json }
         Returns: Json
@@ -2892,6 +2914,26 @@ export type Database = {
         }
         Returns: string
       }
+      commit_event_and_recompose: {
+        Args: {
+          _cost: number
+          _description: string
+          _hours_delta: number
+          _km_delta: number
+          _location: string
+          _metadata?: Json
+          _moto: string
+          _occurred_at: string
+          _title: string
+          _type: string
+          _workshop_id?: string
+        }
+        Returns: {
+          event_id: string
+          hours_total: number
+          km_total: number
+        }[]
+      }
       complete_signup_cpf: {
         Args: {
           _birth_date: string
@@ -2902,6 +2944,13 @@ export type Database = {
         Returns: undefined
       }
       count_active_admins: { Args: never; Returns: number }
+      delete_event_and_recompose: {
+        Args: { _event_id: string }
+        Returns: {
+          hours_total: number
+          km_total: number
+        }[]
+      }
       emit_system_message: {
         Args: {
           _body: string
@@ -3014,6 +3063,13 @@ export type Database = {
         }[]
       }
       profile_completeness: { Args: { _user: string }; Returns: Json }
+      recompose_timeline_server: {
+        Args: { _moto: string }
+        Returns: {
+          hours_total: number
+          km_total: number
+        }[]
+      }
       request_ownership_transfer: {
         Args: { _message: string; _moto_id: string; _to_email: string }
         Returns: string
@@ -3047,6 +3103,21 @@ export type Database = {
         Returns: string
       }
       unarchive_motorcycle: { Args: { _moto_id: string }; Returns: Json }
+      update_event_and_recompose: {
+        Args: {
+          _cost: number
+          _description: string
+          _event_id: string
+          _hours_delta: number
+          _km_delta: number
+          _occurred_at: string
+          _title: string
+        }
+        Returns: {
+          hours_total: number
+          km_total: number
+        }[]
+      }
       user_attention_tickets_count: { Args: never; Returns: number }
       user_list_messages: {
         Args: { _filter?: string }

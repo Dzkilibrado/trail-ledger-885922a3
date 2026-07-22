@@ -3,83 +3,30 @@ import { supabase } from "@/integrations/supabase/client";
 /**
  * Recomposição cronológica exata da linha do tempo da moto.
  *
- * A cada criação/edição/exclusão de atividade, o TrailBook reprocessa
- * TODOS os eventos da moto em ordem cronológica (occurred_at ASC,
- * empatando por created_at) e reescreve `hours_at_event` / `km_at_event`
- * como soma acumulada dos deltas até aquele ponto. Depois atualiza
- * `hours_total` / `km_total` da moto e recomputa `last_done_*` de cada
- * programação a partir do evento vinculado mais recente na nova timeline.
- *
- * Isso elimina o "best-effort" antigo que carimbava eventos históricos
- * com os totais atuais e gerava inconsistência ao editar uma atividade
- * do meio da linha do tempo.
+ * v1.7 (auditoria integridade): agora delega para a RPC atômica
+ * `recompose_timeline_server`, que executa toda a recomposição em UMA
+ * transação protegida por advisory lock por moto. Isso elimina:
+ *  - N chamadas do cliente sem transação (janela de inconsistência);
+ *  - lost update quando duas abas/dispositivos recompõem em paralelo;
+ *  - snapshots `hours_at_event`/`km_at_event` divergindo entre eventos.
  */
 
 export async function recomposeTimeline(motoId: string): Promise<{ hours: number; km: number }> {
-  // Baseline preservada (informada no cadastro / backfill).
-  // Sem essa leitura, a recomposição zeraria o horímetro de motos usadas
-  // que já foram cadastradas com valor inicial > 0 (bug crítico corrigido).
-  const { data: moto } = await supabase
-    .from("motorcycles")
-    .select("hours_initial, km_initial")
-    .eq("id", motoId)
-    .single();
-  const h0 = Number((moto as any)?.hours_initial) || 0;
-  const k0 = Number((moto as any)?.km_initial) || 0;
-
-  const { data: evs } = await supabase
-    .from("events")
-    .select("id, occurred_at, created_at, hours_delta, km_delta")
-    .eq("motorcycle_id", motoId)
-    .order("occurred_at", { ascending: true })
-    .order("created_at", { ascending: true });
-
-  let hours = h0;
-  let km = k0;
-  for (const e of evs ?? []) {
-    hours += Number((e as any).hours_delta) || 0;
-    km += Number((e as any).km_delta) || 0;
-    // Grava snapshot cronológico exato deste evento
-    await supabase
-      .from("events")
-      .update({ hours_at_event: hours, km_at_event: km } as never)
-      .eq("id", (e as any).id);
-  }
-  // Escrita autorizada via RPC (respeita baseline e libera a trava
-  // BEFORE UPDATE que bloqueia regressões silenciosas de horímetro/KM).
-  await supabase.rpc("apply_recomposed_totals" as never, {
-    _moto: motoId, _hours: hours, _km: km,
-  } as never);
-
-  // Recomputa cada schedule a partir do histórico já normalizado.
-  const { data: schs } = await supabase
-    .from("maintenance_schedules")
-    .select("id")
-    .eq("motorcycle_id", motoId);
-  for (const s of schs ?? []) {
-    await recalcScheduleFromHistory((s as any).id);
-  }
-  return { hours, km };
+  const { data, error } = await supabase.rpc(
+    "recompose_timeline_server" as never,
+    { _moto: motoId } as never,
+  );
+  if (error) throw new Error(error.message);
+  const row = Array.isArray(data) ? (data as any[])[0] : (data as any);
+  // Não usamos `|| 0` no path de leitura: se o RPC não retornar linha,
+  // é um erro de integridade que precisa aparecer, não ser mascarado.
+  if (!row) throw new Error("Recomposição não retornou totais");
+  return { hours: Number(row.hours_total), km: Number(row.km_total) };
 }
 
 export async function recalcTotals(motoId: string): Promise<{ hours: number; km: number }> {
-  const { data: moto } = await supabase
-    .from("motorcycles")
-    .select("hours_initial, km_initial")
-    .eq("id", motoId)
-    .single();
-  const h0 = Number((moto as any)?.hours_initial) || 0;
-  const k0 = Number((moto as any)?.km_initial) || 0;
-  const { data: evs } = await supabase
-    .from("events")
-    .select("hours_delta, km_delta")
-    .eq("motorcycle_id", motoId);
-  const hours = h0 + (evs ?? []).reduce((s, e) => s + (Number((e as any).hours_delta) || 0), 0);
-  const km    = k0 + (evs ?? []).reduce((s, e) => s + (Number((e as any).km_delta) || 0), 0);
-  await supabase.rpc("apply_recomposed_totals" as never, {
-    _moto: motoId, _hours: hours, _km: km,
-  } as never);
-  return { hours, km };
+  // Compat: mesma implementação servidor-side.
+  return recomposeTimeline(motoId);
 }
 
 export async function recalcScheduleFromHistory(scheduleId: string) {
