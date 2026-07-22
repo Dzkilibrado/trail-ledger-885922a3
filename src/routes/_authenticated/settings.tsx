@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { Settings, User, Crown, HelpCircle, Bell, Lock, BookOpen, Sparkles } from "lucide-react";
+import { Settings, User, Crown, HelpCircle, Lock, BookOpen, Sparkles, LifeBuoy } from "lucide-react";
 import { useOpenWelcomeTour } from "@/components/onboarding/WelcomeTour";
 
 export const Route = createFileRoute("/_authenticated/settings")({
@@ -44,12 +44,11 @@ function SettingsPage() {
       <section className="grid gap-3 md:grid-cols-2">
         <Card icon={User} title="Dados do perfil" desc="Nome, CPF, telefone e data de nascimento." to="/complete-profile" cta="Editar perfil" />
         <Card icon={Crown} title="Plano" desc="Veja seu plano atual e faça upgrade quando quiser." to="/plans" cta="Ver planos" />
-        <Card icon={Bell} title="Notificações" desc="As notificações e mensagens do sistema ficam disponíveis na Central." to="/messages" cta="Abrir mensagens" />
-        <Card icon={Lock} title="Segurança da conta" desc="Redefina sua senha por e-mail seguro." to="/help" cta="Central de ajuda" />
+        <Card icon={Lock} title="Segurança da conta" desc="Altere sua senha de acesso ao TrailBook." to="/reset-password" cta="Alterar senha" />
         <Card icon={BookOpen} title="Como o TrailBook funciona" desc="Veja o passo a passo do sistema." to="/como-funciona" cta="Ver passo a passo" />
         <Card icon={HelpCircle} title="Perguntas frequentes" desc="Dúvidas comuns sobre cadastro, moto, Recibo, Passaporte e Selos." to="/faq" cta="Abrir FAQ" />
         <Card icon={Sparkles} title="Ver tour de boas-vindas" desc="Reveja a apresentação inicial do TrailBook a qualquer momento." cta="Rever tour" onClick={openTour} />
-        <Card icon={HelpCircle} title="Ajuda e suporte" desc="Abra um chamado ou fale com o time TrailBook." to="/help" cta="Preciso de ajuda" />
+        <Card icon={LifeBuoy} title="Ajuda e suporte" desc="Fale com o time TrailBook pela Central de Chamados." to="/tickets" cta="Abrir chamado" />
       </section>
     </div>
   );
