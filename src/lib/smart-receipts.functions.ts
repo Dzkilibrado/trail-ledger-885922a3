@@ -3,7 +3,6 @@ import { getRequestHeader } from "@tanstack/react-start/server";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "@/integrations/supabase/types";
-import { nextReceiptCode } from "./smart-receipts";
 import {
   errorDiagnostics,
   makeRequestId,
@@ -108,11 +107,24 @@ export const createReceiptDraft = createServerFn({ method: "POST" })
       .from("profiles").select("full_name, cpf, email").eq("id", userId).single();
     if (!sellerProfile?.full_name) throw new Error("Complete seu perfil (nome) antes de iniciar o recibo");
 
-    const { data: lastByYear } = await supabase
-      .from("smart_receipts")
-      .select("code")
-      .like("code", `TB-RCV-${new Date().getFullYear()}-%`)
-      .order("code", { ascending: false }).limit(1).maybeSingle();
+    // Idempotência: se já existe rascunho ativo do MESMO vendedor para esta moto,
+    // reutiliza em vez de criar novo. Evita múltiplos recibos por negociação e
+    // torna cliques repetidos em "Emitir PDF" seguros mesmo em cenários de
+    // dupla submissão / retry após erro transitório.
+    if (!data.previous_receipt_id) {
+      const { data: existingDraft } = await supabase
+        .from("smart_receipts")
+        .select("id, code, version, status")
+        .eq("motorcycle_id", moto.id)
+        .eq("seller_id", userId)
+        .eq("status", "draft")
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (existingDraft) {
+        return { ok: true as const, receipt: existingDraft, reused: true as const };
+      }
+    }
 
     let version = 1;
     if (data.previous_receipt_id) {
@@ -121,15 +133,14 @@ export const createReceiptDraft = createServerFn({ method: "POST" })
       if (prev?.version) version = prev.version + 1;
     }
 
-    const code = nextReceiptCode(lastByYear?.code ?? null);
-
     const isExternal = data.external_buyer === true || !data.buyer.user_id;
 
-    const { data: inserted, error: iErr } = await supabase
-      .from("smart_receipts")
-      .insert({
+    // O código (TB-RCV-YYYY-NNNNNN) é gerado por trigger BEFORE INSERT no banco
+    // usando uma sequence dedicada — serializa concorrência e elimina a race
+    // condition que causava "duplicate key ... smart_receipts_code_key".
+    // NÃO enviar `code` a partir do cliente.
+    const insertPayload = {
         motorcycle_id: moto.id,
-        code,
         seller_id: userId,
         buyer_id: data.buyer.user_id ?? null,
         seller_snapshot: sellerProfile,
@@ -152,12 +163,22 @@ export const createReceiptDraft = createServerFn({ method: "POST" })
         previous_receipt_id: data.previous_receipt_id ?? null,
         external_buyer: isExternal,
         created_by: userId,
-      } as never)
-      .select("id, code, version, status")
-      .single();
-    if (iErr) throw new Error(iErr.message);
+    };
 
-    return { ok: true as const, receipt: inserted };
+    // Safety-net: mesmo com a trigger serializando, retry uma vez em caso
+    // improvável de colisão (23505) — nunca propagar esse erro para a UI.
+    let inserted: { id: string; code: string; version: number; status: string } | null = null;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const { data: row, error: iErr } = await supabase
+        .from("smart_receipts")
+        .insert(insertPayload as never)
+        .select("id, code, version, status")
+        .single();
+      if (!iErr && row) { inserted = row; break; }
+      const code = (iErr as { code?: string } | null)?.code;
+      if (code !== "23505" || attempt === 1) throw new Error(iErr?.message ?? "Falha ao criar rascunho");
+    }
+    return { ok: true as const, receipt: inserted!, reused: false as const };
   });
 
 /** Atualiza dados do rascunho (só enquanto draft). */
