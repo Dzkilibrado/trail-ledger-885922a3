@@ -64,6 +64,20 @@ export function PlanCatalogSyncDialog({ moto, trigger }: { moto: Motorcycle; tri
   async function apply() {
     setSaving(true);
     try {
+      // v1.7 (auditoria): leitura ATUAL do horímetro/KM da moto direto do
+      // banco, para não usar o prop `moto.hours_total` (potencialmente
+      // desatualizado se outra aba registrou atividade). Sem isso, o
+      // baseline do novo item de plano fica errado por toda a vida útil
+      // do item — mesmo padrão do bug corrigido no NewEventDialog.
+      const { data: fresh, error: freshErr } = await supabase
+        .from("motorcycles")
+        .select("hours_total, km_total")
+        .eq("id", moto.id)
+        .single();
+      if (freshErr || !fresh) throw new Error("Não foi possível confirmar o total atual da moto. Tente novamente.");
+      const baseHours = Number((fresh as any).hours_total) || 0;
+      const baseKm    = Number((fresh as any).km_total)    || 0;
+
       const rows = missing
         .filter((r) => checked[r.key] ?? true)
         .map((r) => ({
@@ -77,8 +91,8 @@ export function PlanCatalogSyncDialog({ moto, trigger }: { moto: Motorcycle; tri
           // Baseline: componente cadastrado agora começa a contar a partir do
           // uso atual da moto. Nunca zera o horímetro/hodômetro da moto.
           last_done_at: new Date().toISOString(),
-          last_done_hours: Number((moto as any).hours_total) || 0,
-          last_done_km: Number((moto as any).km_total) || 0,
+          last_done_hours: baseHours,
+          last_done_km: baseKm,
         }));
       if (rows.length === 0) {
         setOpen(false);
