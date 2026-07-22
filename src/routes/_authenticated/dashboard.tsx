@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Plus, ChevronDown, ChevronUp, Bike, Share2, ShieldCheck, FileSignature, Award, FolderOpen, Heart, Wrench, HelpCircle, CheckCircle2 } from "lucide-react";
+import { Plus, ChevronDown, ChevronUp, Bike, Share2, ShieldCheck, FileSignature, Award, FolderOpen, Heart, Wrench, HelpCircle, CheckCircle2, Archive } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StoragePhoto } from "@/components/StoragePhoto";
 import { ActiveMotoCard } from "@/components/ActiveMotoCard";
@@ -37,6 +37,21 @@ function Dashboard() {
       return data;
     },
   });
+  // Conta motos arquivadas para orientar o usuário quando a garagem estiver vazia.
+  const archivedCount = useQuery({
+    queryKey: ["motorcycles-archived-count"],
+    queryFn: async () => {
+      const { data: u } = await supabase.auth.getUser();
+      const uid = u.user?.id;
+      if (!uid) return 0;
+      const { count } = await supabase
+        .from("motorcycles")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_id", uid)
+        .eq("status" as never, "archived" as never);
+      return count ?? 0;
+    },
+  });
 
   // Prioridade: moto ativa; fallback: primeira moto.
   const focusMotoId = activeId && motos.data?.some((m) => m.id === activeId)
@@ -49,11 +64,20 @@ function Dashboard() {
     return (
       <div className="surface-elevated rounded-2xl p-10 text-center">
         <h2 className="font-display text-2xl font-bold">Bem-vindo ao TrailBook</h2>
-        <p className="mt-2 text-muted-foreground">Cadastre sua primeira moto para começar o histórico.</p>
+        <p className="mt-2 text-muted-foreground">
+          {archivedCount.data && archivedCount.data > 0
+            ? "Você não possui motos ativas na garagem. Cadastre uma nova ou reative uma arquivada."
+            : "Cadastre sua primeira moto para começar o histórico."}
+        </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <Link to="/motorcycles/new">
             <Button className="btn-glow"><Plus className="h-4 w-4" /> Cadastrar moto</Button>
           </Link>
+          {(archivedCount.data ?? 0) > 0 && (
+            <Link to="/motorcycles" search={{ tab: "archived" } as any}>
+              <Button variant="outline"><Archive className="h-4 w-4" /> Ver motos arquivadas ({archivedCount.data})</Button>
+            </Link>
+          )}
           <Link to="/como-funciona">
             <Button variant="outline"><HelpCircle className="h-4 w-4" /> Como funciona</Button>
           </Link>
@@ -69,7 +93,8 @@ function Dashboard() {
           "Investido" já aparece no card da moto ativa; métrica duplicada removida. */}
       <ActiveMotoCard motos={motos.data as any} />
 
-      <DocumentPendenciesCard />
+      {/* Pendências do card da moto em foco — nunca mistura motos (v1.6.11). */}
+      <DocumentPendenciesCard scopeMotoId={focusMotoId} />
 
       {!pendencies.isLoading && (pendencies.data?.length ?? 0) === 0 && (
         <section
