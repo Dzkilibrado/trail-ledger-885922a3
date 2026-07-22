@@ -152,31 +152,63 @@ export function NewEventDialog({
       let hours_delta: number | null = null;
       let km_delta: number | null = null;
       if (readingMode === "current") {
-        const curH = currentHours || currentMinutes
+        // Auditoria v1.7: leitura atual precisa comparar com o total
+        // PERSISTIDO agora, não com o cache/prop `moto.hours_total`
+        // (que pode estar defasado se outra aba já registrou atividade).
+        // Sem essa releitura, o delta gravado ficaria inflado (lost update).
+        const { data: fresh, error: freshErr } = await supabase
+          .from("motorcycles")
+          .select("hours_total, km_total")
+          .eq("id", moto.id)
+          .single();
+        if (freshErr || !fresh) {
+          setLoading(false);
+          return toast.error("Não foi possível confirmar o total atual da moto. Tente novamente.");
+        }
+        const hasHoursInput = currentHours !== "" || currentMinutes !== "";
+        const hasKmInput = currentKm !== "";
+        const curH = hasHoursInput
           ? toDecimalHours(Number(currentHours || 0), Number(currentMinutes || 0))
           : null;
-        const curK = currentKm ? Number(currentKm) : null;
+        const curK = hasKmInput ? Number(currentKm) : null;
         if (curH != null) {
-          const d = curH - Number(moto.hours_total);
-          if (d < 0) { setLoading(false); return toast.error("Horímetro atual não pode ser menor que o último registro."); }
+          if (!Number.isFinite(curH)) { setLoading(false); return toast.error("Horímetro atual inválido."); }
+          const currentTotal = Number((fresh as any).hours_total);
+          const d = curH - currentTotal;
+          if (d < 0) {
+            setLoading(false);
+            return toast.error(`Horímetro atual (${curH}h) menor que o último registrado (${currentTotal}h). Atualize a tela e tente novamente.`);
+          }
           hours_delta = d;
         }
         if (curK != null) {
-          const d = curK - Number(moto.km_total);
-          if (d < 0) { setLoading(false); return toast.error("KM atual não pode ser menor que o último registro."); }
+          if (!Number.isFinite(curK)) { setLoading(false); return toast.error("KM atual inválido."); }
+          const currentTotal = Number((fresh as any).km_total);
+          const d = curK - currentTotal;
+          if (d < 0) {
+            setLoading(false);
+            return toast.error(`KM atual (${curK} km) menor que o último registrado (${currentTotal} km). Atualize a tela e tente novamente.`);
+          }
           km_delta = d;
         }
       } else {
-        hours_delta = (deltaHours || deltaMinutes)
-          ? toDecimalHours(Number(deltaHours || 0), Number(deltaMinutes || 0))
-          : null;
-        km_delta = deltaKm ? Number(deltaKm) : null;
+        const hasHoursInput = deltaHours !== "" || deltaMinutes !== "";
+        const hasKmInput = deltaKm !== "";
+        if (hasHoursInput) {
+          const v = toDecimalHours(Number(deltaHours || 0), Number(deltaMinutes || 0));
+          if (!Number.isFinite(v) || v < 0) { setLoading(false); return toast.error("Duração inválida."); }
+          hours_delta = v;
+        }
+        if (hasKmInput) {
+          const v = Number(deltaKm);
+          if (!Number.isFinite(v) || v < 0) { setLoading(false); return toast.error("Distância inválida."); }
+          km_delta = v;
+        }
       }
-      const cost = fd.get("cost") ? Number(fd.get("cost")) : null;
+      const rawCost = fd.get("cost");
+      const cost = rawCost != null && String(rawCost) !== "" ? Number(rawCost) : null;
+      if (cost != null && !Number.isFinite(cost)) { setLoading(false); return toast.error("Custo inválido."); }
       const occurred_at = fd.get("occurred_at") ? new Date(String(fd.get("occurred_at"))).toISOString() : new Date().toISOString();
-
-      const newHours = Number(moto.hours_total) + (hours_delta ?? 0);
-      const newKm = Number(moto.km_total) + (km_delta ?? 0);
 
       // Enriquecimento de metadados por tipo — armazenado em description
       // para não exigir novas colunas no banco. Prefixado com tag legível.
@@ -204,34 +236,31 @@ export function NewEventDialog({
         description = meta.join(" · ") + (description ? `\n\n${description}` : "");
       }
 
-      const { data: ev, error } = await supabase.from("events").insert({
-        motorcycle_id: moto.id,
-        created_by: uid,
-        type,
-        title,
-        description: description || null,
-        location,
-        occurred_at,
-        hours_delta,
-        km_delta,
-        hours_at_event: newHours,
-        km_at_event: newKm,
-        cost,
-      }).select("id").single();
+      // v1.7 — INSERT do evento + recomposição atômica em UMA transação
+      // no servidor, com advisory lock por moto. Snapshots hours_at_event/
+      // km_at_event NÃO são mais calculados no cliente (eram fonte de
+      // inconsistência ao usar `moto.hours_total` do cache). O servidor
+      // grava os snapshots corretos após ordenar toda a linha do tempo.
+      const { data: rpc, error } = await supabase.rpc(
+        "commit_event_and_recompose" as never,
+        {
+          _moto: moto.id,
+          _type: type,
+          _title: title,
+          _description: description || "",
+          _location: location || "",
+          _occurred_at: occurred_at,
+          _hours_delta: hours_delta,
+          _km_delta: km_delta,
+          _cost: cost,
+          _workshop_id: null,
+          _metadata: {},
+        } as never,
+      );
       if (error) throw error;
-
-      // Auditoria: registro de criação da atividade
-      await supabase.from("audit_log").insert({
-        table_name: "events",
-        record_id: ev.id,
-        motorcycle_id: moto.id,
-        actor_id: uid,
-        action: "insert",
-        new_values: {
-          type, title, occurred_at, hours_delta, km_delta,
-          hours_at_event: newHours, km_at_event: newKm, cost,
-        },
-      } as never);
+      const rpcRow = Array.isArray(rpc) ? (rpc as any[])[0] : (rpc as any);
+      if (!rpcRow?.event_id) throw new Error("Servidor não retornou o identificador da atividade");
+      const ev = { id: rpcRow.event_id as string };
 
       // Maintenance item
       if (type === "maintenance" || type === "revision") {
@@ -279,20 +308,13 @@ export function NewEventDialog({
           } as never);
         }
 
-        // Só atualiza schedules quando houve vínculo estruturado
-        // (preset direto OU catálogo escolhido OU nome que casa exatamente).
-        // Sem vínculo → nada é atualizado (evita replicar em outros itens).
+        // v1.7: schedule last_done_* é atualizado pela recomposição final
+        // abaixo, que lê o snapshot cronológico correto do evento no banco.
+        // Aqui só normalizamos flags de estado dos schedules afetados.
         if (targetIds.length > 0) {
           await supabase
             .from("maintenance_schedules")
-            .update({
-              last_done_at: occurred_at,
-              last_done_hours: newHours,
-              last_done_km: newKm,
-              last_completed_event_id: ev.id,
-              status: "active",
-              snoozed_until: null,
-            } as never)
+            .update({ status: "active", snoozed_until: null } as never)
             .in("id", targetIds);
         }
       }
@@ -307,10 +329,11 @@ export function NewEventDialog({
         await supabase.from("event_attachments").insert(uploads);
       }
 
-      // Recomposição cronológica: se a atividade foi retro-datada,
-      // reescreve os snapshots de todos os eventos posteriores e recalcula
-      // schedules. Se for a última em ordem, o resultado equivale ao delta.
-      if (hours_delta || km_delta) {
+      // v1.7: se acrescentamos maintenance_items depois do commit inicial,
+      // rodamos uma segunda recomposição atômica para que os schedules
+      // vinculados peguem os snapshots cronológicos exatos deste evento.
+      // A operação é idempotente e barata (uma única transação serializada).
+      if (type === "maintenance" || type === "revision") {
         await recomposeTimeline(moto.id);
       }
 
