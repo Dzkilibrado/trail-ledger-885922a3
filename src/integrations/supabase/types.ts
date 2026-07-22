@@ -1491,11 +1491,13 @@ export type Database = {
           created_at: string
           displacement: number | null
           engine_number: string | null
+          hours_initial: number
           hours_total: number
           id: string
           incident_declaration: Json | null
           initial_review_done_at: string | null
           is_homologation: boolean
+          km_initial: number
           km_total: number
           main_photo_url: string | null
           model: string
@@ -1530,11 +1532,13 @@ export type Database = {
           created_at?: string
           displacement?: number | null
           engine_number?: string | null
+          hours_initial?: number
           hours_total?: number
           id?: string
           incident_declaration?: Json | null
           initial_review_done_at?: string | null
           is_homologation?: boolean
+          km_initial?: number
           km_total?: number
           main_photo_url?: string | null
           model: string
@@ -1569,11 +1573,13 @@ export type Database = {
           created_at?: string
           displacement?: number | null
           engine_number?: string | null
+          hours_initial?: number
           hours_total?: number
           id?: string
           incident_declaration?: Json | null
           initial_review_done_at?: string | null
           is_homologation?: boolean
+          km_initial?: number
           km_total?: number
           main_photo_url?: string | null
           model?: string
@@ -2858,6 +2864,10 @@ export type Database = {
       }
       admin_user_details: { Args: { _user: string }; Returns: Json }
       align_smart_receipt_code_seq: { Args: never; Returns: number }
+      apply_recomposed_totals: {
+        Args: { _hours: number; _km: number; _moto: string }
+        Returns: undefined
+      }
       archive_motorcycle: {
         Args: { _moto_id: string; _reason?: string }
         Returns: Json
