@@ -178,6 +178,10 @@ function NewMotorcycle() {
         ...draft,
         owner_id: uid,
         main_photo_url,
+        // Baseline preservada — nunca é sobrescrita pela recomposição da
+        // linha do tempo. Fix crítico do bug de zeramento do horímetro.
+        hours_initial: draft.hours_total,
+        km_initial: draft.km_total,
         incident_declaration: incidentDeclaration,
         use_profile: useProfile,
         use_profile_note: useProfile === "other" ? (useProfileNote.trim() || null) : null,
