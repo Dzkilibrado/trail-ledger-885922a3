@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Plus, Archive, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
 import { MotoGridSkeleton } from "@/components/Skeletons";
 import { toast } from "sonner";
+import { invalidateMotorcycleState, setStoredActiveMotorcycleId, useAllMyMotorcycles } from "@/hooks/useActiveMotorcycle";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/")({
   head: () => ({ meta: [{ title: "Motos — TrailBook" }] }),
@@ -21,17 +22,7 @@ function MotorcyclesList() {
   const initial = Route.useSearch().tab as "active" | "archived";
   const [tab, setTab] = useState<"active" | "archived">(initial);
   const qc = useQueryClient();
-  const { data, isLoading } = useQuery({
-    queryKey: ["motorcycles"],
-    queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user?.id;
-      if (!uid) return [];
-      const { data, error } = await supabase.from("motorcycles").select("*").eq("owner_id", uid).order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
+  const { data, isLoading } = useAllMyMotorcycles();
   const active = (data ?? []).filter((m: any) => (m.status ?? "active") === "active");
   const archived = (data ?? []).filter((m: any) => m.status === "archived");
   const list = tab === "active" ? active : archived;
@@ -39,11 +30,8 @@ function MotorcyclesList() {
   async function restore(id: string) {
     const { error } = await supabase.rpc("unarchive_motorcycle" as never, { _moto_id: id } as never);
     if (error) { toast.error("Falha ao reativar", { description: error.message }); return; }
-    await Promise.all([
-      qc.invalidateQueries({ queryKey: ["motorcycles"] }),
-      qc.invalidateQueries({ queryKey: ["motorcycles-archived-count"] }),
-      qc.invalidateQueries({ queryKey: ["document-pendencies"] }),
-    ]);
+    setStoredActiveMotorcycleId(id);
+    await invalidateMotorcycleState(qc);
     toast.success("Motocicleta reativada");
   }
 

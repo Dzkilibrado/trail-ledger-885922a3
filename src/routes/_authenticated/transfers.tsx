@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { formatDate } from "@/lib/trailbook";
 import { PageHeader } from "@/components/PageHeader";
 import { TONE } from "@/lib/ui/status-styles";
+import { invalidateMotorcycleState } from "@/hooks/useActiveMotorcycle";
 
 export const Route = createFileRoute("/_authenticated/transfers")({
   head: () => ({ meta: [{ title: "Transferências — TrailBook" }] }),
@@ -48,7 +49,7 @@ function TransfersPage() {
     if (error) return toast.error(error.message);
     toast.success(approve ? "Transferência aprovada" : "Transferência recusada");
     qc.invalidateQueries({ queryKey: ["transfers"] });
-    qc.invalidateQueries({ queryKey: ["motorcycles"] });
+    await invalidateMotorcycleState(qc);
   }
   async function cancel(id: string) {
     const { error } = await supabase.rpc("cancel_ownership_transfer", { _transfer_id: id } as never);

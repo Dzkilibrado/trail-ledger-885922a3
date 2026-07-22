@@ -3,32 +3,21 @@ import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { StoragePhoto } from "@/components/StoragePhoto";
 import { TBBottomSheet } from "@/design-system/overlays/TBBottomSheet";
-import { useActiveMotorcycle } from "@/hooks/useActiveMotorcycle";
+import { useActiveMotorcycle, type ActiveMotorcycle } from "@/hooks/useActiveMotorcycle";
 import { Bike, Check, ChevronRight, Repeat } from "lucide-react";
-
-type Moto = {
-  id: string;
-  brand: string;
-  model: string;
-  nickname: string | null;
-  main_photo_url: string | null;
-  hours_total: number | string;
-  km_total: number | string;
-  conservation_score: number | string;
-};
 
 /**
  * Cartão da Moto Ativa — foco da home mobile-first.
  * Mostra apenas UMA moto por vez com CTA "Trocar moto" em bottom sheet.
  */
-export function ActiveMotoCard({ motos }: { motos: Moto[] }) {
-  const { activeId, setActiveId } = useActiveMotorcycle();
+export function ActiveMotoCard({ motos }: { motos: ActiveMotorcycle[] }) {
+  const { activeId, activeMoto, setActiveId } = useActiveMotorcycle();
   const [open, setOpen] = useState(false);
 
   const active = useMemo(() => {
     if (motos.length === 0) return null;
-    return motos.find((m) => m.id === activeId) ?? motos[0];
-  }, [motos, activeId]);
+    return motos.find((m) => m.id === activeMoto?.id) ?? motos.find((m) => m.id === activeId) ?? motos[0];
+  }, [motos, activeId, activeMoto?.id]);
 
   if (!active) return null;
 
@@ -67,10 +56,10 @@ export function ActiveMotoCard({ motos }: { motos: Moto[] }) {
         )}
         <div className="min-w-0">
           <div className="truncate font-display text-lg font-bold sm:text-xl">
-            {active.nickname || active.model}
+            {active.nickname || active.model || "Motocicleta"}
           </div>
           <div className="truncate text-xs text-muted-foreground">
-            {active.brand} · {active.model}
+            {[active.brand, active.model].filter(Boolean).join(" · ") || "Moto ativa"}
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
             <span className="rounded-full bg-primary/15 px-2 py-0.5 font-semibold text-primary">
@@ -125,7 +114,7 @@ export function ActiveMotoCard({ motos }: { motos: Moto[] }) {
                       {m.nickname || m.model}
                     </div>
                     <div className="truncate text-xs text-muted-foreground">
-                      {m.brand} · {m.conservation_score}% ·{" "}
+                      {m.brand || "Moto"} · {m.conservation_score}% ·{" "}
                       {Number(m.hours_total).toFixed(1)} h ·{" "}
                       {Number(m.km_total).toFixed(0)} km
                     </div>
