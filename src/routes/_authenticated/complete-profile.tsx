@@ -12,7 +12,7 @@ import { CpfConflictDialog } from "@/components/CpfConflictDialog";
 import { LocationPicker } from "@/components/LocationPicker";
 import { parseLocation } from "@/lib/br-locations";
 import { useInvalidateProfileSnapshot } from "@/hooks/useProfileSnapshot";
-import { CheckCircle2, ChevronLeft, ChevronRight, MapPin, Phone, User } from "lucide-react";
+import { CheckCircle2, ChevronLeft, ChevronRight, MapPin, Pencil, Phone, User } from "lucide-react";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";
 import { PageHeader } from "@/components/PageHeader";
@@ -51,7 +51,7 @@ const EMPTY: Draft = {
   location: "", cep: "", bairro: "", logradouro: "", numero: "", complemento: "",
 };
 
-const STEP_LABELS = ["Dados pessoais", "Contato", "Localização", "Revisão"] as const;
+const STEP_LABELS = ["Dados pessoais", "Contato", "Localização", "Conferência final"] as const;
 
 const FIELD_LABELS: Record<string, string> = {
   full_name: "Nome completo",
@@ -79,6 +79,10 @@ function CompleteProfilePage() {
   // Guarda o WhatsApp digitado quando o usuário marca "igual ao celular",
   // para restaurar sem apagar caso desmarque em seguida.
   const [whatsappBackup, setWhatsappBackup] = useState<string>("");
+  // Quando o usuário clica em "Editar" um bloco na conferência final,
+  // navegamos para a etapa correspondente e voltamos automaticamente
+  // para a conferência após salvar.
+  const [returnToReview, setReturnToReview] = useState(false);
 
   async function refreshCompleteness(uid: string) {
     const { data } = await supabase.rpc("profile_completeness", { _user: uid });
@@ -232,7 +236,17 @@ function CompleteProfilePage() {
       if (r.error !== "conflict") toast.error(r.error ?? "Falha ao salvar");
       return;
     }
+    if (returnToReview) {
+      setReturnToReview(false);
+      setStep(3);
+      return;
+    }
     if (step < 3) setStep(step + 1);
+  }
+
+  function editSection(target: 0 | 1 | 2) {
+    setReturnToReview(true);
+    setStep(target);
   }
 
   async function finish() {
@@ -395,21 +409,46 @@ function CompleteProfilePage() {
 
         {step === 3 && (
           <>
-            <StepHeader icon={<CheckCircle2 className="h-4 w-4" />} title="Revisão" />
-            <ReviewRow label="Nome" value={draft.full_name} />
-            {draft.display_name && <ReviewRow label="Apelido" value={draft.display_name} />}
-            <ReviewRow label="CPF" value={draft.cpf} />
-            <ReviewRow label="Nascimento" value={draft.birth_date} />
-            <ReviewRow label="E-mail" value={draft.email} />
-            <ReviewRow label="Celular" value={draft.phone} />
-            <ReviewRow label="WhatsApp" value={draft.whatsapp_same_as_phone ? draft.phone + " (mesmo do celular)" : draft.whatsapp} />
-            <ReviewRow label="Localização" value={draft.location} />
-            {(draft.cep || draft.logradouro) && (
-              <ReviewRow
-                label="Endereço"
-                value={[draft.logradouro, draft.numero, draft.complemento, draft.bairro, draft.cep].filter(Boolean).join(", ")}
-              />
-            )}
+            <StepHeader icon={<CheckCircle2 className="h-4 w-4" />} title="Conferência final" />
+            <p className="-mt-1 text-xs text-muted-foreground">
+              Revise as informações abaixo. Para corrigir algo, use o botão <span className="font-medium text-foreground">Editar</span> da seção correspondente.
+            </p>
+
+            <ReviewBlock
+              icon={<User className="h-4 w-4" />}
+              title="Dados pessoais"
+              onEdit={() => editSection(0)}
+            >
+              <ReviewRow label="Nome" value={draft.full_name} />
+              {draft.display_name && <ReviewRow label="Apelido" value={draft.display_name} />}
+              <ReviewRow label="CPF" value={draft.cpf} />
+              <ReviewRow label="Nascimento" value={draft.birth_date} />
+            </ReviewBlock>
+
+            <ReviewBlock
+              icon={<Phone className="h-4 w-4" />}
+              title="Contato"
+              onEdit={() => editSection(1)}
+            >
+              <ReviewRow label="E-mail" value={draft.email} />
+              <ReviewRow label="Celular" value={draft.phone} />
+              <ReviewRow label="WhatsApp" value={draft.whatsapp_same_as_phone ? draft.phone + " (mesmo do celular)" : draft.whatsapp} />
+            </ReviewBlock>
+
+            <ReviewBlock
+              icon={<MapPin className="h-4 w-4" />}
+              title="Localização"
+              onEdit={() => editSection(2)}
+            >
+              <ReviewRow label="Cidade / UF" value={draft.location} />
+              {(draft.cep || draft.logradouro) && (
+                <ReviewRow
+                  label="Endereço"
+                  value={[draft.logradouro, draft.numero, draft.complemento, draft.bairro, draft.cep].filter(Boolean).join(", ")}
+                />
+              )}
+            </ReviewBlock>
+
             <p className="pt-2 text-xs text-muted-foreground">
               Ao concluir, o CPF será travado. Alterações posteriores só através do suporte.
             </p>
@@ -422,15 +461,25 @@ function CompleteProfilePage() {
             size="sm"
             disabled={saving}
             onClick={() => {
+              if (returnToReview) {
+                setReturnToReview(false);
+                setStep(3);
+                return;
+              }
               if (step === 0) navigate({ to: "/settings" });
               else setStep(step - 1);
             }}
           >
-            <ChevronLeft className="h-4 w-4" /> {step === 0 ? "Sair" : "Voltar"}
+            <ChevronLeft className="h-4 w-4" /> {returnToReview ? "Cancelar" : step === 0 ? "Sair" : "Voltar"}
           </Button>
           {step < 3 ? (
             <Button disabled={saving} onClick={next} className="btn-glow">
-              {saving ? "Salvando…" : "Avançar"} <ChevronRight className="h-4 w-4" />
+              {saving
+                ? "Salvando…"
+                : returnToReview
+                  ? "Salvar e voltar à conferência"
+                  : "Avançar"}{" "}
+              <ChevronRight className="h-4 w-4" />
             </Button>
           ) : (
             <Button disabled={saving} onClick={finish} className="btn-glow">
@@ -485,5 +534,37 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
       <span className="text-xs uppercase tracking-widest text-muted-foreground">{label}</span>
       <span className="text-right font-medium">{value || <em className="text-muted-foreground">—</em>}</span>
     </div>
+  );
+}
+
+function ReviewBlock({
+  icon,
+  title,
+  onEdit,
+  children,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  onEdit: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-xl border border-border bg-background/40 p-3">
+      <header className="mb-1 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-primary">
+          {icon} {title}
+        </div>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={onEdit}
+          className="h-8 px-2 text-xs"
+        >
+          <Pencil className="h-3.5 w-3.5" /> Editar
+        </Button>
+      </header>
+      <div>{children}</div>
+    </section>
   );
 }
