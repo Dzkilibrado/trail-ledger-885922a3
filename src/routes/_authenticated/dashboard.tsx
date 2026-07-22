@@ -96,7 +96,9 @@ function Dashboard() {
       {/* Pendências do card da moto em foco — nunca mistura motos (v1.6.11). */}
       <DocumentPendenciesCard scopeMotoId={focusMotoId} />
 
-      {!pendencies.isLoading && (pendencies.data?.length ?? 0) === 0 && (
+      {!pendencies.isLoading &&
+        focusMotoId &&
+        (pendencies.data ?? []).filter((p) => p.motorcycle_id === focusMotoId).length === 0 && (
         <section
           aria-label="Sem pendências"
           className="flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4"
@@ -106,7 +108,7 @@ function Dashboard() {
           </div>
           <div className="min-w-0">
             <div className="text-sm font-semibold text-emerald-100">Tudo em dia por aqui.</div>
-            <div className="text-xs text-emerald-200/70">Você não possui pendências no momento.</div>
+            <div className="text-xs text-emerald-200/70">Nenhuma pendência para esta moto.</div>
           </div>
         </section>
       )}
