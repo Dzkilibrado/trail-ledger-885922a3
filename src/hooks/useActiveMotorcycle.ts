@@ -169,9 +169,13 @@ export function useActiveMotorcycle() {
       setStoredActiveMotorcycleId(null);
       return;
     }
+    if (!activeMotos.isSuccess) {
+      setStoredActiveMotorcycleId(id);
+      return;
+    }
     const existsAndActive = motos.some((m) => m.id === id);
     setStoredActiveMotorcycleId(existsAndActive ? id : null);
-  }, [motos]);
+  }, [activeMotos.isSuccess, motos]);
 
   return {
     activeId,
