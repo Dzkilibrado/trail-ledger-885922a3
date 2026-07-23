@@ -122,7 +122,7 @@ export function evaluateSchedule(
 /** Lista priorizada de todas as programações (mais críticas + mais vencidas primeiro). */
 export function priorityList(
   schedules: Schedule[],
-  moto: Pick<Moto, "hours_total" | "km_total">,
+  moto: Pick<Moto, "hours_total" | "km_total" | "hours_initial" | "km_initial">,
   events: Pick<EventRow, "occurred_at" | "hours_delta" | "km_delta">[],
 ): ScheduleStatus[] {
   const rate = usageRate(events);
