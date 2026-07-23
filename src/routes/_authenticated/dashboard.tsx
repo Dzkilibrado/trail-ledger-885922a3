@@ -8,7 +8,10 @@ import { WhatsNewCard } from "@/components/WhatsNewCard";
 import { useActiveMotorcycle, useArchivedMotorcyclesCount } from "@/hooks/useActiveMotorcycle";
 import { useDocumentPendencies } from "@/hooks/useDocumentPendencies";
 import { useMotorcycleEvidence } from "@/hooks/useMotorcycleEvidence";
-import { InitialReviewPendingCard, needsInitialReview } from "@/components/InitialReviewPendingCard";
+import { InitialReviewPendingCard } from "@/components/InitialReviewPendingCard";
+import { computeReviewState } from "@/lib/review-state";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";
 import { memo, useState } from "react";
@@ -47,7 +50,19 @@ function Dashboard() {
   // encontrou vencimentos — precisamos que o dono tenha confirmado o estado
   // real dos componentes ao menos uma vez.
   const focusMoto = motos.find((m) => m.id === focusMotoId) as any | undefined;
-  const initialReviewPending = !!focusMoto && needsInitialReview(focusMoto);
+  const focusSchedules = useQuery({
+    enabled: !!focusMotoId,
+    queryKey: ["schedules", focusMotoId],
+    queryFn: async () =>
+      (await supabase
+        .from("maintenance_schedules")
+        .select("id, status, last_done_at, last_done_hours, last_done_km")
+        .eq("motorcycle_id", focusMotoId!)).data ?? [],
+  });
+  const reviewState = focusMoto
+    ? computeReviewState({ moto: focusMoto, schedules: focusSchedules.data ?? [] })
+    : null;
+  const initialReviewPending = !!reviewState && reviewState.isPending && reviewState.state !== "unknown";
 
   if (isLoading) return <DashboardSkeleton />;
 
@@ -111,6 +126,7 @@ function Dashboard() {
           motoId={focusMoto.id}
           motoHours={Number(focusMoto.hours_total ?? 0)}
           motoKm={Number(focusMoto.km_total ?? 0)}
+          snapshot={reviewState!}
         />
       )}
 
