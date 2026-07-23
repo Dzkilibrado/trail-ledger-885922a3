@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { ComponentIcon } from "@/components/components/componentIcon";
 import { MAINT_CATEGORY_LABEL } from "@/lib/trailbook";
 import { recomposeTimeline } from "@/lib/activity-recalc";
+import { TBDialog } from "@/design-system/overlays/TBDialog";
+import { reviewStateMessage } from "@/lib/review-state";
 
 /**
  * InitialReviewSheet — "Você comprou uma moto usada?" no formato entrevista.
@@ -30,6 +32,7 @@ export function InitialReviewSheet({
   const qc = useQueryClient();
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [successOpen, setSuccessOpen] = useState(false);
   const [informDate, setInformDate] = useState("");
   const [informHours, setInformHours] = useState("");
   const [informKm, setInformKm] = useState("");
@@ -105,9 +108,11 @@ export function InitialReviewSheet({
     } as never).eq("id", motoId);
     try { await recomposeTimeline(motoId); } catch { /* recomposição defensiva */ }
     setSaving(false);
-    toast.success("Revisão inicial concluída.");
-    qc.invalidateQueries();
-    onOpenChange(false);
+    // Sucesso após sincronia (ADR 0011): esperamos a invalidação antes de
+    // abrir o dialog de sucesso, para garantir que o resto da UI já reflita
+    // o novo estado "fully_reviewed".
+    await qc.invalidateQueries();
+    setSuccessOpen(true);
     setStep(0);
   }
 
@@ -137,6 +142,7 @@ export function InitialReviewSheet({
   }
 
   return (
+    <>
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto sm:max-w-lg sm:mx-auto sm:rounded-t-3xl">
         <SheetHeader className="text-left">
@@ -232,5 +238,26 @@ export function InitialReviewSheet({
         )}
       </SheetContent>
     </Sheet>
+    <TBDialog
+      open={successOpen}
+      onOpenChange={(v) => {
+        setSuccessOpen(v);
+        if (!v) onOpenChange(false);
+      }}
+      title="Revisão inicial concluída"
+      description={reviewStateMessage("fully_reviewed")}
+      footer={
+        <Button
+          className="btn-glow w-full sm:w-auto"
+          onClick={() => {
+            setSuccessOpen(false);
+            onOpenChange(false);
+          }}
+        >
+          Continuar
+        </Button>
+      }
+    />
+    </>
   );
 }
