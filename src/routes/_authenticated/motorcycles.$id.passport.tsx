@@ -238,6 +238,17 @@ function Passport() {
         </div>
       </div>
 
+      {/* Status oficial do acompanhamento — transparência de UX, não afeta selos. */}
+      {(() => {
+        const rs = computeReviewState({ moto: m as any, schedules: schedules.data ?? [] });
+        return (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="uppercase tracking-widest">Status do acompanhamento:</span>
+            <ReviewStateBadge snapshot={rs} />
+          </div>
+        );
+      })()}
+
       {/* Selos de Qualidade do Histórico — evidências reais transformadas em confiança pública. */}
       <BadgeSection motorcycleId={m.id} variant="full" />
 
