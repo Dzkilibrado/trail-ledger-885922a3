@@ -8,6 +8,7 @@ import { WhatsNewCard } from "@/components/WhatsNewCard";
 import { useActiveMotorcycle, useArchivedMotorcyclesCount } from "@/hooks/useActiveMotorcycle";
 import { useDocumentPendencies } from "@/hooks/useDocumentPendencies";
 import { useMotorcycleEvidence } from "@/hooks/useMotorcycleEvidence";
+import { InitialReviewPendingCard, needsInitialReview } from "@/components/InitialReviewPendingCard";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";
 import { memo, useState } from "react";
@@ -40,6 +41,13 @@ function Dashboard() {
   const maintenanceClean = !!focusEvidence.evidence &&
     focusEvidence.evidence.maintenance.overdueCount === 0 &&
     focusEvidence.evidence.maintenance.attentionCount === 0;
+
+  // Fonte oficial da "confirmação física inicial" (ver ADR de UX de revisão
+  // inicial): não podemos anunciar "Tudo em dia" apenas porque o motor não
+  // encontrou vencimentos — precisamos que o dono tenha confirmado o estado
+  // real dos componentes ao menos uma vez.
+  const focusMoto = motos.find((m) => m.id === focusMotoId) as any | undefined;
+  const initialReviewPending = !!focusMoto && needsInitialReview(focusMoto);
 
   if (isLoading) return <DashboardSkeleton />;
 
@@ -83,7 +91,7 @@ function Dashboard() {
         focusMotoId &&
         !focusEvidence.isLoading &&
         (pendencies.data ?? []).filter((p) => p.motorcycle_id === focusMotoId).length === 0 &&
-        maintenanceClean && (
+        maintenanceClean && !initialReviewPending && (
         <section
           aria-label="Sem pendências"
           className="flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4"
@@ -96,6 +104,14 @@ function Dashboard() {
             <div className="text-xs text-emerald-200/70">Nenhuma pendência para esta moto.</div>
           </div>
         </section>
+      )}
+
+      {focusMoto && initialReviewPending && (
+        <InitialReviewPendingCard
+          motoId={focusMoto.id}
+          motoHours={Number(focusMoto.hours_total ?? 0)}
+          motoKm={Number(focusMoto.km_total ?? 0)}
+        />
       )}
 
       {focusMotoId && <QuickActions motoId={focusMotoId} />}
