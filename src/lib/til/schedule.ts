@@ -2,7 +2,7 @@ import { priorityList, type ScheduleStatus } from "@/lib/maintenance-engine";
 import type { EventRow, Moto, Schedule, NextMaintenanceSnapshot } from "./types";
 
 export function computeStatuses(
-  moto: Pick<Moto, "hours_total" | "km_total" | "hours_initial" | "km_initial">,
+  moto: Pick<Moto, "hours_total" | "km_total" | "hours_initial" | "km_initial" | "initial_review_done_at" | "created_at">,
   schedules: Schedule[],
   events: EventRow[],
 ): ScheduleStatus[] {
