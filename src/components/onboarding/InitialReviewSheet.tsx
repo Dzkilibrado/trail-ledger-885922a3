@@ -111,6 +111,31 @@ export function InitialReviewSheet({
     setStep(0);
   }
 
+  /**
+   * Atalho para o cenário "revisei a moto inteira agora": marca TODOS os
+   * componentes ainda pendentes como revisados no horímetro/KM atuais e
+   * conclui a revisão inicial em um único passo. Necessário para manter a
+   * sincronia entre o que o usuário informa e o que Dashboard/Manutenção
+   * exibem — sem isso, componentes ficam com last_done nulo e a tela de
+   * Manutenção computa vencimentos a partir da baseline.
+   */
+  async function markAllRevisedNow() {
+    setSaving(true);
+    const ids = items
+      .filter((s: any) => s.status !== "not_applicable")
+      .map((s: any) => s.id as string);
+    if (ids.length > 0) {
+      const patch = {
+        status: "active",
+        last_done_at: new Date().toISOString(),
+        last_done_hours: motoHours,
+        last_done_km: motoKm,
+      };
+      await supabase.from("maintenance_schedules").update(patch as never).in("id", ids);
+    }
+    await finish();
+  }
+
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto sm:max-w-lg sm:mx-auto sm:rounded-t-3xl">
@@ -132,6 +157,16 @@ export function InitialReviewSheet({
           </div>
         ) : (
           <div className="mt-6 space-y-4">
+            {/* Atalho oficial: quem revisou a moto inteira agora conclui em 1 toque. */}
+            <button
+              type="button"
+              onClick={markAllRevisedNow}
+              disabled={saving}
+              className="w-full rounded-2xl border border-primary/40 bg-primary/10 p-3 text-left text-sm font-medium text-primary transition-colors hover:bg-primary/15 disabled:opacity-50"
+            >
+              Já revisei a moto inteira agora ({motoHours.toFixed(1)} h · {motoKm.toFixed(0)} km)
+            </button>
+
             {/* Progress */}
             <div className="h-1.5 overflow-hidden rounded-full bg-muted">
               <div className="h-full bg-primary transition-all" style={{ width: `${((step) / total) * 100}%` }} />
