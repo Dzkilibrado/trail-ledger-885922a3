@@ -1,4 +1,5 @@
 import type { HealthSnapshot, Moto, NextAction, NextMaintenanceSnapshot } from "./types";
+import { computeReviewState } from "@/lib/review-state";
 
 /**
  * Frase contextual do assistente TrailBook — curta, útil e humana.
@@ -22,14 +23,10 @@ export function computeGreeting(input: {
   const { health, nextMaintenance, nextAction, moto } = input;
   const name = moto.nickname?.trim() || moto.model?.trim() || "sua moto";
 
-  // "Revisão inicial pendente" tem prioridade sobre frases positivas quando
-  // não há vencimentos reais — evita comunicar "pronta pra trilha" antes da
-  // confirmação física dos componentes de uma moto usada.
-  const initialReviewPending =
-    !moto.initial_review_done_at &&
-    (moto.condition === "used" ||
-      Number(moto.hours_initial ?? 0) > 0 ||
-      Number(moto.km_initial ?? 0) > 0);
+  // Estado oficial de revisão inicial (MotorcycleReviewState) — camada de
+  // comunicação. Não altera cálculos. Só decide o tom da saudação.
+  const review = computeReviewState({ moto, schedules: [] });
+  const initialReviewPending = review.isPending && review.state !== "unknown";
 
   if (health.grade === "critical") {
     const top = health.topAttention?.name;
@@ -47,7 +44,9 @@ export function computeGreeting(input: {
   }
 
   if (initialReviewPending) {
-    return "Confirme o estado atual dos componentes para concluir a revisão inicial.";
+    return review.state === "partially_reviewed"
+      ? "Continue a revisão inicial: ainda existem componentes sem confirmação."
+      : "Confirme o estado atual dos componentes para concluir a revisão inicial.";
   }
 
   if (nextAction?.kind === "review_plan") {

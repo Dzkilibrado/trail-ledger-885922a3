@@ -1,97 +1,172 @@
-# TrailBook v1.6 — Polish Sprint
+# Evolução: MotorcycleReviewState
 
-> **STATUS: ✅ HOMOLOGADA E ENCERRADA (2026-07-12).**
->
-> - **Bloco A — UX/Mobile/Visual** (CHANGELOG `[1.6.0]`).
-> - **Bloco B — Performance percebida** (CHANGELOG `[1.6.1]`).
-> - **Bloco C — Limpeza técnica e padronização** (CHANGELOG `[1.6.2]`).
->
-> Nenhuma regra de negócio, RLS, migration, edge function ou fluxo
-> homologado foi alterada nos três blocos. A Sprint consolida qualidade,
-> organização, performance, UX e padronização antes das próximas
-> grandes evoluções do produto.
+Consolidar a comunicação sobre a "revisão inicial" em um único estado
+oficial, reutilizável por Dashboard, Cockpit, Passaporte, Saúde,
+Agenda, Notificações e futuras integrações. Nenhuma mudança em
+`evaluateSchedule`, TIL, recomposição, baseline ou fonte única — apenas
+camada de comunicação.
 
-Sprint de polimento, sem novas funcionalidades e sem tocar em regras de negócio homologadas. Entrego em **3 blocos coerentes**, do maior impacto percebido para o mais técnico. Cada bloco fecha em si mesmo (typecheck limpo, screenshots mobile, sem regressões).
+## 1. Arquitetura
 
-## Princípios que regem toda a sprint
+Nova camada isolada em `src/lib/review-state/`:
 
-- **Descoberta Progressiva + Linguagem Oficial + Mobile First** aplicados por padrão.
-- **Nada** que altere `smart_receipts.*`, `evaluator` de selos, RLS, migrations, `client.ts`, `client.server.ts`, `auth-middleware.ts`, `types.ts`.
-- Regra de decisão: solução mais simples, mais intuitiva, menos cliques, funciona no Mobile 384px.
+```text
+src/lib/review-state/
+  types.ts        enum + payloads + mensagens oficiais
+  compute.ts      função pura computeReviewState(moto, schedules)
+  index.ts        barrel
+```
 
----
+Regra: nada dentro dessa camada consulta banco. Recebe objetos já
+carregados pelas telas (mesmo padrão da TIL). A TIL não é alterada — a
+nova camada apenas *lê* moto + schedules e devolve um snapshot próprio.
 
-## Bloco A — UX, Mobile e Consistência Visual (maior impacto)
+## 2. Enum e snapshot
 
-**Componentes de plataforma (fonte única):**
-- Consolidar tokens já usados (`TBPageHeader`, `TBCard`, `TBButton`, `TBChip`) em auditoria rápida para garantir uso onde há reinvenção manual (`div className="surface-elevated ..."` repetidos).
-- Padronizar cabeçalho de página com `PageHeader` em todas as rotas (algumas ainda montam h1 solto).
-- Padronizar chip de status/severidade (Crítico/Atenção/Info) em componente único; hoje é replicado em Passaporte, Documentos e Central.
+```ts
+export type MotorcycleReviewState =
+  | "unknown"
+  | "baseline_only"
+  | "partially_reviewed"
+  | "fully_reviewed";
 
-**Layout mobile-safe (384px):**
-- Sweep de todos os headers de página aplicando `grid-cols-[minmax(0,1fr)_auto]` + `min-w-0` + `shrink-0` + `truncate` — padrão já registrado em `responsive-layout-patterns`.
-- Trocar barras de ações horizontais (`flex flex-wrap gap-2` de 5+ botões) por menu overflow (`•••`) no mobile em: `MotoControlCenter`, `Passaporte`, `MotorcycleDocuments`.
-- Dialogs longos (`EmitReceiptDialog`, `TransferOwnershipDialog`, upload de documentos) recebem `max-h-[85dvh] overflow-y-auto` e footer sticky para o botão principal nunca sair da viewport com teclado aberto.
-- Inputs com `inputMode` correto onde ainda faltar (números, tel, decimal).
-- Trocar remanescentes de `h-screen`/`min-h-screen` por `h-dvh`/`min-h-dvh` (regressão comum de teclado).
+export interface ReviewStateSnapshot {
+  state: MotorcycleReviewState;
+  isPending: boolean;          // unknown | baseline_only | partially_reviewed
+  isComplete: boolean;         // fully_reviewed
+  confirmedCount: number;      // schedules com last_done_*
+  totalCount: number;
+  remainingCount: number;
+  tone: "info" | "attention" | "good";
+  title: string;               // curto (chip/badge)
+  message: string;             // frase longa (card)
+  cta: string | null;          // ex.: "Revisar agora"
+}
+```
 
-**Dashboard (Home):**
-- Ordem revisada: **Moto ativa → Pendências → Próximas manutenções → Atalhos → Últimas atividades → Novidades**. Novidades desce para o fim (não é urgente) e "Próximas manutenções" sobe (é acionável).
-- Remover métricas duplicadas: o "investido" já aparece no card da moto ativa — sai do bloco de métricas do fim.
-- Cabeçalho de saudação enxuto (uma linha, sem duplicar título da página).
+## 3. Regras de transição (determinísticas)
 
-**Textos / linguagem:**
-- Sweep final de `toast.success/error` e `title`/`description` de Dialogs eliminando termos como "SHA-256", "Storage privado", "URL assinada" da UI visível (permanecem só em selos/tooltips técnicos).
-- Padronizar rótulos de botão: verbo + objeto ("Anexar documento", "Registrar atividade", "Compartilhar Passaporte") — remover "Emitir", "Persistir", "Gerar" onde houver equivalente natural.
-- Fechar mensagens confusas apontadas por leitura crítica: banner de origem, pendências, EmitReceipt.
+Entradas consideradas:
+- `moto.initial_review_done_at`
+- `moto.condition`, `hours_initial`, `km_initial`
+- `schedules[].last_done_at | last_done_hours | last_done_km`
 
-**Help Tooltips (revisão do que já existe):**
-- Auditoria rápida — remover se algum ficou redundante com o próprio nome do campo já intuitivo. Adicionar apenas 2 casos identificados: "Nota Fiscal" e "Recibo de Compra e Venda" dentro do seletor de tipo de documento.
+Ordem de decisão:
 
-**Dark Mode & Acessibilidade:**
-- Sweep de contraste: substituir `text-muted-foreground/50`, `text-white/60`, cores arbitrárias por tokens semânticos.
-- Garantir `aria-label` em todos os `Button size="icon"` (regra a11y — costuma escapar em toolbars).
-- Área de toque mínima 44×44 em ícones-ação primários mobile (Bump `size="icon"` para `min-h-11 min-w-11` em CTAs mobile).
+1. `initial_review_done_at` presente -> `fully_reviewed`.
+2. Moto **não** é usada (sem baseline e `condition !== "used"`) e nenhum
+   schedule confirmado -> `unknown`.
+3. Moto usada, `confirmedCount === 0` -> `baseline_only`.
+4. `confirmedCount > 0` e `< totalCount` -> `partially_reviewed`.
+5. `confirmedCount === totalCount && totalCount > 0` mas
+   `initial_review_done_at` ainda nulo -> `partially_reviewed` (só vira
+   `fully_reviewed` quando o marcador oficial é gravado pelo fluxo de
+   conclusão — mantém consistência com a lógica já homologada).
 
-## Bloco B — Performance e Percepção
+Tons e CTAs por estado:
+- `unknown` -> info, sem CTA.
+- `baseline_only` -> attention, CTA "Revisar agora".
+- `partially_reviewed` -> attention, CTA "Continuar revisão".
+- `fully_reviewed` -> good, sem CTA.
 
-- Skeletons consistentes: extrair `<Skeleton>` unificado (hoje há `animate-pulse` inline em cada tela) e aplicar em Dashboard, Central, Passaporte, Documentos.
-- `useQuery` staleTime / gcTime: definir defaults sensatos no `QueryClient` (dashboards/listas 30s, dados por ID 5min) — corta refetch desnecessário sem alterar semântica.
-- `React.memo` em componentes pesados repetidos em lista (`BadgeChip`, `EventTypeIcon`, `SingleBadgeChip`).
-- Lazy-load de rotas pesadas menos usadas (`/admin/*`, `/como-funciona`, `/faq`) via TanStack Router lazy files.
-- Remover `console.log`/warnings residuais.
-- Preload da foto principal da moto ativa (`<link rel="preload" as="image">` no head da rota `/motorcycles/$id`).
+## 4. Mensagens oficiais
 
-## Bloco C — Limpeza técnica
+Definidas em `types.ts` (fonte única — evita textos soltos):
 
-- Remoção de imports não usados (sweep automático com `bunx eslint --fix --rule 'unused-imports/no-unused-imports: error'` se disponível, senão manual).
-- Remoção de componentes/hooks órfãos comprovadamente sem referência (busca por nome; só deleta se `rg` retornar zero call-sites).
-- Consolidar `TIER_STYLE` e `SEVERITY_STYLE` duplicados em `src/lib/ui/status-styles.ts`.
-- Fechar TODOs antigos triviais (comentários obsoletos).
+- unknown: "Aguardando informações iniciais."
+- baseline_only: "Estamos utilizando as horas e quilômetros informados
+  no cadastro como ponto inicial do acompanhamento. Recomendamos
+  confirmar a revisão inicial da motocicleta para que o histórico
+  reflita o estado físico dos componentes."
+- partially_reviewed: "Parte da revisão inicial já foi registrada.
+  Ainda existem N componentes sem confirmação." (N interpolado)
+- fully_reviewed: "Revisão inicial concluída. A partir deste momento o
+  TrailBook acompanhará automaticamente os próximos vencimentos e o
+  histórico de manutenção."
 
-## Fora de escopo (explícito)
+## 5. Retrocompatibilidade
 
-- Não mexer em: `smart_receipts.*`, evaluator de selos, RLS/roles, migrations, edge functions, `client*.ts`, `types.ts`, auto-gen de router.
-- Não iniciar Fase 2 de selos, TrailBook Score, valorização, IA — mesmo se aparecerem sugestões.
-- Não alterar arquitetura ou criar novos módulos/menus.
+`needsInitialReview()` continua exportado de
+`InitialReviewPendingCard.tsx` e passa a ser um wrapper:
 
-## Homologação de encerramento
+```ts
+export const needsInitialReview = (m) =>
+  computeReviewState({ moto: m, schedules: [] }).isPending
+    && computeReviewState({ moto: m, schedules: [] }).state !== "unknown";
+```
 
-- `bunx tsgo --noEmit` limpo.
-- Playwright: 6 screenshots mobile (384×703) — Dashboard, Central, Passaporte, Documentos, EmitReceipt (step 1), Cadastro.
-- 3 screenshots desktop (1280×800) das mesmas telas principais.
-- Console limpo em navegação padrão.
-- Sem migrations. Sem novas dependências (exceto se a limpeza pedir explicitamente e for aprovado).
-- CHANGELOG `[1.6.0]` com resumo por bloco + atualização de `.lovable/plan.md`.
+Nada quebra nas telas atuais; elas migram gradualmente.
 
----
+## 6. Telas que passam a consumir o novo estado
 
-## Como quer prosseguir?
+- **Dashboard** (`routes/_authenticated/dashboard.tsx`): substitui a
+  chamada direta a `needsInitialReview` por `computeReviewState` (usa
+  schedules já carregados via `useMotorcycleEvidence`); renderiza o
+  card âmbar quando `isPending`. "Tudo em dia" só quando `isComplete`
+  e sem pendências.
+- **Cockpit** (`components/cockpit/Cockpit.tsx` + `greeting.ts`):
+  saudação usa `state` em vez do IF ad-hoc atual — mantém a mesma
+  frase para `baseline_only`/`partially_reviewed`.
+- **NextActionWidget**: quando `isPending`, `label`/`reason` vêm do
+  snapshot em vez de string local.
+- **Passaporte** (`motorcycles.$id.passport.tsx`): novo chip
+  "Status do acompanhamento" com `title` do snapshot (transparência,
+  não afeta selos).
+- **Saúde** (`components/HealthPanel.tsx` ou `health/HealthOverview`):
+  faixa informativa discreta quando `isPending`, com o texto
+  "Indicadores calculados utilizando baseline informada no cadastro."
+  Sem alterar notas/cores.
+- **Agenda**: chip discreto no topo quando `isPending` (opcional,
+  mesmo componente reutilizado).
 
-Como a sprint é ampla, sugiro escolher uma das opções:
+Componente compartilhado novo:
+`src/components/review-state/ReviewStateBadge.tsx` (chip) e
+`ReviewStateNotice.tsx` (faixa informativa). Ambos consomem o
+snapshot — zero lógica local.
 
-1. **Executar os 3 blocos em sequência** em uma única entrega grande (mais tempo até o primeiro deploy, resultado completo).
-2. **Bloco A primeiro** (maior impacto visível), homologar, depois B e C. — **Minha recomendação**, porque quase todo ganho percebido está em A e você pode validar antes de investir em B/C.
-3. **Só um subconjunto específico** de A que você queira priorizar (ex.: só Mobile + Dashboard + Textos).
+## 7. Experiência após conclusão
 
-Responda **A**, **B** ou detalhe o subconjunto — na sua confirmação eu já começo a implementar.
+No `InitialReviewSheet`, após `finish()` bem-sucedido e invalidação
+das queries, abrir um `TBDialog` de sucesso:
+
+- Título: "Revisão inicial concluída"
+- Texto: mensagem oficial de `fully_reviewed`.
+- Botão único: "Continuar" (fecha o dialog e o sheet).
+
+Fluxo garante o princípio "Sucesso após sincronia" (ADR 0011): dialog
+só abre depois do `await queryClient.invalidateQueries` das chaves
+`motorcycle`, `schedules`, `events`.
+
+## 8. Preparação para notificações futuras
+
+`ReviewStateSnapshot` exporta `state`, `remainingCount` e `isPending`
+— suficiente para futuras notificações ("Restam 3 componentes") sem
+alterar a camada. Nenhuma notificação é criada agora.
+
+## 9. Garantias
+
+- Nenhuma alteração em: `evaluateSchedule`, `src/lib/til/*`,
+  `activity-recalc`, `maintenance-engine`, RPCs, triggers, políticas.
+- `needsInitialReview` continua funcionando (wrapper).
+- Textos centralizados em um único arquivo (`types.ts`).
+- Snapshot é função pura -> fácil de testar.
+
+## 10. Entregáveis
+
+1. `src/lib/review-state/{types,compute,index}.ts`
+2. `src/components/review-state/{ReviewStateBadge,ReviewStateNotice}.tsx`
+3. Dialog de sucesso em `InitialReviewSheet.tsx`
+4. Migração de: Dashboard, Cockpit/greeting, NextActionWidget,
+   Passaporte, Painel de Saúde
+5. `needsInitialReview` convertido em wrapper
+6. Atualização do CHANGELOG e do ADR (novo ADR curto "Estado oficial
+   de revisão da motocicleta")
+
+## Detalhes técnicos
+
+- `computeReviewState` recebe `{ moto, schedules }` para evitar
+  refetch; telas que já usam `useMotorcycleEvidence` reaproveitam.
+- Um hook fino `useReviewState(motoId)` pode ser adicionado como
+  atalho, apoiado em `useMotorcycleEvidence` (sem nova query).
+- Dialog de sucesso usa `TBDialog` existente (respeita design system).
+- Nenhum campo novo no banco.

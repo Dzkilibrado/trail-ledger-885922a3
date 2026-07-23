@@ -30,6 +30,8 @@ import { BadgeSection } from "@/components/badges/BadgeSection";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";
 import { SCORE_TIER_STYLE as TIER_STYLE } from "@/lib/ui/status-styles";
+import { computeReviewState } from "@/lib/review-state";
+import { ReviewStateBadge } from "@/components/review-state/ReviewStateBadge";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id/passport")({
   head: () => ({ meta: [{ title: "Passaporte Digital — TrailBook" }] }),
@@ -235,6 +237,17 @@ function Passport() {
           </div>
         </div>
       </div>
+
+      {/* Status oficial do acompanhamento — transparência de UX, não afeta selos. */}
+      {(() => {
+        const rs = computeReviewState({ moto: m as any, schedules: schedules.data ?? [] });
+        return (
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="uppercase tracking-widest">Status do acompanhamento:</span>
+            <ReviewStateBadge snapshot={rs} />
+          </div>
+        );
+      })()}
 
       {/* Selos de Qualidade do Histórico — evidências reais transformadas em confiança pública. */}
       <BadgeSection motorcycleId={m.id} variant="full" />
