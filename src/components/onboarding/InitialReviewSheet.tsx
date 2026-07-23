@@ -33,6 +33,12 @@ export function InitialReviewSheet({
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
+  /**
+   * Quando `true`, o usuário optou por rever manualmente os componentes
+   * mesmo estando no cenário "pronta para concluir". Isso oculta a tela
+   * de confirmação e volta ao modo entrevista.
+   */
+  const [forceInterview, setForceInterview] = useState(false);
   const [informDate, setInformDate] = useState("");
   const [informHours, setInformHours] = useState("");
   const [informKm, setInformKm] = useState("");
@@ -42,7 +48,7 @@ export function InitialReviewSheet({
     queryFn: async () => {
       const { data } = await supabase
         .from("maintenance_schedules")
-        .select("id, name, category, status, last_done_at")
+        .select("id, name, category, status, last_done_at, last_done_hours, last_done_km")
         .eq("motorcycle_id", motoId)
         .order("category");
       return data ?? [];
@@ -53,6 +59,28 @@ export function InitialReviewSheet({
   const items = useMemo(() => (schedules.data ?? []).filter((s: any) => s.status !== "not_applicable"), [schedules.data]);
   const total = items.length;
   const current = items[step];
+
+  /**
+   * Mesma regra do `computeReviewState`: um schedule é considerado
+   * confirmado quando possui `last_done_at`, `last_done_hours` ou
+   * `last_done_km`. Se todos os relevantes estiverem confirmados e o
+   * marcador oficial ainda for nulo, entramos no cenário "pronta para
+   * concluir".
+   */
+  const readyToComplete = useMemo(() => {
+    if (total === 0) return false;
+    return items.every((s: any) =>
+      !!(s.last_done_at || s.last_done_hours != null || s.last_done_km != null),
+    );
+  }, [items, total]);
+  const confirmedCount = useMemo(
+    () =>
+      items.filter(
+        (s: any) =>
+          !!(s.last_done_at || s.last_done_hours != null || s.last_done_km != null),
+      ).length,
+    [items],
+  );
 
   function reset() {
     setInformDate(""); setInformHours(""); setInformKm("");
@@ -114,6 +142,7 @@ export function InitialReviewSheet({
     await qc.invalidateQueries();
     setSuccessOpen(true);
     setStep(0);
+    setForceInterview(false);
   }
 
   /**
@@ -145,6 +174,77 @@ export function InitialReviewSheet({
     <>
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="max-h-[92vh] overflow-y-auto sm:max-w-lg sm:mx-auto sm:rounded-t-3xl">
+        {readyToComplete && !forceInterview ? (
+          <>
+            <SheetHeader className="text-left">
+              <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                Revisão inicial
+              </div>
+              <SheetTitle className="font-display text-xl">
+                Revisão pronta para concluir
+              </SheetTitle>
+              <SheetDescription>
+                Todos os componentes possuem informações registradas. Confirme
+                a conclusão para que o TrailBook registre este momento como o
+                início oficial do acompanhamento da motocicleta.
+              </SheetDescription>
+            </SheetHeader>
+
+            <div className="mt-6 space-y-4">
+              <div className="surface-elevated rounded-2xl p-4 space-y-3">
+                <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                  Resumo da confirmação
+                </div>
+                <dl className="grid grid-cols-2 gap-3 text-sm">
+                  <div>
+                    <dt className="text-xs text-muted-foreground">Componentes</dt>
+                    <dd className="font-medium">{total}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">Confirmados</dt>
+                    <dd className="font-medium">{confirmedCount} de {total}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">Horímetro atual</dt>
+                    <dd className="font-medium">{motoHours.toFixed(1)} h</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-muted-foreground">KM atual</dt>
+                    <dd className="font-medium">{motoKm.toFixed(0)} km</dd>
+                  </div>
+                  <div className="col-span-2">
+                    <dt className="text-xs text-muted-foreground">Data que será registrada</dt>
+                    <dd className="font-medium">
+                      {new Date().toLocaleDateString("pt-BR")}
+                    </dd>
+                  </div>
+                </dl>
+                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-200">
+                  Nenhum componente está pendente. As informações já registradas
+                  serão preservadas — nada será sobrescrito.
+                </div>
+              </div>
+
+              <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  variant="outline"
+                  onClick={() => setForceInterview(true)}
+                  disabled={saving}
+                >
+                  Voltar e revisar
+                </Button>
+                <Button
+                  className="btn-glow"
+                  onClick={finish}
+                  disabled={saving}
+                >
+                  Confirmar conclusão
+                </Button>
+              </div>
+            </div>
+          </>
+        ) : (
+        <>
         <SheetHeader className="text-left">
           <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
             Revisão inicial · {Math.min(step + 1, Math.max(total, 1))} de {total}
@@ -235,6 +335,8 @@ export function InitialReviewSheet({
               </Button>
             </div>
           </div>
+        )}
+        </>
         )}
       </SheetContent>
     </Sheet>
