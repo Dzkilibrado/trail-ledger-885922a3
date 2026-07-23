@@ -17,12 +17,16 @@ export const TONE = {
   destructive: "bg-destructive/15 text-destructive border-destructive/30",
 } as const;
 
-/** Estilos de tier para os selos v2 (Central de Selos, Passaporte). */
+/**
+ * Estilos de tier para os selos v2 (Central de Selos, Passaporte).
+ * Refinamento v1.7: fundo neutro + fio de acento sutil por tier, para leitura
+ * calma e premium — evita a saturação laranja/âmbar percebida antes.
+ */
 export const BADGE_TIER_STYLE = {
-  bronze: "border-amber-700/40 bg-amber-900/20 text-amber-200",
-  silver: "border-slate-400/40 bg-slate-500/15 text-slate-100",
-  gold: "border-yellow-500/50 bg-yellow-500/15 text-yellow-200",
-  signature: "border-fuchsia-400/50 bg-gradient-to-r from-fuchsia-500/20 to-cyan-400/20 text-white",
+  bronze: "border-amber-500/30 bg-card text-amber-200/90",
+  silver: "border-slate-300/25 bg-card text-slate-100",
+  gold: "border-yellow-400/35 bg-card text-yellow-100",
+  signature: "border-fuchsia-300/40 bg-gradient-to-r from-fuchsia-500/15 to-cyan-400/15 text-white",
 } as const;
 
 /**
