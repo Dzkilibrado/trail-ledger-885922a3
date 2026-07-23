@@ -62,19 +62,28 @@ function statusFromProgress(p: number): DueStatus {
 /** Calcula o status de UMA programação contra o estado atual da moto. */
 export function evaluateSchedule(
   schedule: Schedule,
-  moto: Pick<Moto, "hours_total" | "km_total">,
+  moto: Pick<Moto, "hours_total" | "km_total" | "hours_initial" | "km_initial">,
   rate: { hoursPerDay: number; kmPerDay: number },
 ): ScheduleStatus {
   const preset = MAINTENANCE_PRESETS.find((p) => p.name === schedule.name);
   const severity: Severity = preset?.severity ?? "medium";
 
-  const lastH = schedule.last_done_hours != null ? Number(schedule.last_done_hours) : 0;
-  const lastK = schedule.last_done_km != null ? Number(schedule.last_done_km) : 0;
-  const lastAt = schedule.last_done_at ? new Date(schedule.last_done_at).getTime() : null;
+  // Baseline correction (bug de sincronia Dashboard↔Manutenção):
+  // quando o componente ainda não possui manutenção registrada, o ponto de
+  // partida é o estado inicial da moto (hours_initial/km_initial) e a data de
+  // criação do schedule — nunca zero absoluto. Isso evita que motos usadas
+  // apareçam com todos os componentes vencidos por padrão.
+  const initialH = Number((moto as any).hours_initial ?? 0);
+  const initialK = Number((moto as any).km_initial ?? 0);
+  const lastH = schedule.last_done_hours != null ? Number(schedule.last_done_hours) : initialH;
+  const lastK = schedule.last_done_km != null ? Number(schedule.last_done_km) : initialK;
+  const lastAt = schedule.last_done_at
+    ? new Date(schedule.last_done_at).getTime()
+    : ((schedule as any).created_at ? new Date((schedule as any).created_at).getTime() : null);
 
   const usedH = schedule.interval_hours ? Number(moto.hours_total) - lastH : null;
   const usedK = schedule.interval_km ? Number(moto.km_total) - lastK : null;
-  const usedD = schedule.interval_days && lastAt ? (Date.now() - lastAt) / 86400000 : (schedule.interval_days ? schedule.interval_days : null);
+  const usedD = schedule.interval_days && lastAt ? (Date.now() - lastAt) / 86400000 : null;
 
   const progH = schedule.interval_hours && usedH != null ? usedH / schedule.interval_hours : -Infinity;
   const progK = schedule.interval_km && usedK != null ? usedK / schedule.interval_km : -Infinity;
@@ -113,7 +122,7 @@ export function evaluateSchedule(
 /** Lista priorizada de todas as programações (mais críticas + mais vencidas primeiro). */
 export function priorityList(
   schedules: Schedule[],
-  moto: Pick<Moto, "hours_total" | "km_total">,
+  moto: Pick<Moto, "hours_total" | "km_total" | "hours_initial" | "km_initial">,
   events: Pick<EventRow, "occurred_at" | "hours_delta" | "km_delta">[],
 ): ScheduleStatus[] {
   const rate = usageRate(events);
