@@ -7,6 +7,7 @@ import { DocumentPendenciesCard } from "@/components/DocumentPendenciesCard";
 import { WhatsNewCard } from "@/components/WhatsNewCard";
 import { useActiveMotorcycle, useArchivedMotorcyclesCount } from "@/hooks/useActiveMotorcycle";
 import { useDocumentPendencies } from "@/hooks/useDocumentPendencies";
+import { useMotorcycleEvidence } from "@/hooks/useMotorcycleEvidence";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";
 import { memo, useState } from "react";
@@ -31,6 +32,14 @@ function Dashboard() {
   // Fonte oficial do Dashboard: useActiveMotorcycle valida o localStorage
   // contra a lista ativa do banco e limpa automaticamente motos arquivadas.
   const focusMotoId = activeId;
+
+  // Fonte única da verdade compartilhada com Manutenção/Saúde: consumimos o
+  // mesmo snapshot da TIL para decidir "Tudo em dia". Evita divergência entre
+  // Dashboard (só documentos) e a tela de Manutenção (saúde completa).
+  const focusEvidence = useMotorcycleEvidence(focusMotoId ?? undefined);
+  const maintenanceClean = !!focusEvidence.evidence &&
+    focusEvidence.evidence.maintenance.overdueCount === 0 &&
+    focusEvidence.evidence.maintenance.attentionCount === 0;
 
   if (isLoading) return <DashboardSkeleton />;
 
@@ -72,7 +81,9 @@ function Dashboard() {
 
       {!pendencies.isLoading &&
         focusMotoId &&
-        (pendencies.data ?? []).filter((p) => p.motorcycle_id === focusMotoId).length === 0 && (
+        !focusEvidence.isLoading &&
+        (pendencies.data ?? []).filter((p) => p.motorcycle_id === focusMotoId).length === 0 &&
+        maintenanceClean && (
         <section
           aria-label="Sem pendências"
           className="flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4"
