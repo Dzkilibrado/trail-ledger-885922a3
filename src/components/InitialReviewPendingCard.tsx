@@ -2,6 +2,7 @@ import { useState } from "react";
 import { ClipboardCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InitialReviewSheet } from "@/components/onboarding/InitialReviewSheet";
+import { computeReviewState, type ReviewStateSnapshot } from "@/lib/review-state";
 
 /**
  * Card oficial "Revisão inicial recomendada".
@@ -20,12 +21,23 @@ export function InitialReviewPendingCard({
   motoId,
   motoHours,
   motoKm,
+  snapshot,
 }: {
   motoId: string;
   motoHours: number;
   motoKm: number;
+  /**
+   * Snapshot oficial de MotorcycleReviewState. Quando fornecido, a mensagem
+   * e o CTA vêm da fonte única — respeita partially_reviewed x baseline_only.
+   */
+  snapshot?: ReviewStateSnapshot;
 }) {
   const [open, setOpen] = useState(false);
+  const title = snapshot?.title ?? "Revisão inicial recomendada";
+  const message =
+    snapshot?.message ??
+    "Esta moto foi cadastrada como usada. As previsões estão sendo calculadas a partir das horas e quilômetros informados, mas o estado real dos componentes ainda não foi confirmado.";
+  const cta = snapshot?.cta ?? "Revisar agora";
   return (
     <section
       aria-label="Revisão inicial recomendada"
@@ -36,23 +48,13 @@ export function InitialReviewPendingCard({
           <ClipboardCheck className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1 space-y-1">
-          <div className="text-sm font-semibold text-amber-100">
-            Revisão inicial recomendada
-          </div>
-          <p className="text-xs leading-relaxed text-amber-200/80">
-            Esta moto foi cadastrada como usada. As previsões estão sendo
-            calculadas a partir das horas e quilômetros informados, mas o
-            estado real dos componentes ainda não foi confirmado.
-          </p>
+          <div className="text-sm font-semibold text-amber-100">{title}</div>
+          <p className="text-xs leading-relaxed text-amber-200/80">{message}</p>
         </div>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2 pl-12">
-        <Button
-          size="sm"
-          className="btn-glow"
-          onClick={() => setOpen(true)}
-        >
-          Revisar agora
+        <Button size="sm" className="btn-glow" onClick={() => setOpen(true)}>
+          {cta}
         </Button>
         <span className="text-[11px] text-muted-foreground">
           ou continue depois — o aviso permanece até a confirmação.
@@ -70,9 +72,9 @@ export function InitialReviewPendingCard({
 }
 
 /**
- * Regra oficial de "revisão inicial pendente".
- * Compartilhada por Dashboard, Cockpit e demais telas para garantir
- * consistência de comunicação.
+ * Wrapper de retrocompatibilidade — encapsula `computeReviewState`.
+ * Retorna `true` para baseline_only e partially_reviewed (o "unknown"
+ * não pede ação, portanto é considerado não-pendente para a UX antiga).
  */
 export function needsInitialReview(moto: {
   condition?: string | null;
@@ -80,10 +82,6 @@ export function needsInitialReview(moto: {
   km_initial?: number | null;
   initial_review_done_at?: string | null;
 }): boolean {
-  if (moto.initial_review_done_at) return false;
-  const isUsed =
-    moto.condition === "used" ||
-    Number(moto.hours_initial ?? 0) > 0 ||
-    Number(moto.km_initial ?? 0) > 0;
-  return isUsed;
+  const snap = computeReviewState({ moto, schedules: [] });
+  return snap.isPending && snap.state !== "unknown";
 }
