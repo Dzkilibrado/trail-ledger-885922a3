@@ -62,24 +62,42 @@ function statusFromProgress(p: number): DueStatus {
 /** Calcula o status de UMA programação contra o estado atual da moto. */
 export function evaluateSchedule(
   schedule: Schedule,
-  moto: Pick<Moto, "hours_total" | "km_total" | "hours_initial" | "km_initial">,
+  moto: Pick<Moto, "hours_total" | "km_total" | "hours_initial" | "km_initial" | "initial_review_done_at" | "created_at">,
   rate: { hoursPerDay: number; kmPerDay: number },
 ): ScheduleStatus {
   const preset = MAINTENANCE_PRESETS.find((p) => p.name === schedule.name);
   const severity: Severity = preset?.severity ?? "medium";
 
-  // Baseline correction (bug de sincronia Dashboard↔Manutenção):
-  // quando o componente ainda não possui manutenção registrada, o ponto de
-  // partida é o estado inicial da moto (hours_initial/km_initial) e a data de
-  // criação do schedule — nunca zero absoluto. Isso evita que motos usadas
-  // apareçam com todos os componentes vencidos por padrão.
+  // Separação semântica explícita (evita interpretar plano/criação como manutenção):
+  //   1) baseline de uso da moto      → hours_initial / km_initial
+  //   2) início do acompanhamento     → motorcycles.initial_review_done_at ?? motorcycles.created_at
+  //   3) manutenção efetivamente feita → schedule.last_done_* (única fonte legítima)
+  //   4) criação técnica do schedule  → schedule.created_at (NUNCA usado como proxy de manutenção)
+  //
+  // Para o eixo de dias, o fallback é o "início do acompanhamento" — e SÓ se
+  // o schedule já existia naquele momento. Um componente adicionado depois
+  // (novo item de catálogo, item customizado) não pode herdar uma data de
+  // manutenção fictícia; enquanto não houver last_done_at explícito, o eixo
+  // de dias é ignorado para aquele schedule.
   const initialH = Number((moto as any).hours_initial ?? 0);
   const initialK = Number((moto as any).km_initial ?? 0);
   const lastH = schedule.last_done_hours != null ? Number(schedule.last_done_hours) : initialH;
   const lastK = schedule.last_done_km != null ? Number(schedule.last_done_km) : initialK;
-  const lastAt = schedule.last_done_at
-    ? new Date(schedule.last_done_at).getTime()
-    : ((schedule as any).created_at ? new Date((schedule as any).created_at).getTime() : null);
+
+  let lastAt: number | null = schedule.last_done_at ? new Date(schedule.last_done_at).getTime() : null;
+  if (lastAt == null && schedule.interval_days) {
+    const trackingStartIso = (moto as any).initial_review_done_at ?? (moto as any).created_at ?? null;
+    const scheduleCreatedIso = (schedule as any).created_at ?? null;
+    if (trackingStartIso && scheduleCreatedIso) {
+      const trackingStart = new Date(trackingStartIso).getTime();
+      const scheduleCreated = new Date(scheduleCreatedIso).getTime();
+      // O schedule só herda o início do acompanhamento se já existia naquele
+      // momento. Tolerância de 60s cobre criação em lote junto com a moto.
+      if (scheduleCreated <= trackingStart + 60_000) {
+        lastAt = trackingStart;
+      }
+    }
+  }
 
   const usedH = schedule.interval_hours ? Number(moto.hours_total) - lastH : null;
   const usedK = schedule.interval_km ? Number(moto.km_total) - lastK : null;
@@ -122,7 +140,7 @@ export function evaluateSchedule(
 /** Lista priorizada de todas as programações (mais críticas + mais vencidas primeiro). */
 export function priorityList(
   schedules: Schedule[],
-  moto: Pick<Moto, "hours_total" | "km_total" | "hours_initial" | "km_initial">,
+  moto: Pick<Moto, "hours_total" | "km_total" | "hours_initial" | "km_initial" | "initial_review_done_at" | "created_at">,
   events: Pick<EventRow, "occurred_at" | "hours_delta" | "km_delta">[],
 ): ScheduleStatus[] {
   const rate = usageRate(events);
