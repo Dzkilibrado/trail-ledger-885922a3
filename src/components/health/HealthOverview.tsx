@@ -11,6 +11,8 @@ import { TBBottomSheet } from "@/design-system/overlays/TBBottomSheet";
 import { Input } from "@/components/ui/input";
 import type { ComponentView } from "@/lib/til/components";
 import { SingleBadgeChip } from "@/components/badges/BadgeSection";
+import { computeReviewState } from "@/lib/review-state";
+import { ReviewStateNotice } from "@/components/review-state/ReviewStateNotice";
 
 /**
  * Saúde da Moto — check-up visual do estado atual, alimentado 100% pela TIL.
@@ -72,6 +74,7 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
   }
 
   const { health } = snapshot;
+  const reviewState = computeReviewState({ moto: moto as any, schedules: schedules.data ?? [] });
   const grade = health.grade;
   const accent =
     grade === "excellent" ? "text-emerald-400"
@@ -120,6 +123,10 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
         </div>
         <p className="mt-2 text-sm text-muted-foreground">{health.headline}</p>
       </section>
+
+      {reviewState.isPending && reviewState.state !== "unknown" && (
+        <ReviewStateNotice snapshot={reviewState} compact />
+      )}
 
       {/* Cards executáveis — abrem bottom sheet com a categoria */}
       <div className="space-y-2">

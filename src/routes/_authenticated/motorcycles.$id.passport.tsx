@@ -30,6 +30,8 @@ import { BadgeSection } from "@/components/badges/BadgeSection";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";
 import { SCORE_TIER_STYLE as TIER_STYLE } from "@/lib/ui/status-styles";
+import { computeReviewState } from "@/lib/review-state";
+import { ReviewStateBadge } from "@/components/review-state/ReviewStateBadge";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id/passport")({
   head: () => ({ meta: [{ title: "Passaporte Digital — TrailBook" }] }),
