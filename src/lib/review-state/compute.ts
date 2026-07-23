@@ -2,6 +2,8 @@ import {
   REVIEW_STATE_CTA,
   REVIEW_STATE_TITLE,
   REVIEW_STATE_TONE,
+  REVIEW_READY_TO_COMPLETE_CTA,
+  REVIEW_READY_TO_COMPLETE_TITLE,
   reviewStateMessage,
   type MotorcycleReviewState,
   type ReviewStateSnapshot,
@@ -67,16 +69,24 @@ export function computeReviewState(input: {
     state = "partially_reviewed";
   }
 
+  const isReadyToComplete =
+    state === "partially_reviewed" && remainingCount === 0;
+
   return {
     state,
     isPending: state !== "fully_reviewed",
     isComplete: state === "fully_reviewed",
+    isReadyToComplete,
     confirmedCount,
     totalCount,
     remainingCount,
     tone: REVIEW_STATE_TONE[state],
-    title: REVIEW_STATE_TITLE[state],
+    title: isReadyToComplete
+      ? REVIEW_READY_TO_COMPLETE_TITLE
+      : REVIEW_STATE_TITLE[state],
     message: reviewStateMessage(state, remainingCount),
-    cta: REVIEW_STATE_CTA[state],
+    cta: isReadyToComplete
+      ? REVIEW_READY_TO_COMPLETE_CTA
+      : REVIEW_STATE_CTA[state],
   };
 }
