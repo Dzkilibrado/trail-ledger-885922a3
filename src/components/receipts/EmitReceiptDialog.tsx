@@ -145,7 +145,14 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
       setBuyerCpf(r.buyer_snapshot?.cpf ?? "");
       setBuyerEmail(r.buyer_snapshot?.email ?? "");
       setBuyerMode(r.external_buyer ? "external" : "tb");
-      if (r.buyer_id) setBuyerFound({ id: r.buyer_id, full_name: r.buyer_snapshot?.full_name ?? "", cpf: r.buyer_snapshot?.cpf ?? null, email: r.buyer_snapshot?.email ?? null });
+      if (r.buyer_id) setBuyerFound({
+        id: r.buyer_id,
+        full_name: r.buyer_snapshot?.full_name ?? "",
+        email: r.buyer_snapshot?.email ?? null,
+        cpf_masked: r.buyer_snapshot?.cpf
+          ? `***.***.***-${r.buyer_snapshot.cpf.replace(/\D/g, "").slice(-2)}`
+          : null,
+      });
       setAmount(String(r.negotiation?.amount ?? ""));
       setPaymentMethod(r.negotiation?.payment_method ?? "PIX");
       setDate(r.negotiation?.date ?? new Date().toISOString().slice(0, 10));
@@ -160,16 +167,34 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
   async function lookupBuyer() {
     const q = buyerSearch.trim();
     if (!q) return;
-    const { data, error } = await supabase
-      .from("profiles").select("id, full_name, email, cpf")
-      .or(`email.eq.${q},cpf.eq.${q.replace(/\D/g, "")}`)
-      .maybeSingle();
-    if (error) { toast.error("Falha na busca"); return; }
-    if (!data) { toast.info("Nenhum usuário TrailBook encontrado"); setBuyerFound(null); return; }
-    setBuyerFound(data as BuyerLookup);
-    setBuyerName(data.full_name ?? "");
-    setBuyerCpf(data.cpf ?? "");
-    setBuyerEmail(data.email ?? "");
+    setBuyerCandidate(null);
+    setBuyerFound(null);
+    // Busca exclusivamente via RPC SECURITY DEFINER. Nenhuma leitura direta
+    // em `profiles` a partir do cliente. A RPC detecta CPF vs e-mail, exige
+    // autenticação, aplica rate limit e registra auditoria.
+    const { data, error } = await supabase.rpc(
+      "find_trailbook_buyer" as never,
+      { _query: q } as never,
+    );
+    if (error) {
+      // Mensagem única e neutra — não vaza estado do usuário-alvo.
+      toast.info("Nenhum usuário TrailBook encontrado");
+      return;
+    }
+    const row = Array.isArray(data) ? (data[0] as BuyerLookup) : null;
+    if (!row) { toast.info("Nenhum usuário TrailBook encontrado"); return; }
+    // Não preenche o formulário; exige confirmação explícita do vendedor.
+    setBuyerCandidate(row);
+  }
+
+  function confirmBuyerCandidate() {
+    if (!buyerCandidate) return;
+    setBuyerFound(buyerCandidate);
+    setBuyerName(buyerCandidate.full_name ?? "");
+    setBuyerEmail(buyerCandidate.email ?? "");
+    // CPF completo permanece protegido no banco; vendedor digita se necessário.
+    setBuyerCpf("");
+    setBuyerCandidate(null);
   }
 
   function resetForm() {
