@@ -299,7 +299,7 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
       const buyerPayload = {
         user_id: buyerMode === "tb" ? buyerFound?.id ?? null : null,
         full_name: buyerName.trim(),
-        cpf: buyerCpf.trim() || null,
+        cpf: onlyDigits(buyerCpf) || null,
         email: buyerEmail.trim() || null,
       };
       const negPayload = {
