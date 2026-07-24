@@ -1,6 +1,5 @@
 import { ListRowsSkeleton } from "@/components/Skeletons";
 import { useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
 import { TBBottomSheet } from "@/design-system/overlays/TBBottomSheet";
 import { Button } from "@/components/ui/button";
 import { ReceiptStatusBadge } from "@/components/receipts/ReceiptStatusBadge";
@@ -9,7 +8,6 @@ import { useReceiptsForMoto } from "@/hooks/useActiveNegotiation";
 import { formatCurrencyBRL, formatIssuedAt, formatVersion } from "@/lib/smart-receipts";
 import type { ReceiptStatus } from "@/lib/smart-receipts";
 import { FileSignature, ExternalLink, ChevronRight, Download } from "lucide-react";
-import { getReceiptSignedUrl } from "@/lib/smart-receipts.functions";
 import { toast } from "sonner";
 
 export function ReceiptsHistorySheet({
@@ -23,13 +21,14 @@ export function ReceiptsHistorySheet({
 }) {
   const [open, setOpen] = useState(false);
   const { data: rows, isLoading } = useReceiptsForMoto(open ? motoId : undefined);
-  const signedUrlFn = useServerFn(getReceiptSignedUrl);
 
-  async function openPdf(code: string, variant: "signed" | "original") {
+  // Bug 2: abre PDF via rota mesma-origem (trailbook.com.br) para evitar
+  // ERR_BLOCKED_BY_CLIENT causado por extensões/DNS filters bloqueando
+  // *.supabase.co. A autorização é validada no handler (mesmo RPC).
+  function openPdf(code: string, variant: "signed" | "original") {
     try {
-      const { url } = await signedUrlFn({ data: { code, variant } });
-      if (url) window.open(url, "_blank", "noopener,noreferrer");
-      else toast.error("PDF indisponível para este recibo");
+      const url = `/api/receipts/${encodeURIComponent(code)}/pdf?variant=${variant}`;
+      window.open(url, "_blank", "noopener,noreferrer");
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha ao abrir PDF");
     }
