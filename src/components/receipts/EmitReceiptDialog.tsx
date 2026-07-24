@@ -31,7 +31,7 @@ import { isStaleStateError, staleStateUserMessage, stripStaleStatePrefix } from 
 
 const PAYMENT_METHODS = ["Dinheiro", "PIX", "Transferência bancária", "Financiamento", "Cartão", "Outro"];
 
-type BuyerLookup = { id: string; full_name: string; email: string | null; cpf: string | null } | null;
+type BuyerLookup = { id: string; full_name: string; email: string | null; cpf_masked: string | null } | null;
 type ReceiptRow = {
   id: string; code: string; status: string; version: number;
   buyer_id: string | null; seller_id: string; external_buyer: boolean;
