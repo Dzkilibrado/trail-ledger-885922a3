@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { RefreshCw, Sparkles, X } from "lucide-react";
-import { useVersionState, isUserInactive } from "./useVersionWatcher";
+import { useVersionState } from "./useVersionWatcher";
 import { canReloadNow, performReload } from "./reload";
 import { canAttemptReloadTo, loopDetectedFor } from "./service";
 import { LOCAL_BUILD } from "./build-info";
@@ -9,38 +9,31 @@ import { cn } from "@/lib/utils";
 
 const SNOOZE_MS = 30 * 60_000;
 
+function computeSnoozedUntil(prev: number): number {
+  // Se o relógio retrocedeu (snoozedUntil "distante demais"), considera expirado.
+  if (prev - Date.now() > SNOOZE_MS) return 0;
+  return prev;
+}
+
 export function UpdateBanner() {
   const state = useVersionState();
   const qc = useQueryClient();
   const [snoozedUntil, setSnoozedUntil] = useState(0);
   const [reloading, setReloading] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
-  const autoTriedForRef = useRef<string | null>(null);
 
   const remote = state.remote;
+  const effectiveSnoozeUntil = computeSnoozedUntil(snoozedUntil);
   const showable =
     state.updateAvailable &&
     remote &&
     remote.buildId !== LOCAL_BUILD.buildId &&
-    Date.now() > snoozedUntil;
+    Date.now() >= effectiveSnoozeUntil;
 
-  // Auto-reload discreto quando o usuário está inativo e nada crítico acontece.
-  useEffect(() => {
-    if (!showable || !remote) return;
-    if (autoTriedForRef.current === remote.buildId) return;
-    if (!isUserInactive(2 * 60_000)) return;
-    const block = canReloadNow(qc);
-    if (!block.ok) return;
-    if (!canAttemptReloadTo(remote.buildId)) return;
-    autoTriedForRef.current = remote.buildId;
-    const t = window.setTimeout(() => {
-      const still = canReloadNow(qc);
-      if (still.ok && isUserInactive(2 * 60_000)) {
-        performReload(remote.buildId);
-      }
-    }, 2_500);
-    return () => window.clearTimeout(t);
-  }, [showable, remote, qc, reloading]);
+  // Auto-reload REMOVIDO por segurança: o dirty-registry é opt-in e a maioria
+  // dos formulários/uploads não está instrumentada. Recarregar em segundo plano
+  // poderia descartar edições locais, modais abertos ou requisições diretas
+  // (fora do React Query). O usuário sempre confirma via "Atualizar agora".
 
   if (!showable || !remote) return null;
 
