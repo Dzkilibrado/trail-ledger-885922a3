@@ -79,6 +79,7 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
   const [buyerMode, setBuyerMode] = useState<"tb" | "external">("tb");
   const [buyerSearch, setBuyerSearch] = useState("");
   const [buyerFound, setBuyerFound] = useState<BuyerLookup>(null);
+  const [buyerCandidate, setBuyerCandidate] = useState<BuyerLookup>(null);
   const [buyerName, setBuyerName] = useState("");
   const [buyerCpf, setBuyerCpf] = useState("");
   const [buyerEmail, setBuyerEmail] = useState("");
