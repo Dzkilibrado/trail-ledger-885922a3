@@ -75,7 +75,8 @@ function ReceiptViewer() {
 
   function download() {
     if (!bytes) return;
-    const blob = new Blob([bytes], { type: "application/pdf" });
+    const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+    const blob = new Blob([buf], { type: "application/pdf" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
