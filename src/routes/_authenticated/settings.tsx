@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { Settings, User, Crown, HelpCircle, Lock, BookOpen, Sparkles, LifeBuoy } from "lucide-react";
 import { useOpenWelcomeTour } from "@/components/onboarding/WelcomeTour";
+import { APP_VERSION, BUILD_ID, BUILD_AT, shortBuildId } from "@/lib/version/build-info";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({ meta: [{ title: "Configurações — TrailBook" }] }),
@@ -50,6 +52,40 @@ function SettingsPage() {
         <Card icon={Sparkles} title="Ver tour de boas-vindas" desc="Reveja a apresentação inicial do TrailBook a qualquer momento." cta="Rever tour" onClick={openTour} />
         <Card icon={LifeBuoy} title="Ajuda e suporte" desc="Fale com o time TrailBook pela Central de Chamados." to="/tickets" cta="Abrir chamado" />
       </section>
+      <VersionFooter />
     </div>
+  );
+}
+
+function VersionFooter() {
+  const publishedAt = (() => {
+    try {
+      return new Date(BUILD_AT).toLocaleString("pt-BR");
+    } catch {
+      return BUILD_AT;
+    }
+  })();
+  const copy = () => {
+    const txt = `TrailBook ${APP_VERSION} · build ${BUILD_ID} · publicado em ${publishedAt}`;
+    try {
+      navigator.clipboard?.writeText(txt);
+      toast.success("Informações copiadas.");
+    } catch {
+      /* noop */
+    }
+  };
+  return (
+    <footer className="mt-4 rounded-2xl border border-border bg-card/40 p-4 text-sm text-muted-foreground">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <div className="font-semibold text-foreground">TrailBook</div>
+          <div>
+            Versão {APP_VERSION} · Build <span className="font-mono">{shortBuildId(BUILD_ID)}</span>
+          </div>
+          <div className="text-xs">Publicado em {publishedAt}</div>
+        </div>
+        <Button size="sm" variant="ghost" onClick={copy}>Copiar informações</Button>
+      </div>
+    </footer>
   );
 }
