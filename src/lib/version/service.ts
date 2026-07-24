@@ -120,7 +120,10 @@ export function canAttemptReloadTo(targetBuildId: string): boolean {
     const last = Number(sessionStorage.getItem(KEY_LAST) || "0");
     const attempts = Number(sessionStorage.getItem(KEY_ATTEMPTS) || "0");
     if (target !== targetBuildId) return true;
-    if (Date.now() - last > LOOP_WINDOW_MS) return true;
+    // Normalização de relógio: diferença negativa (retrocesso) ou timestamp
+    // implausivelmente antigo/futuro (>24h) → trata como janela expirada.
+    const diff = Date.now() - last;
+    if (diff < 0 || diff > LOOP_WINDOW_MS) return true;
     return attempts < MAX_ATTEMPTS;
   } catch {
     return true;
@@ -158,8 +161,13 @@ export function loopDetectedFor(targetBuildId: string): boolean {
     const target = sessionStorage.getItem(KEY_TARGET);
     const attempts = Number(sessionStorage.getItem(KEY_ATTEMPTS) || "0");
     const last = Number(sessionStorage.getItem(KEY_LAST) || "0");
+    const diff = Date.now() - last;
+    // Se o relógio retrocedeu (diff<0) ou saímos da janela, não bloqueia.
     return (
-      target === targetBuildId && attempts >= MAX_ATTEMPTS && Date.now() - last < LOOP_WINDOW_MS
+      target === targetBuildId &&
+      attempts >= MAX_ATTEMPTS &&
+      diff >= 0 &&
+      diff < LOOP_WINDOW_MS
     );
   } catch {
     return false;
