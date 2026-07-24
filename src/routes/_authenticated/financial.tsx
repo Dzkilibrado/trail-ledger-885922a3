@@ -167,8 +167,8 @@ function Financial() {
           <SelectTrigger className="w-44"><SelectValue placeholder="Todas as oficinas" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas as oficinas</SelectItem>
-            {(workshops.data ?? []).map((w) => (
-              <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+            {(workshops.data ?? []).filter((w) => w.id && w.name).map((w) => (
+              <SelectItem key={w.id!} value={w.id!}>{w.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
