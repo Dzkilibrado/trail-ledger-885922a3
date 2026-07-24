@@ -18,6 +18,7 @@ import {
   completeReceiptTransfer,
   cancelDraftReceipt,
   getReceiptSignedUrl,
+  getConfirmedBuyerDetails,
 } from "@/lib/smart-receipts.functions";
 import { toast } from "sonner";
 import { FileSignature, Search, ArrowLeft, ArrowRight, CheckCircle2, Upload, Download, XCircle, Eye, Share2, Printer, Clock } from "lucide-react";
@@ -28,6 +29,7 @@ import { LocationPicker } from "@/components/LocationPicker";
 import { useProfileSnapshot } from "@/hooks/useProfileSnapshot";
 import { ProfileDataChip } from "@/components/ProfileDataChip";
 import { isStaleStateError, staleStateUserMessage, stripStaleStatePrefix } from "@/lib/errors/stale-state";
+import { isValidCPF, maskCPF, onlyDigits } from "@/lib/br-validators";
 
 const PAYMENT_METHODS = ["Dinheiro", "PIX", "Transferência bancária", "Financiamento", "Cartão", "Outro"];
 
@@ -103,6 +105,7 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
   const complete = useServerFn(completeReceiptTransfer);
   const cancelDraft = useServerFn(cancelDraftReceipt);
   const signedUrlFn = useServerFn(getReceiptSignedUrl);
+  const confirmBuyerFn = useServerFn(getConfirmedBuyerDetails);
   const profileQ = useProfileSnapshot();
 
   useEffect(() => {
@@ -198,16 +201,34 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     setBuyerCandidate(row);
   }
 
-  function confirmBuyerCandidate() {
+  async function confirmBuyerCandidate() {
     if (!buyerCandidate) return;
-    setBuyerFound(buyerCandidate);
-    setBuyerName(buyerCandidate.full_name ?? "");
-    // E-mail e CPF completos NÃO são expostos ao vendedor. O backend enriquece
-    // o snapshot do recibo a partir do buyer_id (RLS bypass controlado)
-    // durante a criação/atualização do rascunho.
-    setBuyerEmail("");
+    setLoading(true);
+    try {
+      // Busca autoritativa server-side (mesma query que localizou o candidato).
+      // Só devolve dados se a busca reproduzir o mesmo buyer_id — não é possível
+      // dumpar PII iterando IDs.
+      const details = await confirmBuyerFn({
+        data: { buyer_id: buyerCandidate.id, query: buyerSearch.trim() },
+      });
+      setBuyerFound(buyerCandidate);
+      setBuyerName(details.full_name ?? "");
+      setBuyerCpf(details.cpf ? maskCPF(details.cpf) : "");
+      setBuyerEmail(details.email ?? "");
+      setBuyerCandidate(null);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Não foi possível confirmar o comprador";
+      toast.error(msg);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function clearConfirmedBuyer() {
+    setBuyerFound(null);
+    setBuyerName("");
     setBuyerCpf("");
-    setBuyerCandidate(null);
+    setBuyerEmail("");
   }
 
   function resetForm() {
@@ -223,9 +244,25 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
   const amountValue = useMemo(() => Number(String(amount).replace(",", ".")), [amount]);
   const paymentLabel = paymentMethod === "Outro" ? (paymentOther.trim() || "Outro") : paymentMethod;
 
+  // Bloqueio de edição: quando o comprador TrailBook já foi confirmado, os
+  // três campos (Nome, CPF, E-mail) refletem o snapshot autoritativo do
+  // backend e não podem ser alterados pelo vendedor.
+  const buyerLocked = buyerMode === "tb" && !!buyerFound;
+
+  // Consistência mínima para avançar da etapa 1: nome + CPF válido + e-mail.
+  const partesReady = useMemo(() => {
+    if (!buyerName.trim()) return false;
+    if (!isValidCPF(buyerCpf)) return false;
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyerEmail.trim())) return false;
+    if (buyerMode === "tb" && !buyerFound) return false;
+    return true;
+  }, [buyerName, buyerCpf, buyerEmail, buyerMode, buyerFound]);
+
   function validatePartes() {
     if (!buyerName.trim()) { toast.error("Informe o nome do comprador"); return false; }
     if (buyerMode === "tb" && !buyerFound) { toast.error("Localize um usuário TrailBook ou selecione comprador externo"); return false; }
+    if (!isValidCPF(buyerCpf)) { toast.error("Informe um CPF válido do comprador"); return false; }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyerEmail.trim())) { toast.error("Informe um e-mail válido do comprador"); return false; }
     return true;
   }
   function validateValor() {
@@ -262,7 +299,7 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
       const buyerPayload = {
         user_id: buyerMode === "tb" ? buyerFound?.id ?? null : null,
         full_name: buyerName.trim(),
-        cpf: buyerCpf.trim() || null,
+        cpf: onlyDigits(buyerCpf) || null,
         email: buyerEmail.trim() || null,
       };
       const negPayload = {
@@ -534,24 +571,43 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
                 </div>
               )}
               {buyerMode === "tb" && buyerFound && !buyerCandidate && (
-                <p className="mt-2 text-[11px] text-emerald-500">
-                  Comprador TrailBook confirmado: {buyerFound.full_name}
-                </p>
+                <div className="mt-2 flex items-center justify-between gap-2">
+                  <p className="text-[11px] text-emerald-500">
+                    Comprador TrailBook confirmado: {buyerFound.full_name}
+                  </p>
+                  <Button type="button" size="sm" variant="ghost" onClick={clearConfirmedBuyer}>
+                    Trocar comprador
+                  </Button>
+                </div>
               )}
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="b-name">Nome completo *</Label>
-                <Input id="b-name" value={buyerName} onChange={(e) => setBuyerName(e.target.value)} />
+                <Input id="b-name" value={buyerName} onChange={(e) => setBuyerName(e.target.value)} readOnly={buyerLocked} />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="b-cpf">CPF</Label>
-                <Input id="b-cpf" value={buyerCpf} onChange={(e) => setBuyerCpf(e.target.value)} placeholder="000.000.000-00" />
+                <Label htmlFor="b-cpf">CPF *</Label>
+                <Input
+                  id="b-cpf"
+                  value={buyerCpf}
+                  onChange={(e) => setBuyerCpf(maskCPF(e.target.value))}
+                  onBlur={(e) => setBuyerCpf(maskCPF(e.target.value))}
+                  placeholder="000.000.000-00"
+                  inputMode="numeric"
+                  readOnly={buyerLocked}
+                  maxLength={14}
+                />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="b-email">E-mail</Label>
-                <Input id="b-email" type="email" value={buyerEmail} onChange={(e) => setBuyerEmail(e.target.value)} />
+                <Label htmlFor="b-email">E-mail *</Label>
+                <Input id="b-email" type="email" value={buyerEmail} onChange={(e) => setBuyerEmail(e.target.value)} readOnly={buyerLocked} />
               </div>
+              {buyerLocked && (
+                <p className="sm:col-span-2 text-[11px] text-muted-foreground">
+                  Dados carregados do perfil TrailBook do comprador. Para alterar, use "Trocar comprador".
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -653,11 +709,14 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
           <div className="flex gap-2">
             <Button variant="ghost" onClick={() => setOpen(false)}>Fechar</Button>
             {step < 4 && (
-              <Button onClick={() => {
-                if (step === 1 && !validatePartes()) return;
-                if (step === 3 && !validateValor()) return;
-                setStep(step + 1);
-              }}>
+              <Button
+                onClick={() => {
+                  if (step === 1 && !validatePartes()) return;
+                  if (step === 3 && !validateValor()) return;
+                  setStep(step + 1);
+                }}
+                disabled={step === 1 && !partesReady}
+              >
                 Avançar <ArrowRight className="h-4 w-4" />
               </Button>
             )}

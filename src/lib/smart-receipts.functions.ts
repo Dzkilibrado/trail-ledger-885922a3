@@ -598,3 +598,49 @@ export const listReceiptsForMotorcycle = createServerFn({ method: "GET" })
     if (error) throw new Error(error.message);
     return rows ?? [];
   });
+
+/**
+ * Retorna dados completos (nome, CPF, e-mail) de um comprador TrailBook
+ * previamente localizado via `find_trailbook_buyer`. Para preservar a
+ * privacidade, exige a MESMA query (CPF ou e-mail) que localizou o
+ * usuário — só devolve dados se a busca reproduzir o mesmo `buyer_id`.
+ *
+ * Uso: preencher o formulário do Recibo Inteligente após o vendedor
+ * confirmar "É esse comprador". Registra auditoria via RPC.
+ */
+export const getConfirmedBuyerDetails = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { buyer_id: string; query: string }) => {
+    if (!data?.buyer_id) throw new Error("buyer_id obrigatório");
+    if (!data?.query?.trim()) throw new Error("query obrigatória");
+    return { buyer_id: String(data.buyer_id), query: String(data.query).trim() };
+  })
+  .handler(async ({ data, context }) => {
+    // 1) Reproduz a busca sob a RPC segura (SECURITY DEFINER + rate limit + auditoria).
+    const { data: rows, error } = await context.supabase.rpc(
+      "find_trailbook_buyer" as never,
+      { _query: data.query } as never,
+    );
+    if (error) throw new Error(error.message);
+    const row = Array.isArray(rows) ? rows[0] : rows;
+    if (!row || (row as { id?: string }).id !== data.buyer_id) {
+      throw new Error("Comprador não corresponde à busca. Pesquise novamente.");
+    }
+    // 2) Busca dados autoritativos (bypass controlado de RLS). Restrito a perfis ativos.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: profile, error: pErr } = await supabaseAdmin
+      .from("profiles")
+      .select("id, full_name, cpf, email, status")
+      .eq("id", data.buyer_id)
+      .maybeSingle();
+    if (pErr) throw new Error(pErr.message);
+    if (!profile || profile.status !== "active") {
+      throw new Error("Comprador TrailBook indisponível");
+    }
+    return {
+      id: profile.id as string,
+      full_name: (profile.full_name ?? "") as string,
+      cpf: (profile.cpf ?? "") as string,
+      email: (profile.email ?? "") as string,
+    };
+  });
