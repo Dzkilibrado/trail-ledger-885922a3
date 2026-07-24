@@ -101,6 +101,36 @@ export type Database = {
         }
         Relationships: []
       }
+      buyer_search_audit: {
+        Row: {
+          error_code: string | null
+          found: boolean
+          id: string
+          query_hash: string
+          search_type: string
+          searched_at: string
+          searcher_id: string
+        }
+        Insert: {
+          error_code?: string | null
+          found: boolean
+          id?: string
+          query_hash: string
+          search_type: string
+          searched_at?: string
+          searcher_id: string
+        }
+        Update: {
+          error_code?: string | null
+          found?: boolean
+          id?: string
+          query_hash?: string
+          search_type?: string
+          searched_at?: string
+          searcher_id?: string
+        }
+        Relationships: []
+      }
       certificate_access_log: {
         Row: {
           accessed_at: string
@@ -2962,6 +2992,15 @@ export type Database = {
           _user: string
         }
         Returns: string
+      }
+      find_trailbook_buyer: {
+        Args: { _query: string }
+        Returns: {
+          cpf_masked: string
+          email: string
+          full_name: string
+          id: string
+        }[]
       }
       get_active_negotiation: {
         Args: { _moto_id: string }
