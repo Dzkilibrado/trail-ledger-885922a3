@@ -223,11 +223,33 @@ export const updateReceiptDraft = createServerFn({ method: "POST" })
 
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     if (data.patch.buyer) {
+      // Mesmo enriquecimento do createReceiptDraft: se o comprador é um
+      // usuário TrailBook (user_id presente), busca dados autoritativos
+      // no server para não depender de e-mail/CPF vindos do cliente.
+      let bFullName = data.patch.buyer.full_name
+        ?? (current.buyer_snapshot as { full_name?: string })?.full_name
+        ?? "";
+      let bCpf: string | null = data.patch.buyer.cpf ?? null;
+      let bEmail: string | null = data.patch.buyer.email ?? null;
+      if (data.patch.buyer.user_id) {
+        const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+        const { data: buyerProfile } = await supabaseAdmin
+          .from("profiles")
+          .select("full_name, cpf, email, status")
+          .eq("id", data.patch.buyer.user_id)
+          .maybeSingle();
+        if (!buyerProfile || buyerProfile.status !== "active") {
+          throw new Error("Comprador TrailBook indisponível");
+        }
+        bFullName = buyerProfile.full_name?.trim() || bFullName;
+        bCpf = buyerProfile.cpf ?? null;
+        bEmail = buyerProfile.email ?? null;
+      }
       patch.buyer_snapshot = {
         ...(current.buyer_snapshot as object),
-        full_name: data.patch.buyer.full_name ?? (current.buyer_snapshot as { full_name?: string }).full_name,
-        cpf: data.patch.buyer.cpf ?? null,
-        email: data.patch.buyer.email ?? null,
+        full_name: bFullName,
+        cpf: bCpf,
+        email: bEmail,
       };
       patch.buyer_id = data.patch.buyer.user_id ?? null;
       if (data.patch.external_buyer !== undefined) patch.external_buyer = data.patch.external_buyer;
