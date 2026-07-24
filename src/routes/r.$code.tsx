@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { validateReceiptPublic, getReceiptSignedUrl } from "@/lib/smart-receipts.functions";
+import { validateReceiptPublic, getReceiptPdfBytes } from "@/lib/smart-receipts.functions";
 import { ReceiptStatusBadge } from "@/components/receipts/ReceiptStatusBadge";
 import { formatIssuedAt, formatVersion, sha256HexBytes, type ReceiptStatus } from "@/lib/smart-receipts";
 import { Button } from "@/components/ui/button";
@@ -28,7 +28,7 @@ function PublicReceipt() {
   const { code } = Route.useParams();
   const [verifyResult, setVerifyResult] = useState<null | { ok: boolean; sha256: string }>(null);
   const [busy, setBusy] = useState(false);
-  const signedFn = useServerFn(getReceiptSignedUrl);
+  const pdfBytesFn = useServerFn(getReceiptPdfBytes);
 
   const q = useQuery({
     queryKey: ["public-receipt", code],
@@ -60,11 +60,18 @@ function PublicReceipt() {
   }
 
   async function download() {
+    let opened: Window | null = null;
     try {
-      const { url } = await signedFn({ data: { code } });
-      if (!url) { alert("Download disponível apenas para as partes envolvidas."); return; }
-      window.open(url, "_blank");
-    } catch { alert("Faça login como vendedor ou comprador para baixar o PDF."); }
+      opened = window.open("about:blank", "_blank", "noopener,noreferrer");
+      const res = await pdfBytesFn({ data: { code } });
+      if (!res.found) { opened?.close(); alert("Download disponível apenas para as partes envolvidas."); return; }
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blobUrl = URL.createObjectURL(new Blob([bytes], { type: res.contentType }));
+      if (opened) opened.location.href = blobUrl; else window.open(blobUrl, "_blank", "noopener,noreferrer");
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch { opened?.close(); alert("Faça login como vendedor ou comprador para baixar o PDF."); }
   }
 
   return (
