@@ -13,6 +13,8 @@ import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
+import { useVersionWatcher } from "@/lib/version/useVersionWatcher";
+import { UpdateBanner } from "@/lib/version/UpdateBanner";
 
 function NotFoundComponent() {
   return (
@@ -134,11 +136,16 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  useVersionWatcher(queryClient);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+      if (event === "SIGNED_IN") {
+        // Verificação leve após login (respeita throttle interno).
+        void import("@/lib/version/service").then((m) => m.checkForUpdate());
+      }
     });
     return () => sub.subscription.unsubscribe();
   }, [queryClient]);
@@ -147,6 +154,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <Outlet />
       <Toaster richColors theme="dark" />
+      <UpdateBanner />
     </QueryClientProvider>
   );
 }

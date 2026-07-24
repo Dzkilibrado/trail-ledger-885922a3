@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { toast } from "sonner";
 import { TICKET_MODULES, TICKET_PRIORITIES, TICKET_TYPES } from "@/lib/tickets";
 import { Paperclip } from "lucide-react";
+import { APP_VERSION, BUILD_ID } from "@/lib/version/build-info";
 
 export const Route = createFileRoute("/_authenticated/tickets/new")({
   head: () => ({ meta: [{ title: "Novo chamado — TrailBook" }] }),
@@ -60,11 +61,21 @@ function NewTicketPage() {
         return;
       }
 
+      // Anexa versão/build ao final da descrição para dar ao suporte contexto
+      // sobre a build utilizada pelo usuário (v1.7 — controle de versão).
+      const standalone =
+        typeof window.matchMedia === "function" &&
+        window.matchMedia("(display-mode: standalone)").matches;
+      const meta =
+        `\n\n— — —\nTrailBook ${APP_VERSION} · build ${BUILD_ID}\n` +
+        `Rota: ${window.location.pathname}\n` +
+        `Modo: ${standalone ? "PWA (Tela de Início)" : "Navegador"}\n` +
+        `Agente: ${window.navigator?.userAgent ?? ""}`;
       const { data, error } = await supabase.from("tickets").insert({
         user_id: userId,
         type: type as any, module: module as any, priority: priority as any,
         motorcycle_id: motoId !== "none" ? motoId : null,
-        title: title.trim(), description: description.trim(),
+        title: title.trim(), description: description.trim() + meta,
       }).select("id, code, status, user_id").single();
       if (error) throw error;
 
