@@ -183,8 +183,13 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
       { _query: q } as never,
     );
     if (error) {
-      // Mensagem única e neutra — não vaza estado do usuário-alvo.
-      toast.info("Nenhum usuário TrailBook encontrado");
+      console.error("[TB] Falha na busca segura de comprador", {
+        code: error.code,
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+      });
+      toast.error("Não foi possível consultar compradores agora. Tente novamente em instantes.");
       return;
     }
     const row = Array.isArray(data) ? (data[0] as BuyerLookup) : null;
