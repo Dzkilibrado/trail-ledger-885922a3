@@ -147,11 +147,20 @@ export async function buildReceiptPdf(payload: ReceiptPayload, origin: string): 
     "Motocicletas de uso off-road podem ter histórico de trilhas, competições e uso intenso — as partes reconhecem essa condição.",
     "Este documento é um modelo de referência e não substitui orientação jurídica, ATPV-e, CRV ou registro no DETRAN.",
     "As partes autorizam o registro deste recibo no TrailBook e sua consulta pública pelo código único acima.",
+    "O Comprador declara ter examinado a motocicleta e estar ciente de seu estado de conservação, características e condições aparentes de uso. A partir da entrega, assume a responsabilidade pelo uso, multas, tributos, manutenção e demais encargos relacionados à motocicleta. A venda é realizada no estado em que o veículo se encontra, sem garantia contratual adicional oferecida pelo Vendedor, ressalvadas as responsabilidades legalmente aplicáveis.",
   ];
   for (const c of clauses) {
     y = drawWrapped(page, `• ${c}`, 40, y, w - 80, 8.5, font, 11);
     y -= 2;
   }
+
+  // Encerramento formal antes das assinaturas.
+  y -= 6;
+  y = drawWrapped(
+    page,
+    "Por estarem de pleno acordo, as partes firmam o presente recibo em duas vias de igual teor e forma.",
+    40, y, w - 80, 8.5, font, 11,
+  );
 
   // Section: Assinaturas (linhas)
   y -= 20;
