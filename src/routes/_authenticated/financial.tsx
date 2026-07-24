@@ -29,7 +29,7 @@ function Financial() {
   const motos = useActiveMotorcycles();
   const workshops = useQuery({
     queryKey: ["workshops", "list"],
-    queryFn: async () => (await supabase.from("workshops").select("id, name").order("name")).data ?? [],
+    queryFn: async () => (await supabase.from("workshops_public").select("id, name").order("name")).data ?? [],
   });
   const events = useQuery({
     queryKey: ["events", "all-with-cost"],
