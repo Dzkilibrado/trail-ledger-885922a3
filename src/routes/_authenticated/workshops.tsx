@@ -29,7 +29,7 @@ function Workshops() {
     queryFn: async () =>
       (
         await supabase
-          .from("workshops")
+          .from("workshops_public")
           .select("id, name, city, state, owner_user_id, verified, verified_at, verified_label, created_at, updated_at")
           .order("name")
       ).data ?? [],
