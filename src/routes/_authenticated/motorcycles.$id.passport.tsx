@@ -109,7 +109,7 @@ function Passport() {
 
   const workshopsById = useMemo(() => {
     const m: Record<string, { name: string }> = {};
-    (workshops.data ?? []).forEach((w) => { m[w.id] = { name: w.name }; });
+    (workshops.data ?? []).forEach((w) => { if (w.id && w.name) m[w.id] = { name: w.name }; });
     return m;
   }, [workshops.data]);
 
