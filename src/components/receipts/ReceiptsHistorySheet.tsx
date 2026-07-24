@@ -10,6 +10,7 @@ import { formatCurrencyBRL, formatIssuedAt, formatVersion } from "@/lib/smart-re
 import type { ReceiptStatus } from "@/lib/smart-receipts";
 import { FileSignature, ExternalLink, ChevronRight, Download } from "lucide-react";
 import { getReceiptPdfBytes } from "@/lib/smart-receipts.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export function ReceiptsHistorySheet({
@@ -32,6 +33,11 @@ export function ReceiptsHistorySheet({
   async function openPdf(code: string, variant: "signed" | "original") {
     let opened: Window | null = null;
     try {
+      const { data: sess } = await supabase.auth.getSession();
+      if (!sess.session) {
+        toast.error("Sessão expirada. Entre novamente para baixar o PDF.");
+        return;
+      }
       // Abre a aba SÍNCRONAMENTE no clique — evita bloqueio de popup.
       opened = window.open("about:blank", "_blank", "noopener,noreferrer");
       const res = await pdfBytesFn({ data: { code, variant } });
