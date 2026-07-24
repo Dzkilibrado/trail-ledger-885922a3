@@ -201,7 +201,7 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
   function resetForm() {
     setStep(1);
     setCurrentReceiptId(receiptId ?? null); setCurrentReceipt(null);
-    setBuyerMode("tb"); setBuyerSearch(""); setBuyerFound(null);
+    setBuyerMode("tb"); setBuyerSearch(""); setBuyerFound(null); setBuyerCandidate(null);
     setBuyerName(""); setBuyerCpf(""); setBuyerEmail("");
     setAmount(""); setPaymentMethod("PIX"); setPaymentOther("");
     setDate(new Date().toISOString().slice(0, 10));
@@ -501,6 +501,29 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
               ) : (
                 <p className="mt-2 text-[11px] text-muted-foreground">
                   Comprador sem conta TrailBook. Só o aceite do vendedor será exigido; a moto será arquivada ao concluir.
+                </p>
+              )}
+              {buyerMode === "tb" && buyerCandidate && (
+                <div className="mt-3 rounded-lg border border-primary/40 bg-primary/5 p-3">
+                  <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Confirme o comprador</p>
+                  <div className="mt-1 text-sm">
+                    <p className="font-semibold">{buyerCandidate.full_name || "—"}</p>
+                    {buyerCandidate.email && <p className="text-xs text-muted-foreground">{buyerCandidate.email}</p>}
+                    {buyerCandidate.cpf_masked && <p className="text-xs text-muted-foreground">CPF {buyerCandidate.cpf_masked}</p>}
+                  </div>
+                  <div className="mt-2 flex gap-2">
+                    <Button type="button" size="sm" onClick={confirmBuyerCandidate}>
+                      <CheckCircle2 className="h-4 w-4" /> É esse comprador
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setBuyerCandidate(null)}>
+                      Não é esse
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {buyerMode === "tb" && buyerFound && !buyerCandidate && (
+                <p className="mt-2 text-[11px] text-emerald-500">
+                  Comprador TrailBook confirmado: {buyerFound.full_name}
                 </p>
               )}
             </div>
