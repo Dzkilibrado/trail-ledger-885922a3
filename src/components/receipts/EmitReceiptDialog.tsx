@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useNavigate } from "@tanstack/react-router";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,7 @@ import {
   acceptSignedReceipt,
   completeReceiptTransfer,
   cancelDraftReceipt,
-  getReceiptSignedUrl,
+  getReceiptPdfBytes,
   getConfirmedBuyerDetails,
 } from "@/lib/smart-receipts.functions";
 import { toast } from "sonner";
