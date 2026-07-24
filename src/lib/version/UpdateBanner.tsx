@@ -147,12 +147,3 @@ export function UpdateBanner() {
     </div>
   );
 }
-
-/** Bridge para montar hook + banner (útil onde só se importa um componente). */
-export function UpdateWatcherMount() {
-  const qc = useQueryClient();
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const { useVersionWatcher } = require("./useVersionWatcher") as typeof import("./useVersionWatcher");
-  useVersionWatcher(qc);
-  return <UpdateBanner />;
-}
