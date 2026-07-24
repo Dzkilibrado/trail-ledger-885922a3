@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { validateReceiptPublic, getReceiptPdfBytes } from "@/lib/smart-receipts.functions";
+import { supabase } from "@/integrations/supabase/client";
 import { ReceiptStatusBadge } from "@/components/receipts/ReceiptStatusBadge";
 import { formatIssuedAt, formatVersion, sha256HexBytes, type ReceiptStatus } from "@/lib/smart-receipts";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,11 @@ function PublicReceipt() {
   async function download() {
     let opened: Window | null = null;
     try {
+      const { data: sess } = await supabase.auth.getSession();
+      if (!sess.session) {
+        alert("Faça login como vendedor ou comprador para baixar o PDF.");
+        return;
+      }
       opened = window.open("about:blank", "_blank", "noopener,noreferrer");
       const res = await pdfBytesFn({ data: { code } });
       if (!res.found) { opened?.close(); alert("Download disponível apenas para as partes envolvidas."); return; }
