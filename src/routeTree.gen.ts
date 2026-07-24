@@ -39,6 +39,7 @@ import { Route as AuthenticatedTicketsIndexRouteImport } from './routes/_authent
 import { Route as AuthenticatedMotorcyclesIndexRouteImport } from './routes/_authenticated/motorcycles.index'
 import { Route as AuthenticatedDocumentsIndexRouteImport } from './routes/_authenticated/documents.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
+import { Route as ApiPublicAppVersionRouteImport } from './routes/api/public/app-version'
 import { Route as AuthenticatedTicketsNewRouteImport } from './routes/_authenticated/tickets.new'
 import { Route as AuthenticatedTicketsCpfChangeRouteImport } from './routes/_authenticated/tickets.cpf-change'
 import { Route as AuthenticatedTicketsIdRouteImport } from './routes/_authenticated/tickets.$id'
@@ -215,6 +216,11 @@ const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const ApiPublicAppVersionRoute = ApiPublicAppVersionRouteImport.update({
+  id: '/api/public/app-version',
+  path: '/api/public/app-version',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedTicketsNewRoute = AuthenticatedTicketsNewRouteImport.update({
   id: '/new',
   path: '/new',
@@ -359,6 +365,7 @@ export interface FileRoutesByFullPath {
   '/tickets/$id': typeof AuthenticatedTicketsIdRoute
   '/tickets/cpf-change': typeof AuthenticatedTicketsCpfChangeRoute
   '/tickets/new': typeof AuthenticatedTicketsNewRoute
+  '/api/public/app-version': typeof ApiPublicAppVersionRoute
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/documents/': typeof AuthenticatedDocumentsIndexRoute
   '/motorcycles/': typeof AuthenticatedMotorcyclesIndexRoute
@@ -405,6 +412,7 @@ export interface FileRoutesByTo {
   '/tickets/$id': typeof AuthenticatedTicketsIdRoute
   '/tickets/cpf-change': typeof AuthenticatedTicketsCpfChangeRoute
   '/tickets/new': typeof AuthenticatedTicketsNewRoute
+  '/api/public/app-version': typeof ApiPublicAppVersionRoute
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/documents': typeof AuthenticatedDocumentsIndexRoute
   '/motorcycles': typeof AuthenticatedMotorcyclesIndexRoute
@@ -456,6 +464,7 @@ export interface FileRoutesById {
   '/_authenticated/tickets/$id': typeof AuthenticatedTicketsIdRoute
   '/_authenticated/tickets/cpf-change': typeof AuthenticatedTicketsCpfChangeRoute
   '/_authenticated/tickets/new': typeof AuthenticatedTicketsNewRoute
+  '/api/public/app-version': typeof ApiPublicAppVersionRoute
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/documents/': typeof AuthenticatedDocumentsIndexRoute
   '/_authenticated/motorcycles/': typeof AuthenticatedMotorcyclesIndexRoute
@@ -507,6 +516,7 @@ export interface FileRouteTypes {
     | '/tickets/$id'
     | '/tickets/cpf-change'
     | '/tickets/new'
+    | '/api/public/app-version'
     | '/admin/'
     | '/documents/'
     | '/motorcycles/'
@@ -553,6 +563,7 @@ export interface FileRouteTypes {
     | '/tickets/$id'
     | '/tickets/cpf-change'
     | '/tickets/new'
+    | '/api/public/app-version'
     | '/admin'
     | '/documents'
     | '/motorcycles'
@@ -603,6 +614,7 @@ export interface FileRouteTypes {
     | '/_authenticated/tickets/$id'
     | '/_authenticated/tickets/cpf-change'
     | '/_authenticated/tickets/new'
+    | '/api/public/app-version'
     | '/_authenticated/admin/'
     | '/_authenticated/documents/'
     | '/_authenticated/motorcycles/'
@@ -623,6 +635,7 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   CTokenRoute: typeof CTokenRoute
   RCodeRoute: typeof RCodeRoute
+  ApiPublicAppVersionRoute: typeof ApiPublicAppVersionRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -836,6 +849,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
       parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/api/public/app-version': {
+      id: '/api/public/app-version'
+      path: '/api/public/app-version'
+      fullPath: '/api/public/app-version'
+      preLoaderRoute: typeof ApiPublicAppVersionRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/_authenticated/tickets/new': {
       id: '/_authenticated/tickets/new'
@@ -1099,6 +1119,7 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   CTokenRoute: CTokenRoute,
   RCodeRoute: RCodeRoute,
+  ApiPublicAppVersionRoute: ApiPublicAppVersionRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
