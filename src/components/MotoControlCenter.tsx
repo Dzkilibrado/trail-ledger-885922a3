@@ -44,8 +44,6 @@ import { useActiveNegotiation } from "@/hooks/useActiveNegotiation";
 import { ActiveNegotiationCard } from "@/components/ActiveNegotiationCard";
 import { EmitReceiptDialog } from "@/components/receipts/EmitReceiptDialog";
 import { FileSignature, ExternalLink, Download } from "lucide-react";
-import { useServerFn } from "@tanstack/react-start";
-import { getReceiptSignedUrl } from "@/lib/smart-receipts.functions";
 import { ReceiptsSummaryRow } from "@/components/receipts/ReceiptsHistorySheet";
 import { useReceiptsForMoto } from "@/hooks/useActiveNegotiation";
 import { clearActiveMotorcycleIfMatches, invalidateMotorcycleState, setStoredActiveMotorcycleId } from "@/hooks/useActiveMotorcycle";
@@ -77,16 +75,8 @@ export function MotoControlCenter({ id }: { id: string }) {
   const pendency = useMotoDocumentPendency(id);
   const activeNegotiation = useActiveNegotiation(id);
   const receiptsForMoto = useReceiptsForMoto(id);
-  const signedUrlFn = useServerFn(getReceiptSignedUrl);
-
-  async function openReceiptPdf(code: string, variant: "signed" | "original") {
-    try {
-      const { url } = await signedUrlFn({ data: { code, variant } });
-      if (url) window.open(url, "_blank", "noopener,noreferrer");
-      else toast.error("PDF do recibo indisponível");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao abrir PDF");
-    }
+  function openReceiptPdf(code: string, variant: "signed" | "original") {
+    navigate({ to: "/recibos/$code/visualizar", params: { code }, search: { variant } });
   }
 
   const events = useQuery({

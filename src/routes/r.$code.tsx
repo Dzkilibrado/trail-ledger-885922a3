@@ -1,13 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
-import { validateReceiptPublic, getReceiptPdfBytes } from "@/lib/smart-receipts.functions";
+import { validateReceiptPublic } from "@/lib/smart-receipts.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { ReceiptStatusBadge } from "@/components/receipts/ReceiptStatusBadge";
 import { formatIssuedAt, formatVersion, sha256HexBytes, type ReceiptStatus } from "@/lib/smart-receipts";
 import { Button } from "@/components/ui/button";
-import { BadgeCheck, Download, FileWarning, ShieldCheck, ShieldX, Upload } from "lucide-react";
+import { BadgeCheck, Eye, FileWarning, ShieldCheck, ShieldX, Upload } from "lucide-react";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/r/$code")({
   head: ({ params }) => ({
@@ -29,7 +29,7 @@ function PublicReceipt() {
   const { code } = Route.useParams();
   const [verifyResult, setVerifyResult] = useState<null | { ok: boolean; sha256: string }>(null);
   const [busy, setBusy] = useState(false);
-  const pdfBytesFn = useServerFn(getReceiptPdfBytes);
+  const navigate = useNavigate();
 
   const q = useQuery({
     queryKey: ["public-receipt", code],
@@ -60,24 +60,17 @@ function PublicReceipt() {
     } finally { setBusy(false); }
   }
 
-  async function download() {
-    let opened: Window | null = null;
-    try {
-      const { data: sess } = await supabase.auth.getSession();
-      if (!sess.session) {
-        alert("Faça login como vendedor ou comprador para baixar o PDF.");
-        return;
-      }
-      opened = window.open("about:blank", "_blank", "noopener,noreferrer");
-      const res = await pdfBytesFn({ data: { code } });
-      if (!res.found) { opened?.close(); alert("Download disponível apenas para as partes envolvidas."); return; }
-      const bin = atob(res.base64);
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      const blobUrl = URL.createObjectURL(new Blob([bytes], { type: res.contentType }));
-      if (opened) opened.location.href = blobUrl; else window.open(blobUrl, "_blank", "noopener,noreferrer");
-      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
-    } catch { opened?.close(); alert("Faça login como vendedor ou comprador para baixar o PDF."); }
+  async function openInternalViewer() {
+    const { data: sess } = await supabase.auth.getSession();
+    if (!sess.session) {
+      toast.info("Faça login como vendedor ou comprador para visualizar o PDF.");
+      return;
+    }
+    navigate({
+      to: "/recibos/$code/visualizar",
+      params: { code },
+      search: { variant: (r.status === "completed" ? "signed" : "original") as "signed" | "original" },
+    });
   }
 
   return (
@@ -116,8 +109,8 @@ function PublicReceipt() {
         <h2 className="mb-2 text-xs uppercase tracking-widest text-muted-foreground">Autenticidade</h2>
         <p className="break-all font-mono text-[11px] text-muted-foreground">SHA-256: {r.sha256}</p>
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" onClick={download}>
-            <Download className="h-4 w-4" /> Baixar PDF (partes)
+          <Button variant="outline" size="sm" onClick={openInternalViewer}>
+            <Eye className="h-4 w-4" /> Visualizar PDF (partes)
           </Button>
           <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm hover:bg-muted">
             <Upload className="h-4 w-4" />
