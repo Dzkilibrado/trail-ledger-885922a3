@@ -53,7 +53,6 @@ import { Route as AuthenticatedAdminMessagesRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminHomologRouteImport } from './routes/_authenticated/admin.homolog'
 import { Route as AuthenticatedAdminDocumentsRouteImport } from './routes/_authenticated/admin.documents'
 import { Route as AuthenticatedMotorcyclesIdIndexRouteImport } from './routes/_authenticated/motorcycles.$id.index'
-import { Route as ApiReceiptsCodePdfRouteImport } from './routes/api/receipts/$code.pdf'
 import { Route as AuthenticatedMotorcyclesIdPlanRouteImport } from './routes/_authenticated/motorcycles.$id.plan'
 import { Route as AuthenticatedMotorcyclesIdPassportRouteImport } from './routes/_authenticated/motorcycles.$id.passport'
 import { Route as AuthenticatedMotorcyclesIdHealthRouteImport } from './routes/_authenticated/motorcycles.$id.health'
@@ -297,11 +296,6 @@ const AuthenticatedMotorcyclesIdIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
   } as any)
-const ApiReceiptsCodePdfRoute = ApiReceiptsCodePdfRouteImport.update({
-  id: '/api/receipts/$code/pdf',
-  path: '/api/receipts/$code/pdf',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthenticatedMotorcyclesIdPlanRoute =
   AuthenticatedMotorcyclesIdPlanRouteImport.update({
     id: '/plan',
@@ -381,7 +375,6 @@ export interface FileRoutesByFullPath {
   '/motorcycles/$id/health': typeof AuthenticatedMotorcyclesIdHealthRoute
   '/motorcycles/$id/passport': typeof AuthenticatedMotorcyclesIdPassportRoute
   '/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
-  '/api/receipts/$code/pdf': typeof ApiReceiptsCodePdfRoute
   '/motorcycles/$id/': typeof AuthenticatedMotorcyclesIdIndexRoute
 }
 export interface FileRoutesByTo {
@@ -429,7 +422,6 @@ export interface FileRoutesByTo {
   '/motorcycles/$id/health': typeof AuthenticatedMotorcyclesIdHealthRoute
   '/motorcycles/$id/passport': typeof AuthenticatedMotorcyclesIdPassportRoute
   '/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
-  '/api/receipts/$code/pdf': typeof ApiReceiptsCodePdfRoute
   '/motorcycles/$id': typeof AuthenticatedMotorcyclesIdIndexRoute
 }
 export interface FileRoutesById {
@@ -482,7 +474,6 @@ export interface FileRoutesById {
   '/_authenticated/motorcycles/$id/health': typeof AuthenticatedMotorcyclesIdHealthRoute
   '/_authenticated/motorcycles/$id/passport': typeof AuthenticatedMotorcyclesIdPassportRoute
   '/_authenticated/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
-  '/api/receipts/$code/pdf': typeof ApiReceiptsCodePdfRoute
   '/_authenticated/motorcycles/$id/': typeof AuthenticatedMotorcyclesIdIndexRoute
 }
 export interface FileRouteTypes {
@@ -535,7 +526,6 @@ export interface FileRouteTypes {
     | '/motorcycles/$id/health'
     | '/motorcycles/$id/passport'
     | '/motorcycles/$id/plan'
-    | '/api/receipts/$code/pdf'
     | '/motorcycles/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -583,7 +573,6 @@ export interface FileRouteTypes {
     | '/motorcycles/$id/health'
     | '/motorcycles/$id/passport'
     | '/motorcycles/$id/plan'
-    | '/api/receipts/$code/pdf'
     | '/motorcycles/$id'
   id:
     | '__root__'
@@ -635,7 +624,6 @@ export interface FileRouteTypes {
     | '/_authenticated/motorcycles/$id/health'
     | '/_authenticated/motorcycles/$id/passport'
     | '/_authenticated/motorcycles/$id/plan'
-    | '/api/receipts/$code/pdf'
     | '/_authenticated/motorcycles/$id/'
   fileRoutesById: FileRoutesById
 }
@@ -648,7 +636,6 @@ export interface RootRouteChildren {
   CTokenRoute: typeof CTokenRoute
   RCodeRoute: typeof RCodeRoute
   ApiPublicAppVersionRoute: typeof ApiPublicAppVersionRoute
-  ApiReceiptsCodePdfRoute: typeof ApiReceiptsCodePdfRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -961,13 +948,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMotorcyclesIdIndexRouteImport
       parentRoute: typeof AuthenticatedMotorcyclesIdRoute
     }
-    '/api/receipts/$code/pdf': {
-      id: '/api/receipts/$code/pdf'
-      path: '/api/receipts/$code/pdf'
-      fullPath: '/api/receipts/$code/pdf'
-      preLoaderRoute: typeof ApiReceiptsCodePdfRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authenticated/motorcycles/$id/plan': {
       id: '/_authenticated/motorcycles/$id/plan'
       path: '/plan'
@@ -1140,7 +1120,6 @@ const rootRouteChildren: RootRouteChildren = {
   CTokenRoute: CTokenRoute,
   RCodeRoute: RCodeRoute,
   ApiPublicAppVersionRoute: ApiPublicAppVersionRoute,
-  ApiReceiptsCodePdfRoute: ApiReceiptsCodePdfRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

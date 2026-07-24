@@ -53,6 +53,45 @@ export const getReceiptSignedUrl = createServerFn({ method: "GET" })
     return { url: signed?.signedUrl ?? null };
   });
 
+/**
+ * BUG 2 — Visualização do PDF.
+ * Retorna os BYTES do PDF (base64) para que o cliente construa um
+ * blob URL mesma-origem e o abra em nova aba. Evita completamente o
+ * ERR_BLOCKED_BY_CLIENT causado por extensões / DNS filters que
+ * bloqueiam requisições diretas ao domínio *.supabase.co.
+ * A autorização é a mesma do getReceiptSignedUrl (RPC valida a parte).
+ */
+export const getReceiptPdfBytes = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: { code: string; variant?: "signed" | "original" }) => ({
+    code: String(data.code).toUpperCase(),
+    variant: data.variant === "original" ? ("original" as const) : ("signed" as const),
+  }))
+  .handler(async ({ data, context }) => {
+    const preferSigned = data.variant === "signed";
+    const { data: path, error } = await context.supabase.rpc(
+      "get_receipt_pdf_path" as never,
+      { _code: data.code, _prefer_signed: preferSigned } as never,
+    );
+    if (error) throw new Error(error.message);
+    if (!path) return { found: false as const };
+
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { data: blob, error: dErr } = await supabaseAdmin.storage
+      .from("smart-receipts").download(String(path));
+    if (dErr || !blob) throw new Error(dErr?.message ?? "Falha ao carregar PDF");
+
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    // Base64 (Worker runtime tem Buffer via nodejs_compat).
+    const base64 = Buffer.from(bytes).toString("base64");
+    return {
+      found: true as const,
+      base64,
+      contentType: "application/pdf" as const,
+      filename: `${data.code}${preferSigned ? "-assinado" : ""}.pdf`,
+    };
+  });
+
 // ============================================================================
 // LIFECYCLE
 // draft → issued → awaiting_acceptance → completed
