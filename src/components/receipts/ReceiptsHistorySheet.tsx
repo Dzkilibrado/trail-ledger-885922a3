@@ -9,7 +9,7 @@ import { useReceiptsForMoto } from "@/hooks/useActiveNegotiation";
 import { formatCurrencyBRL, formatIssuedAt, formatVersion } from "@/lib/smart-receipts";
 import type { ReceiptStatus } from "@/lib/smart-receipts";
 import { FileSignature, ExternalLink, ChevronRight, Download } from "lucide-react";
-import { getReceiptSignedUrl } from "@/lib/smart-receipts.functions";
+import { getReceiptPdfBytes } from "@/lib/smart-receipts.functions";
 import { toast } from "sonner";
 
 export function ReceiptsHistorySheet({
@@ -23,14 +23,34 @@ export function ReceiptsHistorySheet({
 }) {
   const [open, setOpen] = useState(false);
   const { data: rows, isLoading } = useReceiptsForMoto(open ? motoId : undefined);
-  const signedUrlFn = useServerFn(getReceiptSignedUrl);
+  const pdfBytesFn = useServerFn(getReceiptPdfBytes);
 
+  // Bug 2: monta blob URL mesma-origem para escapar de extensões/DNS
+  // filters que bloqueiam requisições diretas ao Storage do backend
+  // (ERR_BLOCKED_BY_CLIENT). Blob URLs (`blob:https://trailbook.com.br/...`)
+  // não passam por filtros de rede.
   async function openPdf(code: string, variant: "signed" | "original") {
+    let opened: Window | null = null;
     try {
-      const { url } = await signedUrlFn({ data: { code, variant } });
-      if (url) window.open(url, "_blank", "noopener,noreferrer");
-      else toast.error("PDF indisponível para este recibo");
+      // Abre a aba SÍNCRONAMENTE no clique — evita bloqueio de popup.
+      opened = window.open("about:blank", "_blank", "noopener,noreferrer");
+      const res = await pdfBytesFn({ data: { code, variant } });
+      if (!res.found) {
+        opened?.close();
+        toast.error("PDF indisponível para este recibo");
+        return;
+      }
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: res.contentType });
+      const blobUrl = URL.createObjectURL(blob);
+      if (opened) opened.location.href = blobUrl;
+      else window.open(blobUrl, "_blank", "noopener,noreferrer");
+      // Libera o objeto após ~1min (tempo suficiente para a aba carregar).
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     } catch (e) {
+      opened?.close();
       toast.error(e instanceof Error ? e.message : "Falha ao abrir PDF");
     }
   }
