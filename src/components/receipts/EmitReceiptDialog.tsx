@@ -515,7 +515,7 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
                   <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Confirme o comprador</p>
                   <div className="mt-1 text-sm">
                     <p className="font-semibold">{buyerCandidate.full_name || "—"}</p>
-                    {buyerCandidate.email && <p className="text-xs text-muted-foreground">{buyerCandidate.email}</p>}
+                    {buyerCandidate.email_masked && <p className="text-xs text-muted-foreground">{buyerCandidate.email_masked}</p>}
                     {buyerCandidate.cpf_masked && <p className="text-xs text-muted-foreground">CPF {buyerCandidate.cpf_masked}</p>}
                   </div>
                   <div className="mt-2 flex gap-2">
