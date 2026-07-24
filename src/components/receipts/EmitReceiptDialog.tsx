@@ -31,7 +31,7 @@ import { isStaleStateError, staleStateUserMessage, stripStaleStatePrefix } from 
 
 const PAYMENT_METHODS = ["Dinheiro", "PIX", "Transferência bancária", "Financiamento", "Cartão", "Outro"];
 
-type BuyerLookup = { id: string; full_name: string; email: string | null; cpf_masked: string | null } | null;
+type BuyerLookup = { id: string; full_name: string; email_masked: string | null; cpf_masked: string | null } | null;
 type ReceiptRow = {
   id: string; code: string; status: string; version: number;
   buyer_id: string | null; seller_id: string; external_buyer: boolean;
@@ -146,14 +146,19 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
       setBuyerCpf(r.buyer_snapshot?.cpf ?? "");
       setBuyerEmail(r.buyer_snapshot?.email ?? "");
       setBuyerMode(r.external_buyer ? "external" : "tb");
-      if (r.buyer_id) setBuyerFound({
-        id: r.buyer_id,
-        full_name: r.buyer_snapshot?.full_name ?? "",
-        email: r.buyer_snapshot?.email ?? null,
-        cpf_masked: r.buyer_snapshot?.cpf
-          ? `***.***.***-${r.buyer_snapshot.cpf.replace(/\D/g, "").slice(-2)}`
-          : null,
-      });
+      if (r.buyer_id) {
+        const rawEmail = r.buyer_snapshot?.email ?? null;
+        setBuyerFound({
+          id: r.buyer_id,
+          full_name: r.buyer_snapshot?.full_name ?? "",
+          email_masked: rawEmail
+            ? `${rawEmail.slice(0, 1)}***@${rawEmail.split("@")[1] ?? ""}`
+            : null,
+          cpf_masked: r.buyer_snapshot?.cpf
+            ? `***.***.***-${r.buyer_snapshot.cpf.replace(/\D/g, "").slice(-2)}`
+            : null,
+        });
+      }
       setAmount(String(r.negotiation?.amount ?? ""));
       setPaymentMethod(r.negotiation?.payment_method ?? "PIX");
       setDate(r.negotiation?.date ?? new Date().toISOString().slice(0, 10));
@@ -192,8 +197,10 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     if (!buyerCandidate) return;
     setBuyerFound(buyerCandidate);
     setBuyerName(buyerCandidate.full_name ?? "");
-    setBuyerEmail(buyerCandidate.email ?? "");
-    // CPF completo permanece protegido no banco; vendedor digita se necessário.
+    // E-mail e CPF completos NÃO são expostos ao vendedor. O backend enriquece
+    // o snapshot do recibo a partir do buyer_id (RLS bypass controlado)
+    // durante a criação/atualização do rascunho.
+    setBuyerEmail("");
     setBuyerCpf("");
     setBuyerCandidate(null);
   }
@@ -508,7 +515,7 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
                   <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Confirme o comprador</p>
                   <div className="mt-1 text-sm">
                     <p className="font-semibold">{buyerCandidate.full_name || "—"}</p>
-                    {buyerCandidate.email && <p className="text-xs text-muted-foreground">{buyerCandidate.email}</p>}
+                    {buyerCandidate.email_masked && <p className="text-xs text-muted-foreground">{buyerCandidate.email_masked}</p>}
                     {buyerCandidate.cpf_masked && <p className="text-xs text-muted-foreground">CPF {buyerCandidate.cpf_masked}</p>}
                   </div>
                   <div className="mt-2 flex gap-2">
