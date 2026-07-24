@@ -105,7 +105,8 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
   const accept = useServerFn(acceptSignedReceipt);
   const complete = useServerFn(completeReceiptTransfer);
   const cancelDraft = useServerFn(cancelDraftReceipt);
-  const signedUrlFn = useServerFn(getReceiptSignedUrl);
+  const pdfBytesFn = useServerFn(getReceiptPdfBytes);
+  const navigate = useNavigate();
   const confirmBuyerFn = useServerFn(getConfirmedBuyerDetails);
   const profileQ = useProfileSnapshot();
 
@@ -445,30 +446,28 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     toast.error(isTechnical ? "Não foi possível concluir esta ação agora. Tente novamente em instantes." : raw);
   }
 
-  async function downloadOriginal() {
+  function viewPdf() {
     if (!currentReceipt) return;
-    try {
-      const { url } = await signedUrlFn({ data: { code: currentReceipt.code, variant: "original" } });
-      if (url) window.open(url, "_blank");
-      else toast.error("PDF indisponível");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha");
-    }
+    navigate({
+      to: "/recibos/$code/visualizar",
+      params: { code: currentReceipt.code },
+      search: { variant: "original" },
+    });
   }
-
-  async function viewPdf() { await downloadOriginal(); }
 
   async function downloadPdfBlob() {
     if (!currentReceipt) return;
     try {
-      const { url } = await signedUrlFn({ data: { code: currentReceipt.code, variant: "original" } });
-      if (!url) { toast.error("PDF indisponível"); return; }
-      const resp = await fetch(url);
-      const blob = await resp.blob();
+      const res = await pdfBytesFn({ data: { code: currentReceipt.code, variant: "original" } });
+      if (!res.found) { toast.error("PDF indisponível"); return; }
+      const bin = atob(res.base64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+      const href = URL.createObjectURL(new Blob([buf], { type: res.contentType }));
       const a = document.createElement("a");
-      const href = URL.createObjectURL(blob);
       a.href = href;
-      a.download = `${currentReceipt.code}.pdf`;
+      a.download = res.filename ?? `${currentReceipt.code}.pdf`;
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(href), 5_000);
     } catch (e) {
@@ -496,16 +495,13 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     }
   }
 
-  async function printPdf() {
+  function printPdf() {
     if (!currentReceipt) return;
-    try {
-      const { url } = await signedUrlFn({ data: { code: currentReceipt.code, variant: "original" } });
-      if (!url) { toast.error("PDF indisponível"); return; }
-      const w = window.open(url, "_blank", "noopener,noreferrer");
-      if (!w) toast.info("Permita pop-ups para imprimir diretamente");
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Falha ao imprimir");
-    }
+    navigate({
+      to: "/recibos/$code/visualizar",
+      params: { code: currentReceipt.code },
+      search: { variant: "original" },
+    });
   }
 
   function continueLater() {
