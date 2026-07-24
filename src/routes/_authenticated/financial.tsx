@@ -29,7 +29,7 @@ function Financial() {
   const motos = useActiveMotorcycles();
   const workshops = useQuery({
     queryKey: ["workshops", "list"],
-    queryFn: async () => (await supabase.from("workshops").select("id, name").order("name")).data ?? [],
+    queryFn: async () => (await supabase.from("workshops_public").select("id, name").order("name")).data ?? [],
   });
   const events = useQuery({
     queryKey: ["events", "all-with-cost"],
@@ -167,8 +167,8 @@ function Financial() {
           <SelectTrigger className="w-44"><SelectValue placeholder="Todas as oficinas" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Todas as oficinas</SelectItem>
-            {(workshops.data ?? []).map((w) => (
-              <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
+            {(workshops.data ?? []).filter((w) => w.id && w.name).map((w) => (
+              <SelectItem key={w.id!} value={w.id!}>{w.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>
