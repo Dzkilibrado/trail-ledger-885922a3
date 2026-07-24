@@ -99,7 +99,7 @@ function Passport() {
   });
   const workshops = useQuery({
     queryKey: ["workshops", "byId"],
-    queryFn: async () => (await supabase.from("workshops").select("id, name")).data ?? [],
+    queryFn: async () => (await supabase.from("workshops_public").select("id, name")).data ?? [],
   });
   const receipts = useReceiptsForMoto(id);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
