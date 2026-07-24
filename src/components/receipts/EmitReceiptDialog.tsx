@@ -28,6 +28,7 @@ import { LocationPicker } from "@/components/LocationPicker";
 import { useProfileSnapshot } from "@/hooks/useProfileSnapshot";
 import { ProfileDataChip } from "@/components/ProfileDataChip";
 import { isStaleStateError, staleStateUserMessage, stripStaleStatePrefix } from "@/lib/errors/stale-state";
+import { LOCAL_BUILD } from "@/lib/version/build-info";
 
 const PAYMENT_METHODS = ["Dinheiro", "PIX", "Transferência bancária", "Financiamento", "Cartão", "Outro"];
 
@@ -41,6 +42,76 @@ type ReceiptRow = {
   seller_accepted_at: string | null;
   buyer_accepted_at: string | null;
 };
+
+const BUYER_LOOKUP_DIAG_VERSION = "buyer-lookup-diag-2026-07-24-01";
+const BUYER_LOOKUP_COMPONENT_FILE = "src/components/receipts/EmitReceiptDialog.tsx";
+
+function maskEmailForDiag(email: string | null | undefined): string | null {
+  if (!email || !email.includes("@")) return null;
+  const [name, domain] = email.split("@");
+  return `${name.slice(0, 2)}***@${domain}`;
+}
+
+function normalizeRpcError(error: unknown) {
+  if (!error || typeof error !== "object") return error;
+  const e = error as Record<string, unknown>;
+  return {
+    code: e.code ?? null,
+    message: e.message ?? null,
+    details: e.details ?? null,
+    hint: e.hint ?? null,
+    name: e.name ?? null,
+    stack: e.stack ?? null,
+    raw: e,
+  };
+}
+
+function detectBuyerSearchTypeForDiag(query: string): "cpf" | "email" | "invalid" {
+  const normalized = query.trim();
+  const digits = normalized.replace(/\D/g, "");
+  if (digits === normalized && digits.length === 11) return "cpf";
+  if (digits.length >= 11 && normalized.replace(/[\d.\-\s]/g, "") === "") return "cpf";
+  if (normalized.includes("@")) return "email";
+  return "invalid";
+}
+
+function safeJwtDiagnostics(token: string | null | undefined) {
+  if (!token) return { present: false, parts: 0 };
+  const parts = token.split(".");
+  let payload: Record<string, unknown> | null = null;
+  try {
+    const base64 = parts[1]?.replace(/-/g, "+").replace(/_/g, "/") ?? "";
+    const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
+    payload = JSON.parse(atob(padded)) as Record<string, unknown>;
+  } catch {
+    payload = null;
+  }
+  return {
+    present: true,
+    parts: parts.length,
+    sub: payload?.sub ?? null,
+    role: payload?.role ?? null,
+    aud: payload?.aud ?? null,
+    exp: payload?.exp ?? null,
+    iss_present: Boolean(payload?.iss),
+  };
+}
+
+function redactHeadersForDiag(headers: Headers) {
+  const out: Record<string, string> = {};
+  headers.forEach((value, key) => {
+    if (key.toLowerCase() === "authorization") {
+      out[key] = value.startsWith("Bearer ") ? "Bearer [REDACTED]" : "[REDACTED]";
+      return;
+    }
+    if (key.toLowerCase() === "apikey") {
+      out[key] = "[REDACTED]";
+      return;
+    }
+    out[key] = value;
+  });
+  return out;
+}
 
 function makeReceiptRequestId(): string {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
@@ -104,6 +175,17 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
   const cancelDraft = useServerFn(cancelDraftReceipt);
   const signedUrlFn = useServerFn(getReceiptSignedUrl);
   const profileQ = useProfileSnapshot();
+
+  useEffect(() => {
+    if (!open) return;
+    console.info("[TB][buyer-lookup] component_rendered", {
+      diagVersion: BUYER_LOOKUP_DIAG_VERSION,
+      component: "EmitReceiptDialog",
+      file: BUYER_LOOKUP_COMPONENT_FILE,
+      route: typeof window !== "undefined" ? window.location.pathname : null,
+      build: LOCAL_BUILD,
+    });
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -175,22 +257,117 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     if (!q) return;
     setBuyerCandidate(null);
     setBuyerFound(null);
+    const requestId = makeReceiptRequestId();
+    const searchType = detectBuyerSearchTypeForDiag(q);
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    const token = sessionData.session?.access_token ?? null;
+    const rpcHttp: Array<Record<string, unknown>> = [];
+
+    console.groupCollapsed("[TB][buyer-lookup] lookupBuyer() chamado", requestId);
+    console.info("[TB][buyer-lookup] chamada iniciada", {
+      requestId,
+      diagVersion: BUYER_LOOKUP_DIAG_VERSION,
+      component: "EmitReceiptDialog",
+      file: BUYER_LOOKUP_COMPONENT_FILE,
+      route: typeof window !== "undefined" ? window.location.pathname : null,
+      build: LOCAL_BUILD,
+      buyerMode,
+      motorcycleId,
+      searchType,
+      paramsSentToRpc: { _query: q },
+      auth: {
+        getSessionError: normalizeRpcError(sessionError),
+        getUserError: normalizeRpcError(userError),
+        userId: userData.user?.id ?? null,
+        provider: userData.user?.app_metadata?.provider ?? null,
+        emailMasked: maskEmailForDiag(userData.user?.email),
+        jwt: safeJwtDiagnostics(token),
+      },
+    });
+
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = async (input, init) => {
+      const requestUrl = typeof input === "string" ? input : input instanceof Request ? input.url : String(input);
+      if (!requestUrl.includes("/rest/v1/rpc/find_trailbook_buyer")) {
+        return originalFetch(input, init);
+      }
+
+      const reqHeaders = new Headers(input instanceof Request ? input.headers : undefined);
+      if (init?.headers) new Headers(init.headers).forEach((value, key) => reqHeaders.set(key, value));
+      let requestBody: unknown = typeof init?.body === "string" ? init.body : null;
+      if (!requestBody && input instanceof Request) {
+        requestBody = await input.clone().text().catch(() => null);
+      }
+      console.info("[TB][buyer-lookup] RPC HTTP request", {
+        requestId,
+        url: requestUrl,
+        method: init?.method ?? (input instanceof Request ? input.method : "GET"),
+        headers: redactHeadersForDiag(reqHeaders),
+        body: requestBody,
+      });
+
+      const response = await originalFetch(input, init);
+      const responseText = await response.clone().text().catch((err: unknown) => `<<body_read_error:${err instanceof Error ? err.message : String(err)}>>`);
+      const record = {
+        requestId,
+        url: requestUrl,
+        status: response.status,
+        ok: response.ok,
+        statusText: response.statusText,
+        responseHeaders: redactHeadersForDiag(response.headers),
+        responseBody: responseText,
+      };
+      rpcHttp.push(record);
+      console.info("[TB][buyer-lookup] RPC HTTP response", record);
+      return response;
+    };
+
     // Busca exclusivamente via RPC SECURITY DEFINER. Nenhuma leitura direta
     // em `profiles` a partir do cliente. A RPC detecta CPF vs e-mail, exige
     // autenticação, aplica rate limit e registra auditoria.
-    const { data, error } = await supabase.rpc(
-      "find_trailbook_buyer" as never,
-      { _query: q } as never,
-    );
+    let rpcResult: Awaited<ReturnType<typeof supabase.rpc>> | null = null;
+    try {
+      rpcResult = await supabase.rpc(
+        "find_trailbook_buyer" as never,
+        { _query: q } as never,
+      );
+    } catch (err) {
+      console.error("[TB][buyer-lookup] exceção durante supabase.rpc", {
+        requestId,
+        error: normalizeRpcError(err),
+        rpcHttp,
+      });
+      toast.error(`Exceção real da busca: ${err instanceof Error ? err.message : String(err)}`);
+      console.groupEnd();
+      return;
+    } finally {
+      window.fetch = originalFetch;
+    }
+    const { data, error } = rpcResult;
+
+    console.info("[TB][buyer-lookup] retorno bruto supabase.rpc", {
+      requestId,
+      data,
+      error: normalizeRpcError(error),
+      rpcHttp,
+    });
     if (error) {
-      // Mensagem única e neutra — não vaza estado do usuário-alvo.
-      toast.info("Nenhum usuário TrailBook encontrado");
+      toast.error(`Erro real da busca: ${error.code ?? "sem código"} — ${error.message}`);
+      console.groupEnd();
       return;
     }
     const row = Array.isArray(data) ? (data[0] as BuyerLookup) : null;
-    if (!row) { toast.info("Nenhum usuário TrailBook encontrado"); return; }
+    if (!row) {
+      console.info("[TB][buyer-lookup] RPC executada sem erro, mas retornou lista vazia", { requestId, data, rpcHttp });
+      toast.info("Nenhum usuário TrailBook encontrado");
+      console.groupEnd();
+      return;
+    }
     // Não preenche o formulário; exige confirmação explícita do vendedor.
     setBuyerCandidate(row);
+    console.info("[TB][buyer-lookup] comprador candidato recebido", { requestId, row });
+    console.groupEnd();
   }
 
   function confirmBuyerCandidate() {
