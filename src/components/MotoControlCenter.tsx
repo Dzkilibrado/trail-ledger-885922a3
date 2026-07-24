@@ -44,7 +44,6 @@ import { useActiveNegotiation } from "@/hooks/useActiveNegotiation";
 import { ActiveNegotiationCard } from "@/components/ActiveNegotiationCard";
 import { EmitReceiptDialog } from "@/components/receipts/EmitReceiptDialog";
 import { FileSignature, ExternalLink, Download } from "lucide-react";
-import { useServerFn } from "@tanstack/react-start";
 import { ReceiptsSummaryRow } from "@/components/receipts/ReceiptsHistorySheet";
 import { useReceiptsForMoto } from "@/hooks/useActiveNegotiation";
 import { clearActiveMotorcycleIfMatches, invalidateMotorcycleState, setStoredActiveMotorcycleId } from "@/hooks/useActiveMotorcycle";
