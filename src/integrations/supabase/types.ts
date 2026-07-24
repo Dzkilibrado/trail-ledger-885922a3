@@ -131,6 +131,24 @@ export type Database = {
         }
         Relationships: []
       }
+      buyer_search_secret: {
+        Row: {
+          created_at: string
+          id: boolean
+          pepper: string
+        }
+        Insert: {
+          created_at?: string
+          id?: boolean
+          pepper: string
+        }
+        Update: {
+          created_at?: string
+          id?: boolean
+          pepper?: string
+        }
+        Relationships: []
+      }
       certificate_access_log: {
         Row: {
           accessed_at: string
@@ -2997,7 +3015,7 @@ export type Database = {
         Args: { _query: string }
         Returns: {
           cpf_masked: string
-          email: string
+          email_masked: string
           full_name: string
           id: string
         }[]
@@ -3092,6 +3110,7 @@ export type Database = {
         Returns: undefined
       }
       mask_cpf: { Args: { _cpf: string }; Returns: string }
+      mask_email: { Args: { _email: string }; Returns: string }
       me_access_status: { Args: never; Returns: Json }
       my_workshop_private: {
         Args: { _workshop: string }
