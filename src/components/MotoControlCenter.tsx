@@ -33,7 +33,6 @@ import { MotorcyclePhotos } from "@/components/MotorcyclePhotos";
 import { InspectionDialog } from "@/components/InspectionDialog";
 import { PlanCatalogSyncDialog } from "@/components/PlanCatalogSyncDialog";
 import { Link } from "@tanstack/react-router";
-import { Eye } from "lucide-react";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { AdminMotoDangerZone } from "@/components/AdminMotoDangerZone";
 import { EventActionsMenu } from "@/components/EventActionsMenu";
