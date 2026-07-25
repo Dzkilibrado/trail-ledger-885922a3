@@ -3,6 +3,7 @@ import { TBPdfViewer } from "@/components/pdf/TBPdfViewer";
 import { RECEIPT_STATUS_LABEL, type ReceiptStatus } from "@/lib/smart-receipts";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { closureBannerText, type ClosureType } from "@/lib/receipts/close-reasons";
 
 type SearchParams = { variant?: "signed" | "original"; from?: string };
 
@@ -43,15 +44,29 @@ function ReceiptViewer() {
     queryFn: async () => {
       const { data } = await supabase
         .from("smart_receipts" as never)
-        .select("status")
+        .select("status, closure_type")
         .eq("code", code)
         .maybeSingle();
-      return (data as { status?: string } | null) ?? null;
+      return (data as { status?: string; closure_type?: ClosureType | null } | null) ?? null;
     },
   });
   const statusLabel = meta.data?.status
     ? RECEIPT_STATUS_LABEL[meta.data.status as ReceiptStatus] ?? meta.data.status
     : null;
+
+  const status = meta.data?.status ?? null;
+  const banner = (() => {
+    if (status === "cancelled") {
+      return {
+        text: closureBannerText(meta.data?.closure_type ?? null, status),
+        tone: "destructive" as const,
+      };
+    }
+    if (status === "revoked" || status === "superseded") {
+      return { text: closureBannerText(null, status), tone: "warning" as const };
+    }
+    return null;
+  })();
 
   function goBack() {
     if (from) { navigate({ to: from }); return; }
@@ -70,6 +85,7 @@ function ReceiptViewer() {
       status={statusLabel}
       onBack={goBack}
       onClose={close}
+      banner={banner}
     />
   );
 }
