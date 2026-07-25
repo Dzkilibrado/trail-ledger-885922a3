@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Bell, Mail, ArrowRightLeft, LifeBuoy, Clock, ChevronRight } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
+import { listUserProcesses } from "@/lib/transfers.functions";
 
 export const Route = createFileRoute("/_authenticated/central")({
   head: () => ({ meta: [{ title: "Central — TrailBook" }] }),
@@ -38,11 +40,17 @@ function CentralHub() {
     },
     staleTime: 30_000,
   });
+  const listProcesses = useServerFn(listUserProcesses);
+  const awaitingTransfers = useQuery({
+    queryKey: ["user-processes", "awaiting-count"],
+    queryFn: async () => (await listProcesses()).filter((p) => p.requires_user_action).length,
+    staleTime: 30_000,
+  });
 
   const items = [
     { to: "/notifications", label: "Notificações", desc: "Alertas e avisos do sistema", icon: Bell, badge: unreadNotifs.data ?? 0 },
     { to: "/messages", label: "Mensagens", desc: "Conversas com suporte e oficinas", icon: Mail, badge: unreadMsgs.data ?? 0 },
-    { to: "/transfers", label: "Transferências", desc: "Compra, venda e transferência de moto", icon: ArrowRightLeft, badge: 0 },
+    { to: "/transfers", label: "Transferências", desc: "Compra, venda e transferência de moto", icon: ArrowRightLeft, badge: awaitingTransfers.data ?? 0 },
     { to: "/tickets", label: "Chamados", desc: "Solicitações de suporte", icon: LifeBuoy, badge: openTickets.data ?? 0 },
   ] as const;
 
