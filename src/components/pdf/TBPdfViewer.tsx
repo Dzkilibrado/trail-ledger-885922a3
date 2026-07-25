@@ -17,7 +17,6 @@ import {
   Printer,
   RefreshCw,
   Share2,
-  Upload,
   X,
   ZoomIn,
   ZoomOut,
