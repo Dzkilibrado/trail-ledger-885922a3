@@ -401,7 +401,7 @@ function PdfPageCanvas({ doc, pageNumber, targetWidth }: { doc: PdfDoc; pageNumb
 
   useEffect(() => {
     let cancelled = false;
-    let renderTask: { cancel: () => void } | null = null;
+    let renderTask: { cancel: () => void; promise: Promise<void> } | null = null;
     (async () => {
       try {
         const page = await doc.getPage(pageNumber);
