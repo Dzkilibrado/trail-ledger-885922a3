@@ -24,6 +24,7 @@ import {
   Bike,
   Mail,
   SlidersHorizontal,
+  FileCheck2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/trailbook";
@@ -469,6 +470,11 @@ function ProcessCard({
             <Badge variant="outline" className={BUCKET_TONE[item.status_bucket]}>
               {item.display_status}
             </Badge>
+            {item.has_signed_document && (
+              <Badge variant="outline" className={TONE.emerald}>
+                <FileCheck2 className="mr-1 h-3 w-3" /> Documento assinado recebido
+              </Badge>
+            )}
           </div>
 
           <div className="flex flex-wrap items-baseline gap-x-2">
