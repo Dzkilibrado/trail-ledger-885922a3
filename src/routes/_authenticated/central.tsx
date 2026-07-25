@@ -43,8 +43,16 @@ function CentralHub() {
   const listProcesses = useServerFn(listUserProcesses);
   const awaitingTransfers = useQuery({
     queryKey: ["user-processes", "awaiting-count"],
-    queryFn: async () => (await listProcesses()).filter((p) => p.requires_user_action).length,
+    queryFn: async () => {
+      try {
+        const list = await listProcesses();
+        return list.filter((p) => p.requires_user_action).length;
+      } catch {
+        return 0;
+      }
+    },
     staleTime: 30_000,
+    retry: false,
   });
 
   const items = [
