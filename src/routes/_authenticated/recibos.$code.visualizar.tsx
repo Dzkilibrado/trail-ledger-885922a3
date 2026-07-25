@@ -137,5 +137,3 @@ function ReceiptViewer() {
     </div>
   );
 }
-  );
-}
