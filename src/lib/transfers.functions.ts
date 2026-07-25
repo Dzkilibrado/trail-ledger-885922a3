@@ -45,6 +45,14 @@ export interface ProcessItem {
   action_owner_label: string; // "Aguardando sua ação" | "Aguardando comprador" | ...
   next_action_label: string | null;
   detail_url: string;
+  // Encerramento (recibo cancelled/revoked/superseded)
+  closure_type: "seller_cancelled" | "buyer_declined" | "admin_cancelled" | null;
+  cancellation_reason_code: string | null;
+  cancellation_notes: string | null;
+  cancellation_origin: string | null;
+  cancelled_at: string | null;
+  // Pode encerrar agora (cancelar/recusar)? Só recibos ativos.
+  can_close: boolean;
 }
 
 const RECEIPT_STATUS_LABEL: Record<string, string> = {
@@ -55,6 +63,12 @@ const RECEIPT_STATUS_LABEL: Record<string, string> = {
   cancelled: "Cancelado",
   superseded: "Substituído",
   revoked: "Revogado",
+};
+
+const CLOSURE_DISPLAY: Record<string, string> = {
+  seller_cancelled: "Cancelado pelo vendedor",
+  buyer_declined:   "Compra recusada",
+  admin_cancelled:  "Cancelado administrativamente",
 };
 
 const INVITE_STATUS_LABEL: Record<string, string> = {
@@ -89,6 +103,7 @@ export const listUserProcesses = createServerFn({ method: "GET" })
           "buyer_snapshot, seller_snapshot, negotiation, " +
           "created_at, updated_at, issued_at, signed_at, completed_at, cancelled_at, " +
           "signed_pdf_path, original_pdf_path, seller_accepted_at, buyer_accepted_at, " +
+          "closure_type, cancellation_reason_code, cancellation_notes, cancellation_origin, " +
           "motorcycle_id, " +
           "motorcycles!inner(id, brand, model, nickname, year_model, trailbook_id, main_photo_url)",
       )
@@ -206,6 +221,15 @@ export const listUserProcesses = createServerFn({ method: "GET" })
 
       const started = String(r.created_at);
       const updated = String(r.updated_at ?? r.created_at);
+      const closureType = (r.closure_type as ProcessItem["closure_type"]) ?? null;
+      const displayStatus = status === "cancelled" && closureType
+        ? (CLOSURE_DISPLAY[closureType] ?? "Cancelado")
+        : (RECEIPT_STATUS_LABEL[status] ?? status);
+      // Pode encerrar agora? Vendedor em qualquer status ativo; comprador só
+      // em issued/awaiting_acceptance (não em draft).
+      const canClose = isSeller
+        ? ["draft", "issued", "awaiting_acceptance"].includes(status)
+        : ["issued", "awaiting_acceptance"].includes(status);
 
       items.push({
         key: `receipt:${String(r.id)}`,
@@ -220,7 +244,7 @@ export const listUserProcesses = createServerFn({ method: "GET" })
         role,
         role_label: isSeller ? "Você está vendendo" : "Você está comprando",
         status,
-        display_status: RECEIPT_STATUS_LABEL[status] ?? status,
+        display_status: displayStatus,
         status_bucket: bucket,
         started_at: started,
         updated_at: updated,
@@ -229,6 +253,12 @@ export const listUserProcesses = createServerFn({ method: "GET" })
         action_owner_label: actionOwner,
         next_action_label: nextAction,
         detail_url: detail,
+        closure_type: closureType,
+        cancellation_reason_code: (r.cancellation_reason_code as string | null) ?? null,
+        cancellation_notes: (r.cancellation_notes as string | null) ?? null,
+        cancellation_origin: (r.cancellation_origin as string | null) ?? null,
+        cancelled_at: (r.cancelled_at as string | null) ?? null,
+        can_close: canClose,
       });
     }
 
@@ -299,6 +329,12 @@ export const listUserProcesses = createServerFn({ method: "GET" })
         action_owner_label: actionOwner,
         next_action_label: nextAction,
         detail_url: `/transfers?invite=${String(t.id)}`,
+        closure_type: null,
+        cancellation_reason_code: null,
+        cancellation_notes: null,
+        cancellation_origin: null,
+        cancelled_at: null,
+        can_close: false,
       });
     }
 
