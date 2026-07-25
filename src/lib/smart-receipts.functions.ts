@@ -554,6 +554,7 @@ export const cancelDraftReceipt = createServerFn({ method: "POST" })
       .from("smart_receipts").select("id, status, seller_id").eq("id", data.id).single();
     if (rErr || !r) throw new Error("Recibo não encontrado");
     if (r.seller_id !== userId) throw new Error("Apenas o vendedor pode cancelar");
+    if (r.status === "cancelled") return { ok: true as const, alreadyCancelled: true as const };
     if (!["draft", "issued", "awaiting_acceptance"].includes(r.status))
       throw new Error(`Não é possível cancelar no estado '${r.status}'`);
 
