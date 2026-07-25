@@ -483,7 +483,12 @@ export const attachSignedReceipt = createServerFn({ method: "POST" })
     // decode base64
     const b64 = data.pdf_base64.replace(/^data:application\/pdf;base64,/, "");
     const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-    if (bytes.byteLength > 15 * 1024 * 1024) throw new Error("PDF assinado excede 15 MB");
+    if (bytes.byteLength === 0) throw new Error("Arquivo vazio");
+    if (bytes.byteLength > 10 * 1024 * 1024) throw new Error("PDF assinado excede 10 MB");
+    // Valida magic bytes de PDF (%PDF-)
+    if (bytes[0] !== 0x25 || bytes[1] !== 0x50 || bytes[2] !== 0x44 || bytes[3] !== 0x46 || bytes[4] !== 0x2d) {
+      throw new Error("Arquivo não é um PDF válido");
+    }
 
     const path = `motorcycles/${r.motorcycle_id}/signed/${r.code}-v${r.version}-signed.pdf`;
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");

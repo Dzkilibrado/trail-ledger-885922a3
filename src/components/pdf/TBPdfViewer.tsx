@@ -61,6 +61,7 @@ export function TBPdfViewer({
   onBack,
   onClose,
   banner,
+  attachAction,
 }: {
   code: string;
   variant?: "signed" | "original";
@@ -69,6 +70,8 @@ export function TBPdfViewer({
   onClose: () => void;
   /** Tarja de encerramento (sobreposta ao visualizador, sem alterar o PDF). */
   banner?: { text: string; tone?: "warning" | "destructive" | "muted" } | null;
+  /** Ação opcional exibida na barra do visualizador (ex.: anexar documento assinado). */
+  attachAction?: { label: string; node: React.ReactNode } | null;
 }) {
   const pdfBytesFn = useServerFn(getReceiptPdfBytes);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -331,6 +334,7 @@ export function TBPdfViewer({
             <Share2 className="h-4 w-4 sm:mr-1" />
             <span className="hidden sm:inline">Compartilhar</span>
           </Button>
+          {attachAction ? attachAction.node : null}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" aria-label="Mais opções" className="min-h-[44px] min-w-[44px]">

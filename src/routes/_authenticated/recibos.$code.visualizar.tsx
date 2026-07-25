@@ -1,12 +1,13 @@
 import { createFileRoute, useNavigate, useRouter } from "@tanstack/react-router";
 import { TBPdfViewer } from "@/components/pdf/TBPdfViewer";
 import { RECEIPT_STATUS_LABEL, type ReceiptStatus } from "@/lib/smart-receipts";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { closureBannerText, type ClosureType } from "@/lib/receipts/close-reasons";
 import { CloseReceiptDialog } from "@/components/receipts/CloseReceiptDialog";
+import { AttachSignedDialog } from "@/components/receipts/AttachSignedDialog";
 import { Button } from "@/components/ui/button";
-import { X } from "lucide-react";
+import { X, Upload } from "lucide-react";
 
 type SearchParams = { variant?: "signed" | "original"; from?: string };
 
@@ -40,6 +41,7 @@ function ReceiptViewer() {
   const { variant = "signed", from } = Route.useSearch();
   const navigate = useNavigate();
   const router = useRouter();
+  const qc = useQueryClient();
 
   // Busca leve só para exibir o status no cabeçalho (sem PII).
   const meta = useQuery({
@@ -47,7 +49,7 @@ function ReceiptViewer() {
     queryFn: async () => {
       const { data } = await supabase
         .from("smart_receipts" as never)
-        .select("id, status, closure_type, seller_id, buyer_id, motorcycle_id")
+        .select("id, status, closure_type, seller_id, buyer_id, motorcycle_id, signed_pdf_path")
         .eq("code", code)
         .maybeSingle();
       return (data as {
@@ -57,6 +59,7 @@ function ReceiptViewer() {
         seller_id?: string;
         buyer_id?: string | null;
         motorcycle_id?: string;
+        signed_pdf_path?: string | null;
       } | null) ?? null;
     },
   });
@@ -97,6 +100,13 @@ function ReceiptViewer() {
       ? ["draft", "issued", "awaiting_acceptance"].includes(status)
       : ["issued", "awaiting_acceptance"].includes(status));
 
+  // Pode anexar documento assinado? Apenas partes, em processo ativo (não completed/cancelled/etc).
+  const canAttach =
+    role !== null && status !== null &&
+    ["issued", "awaiting_acceptance"].includes(status);
+  const hasSigned = Boolean(meta.data?.signed_pdf_path);
+  const attachLabel = hasSigned ? "Reanexar assinado" : "Anexar documento assinado";
+
   function goBack() {
     if (from) { navigate({ to: from }); return; }
     if (typeof window !== "undefined" && window.history.length > 1) router.history.back();
@@ -116,6 +126,27 @@ function ReceiptViewer() {
         onBack={goBack}
         onClose={close}
         banner={banner}
+        attachAction={
+          canAttach && meta.data?.id
+            ? {
+                label: attachLabel,
+                node: (
+                  <AttachSignedDialog
+                    receiptId={meta.data.id}
+                    onAttached={() => {
+                      qc.invalidateQueries({ queryKey: ["receipt-meta", code] });
+                    }}
+                    trigger={
+                      <Button variant="outline" size="sm" className="min-h-[44px]">
+                        <Upload className="h-4 w-4 sm:mr-1" />
+                        <span className="hidden sm:inline">{attachLabel}</span>
+                      </Button>
+                    }
+                  />
+                ),
+              }
+            : null
+        }
       />
       {canClose && role && meta.data?.id && (
         <div className="border-t border-border bg-background px-3 py-2">

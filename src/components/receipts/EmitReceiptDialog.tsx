@@ -896,7 +896,7 @@ function ReceiptLifecyclePanel({
             )}
             <div className="mt-2">
               <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted">
-                <Upload className="h-4 w-4" /> {receipt.signed_pdf_path ? "Reenviar assinado" : "Enviar documento assinado"}
+                <Upload className="h-4 w-4" /> {receipt.signed_pdf_path ? "Reanexar assinado" : "Anexar documento assinado"}
                 <input type="file" accept="application/pdf" hidden onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])} disabled={loading} />
               </label>
             </div>
