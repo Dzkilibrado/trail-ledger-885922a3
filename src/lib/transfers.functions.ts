@@ -170,7 +170,7 @@ export const listUserProcesses = createServerFn({ method: "GET" })
               bucket = "awaiting_me";
               requiresMe = true;
               actionOwner = "Aguardando sua ação";
-              nextAction = "Enviar documento assinado";
+              nextAction = "Visualizar documento";
             } else if (!sellerAccepted) {
               bucket = "awaiting_me";
               requiresMe = true;
