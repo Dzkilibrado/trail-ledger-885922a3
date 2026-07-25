@@ -30,7 +30,7 @@ function Workshops() {
       (
         await supabase
           .from("workshops_public")
-          .select("id, name, city, state, owner_user_id, verified, verified_at, verified_label, created_at, updated_at")
+          .select("id, name, city, state, verified, verified_at, verified_label, created_at, updated_at")
           .order("name")
       ).data ?? [],
   });
