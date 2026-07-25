@@ -519,13 +519,6 @@ export type Database = {
             referencedRelation: "workshops"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "events_workshop_id_fkey"
-            columns: ["workshop_id"]
-            isOneToOne: false
-            referencedRelation: "workshops_public"
-            referencedColumns: ["id"]
-          },
         ]
       }
       help_requests: {
@@ -2598,36 +2591,11 @@ export type Database = {
           created_at: string | null
           id: string | null
           name: string | null
-          owner_user_id: string | null
           state: string | null
           updated_at: string | null
           verified: boolean | null
           verified_at: string | null
           verified_label: string | null
-        }
-        Insert: {
-          city?: string | null
-          created_at?: string | null
-          id?: string | null
-          name?: string | null
-          owner_user_id?: string | null
-          state?: string | null
-          updated_at?: string | null
-          verified?: boolean | null
-          verified_at?: string | null
-          verified_label?: string | null
-        }
-        Update: {
-          city?: string | null
-          created_at?: string | null
-          id?: string | null
-          name?: string | null
-          owner_user_id?: string | null
-          state?: string | null
-          updated_at?: string | null
-          verified?: boolean | null
-          verified_at?: string | null
-          verified_label?: string | null
         }
         Relationships: []
       }
@@ -3198,6 +3166,20 @@ export type Database = {
       hash_cpf: { Args: { _cpf: string }; Returns: string }
       is_moto_owner: { Args: { _moto_id: string }; Returns: boolean }
       is_user_admin: { Args: { _user_id: string }; Returns: boolean }
+      list_workshops_public: {
+        Args: never
+        Returns: {
+          city: string
+          created_at: string
+          id: string
+          name: string
+          state: string
+          updated_at: string
+          verified: boolean
+          verified_at: string
+          verified_label: string
+        }[]
+      }
       log_certificate_access: {
         Args: {
           _country?: string
