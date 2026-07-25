@@ -451,7 +451,7 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     navigate({
       to: "/recibos/$code/visualizar",
       params: { code: currentReceipt.code },
-      search: { variant: "original" },
+      search: { variant: "original", from: `/motorcycles/${motorcycleId}/control` },
     });
   }
 
@@ -500,7 +500,7 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     navigate({
       to: "/recibos/$code/visualizar",
       params: { code: currentReceipt.code },
-      search: { variant: "original" },
+      search: { variant: "original", from: `/motorcycles/${motorcycleId}/control` },
     });
   }
 
