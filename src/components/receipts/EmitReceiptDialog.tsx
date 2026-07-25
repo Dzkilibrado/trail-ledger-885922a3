@@ -22,8 +22,7 @@ import {
   getConfirmedBuyerDetails,
 } from "@/lib/smart-receipts.functions";
 import { toast } from "sonner";
-import { FileSignature, Search, ArrowLeft, ArrowRight, CheckCircle2, Upload, Download, XCircle, Eye, Share2, Printer, Clock, FileText, PenLine, HandshakeIcon as HandshakeMissing } from "lucide-react";
-// lucide não expõe HandshakeIcon; usamos ícones existentes abaixo.
+import { FileSignature, Search, ArrowLeft, ArrowRight, CheckCircle2, Upload, Download, XCircle, Eye, Share2, Printer, Clock, FileText, PenLine } from "lucide-react";
 import { formatCurrencyBRL, publicReceiptUrl, RECEIPT_STATUS_LABEL, type ReceiptStatus } from "@/lib/smart-receipts";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";

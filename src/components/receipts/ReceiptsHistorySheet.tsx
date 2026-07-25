@@ -8,7 +8,7 @@ import { EmitReceiptDialog } from "@/components/receipts/EmitReceiptDialog";
 import { useReceiptsForMoto } from "@/hooks/useActiveNegotiation";
 import { formatCurrencyBRL, formatIssuedAt, formatVersion } from "@/lib/smart-receipts";
 import type { ReceiptStatus } from "@/lib/smart-receipts";
-import { FileSignature, ExternalLink, ChevronRight, Eye } from "lucide-react";
+import { FileSignature, ChevronRight, Eye } from "lucide-react";
 
 export function ReceiptsHistorySheet({
   motoId,
@@ -87,11 +87,6 @@ export function ReceiptsHistorySheet({
                       onClick={() => openPdf(r.code, r.status === "completed" ? "signed" : "original")}
                     >
                       <Eye className="h-3.5 w-3.5" /> Visualizar
-                    </Button>
-                    <Button size="sm" variant="outline" asChild>
-                      <a href={`/r/${r.code}`} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-3.5 w-3.5" /> Ver
-                      </a>
                     </Button>
                   </div>
                 </div>

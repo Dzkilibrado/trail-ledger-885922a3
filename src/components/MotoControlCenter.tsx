@@ -43,7 +43,7 @@ import { BadgeSection } from "@/components/badges/BadgeSection";
 import { useActiveNegotiation } from "@/hooks/useActiveNegotiation";
 import { ActiveNegotiationCard } from "@/components/ActiveNegotiationCard";
 import { EmitReceiptDialog } from "@/components/receipts/EmitReceiptDialog";
-import { FileSignature, ExternalLink, Download } from "lucide-react";
+import { FileSignature, Eye } from "lucide-react";
 import { ReceiptsSummaryRow } from "@/components/receipts/ReceiptsHistorySheet";
 import { useReceiptsForMoto } from "@/hooks/useActiveNegotiation";
 import { clearActiveMotorcycleIfMatches, invalidateMotorcycleState, setStoredActiveMotorcycleId } from "@/hooks/useActiveMotorcycle";
@@ -574,12 +574,7 @@ export function MotoControlCenter({ id }: { id: string }) {
                         return (
                           <div className="mt-3 flex flex-wrap gap-1.5">
                             <Button size="sm" variant="outline" onClick={() => openReceiptPdf(code, "signed")}>
-                              <Download className="h-3.5 w-3.5" /> Baixar recibo
-                            </Button>
-                            <Button size="sm" variant="outline" asChild>
-                              <a href={`/r/${code}`} target="_blank" rel="noopener noreferrer">
-                                <ExternalLink className="h-3.5 w-3.5" /> Página pública
-                              </a>
+                              <Eye className="h-3.5 w-3.5" /> Visualizar recibo
                             </Button>
                           </div>
                         );
