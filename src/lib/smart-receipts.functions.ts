@@ -163,6 +163,31 @@ export const createReceiptDraft = createServerFn({ method: "POST" })
       if (existingDraft) {
         return { ok: true as const, receipt: existingDraft, reused: true as const };
       }
+
+      // Bloqueio de PROCESSOS ATIVOS DUPLICADOS para a mesma motocicleta.
+      // O índice parcial `smart_receipts_one_active_per_moto` também barra
+      // no banco (defesa em profundidade); aqui damos uma mensagem amigável
+      // e o código do processo existente para o cliente oferecer "Abrir".
+      const { data: existingActive } = await supabase
+        .from("smart_receipts")
+        .select("id, code, status, seller_id")
+        .eq("motorcycle_id", moto.id)
+        .in("status", ["draft", "issued", "awaiting_acceptance"])
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (existingActive) {
+        const err = new Error(
+          "Já existe um processo ativo de compra e venda para esta motocicleta.",
+        ) as Error & { code?: string; existing?: { id: string; code: string; status: string } };
+        err.code = "ACTIVE_PROCESS_EXISTS";
+        err.existing = {
+          id: existingActive.id as string,
+          code: existingActive.code as string,
+          status: existingActive.status as string,
+        };
+        throw err;
+      }
     }
 
     let version = 1;
@@ -239,6 +264,16 @@ export const createReceiptDraft = createServerFn({ method: "POST" })
         .single();
       if (!iErr && row) { inserted = row; break; }
       const code = (iErr as { code?: string } | null)?.code;
+      // Colisão do índice parcial de "um processo ativo por moto" — reportar
+      // como conflito amigável em vez de erro genérico do banco.
+      const msg = (iErr as { message?: string } | null)?.message ?? "";
+      if (code === "23505" && msg.includes("smart_receipts_one_active_per_moto")) {
+        const err = new Error(
+          "Já existe um processo ativo de compra e venda para esta motocicleta.",
+        ) as Error & { code?: string };
+        err.code = "ACTIVE_PROCESS_EXISTS";
+        throw err;
+      }
       if (code !== "23505" || attempt === 1) throw new Error(iErr?.message ?? "Falha ao criar rascunho");
     }
     return { ok: true as const, receipt: inserted!, reused: false as const };
@@ -542,32 +577,103 @@ export const completeReceiptTransfer = createServerFn({ method: "POST" })
     return { ok: true as const, receipt: updated };
   });
 
-/** Cancela um recibo aberto (draft/issued/awaiting_acceptance). Só vendedor. */
+/**
+ * Encerra um processo de Compra e Venda (cancelar / recusar / admin).
+ * Wrapper da RPC oficial `close_smart_receipt_process` (SECURITY DEFINER),
+ * responsável por: validar papel, garantir concorrência (UPDATE otimista),
+ * gravar auditoria e notificar a contraparte.
+ */
+export interface CloseReceiptInput {
+  id: string;
+  reason_code: string;
+  notes?: string | null;
+  origin?: "central" | "receipt_view" | "moto_control" | "admin_panel" | "legacy";
+  acknowledge: boolean;
+}
+
+export interface CloseReceiptResult {
+  ok: true;
+  already_cancelled: boolean;
+  receipt_id: string;
+  code: string;
+  motorcycle_id: string;
+  closure_type: "seller_cancelled" | "buyer_declined" | "admin_cancelled" | null;
+  previous_status: string | null;
+  status: string;
+  counterparty_id: string | null;
+}
+
+export const closeReceiptProcess = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((data: CloseReceiptInput) => {
+    if (!data?.id) throw new Error("id obrigatório");
+    if (!data?.reason_code?.trim()) throw new Error("Motivo obrigatório");
+    if (!data?.acknowledge) throw new Error("Confirme a ciência para encerrar o processo");
+    const notes = (data.notes ?? "").trim();
+    if (data.reason_code === "other") {
+      if (notes.length < 10) throw new Error("Descreva o motivo com pelo menos 10 caracteres");
+    }
+    if (notes.length > 500) throw new Error("A descrição não pode exceder 500 caracteres");
+    return {
+      id: String(data.id),
+      reason_code: String(data.reason_code).trim(),
+      notes: notes || null,
+      origin: (data.origin ?? "central") as string,
+    };
+  })
+  .handler(async ({ data, context }): Promise<CloseReceiptResult> => {
+    const { data: rpcData, error } = await context.supabase.rpc(
+      "close_smart_receipt_process" as never,
+      {
+        _id: data.id,
+        _reason_code: data.reason_code,
+        _notes: data.notes,
+        _origin: data.origin,
+      } as never,
+    );
+    if (error) throw new Error(error.message);
+    const row = (rpcData ?? {}) as Record<string, unknown>;
+    return {
+      ok: true,
+      already_cancelled: Boolean(row.already_cancelled),
+      receipt_id: String(row.receipt_id ?? data.id),
+      code: String(row.code ?? ""),
+      motorcycle_id: String(row.motorcycle_id ?? ""),
+      closure_type: (row.closure_type as CloseReceiptResult["closure_type"]) ?? null,
+      previous_status: (row.previous_status as string | null) ?? null,
+      status: String(row.status ?? "cancelled"),
+      counterparty_id: (row.counterparty_id as string | null) ?? null,
+    };
+  });
+
+/**
+ * @deprecated Use `closeReceiptProcess`. Wrapper mantido apenas para
+ * retrocompatibilidade com chamadores antigos (marcado com origem `legacy`).
+ * Será removido em versão futura.
+ */
 export const cancelDraftReceipt = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((data: { id: string; reason?: string | null }) => ({
     id: String(data.id), reason: (data.reason ?? "").trim() || null,
   }))
   .handler(async ({ data, context }) => {
-    const { supabase, userId } = context;
-    const { data: r, error: rErr } = await supabase
-      .from("smart_receipts").select("id, status, seller_id").eq("id", data.id).single();
-    if (rErr || !r) throw new Error("Recibo não encontrado");
-    if (r.seller_id !== userId) throw new Error("Apenas o vendedor pode cancelar");
-    if (r.status === "cancelled") return { ok: true as const, alreadyCancelled: true as const };
-    if (!["draft", "issued", "awaiting_acceptance"].includes(r.status))
-      throw new Error(`Não é possível cancelar no estado '${r.status}'`);
-
-    const { error } = await supabase
-      .from("smart_receipts")
-      .update({
-        status: "cancelled",
-        cancelled_at: new Date().toISOString(),
-        cancelled_reason: data.reason,
-      } as never)
-      .eq("id", data.id);
+    const notes = data.reason ?? "";
+    const reason_code = notes.length >= 10 ? "other" : "seller_changed_mind";
+    const { data: rpcData, error } = await context.supabase.rpc(
+      "close_smart_receipt_process" as never,
+      {
+        _id: data.id,
+        _reason_code: reason_code,
+        _notes: notes.length >= 10 ? notes : null,
+        _origin: "legacy",
+      } as never,
+    );
     if (error) throw new Error(error.message);
-    return { ok: true as const };
+    const row = (rpcData ?? {}) as Record<string, unknown>;
+    return {
+      ok: true as const,
+      alreadyCancelled: Boolean(row.already_cancelled),
+    };
   });
 
 /** Revoga um recibo já emitido/concluído. Preserva histórico. Só vendedor ou admin. */

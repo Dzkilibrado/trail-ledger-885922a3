@@ -8,7 +8,9 @@ import { EmitReceiptDialog } from "@/components/receipts/EmitReceiptDialog";
 import { useReceiptsForMoto } from "@/hooks/useActiveNegotiation";
 import { formatCurrencyBRL, formatIssuedAt, formatVersion } from "@/lib/smart-receipts";
 import type { ReceiptStatus } from "@/lib/smart-receipts";
-import { FileSignature, ChevronRight, Eye } from "lucide-react";
+import { FileSignature, ChevronRight, Eye, X } from "lucide-react";
+import { CloseReceiptDialog } from "@/components/receipts/CloseReceiptDialog";
+import { closeActionLabel } from "@/lib/receipts/close-reasons";
 
 export function ReceiptsHistorySheet({
   motoId,
@@ -92,6 +94,20 @@ export function ReceiptsHistorySheet({
                     >
                       <Eye className="h-3.5 w-3.5" /> Visualizar
                     </Button>
+                    {isOwner && ["draft", "issued", "awaiting_acceptance"].includes(r.status) && (
+                      <CloseReceiptDialog
+                        receiptId={r.id}
+                        code={r.code}
+                        role="seller"
+                        origin="moto_control"
+                        motorcycleId={motoId}
+                        trigger={
+                          <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                            <X className="h-3.5 w-3.5" /> {closeActionLabel("seller")}
+                          </Button>
+                        }
+                      />
+                    )}
                   </div>
                 </div>
               </li>

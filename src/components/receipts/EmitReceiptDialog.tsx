@@ -309,12 +309,26 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
         location: location.trim() || null, notes: notes.trim() || null,
       };
       if (!id) {
-        const res = await createDraft({ data: {
-          motorcycle_id: motorcycleId, buyer: buyerPayload,
-          external_buyer: buyerMode === "external",
-          negotiation: negPayload, lgpd_consent: true,
-        }});
-        id = res.receipt.id; setCurrentReceiptId(id);
+        try {
+          const res = await createDraft({ data: {
+            motorcycle_id: motorcycleId, buyer: buyerPayload,
+            external_buyer: buyerMode === "external",
+            negotiation: negPayload, lgpd_consent: true,
+          }});
+          id = res.receipt.id; setCurrentReceiptId(id);
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          if (/já existe um processo ativo/i.test(message)) {
+            toast.error("Já existe um processo ativo de compra e venda para esta motocicleta.", {
+              action: {
+                label: "Abrir processo existente",
+                onClick: () => { setOpen(false); navigate({ to: "/transfers", search: { filter: "awaiting_me" } }); },
+              },
+            });
+            return;
+          }
+          throw err;
+        }
       } else if (currentReceipt?.status === "draft") {
         await updateDraft({ data: { id, patch: { buyer: buyerPayload, external_buyer: buyerMode === "external", negotiation: negPayload } } });
       }
