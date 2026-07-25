@@ -1,172 +1,66 @@
-# Evolução: MotorcycleReviewState
+# Centro de Transferência TrailBook — Plano
 
-Consolidar a comunicação sobre a "revisão inicial" em um único estado
-oficial, reutilizável por Dashboard, Cockpit, Passaporte, Saúde,
-Agenda, Notificações e futuras integrações. Nenhuma mudança em
-`evaluateSchedule`, TIL, recomposição, baseline ou fonte única — apenas
-camada de comunicação.
+Escopo apenas de UX/apresentação e unificação. Sem mudar regras de negócio, banco, permissões ou fluxo jurídico.
 
-## 1. Arquitetura
+## 1. Visualizador único de PDF
 
-Nova camada isolada em `src/lib/review-state/`:
+Criar componente oficial `TBPdfViewer` em `src/components/pdf/TBPdfViewer.tsx` (fullscreen, cabeçalho fixo, Voltar / Código / Status / Baixar / Compartilhar / Imprimir / Fechar, safe-area, loading e erro amigáveis, renderização por `blob:` mesma origem, sem URL do backend).
+
+A rota `/_authenticated/recibos/$code/visualizar` passa a ser um wrapper fino que carrega os bytes via `getReceiptPdfBytes` e delega ao `TBPdfViewer`. Adicionar botão **Imprimir** (`iframe.contentWindow.print()`).
+
+## 2. Eliminar caminhos legados de PDF de recibo
+
+Auditar e reescrever todos os pontos que abrem PDF de recibo para navegar para `/recibos/$code/visualizar`:
+
+- `EmitReceiptDialog.tsx` — remover botões duplicados "Visualizar PDF / Baixar / Compartilhar / Imprimir" do bloco verde; deixar somente "Abrir Centro de Transferência".
+- `MotoControlCenter.tsx` — botões "Ver / Documento Original" devem navegar para o visualizador interno (não abrir Signed URL).
+- `ReceiptsHistorySheet.tsx` — idem.
+- `r.$code.tsx` — botão "Visualizar PDF (partes)" já navega; validar.
+- Remover/isolar `getReceiptSignedUrl` para uso admin/debug apenas (não referenciado por UI de usuário).
+
+Busca global final por `window.open`, `createSignedUrl`, `signedUrl`, `pdf_url` para garantir que nenhum caminho de recibo escape.
+
+## 3. Centro de Transferência
+
+Nova rota `_authenticated/transferencias.$code.tsx` (Centro de Transferência) reutilizando dados existentes do `smart_receipts`. Layout mobile-first por etapas:
 
 ```text
-src/lib/review-state/
-  types.ts        enum + payloads + mensagens oficiais
-  compute.ts      função pura computeReviewState(moto, schedules)
-  index.ts        barrel
+┌ Cabeçalho: Código · Status · Data · Moto · Comprador · Valor
+├ [Resumo executivo verde] Próxima ação
+├ Timeline vertical (criado → gerado → aguardando assinatura →
+│   assinado anexado → aceite vendedor → aceite comprador → concluído)
+├ Documento Original — Visualizar / Baixar / Compartilhar / Imprimir
+├ Documento Assinado — anexar ou estado "nenhum anexado"
+├ Aceites — vendedor / comprador
+├ Transferência — status + próxima etapa
+├ Auditoria (colapsável) — quem criou / visualizou / baixou / anexou / aceitou
+└ Ações: Cancelar Processo · Fechar
 ```
 
-Regra: nada dentro dessa camada consulta banco. Recebe objetos já
-carregados pelas telas (mesmo padrão da TIL). A TIL não é alterada — a
-nova camada apenas *lê* moto + schedules e devolve um snapshot próprio.
+Etapas derivadas do `status` já persistido; sem alterar schema. Auditoria mostrada a partir dos campos existentes (`created_at`, `signed_at`, `viewed_by_*`, se disponíveis) — quando um campo não existir, mostrar "—" (nunca inventar dado).
 
-## 2. Enum e snapshot
+Todos os pontos que hoje abrem "Emitir Recibo" ou apontam para PDF passam a linkar para o Centro de Transferência; o visualizador de PDF é acessado a partir dele.
 
-```ts
-export type MotorcycleReviewState =
-  | "unknown"
-  | "baseline_only"
-  | "partially_reviewed"
-  | "fully_reviewed";
+## 4. Bloco verde de sucesso
 
-export interface ReviewStateSnapshot {
-  state: MotorcycleReviewState;
-  isPending: boolean;          // unknown | baseline_only | partially_reviewed
-  isComplete: boolean;         // fully_reviewed
-  confirmedCount: number;      // schedules com last_done_*
-  totalCount: number;
-  remainingCount: number;
-  tone: "info" | "attention" | "good";
-  title: string;               // curto (chip/badge)
-  message: string;             // frase longa (card)
-  cta: string | null;          // ex.: "Revisar agora"
-}
-```
+Reduzir para: ícone ✔, código, status, moto, comprador, valor, uma frase de próxima ação, um CTA único **"Abrir Centro de Transferência"**. Sem duplicar Baixar / Compartilhar / Imprimir.
 
-## 3. Regras de transição (determinísticas)
+## 5. Padronização
 
-Entradas consideradas:
-- `moto.initial_review_done_at`
-- `moto.condition`, `hours_initial`, `km_initial`
-- `schedules[].last_done_at | last_done_hours | last_done_km`
+`TBPdfViewer` passa a ser o componente oficial de qualquer PDF do TrailBook (recibo agora; certificados/anexos futuros). Mesmos ícones (`Eye`, `Download`, `Share2`, `Printer`, `X`, `ArrowLeft`) e ordem padrão.
 
-Ordem de decisão:
+## 6. Fora de escopo
 
-1. `initial_review_done_at` presente -> `fully_reviewed`.
-2. Moto **não** é usada (sem baseline e `condition !== "used"`) e nenhum
-   schedule confirmado -> `unknown`.
-3. Moto usada, `confirmedCount === 0` -> `baseline_only`.
-4. `confirmedCount > 0` e `< totalCount` -> `partially_reviewed`.
-5. `confirmedCount === totalCount && totalCount > 0` mas
-   `initial_review_done_at` ainda nulo -> `partially_reviewed` (só vira
-   `fully_reviewed` quando o marcador oficial é gravado pelo fluxo de
-   conclusão — mantém consistência com a lógica já homologada).
+- Sem mudanças de RLS, RPCs, migrações ou lógica de negócio.
+- Sem alterar o PDF em si (cláusulas mantidas como estão).
+- Certificados e outros documentos permanecem no fluxo atual; adoção do `TBPdfViewer` fora de recibos fica para próxima fase (registrada como follow-up).
 
-Tons e CTAs por estado:
-- `unknown` -> info, sem CTA.
-- `baseline_only` -> attention, CTA "Revisar agora".
-- `partially_reviewed` -> attention, CTA "Continuar revisão".
-- `fully_reviewed` -> good, sem CTA.
+## 7. Testes / evidências
 
-## 4. Mensagens oficiais
+- `tsgo` (typecheck).
+- Playwright: emitir recibo → abrir pelo Centro da Moto → abrir pelo Histórico → abrir pela página pública. Screenshots do visualizador e do Centro de Transferência em mobile (390×844) e desktop.
+- Grep final: nenhum `createSignedUrl`/`window.open` restante em fluxos de UI de recibo.
 
-Definidas em `types.ts` (fonte única — evita textos soltos):
+## 8. Retorno ao final
 
-- unknown: "Aguardando informações iniciais."
-- baseline_only: "Estamos utilizando as horas e quilômetros informados
-  no cadastro como ponto inicial do acompanhamento. Recomendamos
-  confirmar a revisão inicial da motocicleta para que o histórico
-  reflita o estado físico dos componentes."
-- partially_reviewed: "Parte da revisão inicial já foi registrada.
-  Ainda existem N componentes sem confirmação." (N interpolado)
-- fully_reviewed: "Revisão inicial concluída. A partir deste momento o
-  TrailBook acompanhará automaticamente os próximos vencimentos e o
-  histórico de manutenção."
-
-## 5. Retrocompatibilidade
-
-`needsInitialReview()` continua exportado de
-`InitialReviewPendingCard.tsx` e passa a ser um wrapper:
-
-```ts
-export const needsInitialReview = (m) =>
-  computeReviewState({ moto: m, schedules: [] }).isPending
-    && computeReviewState({ moto: m, schedules: [] }).state !== "unknown";
-```
-
-Nada quebra nas telas atuais; elas migram gradualmente.
-
-## 6. Telas que passam a consumir o novo estado
-
-- **Dashboard** (`routes/_authenticated/dashboard.tsx`): substitui a
-  chamada direta a `needsInitialReview` por `computeReviewState` (usa
-  schedules já carregados via `useMotorcycleEvidence`); renderiza o
-  card âmbar quando `isPending`. "Tudo em dia" só quando `isComplete`
-  e sem pendências.
-- **Cockpit** (`components/cockpit/Cockpit.tsx` + `greeting.ts`):
-  saudação usa `state` em vez do IF ad-hoc atual — mantém a mesma
-  frase para `baseline_only`/`partially_reviewed`.
-- **NextActionWidget**: quando `isPending`, `label`/`reason` vêm do
-  snapshot em vez de string local.
-- **Passaporte** (`motorcycles.$id.passport.tsx`): novo chip
-  "Status do acompanhamento" com `title` do snapshot (transparência,
-  não afeta selos).
-- **Saúde** (`components/HealthPanel.tsx` ou `health/HealthOverview`):
-  faixa informativa discreta quando `isPending`, com o texto
-  "Indicadores calculados utilizando baseline informada no cadastro."
-  Sem alterar notas/cores.
-- **Agenda**: chip discreto no topo quando `isPending` (opcional,
-  mesmo componente reutilizado).
-
-Componente compartilhado novo:
-`src/components/review-state/ReviewStateBadge.tsx` (chip) e
-`ReviewStateNotice.tsx` (faixa informativa). Ambos consomem o
-snapshot — zero lógica local.
-
-## 7. Experiência após conclusão
-
-No `InitialReviewSheet`, após `finish()` bem-sucedido e invalidação
-das queries, abrir um `TBDialog` de sucesso:
-
-- Título: "Revisão inicial concluída"
-- Texto: mensagem oficial de `fully_reviewed`.
-- Botão único: "Continuar" (fecha o dialog e o sheet).
-
-Fluxo garante o princípio "Sucesso após sincronia" (ADR 0011): dialog
-só abre depois do `await queryClient.invalidateQueries` das chaves
-`motorcycle`, `schedules`, `events`.
-
-## 8. Preparação para notificações futuras
-
-`ReviewStateSnapshot` exporta `state`, `remainingCount` e `isPending`
-— suficiente para futuras notificações ("Restam 3 componentes") sem
-alterar a camada. Nenhuma notificação é criada agora.
-
-## 9. Garantias
-
-- Nenhuma alteração em: `evaluateSchedule`, `src/lib/til/*`,
-  `activity-recalc`, `maintenance-engine`, RPCs, triggers, políticas.
-- `needsInitialReview` continua funcionando (wrapper).
-- Textos centralizados em um único arquivo (`types.ts`).
-- Snapshot é função pura -> fácil de testar.
-
-## 10. Entregáveis
-
-1. `src/lib/review-state/{types,compute,index}.ts`
-2. `src/components/review-state/{ReviewStateBadge,ReviewStateNotice}.tsx`
-3. Dialog de sucesso em `InitialReviewSheet.tsx`
-4. Migração de: Dashboard, Cockpit/greeting, NextActionWidget,
-   Passaporte, Painel de Saúde
-5. `needsInitialReview` convertido em wrapper
-6. Atualização do CHANGELOG e do ADR (novo ADR curto "Estado oficial
-   de revisão da motocicleta")
-
-## Detalhes técnicos
-
-- `computeReviewState` recebe `{ moto, schedules }` para evitar
-  refetch; telas que já usam `useMotorcycleEvidence` reaproveitam.
-- Um hook fino `useReviewState(motoId)` pode ser adicionado como
-  atalho, apoiado em `useMotorcycleEvidence` (sem nova query).
-- Dialog de sucesso usa `TBDialog` existente (respeita design system).
-- Nenhum campo novo no banco.
+Lista de arquivos alterados, antes/depois resumido, screenshots dos testes, confirmação dos itens do check-list (visualizador único, sem Signed URL exposta, sem duplicidade, timeline funcional, Centro de Transferência ativo).

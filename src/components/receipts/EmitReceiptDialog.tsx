@@ -22,7 +22,7 @@ import {
   getConfirmedBuyerDetails,
 } from "@/lib/smart-receipts.functions";
 import { toast } from "sonner";
-import { FileSignature, Search, ArrowLeft, ArrowRight, CheckCircle2, Upload, Download, XCircle, Eye, Share2, Printer, Clock } from "lucide-react";
+import { FileSignature, Search, ArrowLeft, ArrowRight, CheckCircle2, Upload, Download, XCircle, Eye, Share2, Printer, Clock, FileText, PenLine } from "lucide-react";
 import { formatCurrencyBRL, publicReceiptUrl, RECEIPT_STATUS_LABEL, type ReceiptStatus } from "@/lib/smart-receipts";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";
@@ -746,6 +746,27 @@ function ReceiptLifecyclePanel({
   const label = RECEIPT_STATUS_LABEL[(receipt.status as ReceiptStatus)] ?? receipt.status;
   const justIssued = receipt.status === "issued" && !receipt.signed_pdf_path;
 
+  // Timeline oficial da transferência — deriva do estado real do recibo.
+  const steps: Array<{ key: string; label: string; done: boolean; current: boolean }> = [
+    { key: "created",   label: "Recibo criado",                done: true, current: false },
+    { key: "generated", label: "Documento gerado",             done: receipt.status !== "draft", current: receipt.status === "draft" },
+    { key: "signed",    label: "Documento assinado anexado",   done: !!receipt.signed_pdf_path, current: receipt.status !== "draft" && !receipt.signed_pdf_path },
+    { key: "seller",    label: "Aceite do vendedor",           done: !!receipt.seller_accepted_at, current: !!receipt.signed_pdf_path && !receipt.seller_accepted_at },
+    ...(needsBuyerAccept ? [{ key: "buyer", label: "Aceite do comprador", done: !!receipt.buyer_accepted_at, current: !!receipt.seller_accepted_at && !receipt.buyer_accepted_at }] : []),
+    { key: "done",      label: "Transferência concluída",      done: receipt.status === "completed", current: canComplete && receipt.status !== "completed" },
+  ];
+
+  // Próxima ação sugerida (uma única frase, sempre concreta).
+  const nextAction = (() => {
+    if (receipt.status === "completed") return "Transferência concluída. Nenhuma ação pendente.";
+    if (!receipt.signed_pdf_path) return "Anexe o PDF assinado pelas partes.";
+    if (isSeller && !receipt.seller_accepted_at) return "Registre seu aceite como vendedor.";
+    if (isBuyer && needsBuyerAccept && !receipt.buyer_accepted_at) return "Registre seu aceite como comprador.";
+    if (needsBuyerAccept && !receipt.buyer_accepted_at) return "Aguardando aceite do comprador.";
+    if (canComplete) return "Concluir transferência.";
+    return "Aguardando próxima etapa da contraparte.";
+  })();
+
   return (
     <div className="space-y-4 text-sm">
       {justIssued && (
@@ -755,81 +776,123 @@ function ReceiptLifecyclePanel({
               <CheckCircle2 className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <div className="font-display text-base font-bold text-emerald-300">Recibo gerado com sucesso</div>
+              <div className="font-display text-base font-bold text-emerald-300">Recibo criado com sucesso</div>
               <div className="mt-0.5 text-xs text-muted-foreground">
-                Código <span className="font-mono font-semibold text-foreground">{receipt.code}</span>. O PDF já está salvo — você o encontra na Central da Moto, no Passaporte, na Timeline e no Histórico de Recibos.
+                Código <span className="font-mono font-semibold text-foreground">{receipt.code}</span> — {label}.
+              </div>
+              <div className="mt-2 text-xs text-emerald-100/80">
+                Próxima ação: <strong className="text-emerald-200">{nextAction}</strong>
               </div>
             </div>
           </div>
-          <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            <Button size="sm" variant="outline" onClick={onView} disabled={loading} className="h-10 justify-start">
-              <Eye className="h-4 w-4" /> Visualizar PDF
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" onClick={onView} disabled={loading}>
+              <Eye className="h-4 w-4" /> Abrir documento
             </Button>
-            <Button size="sm" variant="outline" onClick={onDownload} disabled={loading} className="h-10 justify-start">
-              <Download className="h-4 w-4" /> Baixar PDF
-            </Button>
-            <Button size="sm" variant="outline" onClick={onShare} disabled={loading} className="h-10 justify-start">
-              <Share2 className="h-4 w-4" /> Compartilhar
-            </Button>
-            <Button size="sm" variant="outline" onClick={onPrint} disabled={loading} className="h-10 justify-start">
-              <Printer className="h-4 w-4" /> Imprimir
-            </Button>
-            <label className="inline-flex h-10 cursor-pointer items-center justify-start gap-2 rounded-md border border-border bg-background px-3 text-xs font-medium hover:bg-muted">
-              <Upload className="h-4 w-4" /> Anexar assinado
-              <input type="file" accept="application/pdf" hidden onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])} disabled={loading} />
-            </label>
-            <Button size="sm" variant="ghost" onClick={onContinueLater} disabled={loading} className="h-10 justify-start">
+            <Button size="sm" variant="ghost" onClick={onContinueLater} disabled={loading}>
               <Clock className="h-4 w-4" /> Continuar depois
             </Button>
           </div>
         </div>
       )}
 
+      {/* Cabeçalho executivo */}
       <div className="rounded-xl border border-primary/30 bg-primary/5 p-3">
-        <div className="text-[11px] uppercase tracking-widest text-primary">Recibo {receipt.code}</div>
-        <div className="mt-1 text-xs text-muted-foreground">Estado: <strong className="text-foreground">{label}</strong></div>
-      </div>
-
-      <div className="rounded-xl border border-border p-3">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap items-baseline justify-between gap-2">
           <div>
-            <div className="font-semibold">1. Documento original (para assinar)</div>
-            <div className="text-xs text-muted-foreground">PDF modelo — imprima ou assine digitalmente.</div>
+            <div className="text-[11px] uppercase tracking-widest text-primary">Transferência</div>
+            <div className="mt-0.5 font-mono text-sm font-bold text-foreground">{receipt.code}</div>
           </div>
-          <div className="flex flex-wrap gap-1.5">
-            <Button size="sm" variant="outline" onClick={onView}>
-              <Eye className="h-4 w-4" /> Ver
-            </Button>
-            <Button size="sm" variant="outline" onClick={onDownload}>
-              <Download className="h-4 w-4" /> Baixar
-            </Button>
-            <Button size="sm" variant="outline" onClick={onShare}>
-              <Share2 className="h-4 w-4" /> Compartilhar
-            </Button>
-            <Button size="sm" variant="outline" onClick={onPrint}>
-              <Printer className="h-4 w-4" /> Imprimir
-            </Button>
+          <div className="text-xs text-muted-foreground">
+            Estado <strong className="text-foreground">{label}</strong>
           </div>
+        </div>
+        <div className="mt-2 text-xs text-muted-foreground">
+          Próxima ação: <strong className="text-foreground">{nextAction}</strong>
         </div>
       </div>
 
+      {/* Timeline visual */}
+      <ol className="rounded-xl border border-border bg-card p-3">
+        {steps.map((s, i) => {
+          const isLast = i === steps.length - 1;
+          const dot = s.done
+            ? "bg-emerald-500 text-background"
+            : s.current
+              ? "bg-amber-400 text-background"
+              : "bg-muted text-muted-foreground";
+          const line = s.done ? "bg-emerald-500/40" : "bg-border";
+          return (
+            <li key={s.key} className="relative flex gap-3">
+              <div className="flex flex-col items-center">
+                <div className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-bold ${dot}`}>
+                  {s.done ? "✓" : i + 1}
+                </div>
+                {!isLast && <div className={`w-px flex-1 ${line}`} />}
+              </div>
+              <div className={`min-w-0 flex-1 pb-3 text-xs ${s.done ? "text-foreground" : s.current ? "text-foreground" : "text-muted-foreground"}`}>
+                {s.label}
+                {s.current && <span className="ml-1 text-[10px] uppercase tracking-widest text-amber-400">agora</span>}
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+
+      {/* DOCUMENTO ORIGINAL — ações únicas e padronizadas */}
       <div className="rounded-xl border border-border p-3">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <div className="font-semibold">2. Anexar documento assinado</div>
-            <div className="text-xs text-muted-foreground">
-              {receipt.signed_pdf_path ? "Anexado ✓ (reanexar reseta aceites)" : "PDF assinado pelas partes"}
+        <div className="flex items-start gap-3">
+          <div className="mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full bg-muted text-muted-foreground">
+            <FileText className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Documento original</div>
+            <div className="text-sm font-semibold">PDF modelo — para assinar</div>
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              <Button size="sm" variant="outline" onClick={onView}>
+                <Eye className="h-4 w-4" /> Visualizar
+              </Button>
+              <Button size="sm" variant="outline" onClick={onDownload}>
+                <Download className="h-4 w-4" /> Baixar
+              </Button>
+              <Button size="sm" variant="outline" onClick={onShare}>
+                <Share2 className="h-4 w-4" /> Compartilhar
+              </Button>
+              <Button size="sm" variant="outline" onClick={onPrint}>
+                <Printer className="h-4 w-4" /> Imprimir
+              </Button>
             </div>
           </div>
-          <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted">
-            <Upload className="h-4 w-4" /> Enviar PDF
-            <input type="file" accept="application/pdf" hidden onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])} disabled={loading} />
-          </label>
         </div>
       </div>
 
+      {/* DOCUMENTO ASSINADO */}
+      <div className="rounded-xl border border-border p-3">
+        <div className="flex items-start gap-3">
+          <div className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full ${receipt.signed_pdf_path ? "bg-emerald-500/15 text-emerald-400" : "bg-muted text-muted-foreground"}`}>
+            <PenLine className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Documento assinado</div>
+            <div className="text-sm font-semibold">
+              {receipt.signed_pdf_path ? "Anexado ✓" : "Nenhum documento anexado"}
+            </div>
+            {receipt.signed_pdf_path && (
+              <div className="text-[11px] text-muted-foreground">Reanexar reseta os aceites.</div>
+            )}
+            <div className="mt-2">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted">
+                <Upload className="h-4 w-4" /> {receipt.signed_pdf_path ? "Reenviar assinado" : "Enviar documento assinado"}
+                <input type="file" accept="application/pdf" hidden onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])} disabled={loading} />
+              </label>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ACEITES */}
       <div className="rounded-xl border border-border p-3 space-y-2">
-        <div className="font-semibold">3. Aceites</div>
+        <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Aceites</div>
         <div className="flex items-center justify-between gap-3">
           <div className="text-xs">
             Vendedor {receipt.seller_accepted_at
