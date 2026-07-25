@@ -75,7 +75,11 @@ export function MotoControlCenter({ id }: { id: string }) {
   const activeNegotiation = useActiveNegotiation(id);
   const receiptsForMoto = useReceiptsForMoto(id);
   function openReceiptPdf(code: string, variant: "signed" | "original") {
-    navigate({ to: "/recibos/$code/visualizar", params: { code }, search: { variant } });
+    navigate({
+      to: "/recibos/$code/visualizar",
+      params: { code },
+      search: { variant, from: `/motorcycles/${id}/control` },
+    });
   }
 
   const events = useQuery({

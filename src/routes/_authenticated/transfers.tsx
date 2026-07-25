@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef } from "react";
+import type { SetStateAction } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -102,7 +103,7 @@ function TransfersPage() {
   const navigate = useNavigate({ from: "/transfers" });
   const search = Route.useSearch();
   const listFn = useServerFn(listUserProcesses);
-  const highlightRef = useRef<HTMLDivElement | null>(null);
+  const highlightRef = useRef<HTMLLIElement | null>(null);
 
   const processes = useQuery({
     queryKey: ["user-processes"],
@@ -154,13 +155,13 @@ function TransfersPage() {
   }, [processes.isSuccess, items, search.receipt, search.invite]);
 
   function setFilter(key: FilterKey) {
-    navigate({ search: (prev) => ({ ...prev, filter: key }), replace: true });
+    navigate({ search: ((prev: SearchParams) => ({ ...prev, filter: key })) as SetStateAction<SearchParams>, replace: true });
   }
   function setRole(key: RoleKey) {
-    navigate({ search: (prev) => ({ ...prev, role: key }), replace: true });
+    navigate({ search: ((prev: SearchParams) => ({ ...prev, role: key })) as SetStateAction<SearchParams>, replace: true });
   }
   function setType(key: TypeKey) {
-    navigate({ search: (prev) => ({ ...prev, type: key }), replace: true });
+    navigate({ search: ((prev: SearchParams) => ({ ...prev, type: key })) as SetStateAction<SearchParams>, replace: true });
   }
 
   async function respondInvite(id: string, approve: boolean) {

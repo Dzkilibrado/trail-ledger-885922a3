@@ -69,7 +69,10 @@ function PublicReceipt() {
     navigate({
       to: "/recibos/$code/visualizar",
       params: { code },
-      search: { variant: (r.status === "completed" ? "signed" : "original") as "signed" | "original" },
+      search: {
+        variant: (r.status === "completed" ? "signed" : "original") as "signed" | "original",
+        from: `/r/${code}`,
+      },
     });
   }
 

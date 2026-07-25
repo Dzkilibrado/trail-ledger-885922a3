@@ -25,7 +25,11 @@ export function ReceiptsHistorySheet({
 
   function openPdf(code: string, variant: "signed" | "original") {
     setOpen(false);
-    navigate({ to: "/recibos/$code/visualizar", params: { code }, search: { variant } });
+    navigate({
+      to: "/recibos/$code/visualizar",
+      params: { code },
+      search: { variant, from: `/motorcycles/${motoId}/control` },
+    });
   }
 
   return (
