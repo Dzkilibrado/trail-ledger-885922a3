@@ -7,6 +7,13 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ArrowRightLeft,
   Check,
   X,
@@ -16,6 +23,7 @@ import {
   ChevronRight,
   Bike,
   Mail,
+  SlidersHorizontal,
 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/trailbook";
@@ -39,17 +47,20 @@ type FilterKey = "all" | "awaiting_me" | "in_progress" | "completed" | "cancelle
 type RoleKey = "all" | "buying" | "selling";
 type TypeKey = "all" | "receipt" | "invite";
 
-const FILTER_OPTIONS: { key: FilterKey; label: string }[] = [
-  { key: "awaiting_me", label: "Aguardando você" },
-  { key: "in_progress", label: "Em andamento" },
-  { key: "completed", label: "Concluídos" },
-  { key: "cancelled", label: "Cancelados" },
-  { key: "all", label: "Todos" },
+// Status: apresentado como abas segmentadas. Sem opção "Todos" — o próprio chip
+// ativo alterna para "all" ao ser clicado novamente (ver setFilter).
+const STATUS_OPTIONS: { key: Exclude<FilterKey, "all">; label: string; shortLabel: string }[] = [
+  { key: "awaiting_me", label: "Aguardando você", shortLabel: "Aguardando" },
+  { key: "in_progress", label: "Em andamento", shortLabel: "Em andamento" },
+  { key: "completed", label: "Concluídos", shortLabel: "Concluídos" },
+  { key: "cancelled", label: "Cancelados", shortLabel: "Cancelados" },
 ];
+// Papel: apresentado como select em "Mostrar". Nomenclatura revisada para
+// evitar a colisão semântica com o tipo "Compra e Venda".
 const ROLE_OPTIONS: { key: RoleKey; label: string }[] = [
   { key: "all", label: "Compras e vendas" },
-  { key: "selling", label: "Vendas" },
-  { key: "buying", label: "Compras" },
+  { key: "buying", label: "Sou comprador" },
+  { key: "selling", label: "Sou vendedor" },
 ];
 const TYPE_OPTIONS: { key: TypeKey; label: string }[] = [
   { key: "all", label: "Todos os tipos" },
@@ -157,7 +168,14 @@ function TransfersPage() {
   }, [processes.isSuccess, items, search.receipt, search.invite]);
 
   function setFilter(key: FilterKey) {
-    navigate({ search: ((prev: SearchParams) => ({ ...prev, filter: key })) as SetStateAction<SearchParams>, replace: true });
+    navigate({
+      search: ((prev: SearchParams) => ({
+        ...prev,
+        // Clicar no status ativo alterna para "all" (limpa o filtro).
+        filter: prev.filter === key ? "all" : key,
+      })) as SetStateAction<SearchParams>,
+      replace: true,
+    });
   }
   function setRole(key: RoleKey) {
     navigate({ search: ((prev: SearchParams) => ({ ...prev, role: key })) as SetStateAction<SearchParams>, replace: true });
@@ -192,6 +210,9 @@ function TransfersPage() {
   const activeType: TypeKey = search.type ?? "all";
   const showEmpty = processes.isSuccess && filtered.length === 0;
   const totalCompleted = items.filter((i) => i.status_bucket === "completed").length;
+  const secondaryFiltersActive = activeRole !== "all" || activeType !== "all";
+  const activeRoleLabel = ROLE_OPTIONS.find((r) => r.key === activeRole)?.label ?? "";
+  const activeTypeLabel = TYPE_OPTIONS.find((t) => t.key === activeType)?.label ?? "";
 
   return (
     <div className="space-y-6">
@@ -200,28 +221,108 @@ function TransfersPage() {
         description="Compras, vendas e transferências das suas motos em um só lugar."
       />
 
-      {/* Filtros */}
-      <div className="space-y-2">
-        <FilterRow>
-          {FILTER_OPTIONS.map((f) => (
-            <FilterChip key={f.key} active={activeFilter === f.key} onClick={() => setFilter(f.key)}>
-              {f.label}
-            </FilterChip>
-          ))}
-        </FilterRow>
-        <FilterRow>
-          {ROLE_OPTIONS.map((r) => (
-            <FilterChip key={r.key} active={activeRole === r.key} onClick={() => setRole(r.key)}>
-              {r.label}
-            </FilterChip>
-          ))}
-          <span className="mx-1 h-4 w-px shrink-0 self-center bg-border" aria-hidden />
-          {TYPE_OPTIONS.map((t) => (
-            <FilterChip key={t.key} active={activeType === t.key} onClick={() => setType(t.key)} tone="subtle">
-              {t.label}
-            </FilterChip>
-          ))}
-        </FilterRow>
+      {/* Filtros — dois grupos claramente separados */}
+      <div className="space-y-4">
+        {/* Grupo 1 — Status do processo */}
+        <section aria-labelledby="filtros-status" className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2
+              id="filtros-status"
+              className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground"
+            >
+              Status
+            </h2>
+            {activeFilter !== "all" && (
+              <button
+                type="button"
+                onClick={() => setFilter(activeFilter)}
+                className="text-[11px] font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              >
+                Ver todos os status
+              </button>
+            )}
+          </div>
+          <FilterRow>
+            {STATUS_OPTIONS.map((f) => (
+              <FilterChip
+                key={f.key}
+                active={activeFilter === f.key}
+                onClick={() => setFilter(f.key)}
+              >
+                <span className="hidden sm:inline">{f.label}</span>
+                <span className="sm:hidden">{f.shortLabel}</span>
+              </FilterChip>
+            ))}
+          </FilterRow>
+        </section>
+
+        {/* Grupo 2 — Refinamento (papel + tipo) */}
+        <section aria-labelledby="filtros-refinamento" className="space-y-2">
+          <div className="flex items-center justify-between">
+            <h2
+              id="filtros-refinamento"
+              className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground"
+            >
+              <SlidersHorizontal className="h-3 w-3" /> Filtros
+            </h2>
+            {secondaryFiltersActive && (
+              <button
+                type="button"
+                onClick={() => {
+                  setRole("all");
+                  setType("all");
+                }}
+                className="text-[11px] font-medium text-muted-foreground underline-offset-2 hover:text-foreground hover:underline"
+              >
+                Limpar
+              </button>
+            )}
+          </div>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            <label className="space-y-1">
+              <span className="text-[11px] text-muted-foreground">Mostrar</span>
+              <Select value={activeRole} onValueChange={(v) => setRole(v as RoleKey)}>
+                <SelectTrigger
+                  aria-label="Filtrar por papel"
+                  className={cn(
+                    "h-10 w-full",
+                    activeRole !== "all" && "border-primary/60 bg-primary/5",
+                  )}
+                >
+                  <SelectValue>{activeRoleLabel}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {ROLE_OPTIONS.map((r) => (
+                    <SelectItem key={r.key} value={r.key}>
+                      {r.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+            <label className="space-y-1">
+              <span className="text-[11px] text-muted-foreground">Tipo</span>
+              <Select value={activeType} onValueChange={(v) => setType(v as TypeKey)}>
+                <SelectTrigger
+                  aria-label="Filtrar por tipo de processo"
+                  className={cn(
+                    "h-10 w-full",
+                    activeType !== "all" && "border-primary/60 bg-primary/5",
+                  )}
+                >
+                  <SelectValue>{activeTypeLabel}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {TYPE_OPTIONS.map((t) => (
+                    <SelectItem key={t.key} value={t.key}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </label>
+          </div>
+        </section>
       </div>
 
       {/* Lista */}
