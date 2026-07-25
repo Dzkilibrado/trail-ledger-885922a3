@@ -2014,8 +2014,16 @@ export type Database = {
           buyer_id: string | null
           buyer_snapshot: Json
           cancel_reason: string | null
+          cancellation_notes: string | null
+          cancellation_origin: string | null
+          cancellation_reason_code: string | null
           cancelled_at: string | null
+          cancelled_by: string | null
+          cancelled_by_role: string | null
           cancelled_reason: string | null
+          closure_type:
+            | Database["public"]["Enums"]["receipt_closure_type"]
+            | null
           code: string
           completed_at: string | null
           created_at: string
@@ -2029,6 +2037,7 @@ export type Database = {
           original_pdf_path: string | null
           pdf_path: string | null
           previous_receipt_id: string | null
+          previous_status: string | null
           qr_path: string | null
           revoked_at: string | null
           revoked_reason: string | null
@@ -2048,8 +2057,16 @@ export type Database = {
           buyer_id?: string | null
           buyer_snapshot?: Json
           cancel_reason?: string | null
+          cancellation_notes?: string | null
+          cancellation_origin?: string | null
+          cancellation_reason_code?: string | null
           cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_by_role?: string | null
           cancelled_reason?: string | null
+          closure_type?:
+            | Database["public"]["Enums"]["receipt_closure_type"]
+            | null
           code: string
           completed_at?: string | null
           created_at?: string
@@ -2063,6 +2080,7 @@ export type Database = {
           original_pdf_path?: string | null
           pdf_path?: string | null
           previous_receipt_id?: string | null
+          previous_status?: string | null
           qr_path?: string | null
           revoked_at?: string | null
           revoked_reason?: string | null
@@ -2082,8 +2100,16 @@ export type Database = {
           buyer_id?: string | null
           buyer_snapshot?: Json
           cancel_reason?: string | null
+          cancellation_notes?: string | null
+          cancellation_origin?: string | null
+          cancellation_reason_code?: string | null
           cancelled_at?: string | null
+          cancelled_by?: string | null
+          cancelled_by_role?: string | null
           cancelled_reason?: string | null
+          closure_type?:
+            | Database["public"]["Enums"]["receipt_closure_type"]
+            | null
           code?: string
           completed_at?: string | null
           created_at?: string
@@ -2097,6 +2123,7 @@ export type Database = {
           original_pdf_path?: string | null
           pdf_path?: string | null
           previous_receipt_id?: string | null
+          previous_status?: string | null
           qr_path?: string | null
           revoked_at?: string | null
           revoked_reason?: string | null
@@ -2992,6 +3019,15 @@ export type Database = {
         Args: { _transfer_id: string }
         Returns: undefined
       }
+      close_smart_receipt_process: {
+        Args: {
+          _id: string
+          _notes: string
+          _origin: string
+          _reason_code: string
+        }
+        Returns: Json
+      }
       comm_expand_audience: {
         Args: {
           _audience: Database["public"]["Enums"]["message_audience"]
@@ -3414,6 +3450,10 @@ export type Database = {
         | "check_level"
       plan_severity: "low" | "medium" | "high" | "critical"
       plan_tier: "free" | "premium" | "workshop"
+      receipt_closure_type:
+        | "seller_cancelled"
+        | "buyer_declined"
+        | "admin_cancelled"
       recipient_status: "sent" | "read" | "replied" | "archived"
       schedule_status:
         | "active"
@@ -3739,6 +3779,11 @@ export const Constants = {
       ],
       plan_severity: ["low", "medium", "high", "critical"],
       plan_tier: ["free", "premium", "workshop"],
+      receipt_closure_type: [
+        "seller_cancelled",
+        "buyer_declined",
+        "admin_cancelled",
+      ],
       recipient_status: ["sent", "read", "replied", "archived"],
       schedule_status: [
         "active",
