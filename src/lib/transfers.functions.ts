@@ -53,6 +53,8 @@ export interface ProcessItem {
   cancelled_at: string | null;
   // Pode encerrar agora (cancelar/recusar)? Só recibos ativos.
   can_close: boolean;
+  // Documento assinado já foi anexado ao processo?
+  has_signed_document: boolean;
 }
 
 const RECEIPT_STATUS_LABEL: Record<string, string> = {
@@ -145,6 +147,7 @@ export const listUserProcesses = createServerFn({ method: "GET" })
       let actionOwner = "";
       let nextAction: string | null = null;
       let detail = `/recibos/${String(r.code)}/visualizar`;
+      const hasSigned = Boolean(r.signed_pdf_path);
 
       switch (status) {
         case "draft":
@@ -164,12 +167,11 @@ export const listUserProcesses = createServerFn({ method: "GET" })
         case "awaiting_acceptance": {
           const sellerAccepted = Boolean(r.seller_accepted_at);
           const buyerAccepted = Boolean(r.buyer_accepted_at);
-          const hasSigned = Boolean(r.signed_pdf_path);
           if (isSeller) {
             if (!hasSigned) {
               bucket = "awaiting_me";
               requiresMe = true;
-              actionOwner = "Aguardando sua ação";
+              actionOwner = "Aguardando assinatura das partes";
               nextAction = "Visualizar documento";
             } else if (!sellerAccepted) {
               bucket = "awaiting_me";
@@ -179,14 +181,18 @@ export const listUserProcesses = createServerFn({ method: "GET" })
             } else if (!buyerAccepted) {
               bucket = "in_progress";
               actionOwner = "Aguardando comprador";
-              nextAction = "Ver documento";
+              nextAction = "Visualizar documento";
             } else {
               bucket = "in_progress";
               actionOwner = "Aguardando conclusão";
-              nextAction = "Ver documento";
+              nextAction = "Visualizar documento";
             }
           } else {
-            if (!buyerAccepted) {
+            if (!hasSigned) {
+              bucket = "in_progress";
+              actionOwner = "Aguardando assinatura das partes";
+              nextAction = "Visualizar documento";
+            } else if (!buyerAccepted) {
               bucket = "awaiting_me";
               requiresMe = true;
               actionOwner = "Aguardando sua ação";
@@ -194,11 +200,11 @@ export const listUserProcesses = createServerFn({ method: "GET" })
             } else if (!sellerAccepted) {
               bucket = "in_progress";
               actionOwner = "Aguardando vendedor";
-              nextAction = "Ver documento";
+              nextAction = "Visualizar documento";
             } else {
               bucket = "in_progress";
               actionOwner = "Aguardando conclusão";
-              nextAction = "Ver documento";
+              nextAction = "Visualizar documento";
             }
           }
           break;
@@ -206,7 +212,7 @@ export const listUserProcesses = createServerFn({ method: "GET" })
         case "completed":
           bucket = "completed";
           actionOwner = "Nenhuma ação pendente";
-          nextAction = "Ver documento";
+          nextAction = "Visualizar documento assinado";
           break;
         case "cancelled":
         case "revoked":
@@ -222,9 +228,14 @@ export const listUserProcesses = createServerFn({ method: "GET" })
       const started = String(r.created_at);
       const updated = String(r.updated_at ?? r.created_at);
       const closureType = (r.closure_type as ProcessItem["closure_type"]) ?? null;
-      const displayStatus = status === "cancelled" && closureType
-        ? (CLOSURE_DISPLAY[closureType] ?? "Cancelado")
-        : (RECEIPT_STATUS_LABEL[status] ?? status);
+      let displayStatus: string;
+      if (status === "cancelled" && closureType) {
+        displayStatus = CLOSURE_DISPLAY[closureType] ?? "Cancelado";
+      } else if ((status === "issued" || status === "awaiting_acceptance") && !hasSigned) {
+        displayStatus = "Aguardando assinatura das partes";
+      } else {
+        displayStatus = RECEIPT_STATUS_LABEL[status] ?? status;
+      }
       // Pode encerrar agora? Vendedor em qualquer status ativo; comprador só
       // em issued/awaiting_acceptance (não em draft).
       const canClose = isSeller
@@ -259,6 +270,7 @@ export const listUserProcesses = createServerFn({ method: "GET" })
         cancellation_origin: (r.cancellation_origin as string | null) ?? null,
         cancelled_at: (r.cancelled_at as string | null) ?? null,
         can_close: canClose,
+        has_signed_document: hasSigned,
       });
     }
 
@@ -335,6 +347,7 @@ export const listUserProcesses = createServerFn({ method: "GET" })
         cancellation_origin: null,
         cancelled_at: null,
         can_close: false,
+        has_signed_document: false,
       });
     }
 
