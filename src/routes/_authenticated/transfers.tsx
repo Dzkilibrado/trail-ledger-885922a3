@@ -25,6 +25,8 @@ import { invalidateMotorcycleState } from "@/hooks/useActiveMotorcycle";
 import { listUserProcesses, type ProcessItem, type ProcessBucket } from "@/lib/transfers.functions";
 import { StoragePhoto } from "@/components/StoragePhoto";
 import { cn } from "@/lib/utils";
+import { CloseReceiptDialog } from "@/components/receipts/CloseReceiptDialog";
+import { reasonLabelFromClosure, closureTitle, closeActionLabel } from "@/lib/receipts/close-reasons";
 
 type SearchParams = {
   filter?: FilterKey;
@@ -438,6 +440,20 @@ function ProcessCard({
             </Button>
           </>
         )}
+        {!isInvite && item.can_close && item.receipt_code && (
+          <CloseReceiptDialog
+            receiptId={item.id}
+            code={item.receipt_code}
+            role={item.role}
+            origin="central"
+            motorcycleId={item.motorcycle_id}
+            trigger={
+              <Button size="sm" variant="outline">
+                <X className="h-4 w-4" /> {closeActionLabel(item.role)}
+              </Button>
+            }
+          />
+        )}
         {!isInvite && item.next_action_label && (
           <Button size="sm" onClick={openDetail}>
             {item.next_action_label}
@@ -445,6 +461,18 @@ function ProcessCard({
           </Button>
         )}
       </div>
+
+      {/* Motivo resumido para processos cancelados */}
+      {!isInvite && item.status === "cancelled" && (
+        <div className="mt-2 rounded-md border border-border/60 bg-muted/30 p-2 text-xs">
+          <div className="font-semibold text-foreground">{closureTitle(item.closure_type)}</div>
+          <div className="mt-0.5 text-muted-foreground">
+            Motivo: {item.cancellation_reason_code === "other"
+              ? "Outro motivo informado."
+              : reasonLabelFromClosure(item.closure_type, item.cancellation_reason_code)}
+          </div>
+        </div>
+      )}
     </article>
   );
 }
