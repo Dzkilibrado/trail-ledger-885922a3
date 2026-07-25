@@ -60,12 +60,15 @@ export function TBPdfViewer({
   status,
   onBack,
   onClose,
+  banner,
 }: {
   code: string;
   variant?: "signed" | "original";
   status?: string | null;
   onBack: () => void;
   onClose: () => void;
+  /** Tarja de encerramento (sobreposta ao visualizador, sem alterar o PDF). */
+  banner?: { text: string; tone?: "warning" | "destructive" | "muted" } | null;
 }) {
   const pdfBytesFn = useServerFn(getReceiptPdfBytes);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -233,6 +236,23 @@ export function TBPdfViewer({
 
       {/* Corpo */}
       <div ref={scrollRef} className="relative flex-1 overflow-auto bg-muted/30">
+        {banner ? (
+          <div
+            className={
+              "sticky top-0 z-20 mx-auto flex w-full max-w-3xl items-center justify-center gap-2 border-b px-3 py-2 text-center text-[11px] font-bold uppercase tracking-widest sm:text-xs " +
+              (banner.tone === "destructive"
+                ? "border-destructive/40 bg-destructive/15 text-destructive"
+                : banner.tone === "muted"
+                ? "border-border bg-muted text-muted-foreground"
+                : "border-amber-500/40 bg-amber-500/15 text-amber-300")
+            }
+            role="status"
+            aria-label={banner.text}
+          >
+            <FileWarning className="h-3.5 w-3.5" aria-hidden />
+            {banner.text}
+          </div>
+        ) : null}
         {state === "loading" && (
           <div className="mx-auto flex max-w-3xl flex-col items-center gap-3 p-4">
             <div className="flex items-center gap-2 py-4 text-sm text-muted-foreground">
