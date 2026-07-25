@@ -114,7 +114,7 @@ export const listUserProcesses = createServerFn({ method: "GET" })
     const items: ProcessItem[] = [];
 
     // ---- Recibos ----
-    for (const r of (receiptsRes.data ?? []) as Array<Record<string, unknown>>) {
+    for (const r of ((receiptsRes.data ?? []) as unknown as Array<Record<string, unknown>>)) {
       const moto = (r.motorcycles ?? {}) as Record<string, unknown>;
       const role: ProcessRole = r.seller_id === userId ? "seller" : "buyer";
       const isSeller = role === "seller";
@@ -233,7 +233,7 @@ export const listUserProcesses = createServerFn({ method: "GET" })
     }
 
     // ---- Convites de transferência ----
-    for (const t of (invitesRes.data ?? []) as Array<Record<string, unknown>>) {
+    for (const t of ((invitesRes.data ?? []) as unknown as Array<Record<string, unknown>>)) {
       const moto = (t.motorcycles ?? {}) as Record<string, unknown>;
       const role: ProcessRole = t.from_user_id === userId ? "seller" : "buyer";
       const isSender = role === "seller";
