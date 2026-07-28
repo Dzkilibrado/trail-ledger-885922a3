@@ -334,10 +334,13 @@ export function MotoControlCenter({ id }: { id: string }) {
                   </Button>
                 }
               />}
-              {isOwner && <CertificateSettingsDialog
-                motorcycleId={m.id}
-                trigger={<Button variant="outline" onClick={checkCertLimit}><QrCode className="h-4 w-4" /> Gerar certificado</Button>}
-              />}
+              {isOwner && (
+                <Button variant="outline" asChild>
+                  <Link to="/motorcycles/$id/certificate" params={{ id: m.id }}>
+                    <QrCode className="h-4 w-4" /> Certificado Digital
+                  </Link>
+                </Button>
+              )}
               {isOwner && (pendingTransfer.data ? (
                 <Button variant="outline" disabled className="text-amber-400"><ArrowRightLeft className="h-4 w-4" /> Transferência pendente</Button>
               ) : (
