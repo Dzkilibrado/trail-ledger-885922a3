@@ -118,15 +118,16 @@ export function CertificateSettingsDialog({ motorcycleId, existing, trigger, onS
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
-        <DialogHeader>
+      <DialogContent className="flex max-h-[92dvh] w-[min(100vw-1rem,42rem)] max-w-2xl flex-col gap-0 overflow-hidden p-0">
+        <DialogHeader className="border-b border-border px-4 py-3 sm:px-6">
           <DialogTitle className="flex items-center gap-2"><Globe2 className="h-5 w-5 text-primary" /> Configurar certificado público</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs sm:text-sm">
             Escolha exatamente quais informações ficarão visíveis no link público. Qualquer pessoa com o link
             poderá ver o que estiver marcado abaixo.
           </DialogDescription>
         </DialogHeader>
 
+        <div className="min-w-0 flex-1 space-y-4 overflow-y-auto px-4 py-4 sm:px-6">
         <div className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-300">
           <div className="flex items-start gap-2">
             <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
@@ -194,17 +195,17 @@ export function CertificateSettingsDialog({ motorcycleId, existing, trigger, onS
               <button type="button" className="text-muted-foreground hover:text-foreground" onClick={() => setSections(new Set())}>Nada</button>
             </div>
           </div>
-          <ul className="divide-y divide-border rounded-xl border border-border">
+          <ul className="divide-y divide-border overflow-hidden rounded-xl border border-border">
             {CERT_SECTIONS.map((sec) => (
               <li key={sec.key} className="flex items-center justify-between gap-3 p-3">
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 text-sm font-medium">
-                    {sec.label}
+                    <span className="truncate">{sec.label}</span>
                     {sec.sensitive ? <Badge variant="outline" className="border-amber-500/40 text-[10px] text-amber-400">sensível</Badge> : null}
                   </div>
                   <div className="text-xs text-muted-foreground">{sec.description}</div>
                 </div>
-                <Switch checked={sections.has(sec.key)} onCheckedChange={() => toggle(sec.key)} />
+                <Switch className="shrink-0" checked={sections.has(sec.key)} onCheckedChange={() => toggle(sec.key)} />
               </li>
             ))}
           </ul>
@@ -232,21 +233,23 @@ export function CertificateSettingsDialog({ motorcycleId, existing, trigger, onS
               `${sections.size} de ${CERT_SECTIONS.length} seções serão exibidas.`}
           </div>
           {publicUrl ? (
-            <div className="mt-3 grid gap-3 md:grid-cols-[140px_1fr]">
-              {qrDataUrl ? (
-                <img src={qrDataUrl} alt="QR Code do certificado" className="h-[140px] w-[140px] rounded-lg border border-border bg-white p-1" />
-              ) : (
-                <div className="grid h-[140px] w-[140px] place-items-center rounded-lg border border-dashed border-border text-xs text-muted-foreground">
-                  <QrCode className="h-6 w-6" />
-                </div>
-              )}
-              <div className="space-y-2">
-                <code className="block truncate rounded-md bg-elevated px-2 py-1 text-[11px]">{publicUrl}</code>
+            <div className="mt-3 flex flex-col items-stretch gap-3 sm:grid sm:grid-cols-[120px_minmax(0,1fr)]">
+              <div className="flex justify-center sm:block">
+                {qrDataUrl ? (
+                  <img src={qrDataUrl} alt="QR Code do certificado" className="h-[120px] w-[120px] rounded-lg border border-border bg-white p-1" />
+                ) : (
+                  <div className="grid h-[120px] w-[120px] place-items-center rounded-lg border border-dashed border-border text-xs text-muted-foreground">
+                    <QrCode className="h-6 w-6" />
+                  </div>
+                )}
+              </div>
+              <div className="min-w-0 space-y-2">
+                <code className="block w-full truncate rounded-md bg-elevated px-2 py-1 text-[11px]">{publicUrl}</code>
                 <div className="flex flex-wrap gap-2">
                   <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(publicUrl); toast.success("Link copiado"); }}><Copy className="h-3.5 w-3.5" /> Copiar</Button>
                   <a href={publicUrl} target="_blank" rel="noreferrer"><Button size="sm" variant="outline"><ExternalLink className="h-3.5 w-3.5" /> Abrir</Button></a>
                   <Button size="sm" variant="outline" onClick={downloadQr} disabled={!qrDataUrl}><QrCode className="h-3.5 w-3.5" /> Baixar QR</Button>
-                  <Button size="sm" variant="outline" onClick={printQr} disabled={!qrDataUrl}>Imprimir QR</Button>
+                  <Button size="sm" variant="outline" onClick={printQr} disabled={!qrDataUrl}>Imprimir</Button>
                 </div>
               </div>
             </div>
@@ -254,10 +257,11 @@ export function CertificateSettingsDialog({ motorcycleId, existing, trigger, onS
             <p className="mt-3 text-[11px] text-muted-foreground">O link será gerado ao salvar.</p>
           )}
         </div>
+        </div>
 
-        <DialogFooter className="gap-2">
-          <Button variant="ghost" onClick={() => setOpen(false)}>Cancelar</Button>
-          <Button onClick={save} disabled={saving}>{saving ? "Salvando…" : existing ? "Salvar alterações" : "Criar certificado"}</Button>
+        <DialogFooter className="sticky bottom-0 flex-col-reverse gap-2 border-t border-border bg-background/95 px-4 py-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] backdrop-blur sm:flex-row sm:px-6">
+          <Button variant="ghost" onClick={() => setOpen(false)} className="w-full sm:w-auto">Cancelar</Button>
+          <Button onClick={save} disabled={saving} className="w-full sm:w-auto">{saving ? "Salvando…" : existing ? "Salvar alterações" : "Criar certificado"}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
