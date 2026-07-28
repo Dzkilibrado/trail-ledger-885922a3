@@ -1,7 +1,7 @@
 import { ListRowsSkeleton } from "@/components/Skeletons";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription, DialogClose } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Activity } from "lucide-react";
 
@@ -70,7 +70,11 @@ export function CertificateAccessLogDialog({ certificateId, trigger }: Props) {
             </table>
           </div>
         )}
-        <div className="mt-2 flex justify-end"><Button variant="ghost">Fechar</Button></div>
+        <div className="mt-2 flex justify-end">
+          <DialogClose asChild>
+            <Button variant="ghost">Fechar</Button>
+          </DialogClose>
+        </div>
       </DialogContent>
     </Dialog>
   );
