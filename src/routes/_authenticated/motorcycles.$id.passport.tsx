@@ -21,6 +21,8 @@ import {
   type PassportEntryKind,
 } from "@/lib/passport";
 import { AlertTriangle, ArrowLeft, BadgeCheck, Copy, FileText, QrCode, Share2, ShieldAlert, Sparkles } from "lucide-react";
+import { FolderOpen } from "lucide-react";
+import { PresentDocumentsSheet } from "@/components/documents/PresentDocumentsSheet";
 import { toast } from "sonner";
 import { ReceiptsSummaryRow } from "@/components/receipts/ReceiptsHistorySheet";
 import { useReceiptsForMoto } from "@/hooks/useActiveNegotiation";
@@ -58,6 +60,7 @@ const KIND_LABEL: Record<PassportEntryKind, string> = {
 function Passport() {
   const { id } = Route.useParams();
   const [filter, setFilter] = useState<string>("all");
+  const [presentOpen, setPresentOpen] = useState(false);
 
   const moto = useQuery({
     queryKey: ["motorcycle", id],
@@ -182,6 +185,9 @@ function Passport() {
                 <ArrowLeft className="h-4 w-4" /> Voltar à moto
               </Link>
             </Button>
+            <Button variant="secondary" onClick={() => setPresentOpen(true)}>
+              <FolderOpen className="h-4 w-4" /> Apresentar documentos
+            </Button>
             <HelpTooltip label="Certificado Digital" text={HELP.passportShare} side="bottom" />
             <Button asChild className="btn-glow">
               <Link to="/motorcycles/$id/certificate" params={{ id: m.id }}>
@@ -190,6 +196,13 @@ function Passport() {
             </Button>
           </div>
         }
+      />
+
+      <PresentDocumentsSheet
+        open={presentOpen}
+        onOpenChange={setPresentOpen}
+        motorcycleId={m.id}
+        motorcycleLabel={m.nickname || m.model}
       />
 
       {/* Hero */}
