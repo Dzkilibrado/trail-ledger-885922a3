@@ -219,7 +219,13 @@ export function CertificateSettingsDialog({ motorcycleId, existing, trigger, onS
         <div className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm font-semibold"><Eye className="h-4 w-4" /> Pré-visualização</div>
-            <Badge variant="outline" className={STATUS_TONE[eff]}>{STATUS_LABEL[eff]}</Badge>
+            {existing ? (
+              <Badge variant="outline" className={STATUS_TONE[eff]}>{STATUS_LABEL[eff]}</Badge>
+            ) : (
+              <Badge variant="outline" className="border-primary/40 text-primary">
+                Rascunho — será gerado ao salvar
+              </Badge>
+            )}
           </div>
           <div className="mt-2 text-xs text-muted-foreground">
             {sections.size === 0 ? "Nenhuma seção marcada — o certificado ficará praticamente vazio." :
