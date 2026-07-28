@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { CertificateSettingsDialog } from "@/components/CertificateSettingsDialog";
 import { CertificateAccessLogDialog } from "@/components/CertificateAccessLogDialog";
 import { RevokeCertificateDialog } from "@/components/RevokeCertificateDialog";
@@ -16,7 +17,7 @@ import { canCreateCertificate } from "@/lib/plans";
 import { effectiveStatus, STATUS_LABEL, STATUS_TONE, type CertStatus } from "@/lib/cert-sections";
 import {
   ArrowLeft, BadgeCheck, Copy, ExternalLink, Eye, Globe2, Lock,
-  QrCode, RefreshCcw, Settings2, ShieldOff, Share2, Sparkles, Activity,
+  QrCode, RefreshCcw, Settings2, ShieldOff, Share2, Sparkles, Activity, X,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -41,6 +42,7 @@ function CertificatePage() {
   const qc = useQueryClient();
   const { plan } = usePlan();
   const [revokeOpen, setRevokeOpen] = useState(false);
+  const [viewerOpen, setViewerOpen] = useState(false);
 
   const moto = useQuery({
     queryKey: ["motorcycle", id],
@@ -61,6 +63,7 @@ function CertificatePage() {
   const eff: CertStatus | null = cert ? effectiveStatus(cert as any) : null;
   const publicUrl =
     cert && typeof window !== "undefined" ? `${window.location.origin}/c/${cert.public_token}` : null;
+  const shortUrl = cert ? `trailbook.app/c/${cert.public_token.slice(0, 8)}…` : null;
 
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   useEffect(() => {
@@ -184,7 +187,7 @@ function CertificatePage() {
       {/* Estado B/C/D: certificado existente */}
       {cert && eff && (
         <>
-          <div className="surface-elevated rounded-2xl p-6">
+          <div className="surface-elevated overflow-hidden rounded-2xl p-4 sm:p-6">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="min-w-0">
                 <div className="text-xs uppercase tracking-widest text-muted-foreground">
@@ -208,41 +211,47 @@ function CertificatePage() {
             </div>
 
             {/* Ações principais por estado */}
-            <div className="mt-5 grid gap-4 md:grid-cols-[220px_1fr]">
+            <div className="mt-5 grid gap-5 md:grid-cols-[220px_minmax(0,1fr)]">
               <div className="flex items-center justify-center">
                 {qrDataUrl ? (
                   <img
                     src={qrDataUrl}
                     alt="QR Code do Certificado Digital"
-                    className="h-[200px] w-[200px] rounded-xl border border-border bg-white p-2"
+                    className="aspect-square h-auto w-full max-w-[220px] rounded-xl border border-border bg-white p-2"
                   />
                 ) : (
-                  <div className="grid h-[200px] w-[200px] place-items-center rounded-xl border border-dashed border-border text-muted-foreground">
+                  <div className="grid aspect-square w-full max-w-[220px] place-items-center rounded-xl border border-dashed border-border text-muted-foreground">
                     <QrCode className="h-8 w-8" />
                   </div>
                 )}
               </div>
-              <div className="space-y-3">
+              <div className="min-w-0 space-y-3">
                 {publicUrl && (
-                  <code className="block truncate rounded-md bg-elevated px-2 py-1.5 text-[11px]">
-                    {publicUrl}
-                  </code>
+                  <div className="min-w-0">
+                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      Link público do certificado
+                    </div>
+                    <code
+                      title={publicUrl}
+                      className="mt-1 block max-w-full truncate rounded-md bg-elevated px-2 py-1.5 text-[11px]"
+                    >
+                      {shortUrl}
+                    </code>
+                  </div>
                 )}
 
                 {eff === "active" && (
-                  <div className="flex flex-wrap gap-2">
-                    <Button asChild className="btn-glow">
-                      <a href={publicUrl ?? "#"} target="_blank" rel="noreferrer">
-                        <Eye className="h-4 w-4" /> Visualizar
-                      </a>
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                    <Button className="btn-glow min-h-[44px] rounded-xl" onClick={() => setViewerOpen(true)}>
+                      <Eye className="h-4 w-4" /> Visualizar
                     </Button>
-                    <Button variant="outline" onClick={shareLink}>
+                    <Button variant="outline" className="min-h-[44px] rounded-xl" onClick={shareLink}>
                       <Share2 className="h-4 w-4" /> Compartilhar
                     </Button>
-                    <Button variant="outline" onClick={copyLink}>
+                    <Button variant="outline" className="min-h-[44px] rounded-xl" onClick={copyLink}>
                       <Copy className="h-4 w-4" /> Copiar link
                     </Button>
-                    <Button variant="outline" onClick={downloadQr} disabled={!qrDataUrl}>
+                    <Button variant="outline" className="min-h-[44px] rounded-xl" onClick={downloadQr} disabled={!qrDataUrl}>
                       <QrCode className="h-4 w-4" /> Baixar QR
                     </Button>
                   </div>
@@ -269,49 +278,58 @@ function CertificatePage() {
                   </div>
                 )}
 
-                {/* Ações secundárias / contextuais */}
-                <div className="flex flex-wrap gap-2 pt-1">
-                  <CertificateSettingsDialog
-                    motorcycleId={m.id}
-                    existing={cert as any}
-                    trigger={
-                      <Button variant="outline" size="sm">
-                        <Settings2 className="h-4 w-4" /> Configurar
+                {/* Ações secundárias / contextuais — padronizadas */}
+                <div className="pt-2">
+                  <div className="mb-2 text-[11px] uppercase tracking-wide text-muted-foreground">
+                    Mais ações
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
+                    <CertificateSettingsDialog
+                      motorcycleId={m.id}
+                      existing={cert as any}
+                      trigger={
+                        <Button variant="outline" className="min-h-[44px] rounded-xl">
+                          <Settings2 className="h-4 w-4" /> Configurar
+                        </Button>
+                      }
+                    />
+                    <CertificateAccessLogDialog
+                      certificateId={cert.id}
+                      trigger={
+                        <Button variant="outline" className="min-h-[44px] rounded-xl">
+                          <Activity className="h-4 w-4" /> Log de acessos
+                        </Button>
+                      }
+                    />
+                    <CertificateSettingsDialog
+                      motorcycleId={m.id}
+                      trigger={
+                        <Button variant="outline" className="min-h-[44px] rounded-xl" onClick={checkCertLimit}>
+                          <Sparkles className="h-4 w-4" /> Gerar novo
+                        </Button>
+                      }
+                    />
+                    {publicUrl && eff === "active" && (
+                      <Button variant="outline" className="min-h-[44px] rounded-xl" asChild>
+                        <a href={publicUrl} target="_blank" rel="noreferrer">
+                          <ExternalLink className="h-4 w-4" /> Abrir em nova aba
+                        </a>
                       </Button>
-                    }
-                  />
-                  <CertificateAccessLogDialog
-                    certificateId={cert.id}
-                    trigger={
-                      <Button variant="outline" size="sm">
-                        <Activity className="h-4 w-4" /> Log de acessos
+                    )}
+                    {eff === "revoked" ? (
+                      <Button variant="outline" className="min-h-[44px] rounded-xl" onClick={reactivateCert}>
+                        <RefreshCcw className="h-4 w-4" /> Reativar
                       </Button>
-                    }
-                  />
-                  {eff === "revoked" ? (
-                    <Button variant="outline" size="sm" onClick={reactivateCert}>
-                      <RefreshCcw className="h-4 w-4" /> Reativar
-                    </Button>
-                  ) : (
-                    <Button variant="outline" size="sm" onClick={() => setRevokeOpen(true)}>
-                      <ShieldOff className="h-4 w-4" /> Revogar
-                    </Button>
-                  )}
-                  <CertificateSettingsDialog
-                    motorcycleId={m.id}
-                    trigger={
-                      <Button variant="ghost" size="sm" onClick={checkCertLimit}>
-                        <Sparkles className="h-4 w-4" /> Gerar novo
+                    ) : (
+                      <Button
+                        variant="outline"
+                        className="min-h-[44px] rounded-xl border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => setRevokeOpen(true)}
+                      >
+                        <ShieldOff className="h-4 w-4" /> Revogar
                       </Button>
-                    }
-                  />
-                  {publicUrl && eff === "active" && (
-                    <Button variant="ghost" size="sm" asChild>
-                      <a href={publicUrl} target="_blank" rel="noreferrer">
-                        <ExternalLink className="h-4 w-4" /> Abrir em nova aba
-                      </a>
-                    </Button>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -324,6 +342,37 @@ function CertificatePage() {
               motorcycleId={m.id}
             />
           )}
+          {/* Viewer interno — tela cheia mobile-first */}
+          <Sheet open={viewerOpen} onOpenChange={setViewerOpen}>
+            <SheetContent
+              side="bottom"
+              className="flex h-[100dvh] w-screen max-w-none flex-col gap-0 border-0 p-0 sm:max-w-none"
+            >
+              <div className="flex items-center justify-between border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
+                <div className="min-w-0">
+                  <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                    Certificado Digital
+                  </div>
+                  <div className="truncate text-sm font-semibold">{motoLabel}</div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="min-h-[44px] rounded-xl"
+                  onClick={() => setViewerOpen(false)}
+                >
+                  <X className="h-4 w-4" /> Fechar
+                </Button>
+              </div>
+              {publicUrl && viewerOpen && (
+                <iframe
+                  src={publicUrl}
+                  title="Certificado Digital"
+                  className="h-full w-full flex-1 border-0 bg-background"
+                />
+              )}
+            </SheetContent>
+          </Sheet>
         </>
       )}
     </div>
