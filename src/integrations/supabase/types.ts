@@ -196,6 +196,9 @@ export type Database = {
           id: string
           motorcycle_id: string
           public_token: string
+          revoked_at: string | null
+          revoked_reason_code: string | null
+          revoked_reason_notes: string | null
           status: string
         }
         Insert: {
@@ -206,6 +209,9 @@ export type Database = {
           id?: string
           motorcycle_id: string
           public_token?: string
+          revoked_at?: string | null
+          revoked_reason_code?: string | null
+          revoked_reason_notes?: string | null
           status?: string
         }
         Update: {
@@ -216,6 +222,9 @@ export type Database = {
           id?: string
           motorcycle_id?: string
           public_token?: string
+          revoked_at?: string | null
+          revoked_reason_code?: string | null
+          revoked_reason_notes?: string | null
           status?: string
         }
         Relationships: [
