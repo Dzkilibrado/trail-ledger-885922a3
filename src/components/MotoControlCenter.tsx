@@ -23,9 +23,7 @@ import { toast } from "sonner";
 import { priorityList } from "@/lib/maintenance-engine";
 import { computeConservation, categoryHealth, docsHealth, historyHealth } from "@/lib/conservation";
 import { useEffect } from "react";
-import { usePlan } from "@/hooks/usePlan";
-import { canCreateCertificate } from "@/lib/plans";
-import { CertificateSettingsDialog } from "@/components/CertificateSettingsDialog";
+// Certificado Digital agora vive em rota dedicada por moto (/motorcycles/$id/certificate)
 import { TransferOwnershipDialog } from "@/components/TransferOwnershipDialog";
 import { OwnershipTimeline } from "@/components/OwnershipTimeline";
 import { MotorcycleDocuments } from "@/components/MotorcycleDocuments";
@@ -50,7 +48,6 @@ import { clearActiveMotorcycleIfMatches, invalidateMotorcycleState, setStoredAct
 export function MotoControlCenter({ id }: { id: string }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
-  const { plan } = usePlan();
   const { isAdmin } = useIsAdmin();
   const [archiveReason, setArchiveReason] = useState<string>("");
   const [archiveReasonOther, setArchiveReasonOther] = useState<string>("");
@@ -153,16 +150,6 @@ export function MotoControlCenter({ id }: { id: string }) {
       return data ?? [];
     },
   });
-
-  async function checkCertLimit(e: React.MouseEvent) {
-    const { count } = await supabase.from("certificates").select("id", { count: "exact", head: true });
-    if (!canCreateCertificate(plan, count ?? 0)) {
-      e.preventDefault();
-      e.stopPropagation();
-      toast.error(`Plano ${plan.label} permite ${plan.limits.activeCertificates} certificado(s). Faça upgrade.`);
-      navigate({ to: "/plans" });
-    }
-  }
 
   async function archiveMoto() {
     const finalReason = archiveReason === "Outros motivos"
@@ -334,10 +321,13 @@ export function MotoControlCenter({ id }: { id: string }) {
                   </Button>
                 }
               />}
-              {isOwner && <CertificateSettingsDialog
-                motorcycleId={m.id}
-                trigger={<Button variant="outline" onClick={checkCertLimit}><QrCode className="h-4 w-4" /> Gerar certificado</Button>}
-              />}
+              {isOwner && (
+                <Button variant="outline" asChild>
+                  <Link to="/motorcycles/$id/certificate" params={{ id: m.id }}>
+                    <QrCode className="h-4 w-4" /> Certificado Digital
+                  </Link>
+                </Button>
+              )}
               {isOwner && (pendingTransfer.data ? (
                 <Button variant="outline" disabled className="text-amber-400"><ArrowRightLeft className="h-4 w-4" /> Transferência pendente</Button>
               ) : (

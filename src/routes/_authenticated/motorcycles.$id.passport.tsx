@@ -9,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EventTypeIcon } from "@/components/EventTypeIcon";
-import { CertificateSettingsDialog } from "@/components/CertificateSettingsDialog";
 import { brl, EVENT_TYPE_LABEL, formatDate } from "@/lib/trailbook";
 import { computeConservation, categoryHealth, docsHealth, historyHealth } from "@/lib/conservation";
 import { priorityList } from "@/lib/maintenance-engine";
@@ -183,11 +182,12 @@ function Passport() {
                 <ArrowLeft className="h-4 w-4" /> Voltar à moto
               </Link>
             </Button>
-            <HelpTooltip label="Compartilhar" text={HELP.passportShare} side="bottom" />
-            <CertificateSettingsDialog
-              motorcycleId={m.id}
-              trigger={<Button className="btn-glow"><Share2 className="h-4 w-4" /> Compartilhar / Certificado</Button>}
-            />
+            <HelpTooltip label="Certificado Digital" text={HELP.passportShare} side="bottom" />
+            <Button asChild className="btn-glow">
+              <Link to="/motorcycles/$id/certificate" params={{ id: m.id }}>
+                <Share2 className="h-4 w-4" /> Certificado Digital
+              </Link>
+            </Button>
           </div>
         }
       />
