@@ -86,8 +86,7 @@ export function PresentDocumentsSheet({
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
         side="bottom"
-        className="h-[100dvh] max-h-[100dvh] w-full max-w-full overflow-hidden p-0 sm:max-w-full"
-        hideClose
+        className="h-[100dvh] max-h-[100dvh] w-full max-w-full overflow-hidden p-0 sm:max-w-full [&>button.absolute]:hidden"
       >
         {selected ? (
           <TBDocumentViewer
