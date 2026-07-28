@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CertificateSettingsDialog } from "@/components/CertificateSettingsDialog";
 import { CertificateAccessLogDialog } from "@/components/CertificateAccessLogDialog";
+import { RevokeCertificateDialog } from "@/components/RevokeCertificateDialog";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";
 import { usePlan } from "@/hooks/usePlan";
@@ -39,6 +40,7 @@ function CertificatePage() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const { plan } = usePlan();
+  const [revokeOpen, setRevokeOpen] = useState(false);
 
   const moto = useQuery({
     queryKey: ["motorcycle", id],
@@ -78,15 +80,6 @@ function CertificatePage() {
       toast.error(`Plano ${plan.label} permite ${plan.limits.activeCertificates} certificado(s). Faça upgrade.`);
       navigate({ to: "/plans" });
     }
-  }
-
-  async function revokeCert() {
-    if (!cert) return;
-    if (!window.confirm("Revogar este Certificado Digital? O link público deixará de abrir imediatamente.")) return;
-    const { error } = await supabase.from("certificates").update({ status: "revoked" }).eq("id", cert.id);
-    if (error) { toast.error(error.message); return; }
-    toast.success("Certificado revogado.");
-    qc.invalidateQueries({ queryKey: ["certificates", id] });
   }
 
   async function reactivateCert() {
@@ -300,7 +293,7 @@ function CertificatePage() {
                       <RefreshCcw className="h-4 w-4" /> Reativar
                     </Button>
                   ) : (
-                    <Button variant="outline" size="sm" onClick={revokeCert}>
+                    <Button variant="outline" size="sm" onClick={() => setRevokeOpen(true)}>
                       <ShieldOff className="h-4 w-4" /> Revogar
                     </Button>
                   )}
@@ -323,6 +316,14 @@ function CertificatePage() {
               </div>
             </div>
           </div>
+          {cert && (
+            <RevokeCertificateDialog
+              open={revokeOpen}
+              onOpenChange={setRevokeOpen}
+              certificateId={cert.id}
+              motorcycleId={m.id}
+            />
+          )}
         </>
       )}
     </div>
