@@ -174,7 +174,7 @@ export function computeComponentViews(
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
     const w = toneWeight(a.tone) - toneWeight(b.tone);
     if (w !== 0) return w;
-    return a.name.localeCompare(b.name);
+    return (a.name ?? "").localeCompare(b.name ?? "");
   });
 }
 
