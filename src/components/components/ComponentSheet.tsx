@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { NewEventDialog } from "@/components/NewEventDialog";
 import { ComponentIcon } from "./componentIcon";
 import { DiagnosisCard } from "@/components/health/DiagnosisCard";
+import { NoDataHelp } from "@/components/health/NoDataHelp";
 import { TBStatusPill } from "@/design-system/primitives/TBStatusPill";
 import type { ComponentView, ComponentSeverity } from "@/lib/til/components";
 import { SEVERITY_LABEL } from "@/lib/til/components";
@@ -104,6 +105,7 @@ export function ComponentSheet({
 
           {/* Diagnóstico inteligente */}
           <div className="mt-5">
+            {c.diagnosis.status === "unknown" && <NoDataHelp componentName={c.name} />}
             <DiagnosisCard diagnosis={c.diagnosis} />
           </div>
 

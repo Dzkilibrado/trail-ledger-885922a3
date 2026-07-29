@@ -15,8 +15,8 @@ const ICON = {
  * Responde diretamente: "posso rodar hoje?".
  */
 export function HealthHeroWidget({ snapshot }: { snapshot: CockpitSnapshot }) {
-  const { health } = snapshot;
-  const status = health.status;
+  const answer = snapshot.rideAnswer;
+  const status = answer.status;
   const Icon = ICON[status];
 
   return (
@@ -29,12 +29,17 @@ export function HealthHeroWidget({ snapshot }: { snapshot: CockpitSnapshot }) {
           <Icon className="h-5 w-5" aria-hidden />
         </span>
         <div className="min-w-0">
-          <div className="text-sm font-semibold">Posso rodar hoje?</div>
-          <p className="text-xs leading-snug text-muted-foreground">{health.canRideAnswer}</p>
+          <div className="text-sm font-semibold">{answer.title}</div>
+          <p className="text-xs leading-snug text-muted-foreground">{answer.message}</p>
         </div>
         <TBStatusPill status={status} size="sm" className="shrink-0" />
       </div>
-      <p className="text-xs text-muted-foreground">{snapshot.actionSummary}</p>
+      <p className="text-xs text-muted-foreground">{answer.rationale}</p>
+      {answer.nextAction && (
+        <p className="text-xs font-medium">
+          Próxima ação: {answer.nextAction.label}
+        </p>
+      )}
     </section>
   );
 }
