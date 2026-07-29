@@ -14,7 +14,7 @@ const W = 210;
 const H = 297;
 
 const STATUS_TEXT: Record<string, string> = {
-  ok: "OK",
+  ok: "Saudavel",
   attention: "Atencao",
   action: "Necessita acao",
   unknown: "Sem dados",
