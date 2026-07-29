@@ -86,7 +86,10 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
   useEffect(() => {
     if (runId || !health.moto) return;
     start({ data: { motorcycleId: motoId } })
-      .then((r) => setRunId(r.runId))
+      .then((r) => {
+        setRunId(r.runId);
+        trackHealth("checkup_iniciado", { motoId });
+      })
       .catch(() => toast.error("Não foi possível iniciar o Check-up. Tente novamente."));
   }, [health.moto, motoId, runId, start]);
 
@@ -114,6 +117,11 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
           },
         }).catch(() => null);
       }
+      trackHealth(gating?.mode === "blocked" ? "emissao_bloqueada" : "analise_concluida", {
+        motoId,
+        blockers: gating?.blockers?.length ?? 0,
+        reservas: gating?.reservations?.length ?? 0,
+      });
       setStep(3);
     }, 900);
   };
@@ -141,6 +149,7 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
       await qc.invalidateQueries({ queryKey: ["health-reports", motoId] });
       await qc.invalidateQueries({ queryKey: ["health-report-last", motoId] });
       toast.success(res.reused ? "Este Check-up já havia sido emitido." : "Laudo emitido com sucesso.");
+      trackHealth("laudo_emitido", { motoId, code: String(res.report.code ?? ""), reused: !!res.reused });
       navigate({
         to: "/motorcycles/$id/checkups/$code",
         params: { id: motoId, code: String(res.report.code ?? "") },
