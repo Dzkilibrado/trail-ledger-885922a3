@@ -1,0 +1,135 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import QRCode from "qrcode";
+import { Download, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+import { PageHeader } from "@/components/PageHeader";
+import { TBButton, TBErrorState, TBLoadingState } from "@/design-system";
+import { ReportSnapshotView } from "@/components/health/reports/ReportSnapshotView";
+import { SharePanel } from "@/components/health/reports/SharePanel";
+import { buildReportPdf, reportFileName } from "@/lib/health-reports/pdf";
+import { REPORT_STATUS_LABEL, type HealthReportSnapshot, type ReportStatus } from "@/lib/health-reports/types";
+import { effectiveValidity } from "@/lib/health-reports/validity";
+import { saveFile } from "@/lib/save-file";
+
+export const Route = createFileRoute("/_authenticated/motorcycles/$id/checkups/$code")({
+  head: ({ params }) => ({
+    meta: [
+      { title: `Laudo ${params.code} — TrailBook` },
+      { name: "description", content: `Laudo Inteligente ${params.code} com diagnóstico completo da motocicleta.` },
+      { property: "og:title", content: `Laudo ${params.code} — TrailBook` },
+      { property: "og:description", content: "Diagnóstico, plano de ação e histórico da moto no momento da emissão." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
+  component: ReportPage,
+});
+
+function ReportPage() {
+  const { id, code } = Route.useParams();
+  const [saving, setSaving] = useState(false);
+
+  const q = useQuery({
+    queryKey: ["health-report", code],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("health_reports")
+        .select("*, health_report_snapshots(payload, sha256)")
+        .eq("code", code)
+        .single();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const moto = useQuery({
+    queryKey: ["motorcycle", id],
+    queryFn: async () => (await supabase.from("motorcycles").select("hours_total, km_total").eq("id", id).single()).data,
+  });
+
+  if (q.isLoading) return <TBLoadingState label="Abrindo o laudo…" />;
+  if (q.error || !q.data) return <TBErrorState title="Laudo não encontrado" onRetry={() => q.refetch()} />;
+
+  const report = q.data;
+  const snapRel = (report as unknown as { health_report_snapshots: { payload: unknown; sha256: string } | null })
+    .health_report_snapshots;
+  const snapshot = snapRel?.payload as HealthReportSnapshot | undefined;
+  const eff = effectiveValidity(report, {
+    hours: Number(moto.data?.hours_total ?? 0),
+    km: Number(moto.data?.km_total ?? 0),
+  });
+
+  const downloadPdf = async () => {
+    if (!snapshot) return;
+    setSaving(true);
+    try {
+      const share = (
+        await supabase
+          .from("health_report_shares")
+          .select("public_token")
+          .eq("report_id", report.id)
+          .is("revoked_at", null)
+          .limit(1)
+      ).data?.[0];
+      const publicUrl = share ? `${window.location.origin}/l/${share.public_token}` : null;
+      const qrDataUrl = publicUrl ? await QRCode.toDataURL(publicUrl, { width: 320, margin: 1 }) : null;
+      const blob = await buildReportPdf({
+        snapshot,
+        code: report.code ?? code,
+        sha256: report.snapshot_sha256,
+        statusLabel: REPORT_STATUS_LABEL[eff.status as ReportStatus] ?? eff.label,
+        qrDataUrl,
+        publicUrl,
+      });
+      const res = await saveFile({
+        blob,
+        fileName: reportFileName(report.code ?? code, report.issued_at),
+        mime: "application/pdf",
+        shareTitle: "Laudo Inteligente TrailBook",
+      });
+      if (res.outcome === "error") toast.error("Não foi possível salvar o PDF.");
+      else if (res.outcome !== "cancelled") toast.success("Laudo salvo em PDF.");
+    } catch {
+      toast.error("Não foi possível gerar o PDF do laudo.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-2xl space-y-5 pb-24">
+      <PageHeader
+        title={`Laudo ${report.code}`}
+        crumbs={[
+          { label: "Motos", to: "/motorcycles" },
+          { label: "Check-ups", to: `/motorcycles/${id}/checkups` },
+          { label: report.code ?? "Laudo" },
+        ]}
+        description={`${REPORT_STATUS_LABEL[eff.status as ReportStatus] ?? ""} · ${eff.label}`}
+      />
+
+      <div className="flex flex-wrap gap-2">
+        <TBButton onClick={downloadPdf} disabled={saving || !snapshot}>
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Download className="h-4 w-4" aria-hidden />}
+          Salvar em PDF
+        </TBButton>
+      </div>
+
+      <SharePanel reportId={report.id} canManage />
+
+      {snapshot ? (
+        <ReportSnapshotView
+          snapshot={snapshot}
+          code={report.code ?? code}
+          sha256={report.snapshot_sha256}
+          statusLabel={REPORT_STATUS_LABEL[eff.status as ReportStatus]}
+        />
+      ) : (
+        <TBErrorState title="Conteúdo do laudo indisponível" description="Tente novamente em instantes." />
+      )}
+    </div>
+  );
+}
