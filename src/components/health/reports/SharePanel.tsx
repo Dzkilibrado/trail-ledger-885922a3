@@ -8,6 +8,7 @@ import { TBBottomSheet, TBButton, TBCard, TBEmptyState } from "@/design-system";
 import { NEVER_SHARED, PRESET_DESCRIPTION, PRESET_LABEL, PRESET_SECTIONS } from "@/lib/health-reports/sections";
 import { SECTION_LABEL, type ReportSection } from "@/lib/health-reports/types";
 import { formatDate } from "@/lib/trailbook";
+import { trackHealth } from "@/lib/health-reports/telemetry";
 
 type Preset = "buyer" | "workshop" | "custom";
 
@@ -73,6 +74,7 @@ export function SharePanel({ reportId, canManage }: { reportId: string; canManag
       await qc.invalidateQueries({ queryKey: ["health-report-shares", reportId] });
       setOpen(false);
       toast.success("Link de compartilhamento criado.");
+      trackHealth("compartilhamento_criado", { reportId, preset, dias: days, secoes: sections.length });
     },
     onError: (e: Error) => toast.error(e.message),
   });
