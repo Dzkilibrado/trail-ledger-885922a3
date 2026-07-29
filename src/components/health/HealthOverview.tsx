@@ -127,6 +127,8 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
 
       <ActionPlanCard plan={snapshot.actionPlan} onOpen={setSelectedId} />
 
+      <LastReportCard motoId={moto.id} />
+
       {/* Cards executáveis — abrem bottom sheet com a categoria */}
       <div className="space-y-2">
         {buckets.map((b) => (
