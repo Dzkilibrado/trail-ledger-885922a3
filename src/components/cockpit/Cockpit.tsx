@@ -2,7 +2,7 @@ import { useMemo, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, AlertTriangle, Heart, Wrench, FolderOpen, Camera, Sparkles } from "lucide-react";
+import { ChevronRight, AlertTriangle, Heart, Wrench, FolderOpen, Camera, Sparkles, Stethoscope } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { computeCockpitSnapshot } from "@/lib/til";
 import { HealthHeroWidget } from "./widgets/HealthHeroWidget";
@@ -163,6 +163,13 @@ export function Cockpit({ motoId }: { motoId: string }) {
           icon={<Wrench className="h-5 w-5 text-primary" />}
           title="Componentes"
           description="Plano de manutenção e componentes"
+        />
+        <ActionCard
+          to="/motorcycles/$id/checkups"
+          params={{ id: m.id }}
+          icon={<Stethoscope className="h-5 w-5 text-sky-400" />}
+          title="Check-ups e Laudos"
+          description="Emita e compartilhe o laudo da sua moto"
         />
         <ActionCard
           to="/motorcycles/$id/control"

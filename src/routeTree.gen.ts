@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RCodeRouteImport } from './routes/r.$code'
+import { Route as LTokenRouteImport } from './routes/l.$token'
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedWorkshopsRouteImport } from './routes/_authenticated/workshops'
 import { Route as AuthenticatedTransfersRouteImport } from './routes/_authenticated/transfers'
@@ -60,6 +61,10 @@ import { Route as AuthenticatedMotorcyclesIdHealthRouteImport } from './routes/_
 import { Route as AuthenticatedMotorcyclesIdControlRouteImport } from './routes/_authenticated/motorcycles.$id.control'
 import { Route as AuthenticatedMotorcyclesIdComponentsRouteImport } from './routes/_authenticated/motorcycles.$id.components'
 import { Route as AuthenticatedMotorcyclesIdCertificateRouteImport } from './routes/_authenticated/motorcycles.$id.certificate'
+import { Route as AuthenticatedMotorcyclesIdCheckupsIndexRouteImport } from './routes/_authenticated/motorcycles.$id.checkups.index'
+import { Route as AuthenticatedMotorcyclesIdCheckupsNovoRouteImport } from './routes/_authenticated/motorcycles.$id.checkups.novo'
+import { Route as AuthenticatedMotorcyclesIdCheckupsCompararRouteImport } from './routes/_authenticated/motorcycles.$id.checkups.comparar'
+import { Route as AuthenticatedMotorcyclesIdCheckupsCodeRouteImport } from './routes/_authenticated/motorcycles.$id.checkups.$code'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -88,6 +93,11 @@ const IndexRoute = IndexRouteImport.update({
 const RCodeRoute = RCodeRouteImport.update({
   id: '/r/$code',
   path: '/r/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LTokenRoute = LTokenRouteImport.update({
+  id: '/l/$token',
+  path: '/l/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CTokenRoute = CTokenRouteImport.update({
@@ -340,6 +350,30 @@ const AuthenticatedMotorcyclesIdCertificateRoute =
     path: '/certificate',
     getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
   } as any)
+const AuthenticatedMotorcyclesIdCheckupsIndexRoute =
+  AuthenticatedMotorcyclesIdCheckupsIndexRouteImport.update({
+    id: '/checkups/',
+    path: '/checkups/',
+    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
+  } as any)
+const AuthenticatedMotorcyclesIdCheckupsNovoRoute =
+  AuthenticatedMotorcyclesIdCheckupsNovoRouteImport.update({
+    id: '/checkups/novo',
+    path: '/checkups/novo',
+    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
+  } as any)
+const AuthenticatedMotorcyclesIdCheckupsCompararRoute =
+  AuthenticatedMotorcyclesIdCheckupsCompararRouteImport.update({
+    id: '/checkups/comparar',
+    path: '/checkups/comparar',
+    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
+  } as any)
+const AuthenticatedMotorcyclesIdCheckupsCodeRoute =
+  AuthenticatedMotorcyclesIdCheckupsCodeRouteImport.update({
+    id: '/checkups/$code',
+    path: '/checkups/$code',
+    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -366,6 +400,7 @@ export interface FileRoutesByFullPath {
   '/transfers': typeof AuthenticatedTransfersRoute
   '/workshops': typeof AuthenticatedWorkshopsRoute
   '/c/$token': typeof CTokenRoute
+  '/l/$token': typeof LTokenRoute
   '/r/$code': typeof RCodeRoute
   '/admin/documents': typeof AuthenticatedAdminDocumentsRoute
   '/admin/homolog': typeof AuthenticatedAdminHomologRoute
@@ -392,6 +427,10 @@ export interface FileRoutesByFullPath {
   '/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
   '/recibos/$code/visualizar': typeof AuthenticatedRecibosCodeVisualizarRoute
   '/motorcycles/$id/': typeof AuthenticatedMotorcyclesIdIndexRoute
+  '/motorcycles/$id/checkups/$code': typeof AuthenticatedMotorcyclesIdCheckupsCodeRoute
+  '/motorcycles/$id/checkups/comparar': typeof AuthenticatedMotorcyclesIdCheckupsCompararRoute
+  '/motorcycles/$id/checkups/novo': typeof AuthenticatedMotorcyclesIdCheckupsNovoRoute
+  '/motorcycles/$id/checkups/': typeof AuthenticatedMotorcyclesIdCheckupsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -416,6 +455,7 @@ export interface FileRoutesByTo {
   '/transfers': typeof AuthenticatedTransfersRoute
   '/workshops': typeof AuthenticatedWorkshopsRoute
   '/c/$token': typeof CTokenRoute
+  '/l/$token': typeof LTokenRoute
   '/r/$code': typeof RCodeRoute
   '/admin/documents': typeof AuthenticatedAdminDocumentsRoute
   '/admin/homolog': typeof AuthenticatedAdminHomologRoute
@@ -441,6 +481,10 @@ export interface FileRoutesByTo {
   '/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
   '/recibos/$code/visualizar': typeof AuthenticatedRecibosCodeVisualizarRoute
   '/motorcycles/$id': typeof AuthenticatedMotorcyclesIdIndexRoute
+  '/motorcycles/$id/checkups/$code': typeof AuthenticatedMotorcyclesIdCheckupsCodeRoute
+  '/motorcycles/$id/checkups/comparar': typeof AuthenticatedMotorcyclesIdCheckupsCompararRoute
+  '/motorcycles/$id/checkups/novo': typeof AuthenticatedMotorcyclesIdCheckupsNovoRoute
+  '/motorcycles/$id/checkups': typeof AuthenticatedMotorcyclesIdCheckupsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -469,6 +513,7 @@ export interface FileRoutesById {
   '/_authenticated/transfers': typeof AuthenticatedTransfersRoute
   '/_authenticated/workshops': typeof AuthenticatedWorkshopsRoute
   '/c/$token': typeof CTokenRoute
+  '/l/$token': typeof LTokenRoute
   '/r/$code': typeof RCodeRoute
   '/_authenticated/admin/documents': typeof AuthenticatedAdminDocumentsRoute
   '/_authenticated/admin/homolog': typeof AuthenticatedAdminHomologRoute
@@ -495,6 +540,10 @@ export interface FileRoutesById {
   '/_authenticated/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
   '/_authenticated/recibos/$code/visualizar': typeof AuthenticatedRecibosCodeVisualizarRoute
   '/_authenticated/motorcycles/$id/': typeof AuthenticatedMotorcyclesIdIndexRoute
+  '/_authenticated/motorcycles/$id/checkups/$code': typeof AuthenticatedMotorcyclesIdCheckupsCodeRoute
+  '/_authenticated/motorcycles/$id/checkups/comparar': typeof AuthenticatedMotorcyclesIdCheckupsCompararRoute
+  '/_authenticated/motorcycles/$id/checkups/novo': typeof AuthenticatedMotorcyclesIdCheckupsNovoRoute
+  '/_authenticated/motorcycles/$id/checkups/': typeof AuthenticatedMotorcyclesIdCheckupsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -523,6 +572,7 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/workshops'
     | '/c/$token'
+    | '/l/$token'
     | '/r/$code'
     | '/admin/documents'
     | '/admin/homolog'
@@ -549,6 +599,10 @@ export interface FileRouteTypes {
     | '/motorcycles/$id/plan'
     | '/recibos/$code/visualizar'
     | '/motorcycles/$id/'
+    | '/motorcycles/$id/checkups/$code'
+    | '/motorcycles/$id/checkups/comparar'
+    | '/motorcycles/$id/checkups/novo'
+    | '/motorcycles/$id/checkups/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -573,6 +627,7 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/workshops'
     | '/c/$token'
+    | '/l/$token'
     | '/r/$code'
     | '/admin/documents'
     | '/admin/homolog'
@@ -598,6 +653,10 @@ export interface FileRouteTypes {
     | '/motorcycles/$id/plan'
     | '/recibos/$code/visualizar'
     | '/motorcycles/$id'
+    | '/motorcycles/$id/checkups/$code'
+    | '/motorcycles/$id/checkups/comparar'
+    | '/motorcycles/$id/checkups/novo'
+    | '/motorcycles/$id/checkups'
   id:
     | '__root__'
     | '/'
@@ -625,6 +684,7 @@ export interface FileRouteTypes {
     | '/_authenticated/transfers'
     | '/_authenticated/workshops'
     | '/c/$token'
+    | '/l/$token'
     | '/r/$code'
     | '/_authenticated/admin/documents'
     | '/_authenticated/admin/homolog'
@@ -651,6 +711,10 @@ export interface FileRouteTypes {
     | '/_authenticated/motorcycles/$id/plan'
     | '/_authenticated/recibos/$code/visualizar'
     | '/_authenticated/motorcycles/$id/'
+    | '/_authenticated/motorcycles/$id/checkups/$code'
+    | '/_authenticated/motorcycles/$id/checkups/comparar'
+    | '/_authenticated/motorcycles/$id/checkups/novo'
+    | '/_authenticated/motorcycles/$id/checkups/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -660,6 +724,7 @@ export interface RootRouteChildren {
   HelpRoute: typeof HelpRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   CTokenRoute: typeof CTokenRoute
+  LTokenRoute: typeof LTokenRoute
   RCodeRoute: typeof RCodeRoute
   ApiPublicAppVersionRoute: typeof ApiPublicAppVersionRoute
 }
@@ -706,6 +771,13 @@ declare module '@tanstack/react-router' {
       path: '/r/$code'
       fullPath: '/r/$code'
       preLoaderRoute: typeof RCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/l/$token': {
+      id: '/l/$token'
+      path: '/l/$token'
+      fullPath: '/l/$token'
+      preLoaderRoute: typeof LTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/c/$token': {
@@ -1023,6 +1095,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMotorcyclesIdCertificateRouteImport
       parentRoute: typeof AuthenticatedMotorcyclesIdRoute
     }
+    '/_authenticated/motorcycles/$id/checkups/': {
+      id: '/_authenticated/motorcycles/$id/checkups/'
+      path: '/checkups'
+      fullPath: '/motorcycles/$id/checkups/'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdCheckupsIndexRouteImport
+      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
+    }
+    '/_authenticated/motorcycles/$id/checkups/novo': {
+      id: '/_authenticated/motorcycles/$id/checkups/novo'
+      path: '/checkups/novo'
+      fullPath: '/motorcycles/$id/checkups/novo'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdCheckupsNovoRouteImport
+      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
+    }
+    '/_authenticated/motorcycles/$id/checkups/comparar': {
+      id: '/_authenticated/motorcycles/$id/checkups/comparar'
+      path: '/checkups/comparar'
+      fullPath: '/motorcycles/$id/checkups/comparar'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdCheckupsCompararRouteImport
+      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
+    }
+    '/_authenticated/motorcycles/$id/checkups/$code': {
+      id: '/_authenticated/motorcycles/$id/checkups/$code'
+      path: '/checkups/$code'
+      fullPath: '/motorcycles/$id/checkups/$code'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdCheckupsCodeRouteImport
+      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
+    }
   }
 }
 
@@ -1074,6 +1174,10 @@ interface AuthenticatedMotorcyclesIdRouteChildren {
   AuthenticatedMotorcyclesIdPassportRoute: typeof AuthenticatedMotorcyclesIdPassportRoute
   AuthenticatedMotorcyclesIdPlanRoute: typeof AuthenticatedMotorcyclesIdPlanRoute
   AuthenticatedMotorcyclesIdIndexRoute: typeof AuthenticatedMotorcyclesIdIndexRoute
+  AuthenticatedMotorcyclesIdCheckupsCodeRoute: typeof AuthenticatedMotorcyclesIdCheckupsCodeRoute
+  AuthenticatedMotorcyclesIdCheckupsCompararRoute: typeof AuthenticatedMotorcyclesIdCheckupsCompararRoute
+  AuthenticatedMotorcyclesIdCheckupsNovoRoute: typeof AuthenticatedMotorcyclesIdCheckupsNovoRoute
+  AuthenticatedMotorcyclesIdCheckupsIndexRoute: typeof AuthenticatedMotorcyclesIdCheckupsIndexRoute
 }
 
 const AuthenticatedMotorcyclesIdRouteChildren: AuthenticatedMotorcyclesIdRouteChildren =
@@ -1090,6 +1194,14 @@ const AuthenticatedMotorcyclesIdRouteChildren: AuthenticatedMotorcyclesIdRouteCh
       AuthenticatedMotorcyclesIdPassportRoute,
     AuthenticatedMotorcyclesIdPlanRoute: AuthenticatedMotorcyclesIdPlanRoute,
     AuthenticatedMotorcyclesIdIndexRoute: AuthenticatedMotorcyclesIdIndexRoute,
+    AuthenticatedMotorcyclesIdCheckupsCodeRoute:
+      AuthenticatedMotorcyclesIdCheckupsCodeRoute,
+    AuthenticatedMotorcyclesIdCheckupsCompararRoute:
+      AuthenticatedMotorcyclesIdCheckupsCompararRoute,
+    AuthenticatedMotorcyclesIdCheckupsNovoRoute:
+      AuthenticatedMotorcyclesIdCheckupsNovoRoute,
+    AuthenticatedMotorcyclesIdCheckupsIndexRoute:
+      AuthenticatedMotorcyclesIdCheckupsIndexRoute,
   }
 
 const AuthenticatedMotorcyclesIdRouteWithChildren =
@@ -1164,6 +1276,7 @@ const rootRouteChildren: RootRouteChildren = {
   HelpRoute: HelpRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   CTokenRoute: CTokenRoute,
+  LTokenRoute: LTokenRoute,
   RCodeRoute: RCodeRoute,
   ApiPublicAppVersionRoute: ApiPublicAppVersionRoute,
 }
