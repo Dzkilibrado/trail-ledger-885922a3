@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import { CertificateSettingsDialog } from "@/components/CertificateSettingsDialog";
 import { CertificateAccessLogDialog } from "@/components/CertificateAccessLogDialog";
 import { RevokeCertificateDialog } from "@/components/RevokeCertificateDialog";
@@ -348,6 +348,10 @@ function CertificatePage() {
               side="bottom"
               className="flex h-[100dvh] w-screen max-w-none flex-col gap-0 border-0 p-0 sm:max-w-none"
             >
+              <SheetTitle className="sr-only">Visualização do Certificado Digital</SheetTitle>
+              <SheetDescription className="sr-only">
+                Prévia interna do certificado público da motocicleta.
+              </SheetDescription>
               <div className="flex items-center justify-between border-b border-border bg-background/95 px-4 py-3 backdrop-blur">
                 <div className="min-w-0">
                   <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
