@@ -13,10 +13,10 @@
 export type HealthStatus = "ok" | "attention" | "action" | "unknown";
 
 export const HEALTH_STATUS_LABEL: Record<HealthStatus, string> = {
-  ok: "OK",
+  ok: "Saudável",
   attention: "Atenção",
   action: "Necessita ação",
-  unknown: "Dados insuficientes",
+  unknown: "Sem dados suficientes",
 };
 
 /** Frase curta que responde "o que isso significa para mim?". */
