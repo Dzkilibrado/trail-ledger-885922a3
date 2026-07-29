@@ -1,6 +1,7 @@
 # Project Memory
 
 ## Core
+- **Constituição do TrailBook (ADR 0016, `mem://principles/constituicao-trailbook`) — diretriz permanente acima de tudo.** Missão oficial: "Ser o Especialista Digital em Saúde da Motocicleta." O TrailBook entrega interpretação, não dados. Toda avaliação responde: diagnóstico, o que foi encontrado, o que recomendamos, posso rodar hoje. Linguagem humana, justificativa sempre, foco preventivo, Timeline = evolução da saúde. TIL inalterada; IA futura amplia, não substitui. Antes de qualquer feature: "isso ajuda o TrailBook a ser o Especialista Digital em Saúde da Motocicleta?"
 O usuário nunca vê nota/percentual: avaliação → diagnóstico → achados → recomendação → "posso rodar hoje?". Números só no Modo Técnico (admin).
 - TrailBook: identidade digital permanente da moto off-road. Tema escuro premium (grafite/laranja), fontes Inter + Space Grotesk. Nunca hardcode cores — usar tokens semânticos em `src/styles.css`.
 - UX oficial: aplicar SEMPRE os princípios `mem://principles/ux-official` — 3 perguntas antes de adicionar, regra do usuário cansado, uma tela = uma decisão, menos é mais, decisão acima da informação.
@@ -52,3 +53,6 @@ O usuário nunca vê nota/percentual: avaliação → diagnóstico → achados �
 - [ADR 0013 — Landing Page: conversão e divulgação progressiva](docs/adr/0013-landing-page-conversao.md) — redesign v1.6.5
 - [Retorno perceptível a toda ação](mem://principles/retorno-perceptivel) — nenhum clique pode terminar em silêncio
 - [ADR 0014 — Retorno Perceptível a Toda Ação](docs/adr/0014-retorno-perceptivel.md) — Sprint v1.6.7 de navegação, comunicação e atendimento
+- [ADR 0015 — Health 4.0: da nota para a avaliação inteligente](docs/adr/0015-avaliacao-inteligente-health-4.md) — estrutura oficial da avaliação e Modo Técnico
+- [Constituição do Produto TrailBook](mem://principles/constituicao-trailbook) — missão e 10 princípios permanentes
+- [ADR 0016 — Constituição do Produto TrailBook](docs/adr/0016-constituicao-do-produto.md) — registro oficial das diretrizes permanentes
