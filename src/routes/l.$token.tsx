@@ -1,9 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ShieldCheck } from "lucide-react";
 import { getPublicHealthReport } from "@/lib/health-reports.functions";
 import { ReportSnapshotView } from "@/components/health/reports/ReportSnapshotView";
 import { TBErrorState, TBLoadingState } from "@/design-system";
+import { trackHealth } from "@/lib/health-reports/telemetry";
 import { REPORT_STATUS_LABEL, type HealthReportSnapshot, type ReportStatus } from "@/lib/health-reports/types";
 
 export const Route = createFileRoute("/l/$token")({
@@ -28,6 +30,14 @@ function PublicReportPage() {
     queryKey: ["public-health-report", token],
     queryFn: () => getPublicHealthReport({ data: { token } }),
   });
+
+  const result = q.data;
+  useEffect(() => {
+    if (!result) return;
+    if (result.ok) trackHealth("pagina_publica_acessada", { code: result.code });
+    else if (result.reason === "expired") trackHealth("link_expirado");
+    else if (result.reason === "revoked") trackHealth("link_revogado");
+  }, [result]);
 
   if (q.isLoading) return <div className="mx-auto max-w-2xl p-4"><TBLoadingState label="Abrindo o laudo…" /></div>;
   if (q.error) {
