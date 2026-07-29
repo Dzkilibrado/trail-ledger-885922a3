@@ -15,7 +15,6 @@ import { prepareCertPhotoDataUrl } from "@/lib/cert-pdf";
 import { saveFile } from "@/lib/save-file";
 import { isAllowed, type CertSectionKey } from "@/lib/cert-sections";
 import { OwnershipTimeline } from "@/components/OwnershipTimeline";
-import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 export const Route = createFileRoute("/c/$token")({
   head: () => ({ meta: [{ title: "Certificado TrailBook" }] }),
@@ -39,49 +38,6 @@ function normalizeSignedStorageUrl(url: string | null | undefined): string | nul
   return `${storageOrigin}${path.startsWith("/storage/v1") ? "" : "/storage/v1"}${path}`;
 }
 
-function logCertificateDownloadStep(step: number, label: string, details?: Record<string, unknown>) {
-  console.log(`[cert-download][${String(step).padStart(2, "0")}/16] ${label}`, details ?? {});
-}
-
-function summarizeDownloadError(err: unknown) {
-  if (err instanceof Error) {
-    return { name: err.name, message: err.message, stack: err.stack };
-  }
-  return { name: typeof err, message: String(err) };
-}
-
-function directDownloadDiagnosticPdf(): Blob {
-  const pdf = `%PDF-1.4
-1 0 obj
-<< /Type /Catalog /Pages 2 0 R >>
-endobj
-2 0 obj
-<< /Type /Pages /Kids [3 0 R] /Count 1 >>
-endobj
-3 0 obj
-<< /Type /Page /Parent 2 0 R /MediaBox [0 0 360 180] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
-endobj
-4 0 obj
-<< /Length 92 >>
-stream
-BT
-/F1 16 Tf
-36 120 Td
-(Teste de Download Direto) Tj
-36 92 Td
-(TrailBook Certificado Digital) Tj
-ET
-endstream
-endobj
-5 0 obj
-<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
-endobj
-trailer
-<< /Root 1 0 R >>
-%%EOF`;
-  return new Blob([pdf], { type: "application/pdf" });
-}
-
 type CertPayload = {
   certificate: { public_token: string; created_at: string; expires_at: string | null; status?: string; allowed_sections?: CertSectionKey[] };
   motorcycle: Motorcycle;
@@ -96,7 +52,6 @@ type CertPayload = {
 
 function PublicCert() {
   const { token } = Route.useParams();
-  const { isAdmin } = useIsAdmin();
   const [data, setData] = useState<CertPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -118,10 +73,6 @@ function PublicCert() {
       const allowedSections = (payload.certificate.allowed_sections ?? []) as string[];
       const photo = payload.motorcycle.main_photo_url;
       const photoAllowed = allowedSections.includes("photo");
-      console.log("[cert-photo] allowed", photoAllowed);
-      console.log("[cert-photo] main-photo-path-present", Boolean(photo));
-      console.log("[cert-photo] bucket", "motorcycle-photos");
-      console.log("[cert-photo] path-has-duplicated-bucket-prefix", Boolean(photo?.startsWith("motorcycle-photos/")));
       if (photo && photoAllowed) {
         try {
           const normalizedPath = photo.startsWith("motorcycle-photos/")
@@ -132,7 +83,6 @@ function PublicCert() {
             .createSignedUrl(normalizedPath, 3600);
           if (sErr) console.error("[cert-photo] signed-url-error", sErr);
           const normalizedUrl = normalizeSignedStorageUrl(signed?.signedUrl);
-          console.log("[cert-photo] signed-url-created", Boolean(normalizedUrl));
           if (active) setPhotoUrl(normalizedUrl);
         } catch (err) {
           console.error("[cert-photo] signed-url-exception", err);
@@ -211,35 +161,13 @@ function PublicCert() {
   async function downloadPdf() {
     const loadingId = toast.loading("Preparando certificado…");
     let stage = "iniciando";
-    let finalOutcome = "pending";
     try {
-      logCertificateDownloadStep(1, "ação recebida", { tokenPrefix: token.slice(0, 8) });
-      logCertificateDownloadStep(2, "capacidades do navegador", {
-        hasShowSaveFilePicker: typeof window !== "undefined" && typeof (window as unknown as { showSaveFilePicker?: unknown }).showSaveFilePicker === "function",
-        hasNavigatorShare: typeof navigator !== "undefined" && typeof navigator.share === "function",
-        hasNavigatorCanShare: typeof navigator !== "undefined" && typeof (navigator as Navigator & { canShare?: unknown }).canShare === "function",
-      });
-      logCertificateDownloadStep(3, "payload do certificado pronto", {
-        events: certData.events.length,
-        attachments: certData.attachments.length,
-        workshops: certData.workshops.length,
-      });
-      logCertificateDownloadStep(4, "url pública preparada", { origin: typeof window !== "undefined" ? window.location.origin : "server" });
-      // Respeita allowed_sections.photo: se a seção estiver desabilitada,
-      // nem sequer buscamos os bytes da imagem para o PDF.
       let photoDataUrl: string | null = null;
-      logCertificateDownloadStep(5, "regra da foto avaliada", { photoAllowed: show("photo"), photoUrlPresent: Boolean(photoUrl) });
       if (show("photo") && photoUrl) {
         stage = "preparando foto";
-        logCertificateDownloadStep(6, "preparo da foto iniciado", { photoUrlPresent: true });
         photoDataUrl = await prepareCertPhotoDataUrl(photoUrl);
-        logCertificateDownloadStep(7, "preparo da foto concluído", { hasPhotoDataUrl: Boolean(photoDataUrl), length: photoDataUrl?.length ?? 0 });
-      } else {
-        logCertificateDownloadStep(6, "preparo da foto ignorado", { reason: show("photo") ? "sem URL assinada" : "seção não permitida" });
-        logCertificateDownloadStep(7, "preparo da foto concluído", { hasPhotoDataUrl: false, length: 0 });
       }
       stage = "gerando PDF";
-      logCertificateDownloadStep(8, "geração do PDF iniciada", { motorcycle: moto.nickname || moto.model });
       const { blob, fileName } = await generateCertificatePdf({
         moto, events: certData.events,
         conservation: certComputed.conservation,
@@ -249,63 +177,22 @@ function PublicCert() {
         attachmentsCount: certData.attachments.length,
         workshopsCount: certData.workshops.length,
       });
-      logCertificateDownloadStep(9, "PDF gerado", { size: blob.size, type: blob.type, fileName });
-      logCertificateDownloadStep(10, "blob validado antes do salvamento", { valid: blob.size > 0 && blob.type === "application/pdf" });
       stage = "salvando arquivo";
-      logCertificateDownloadStep(11, "cascata de salvamento iniciada", { fileName, mime: "application/pdf" });
       const result = await saveFile({
         blob,
         fileName,
         mime: "application/pdf",
         shareTitle: `TrailBook — ${moto.nickname || moto.model}`,
-        onStep: (stepInfo) => {
-          console.log("[cert-download][save-file]", stepInfo);
-        },
       });
-      logCertificateDownloadStep(12, "cascata de salvamento finalizada", { outcome: result.outcome, hasError: Boolean(result.error) });
-      finalOutcome = result.outcome;
       if (result.outcome === "saved") toast.success("Certificado salvo com sucesso.");
       else if (result.outcome === "shared") toast.success("Certificado enviado para compartilhamento.");
       else if (result.outcome === "downloaded") toast.success("Download iniciado. Verifique a pasta de downloads ou o aplicativo de arquivos.");
       else if (result.outcome === "cancelled") toast("Salvamento cancelado.");
       else toast.error("Não foi possível salvar o certificado. Tente novamente.");
-      logCertificateDownloadStep(13, "feedback selecionado", { outcome: result.outcome });
-      logCertificateDownloadStep(14, "fluxo concluído sem exceção", { outcome: result.outcome });
     } catch (err) {
-      const errorSummary = summarizeDownloadError(err);
-      finalOutcome = "error";
-      console.error(`[PDF] falha na etapa "${stage}"`, errorSummary);
-      toast.error(`Falha ao gerar o certificado (${stage}): ${errorSummary.message}`);
-      logCertificateDownloadStep(13, "feedback de erro selecionado", { stage, ...errorSummary });
-      logCertificateDownloadStep(14, "fluxo concluído com exceção", { stage });
-    } finally {
-      logCertificateDownloadStep(15, "loading encerrado", { finalOutcome });
-      toast.dismiss(loadingId);
-      logCertificateDownloadStep(16, "diagnóstico finalizado", { finalOutcome, stage });
-    }
-  }
-
-  async function testDirectDownload() {
-    const loadingId = toast.loading("Testando download direto…");
-    try {
-      console.log("[cert-direct-download] início", {
-        hasShowSaveFilePicker: typeof window !== "undefined" && typeof (window as unknown as { showSaveFilePicker?: unknown }).showSaveFilePicker === "function",
-        hasNavigatorShare: typeof navigator !== "undefined" && typeof navigator.share === "function",
-      });
-      const blob = directDownloadDiagnosticPdf();
-      const result = await saveFile({
-        blob,
-        fileName: "trailbook-teste-download-direto.pdf",
-        mime: "application/pdf",
-        shareTitle: "TrailBook — teste de download direto",
-        onStep: (stepInfo) => console.log("[cert-direct-download][save-file]", stepInfo),
-      });
-      console.log("[cert-direct-download] resultado", result);
-      if (result.outcome === "error") toast.error("Falha no download direto.");
-      else toast.success("Teste de download direto iniciado.");
-    } catch (err) {
-      console.error("[cert-direct-download] falha", summarizeDownloadError(err));
-      toast.error("Falha no teste de download direto.");
+      const message = err instanceof Error ? err.message : String(err);
+      console.error(`[PDF] falha na etapa "${stage}"`, err);
+      toast.error(`Falha ao gerar o certificado (${stage}): ${message}`);
     } finally {
       toast.dismiss(loadingId);
     }
@@ -327,38 +214,24 @@ function PublicCert() {
             <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(publicUrl); toast.success("Link copiado"); }}><Copy className="h-4 w-4" /> <span className="hidden sm:inline">Copiar link</span></Button>
             <Button variant="outline" size="sm" onClick={share}><Share2 className="h-4 w-4" /> <span className="hidden sm:inline">Compartilhar</span></Button>
             <Button size="sm" onClick={downloadPdf}><Download className="h-4 w-4" /> <span className="hidden sm:inline">Salvar certificado</span><span className="sm:hidden">PDF</span></Button>
-            {isAdmin && (
-              <Button variant="outline" size="sm" onClick={testDirectDownload}>
-                <Download className="h-4 w-4" /> <span className="hidden sm:inline">Testar Download Direto</span><span className="sm:hidden">Teste</span>
-              </Button>
-            )}
           </div>
         </header>
 
         {/* Hero */}
         <section className="mt-6 surface-elevated overflow-hidden rounded-3xl">
           <div className="grid gap-0 md:grid-cols-[1.4fr_1fr]">
-            <div className="relative aspect-[4/3] bg-elevated md:aspect-auto">
+            <div className="relative aspect-[16/9] bg-elevated md:aspect-auto">
               {photoUrl && show("photo") ? (
                 <img
                   src={photoUrl}
                   alt={moto.nickname || moto.model}
                   className="h-full w-full object-cover"
-                  onLoad={() => console.log("[cert-photo] image-load-success")}
-                  onError={(event) => {
-                    const target = event.currentTarget;
-                    console.error("[cert-photo] image-load-error", {
-                      srcPresent: Boolean(target.currentSrc || target.src),
-                      naturalWidth: target.naturalWidth,
-                      naturalHeight: target.naturalHeight,
-                    });
-                    setPhotoUrl(null);
-                  }}
+                  onError={() => setPhotoUrl(null)}
                 />
               ) : (
                 <div className="grid h-full w-full place-items-center text-muted-foreground"><Bike className="h-16 w-16 opacity-40" /></div>
               )}
-              <div className="absolute left-4 top-4 flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground btn-glow">
+              <div className="absolute left-5 top-5 flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground btn-glow">
                 <ShieldCheck className="h-3.5 w-3.5" /> TRAILBOOK CERTIFIED
               </div>
             </div>
