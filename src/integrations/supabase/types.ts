@@ -435,6 +435,52 @@ export type Database = {
           },
         ]
       }
+      event_documents: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          document_id: string
+          event_id: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          document_id: string
+          event_id: string
+          id?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          document_id?: string
+          event_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "event_documents_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycle_documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "event_documents_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycle_origin_document_view"
+            referencedColumns: ["document_id"]
+          },
+          {
+            foreignKeyName: "event_documents_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       events: {
         Row: {
           cost: number | null

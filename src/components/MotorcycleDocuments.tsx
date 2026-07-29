@@ -28,6 +28,7 @@ import {
 import { brl, formatDate } from "@/lib/trailbook";
 import { cn } from "@/lib/utils";
 import { useMotoDocumentPendency } from "@/hooks/useDocumentPendencies";
+import { countEventLinks, unlinkDocumentFromEvent } from "@/lib/event-documents";
 import {
   ORIGIN_DOC_TYPES, clearOriginSnooze, suggestOriginDocType,
   type OriginDocType,
@@ -122,6 +123,27 @@ export function MotorcycleDocuments({
     },
   });
 
+  // Contagem de vínculos com atividades — permite exibir "Vinculado a N atividades"
+  // e alertar antes de excluir.
+  const links = useQuery({
+    queryKey: ["event-documents-count", motorcycleId, docs.data?.length ?? 0],
+    queryFn: async () => {
+      const ids = (docs.data ?? []).map((d) => d.id);
+      if (!ids.length) return {} as Record<string, number>;
+      const { data, error } = await supabase
+        .from("event_documents" as never)
+        .select("document_id")
+        .in("document_id", ids);
+      if (error) return {} as Record<string, number>;
+      const map: Record<string, number> = {};
+      for (const row of (data ?? []) as any[]) {
+        map[row.document_id] = (map[row.document_id] ?? 0) + 1;
+      }
+      return map;
+    },
+    enabled: !!docs.data,
+  });
+
   const rows = docs.data ?? [];
   const active = rows.filter((r) => r.is_current && !r.deleted_at);
   const trashed = rows.filter((r) => r.deleted_at);
@@ -203,6 +225,13 @@ export function MotorcycleDocuments({
   }
 
   async function softDelete(doc: Doc) {
+    const n = links.data?.[doc.id] ?? 0;
+    if (n > 0) {
+      const ok = window.confirm(
+        `Este documento está vinculado a ${n} atividade(s). A exclusão também removerá sua visualização nesses registros. Deseja continuar?`,
+      );
+      if (!ok) return;
+    }
     const { data: u } = await supabase.auth.getUser();
     const { error } = await supabase.from("motorcycle_documents" as never)
       .update({ deleted_at: new Date().toISOString(), deleted_by: u.user!.id, is_current: false } as never)
@@ -362,6 +391,7 @@ export function MotorcycleDocuments({
               doc={d}
               authorName={profiles[d.created_by ?? ""] ?? "—"}
               isTrash={tab === "trash"}
+              linkCount={links.data?.[d.id] ?? 0}
               onView={() => openFile(d)}
               onDownload={() => openFile(d, true)}
               onEdit={() => setEditing(d)}
@@ -385,6 +415,7 @@ export function MotorcycleDocuments({
                   <DocCard
                     key={d.id} doc={d} authorName={profiles[d.created_by ?? ""] ?? "—"}
                     isTrash={tab === "trash"}
+                    linkCount={links.data?.[d.id] ?? 0}
                     onView={() => openFile(d)} onDownload={() => openFile(d, true)}
                     onEdit={() => setEditing(d)} onReplace={() => setReplacing(d)}
                     onRemove={() => softDelete(d)} onRestore={() => restoreDoc(d)}
@@ -424,10 +455,10 @@ export function MotorcycleDocuments({
 /* ============================================================= */
 
 function DocCard({
-  doc, authorName, isTrash,
+  doc, authorName, isTrash, linkCount = 0,
   onView, onDownload, onEdit, onReplace, onRemove, onRestore, onHardDelete, onTimeline,
 }: {
-  doc: Doc; authorName: string; isTrash: boolean;
+  doc: Doc; authorName: string; isTrash: boolean; linkCount?: number;
   onView: () => void; onDownload: () => void; onEdit: () => void; onReplace: () => void;
   onRemove: () => void; onRestore: () => void; onHardDelete: () => void; onTimeline: () => void;
 }) {
@@ -462,6 +493,11 @@ function DocCard({
           <div className="text-[11px] text-muted-foreground">
             por <span className="text-foreground">{authorName}</span>
           </div>
+          {linkCount > 0 && (
+            <div className="mt-1 inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+              Vinculado a {linkCount} atividade{linkCount === 1 ? "" : "s"}
+            </div>
+          )}
           {doc.doc_type === "invoice" && (doc.doc_number || doc.issuer || doc.amount != null) && (
             <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground">
               {doc.doc_number && <span>Nº {doc.doc_number}</span>}
