@@ -576,6 +576,524 @@ export type Database = {
           },
         ]
       }
+      health_check_runs: {
+        Row: {
+          blockers: Json
+          completed_at: string | null
+          created_at: string
+          error: string | null
+          id: string
+          motorcycle_id: string
+          preview: Json | null
+          rule_version: string | null
+          status: Database["public"]["Enums"]["health_run_status"]
+          til_version: string | null
+          updated_at: string
+          user_id: string
+          warnings: Json
+        }
+        Insert: {
+          blockers?: Json
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          motorcycle_id: string
+          preview?: Json | null
+          rule_version?: string | null
+          status?: Database["public"]["Enums"]["health_run_status"]
+          til_version?: string | null
+          updated_at?: string
+          user_id: string
+          warnings?: Json
+        }
+        Update: {
+          blockers?: Json
+          completed_at?: string | null
+          created_at?: string
+          error?: string | null
+          id?: string
+          motorcycle_id?: string
+          preview?: Json | null
+          rule_version?: string | null
+          status?: Database["public"]["Enums"]["health_run_status"]
+          til_version?: string | null
+          updated_at?: string
+          user_id?: string
+          warnings?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_check_runs_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "document_pendencies_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "health_check_runs_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycle_origin_document_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "health_check_runs_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      health_report_access_logs: {
+        Row: {
+          accessed_at: string
+          id: string
+          ip: string | null
+          referer: string | null
+          report_id: string
+          result: string
+          share_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          accessed_at?: string
+          id?: string
+          ip?: string | null
+          referer?: string | null
+          report_id: string
+          result?: string
+          share_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          accessed_at?: string
+          id?: string
+          ip?: string | null
+          referer?: string | null
+          report_id?: string
+          result?: string
+          share_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_report_access_logs_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "health_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_report_access_logs_share_id_fkey"
+            columns: ["share_id"]
+            isOneToOne: false
+            referencedRelation: "health_report_shares"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      health_report_components: {
+        Row: {
+          category: string
+          conclusion: string | null
+          confidence_level: string | null
+          created_at: string
+          id: string
+          is_safety_item: boolean
+          missing_data: Json
+          name: string
+          next_action: string | null
+          reasons: Json
+          remaining_label: string | null
+          report_id: string
+          schedule_id: string | null
+          severity: string | null
+          status: string
+          trend: string | null
+        }
+        Insert: {
+          category: string
+          conclusion?: string | null
+          confidence_level?: string | null
+          created_at?: string
+          id?: string
+          is_safety_item?: boolean
+          missing_data?: Json
+          name: string
+          next_action?: string | null
+          reasons?: Json
+          remaining_label?: string | null
+          report_id: string
+          schedule_id?: string | null
+          severity?: string | null
+          status: string
+          trend?: string | null
+        }
+        Update: {
+          category?: string
+          conclusion?: string | null
+          confidence_level?: string | null
+          created_at?: string
+          id?: string
+          is_safety_item?: boolean
+          missing_data?: Json
+          name?: string
+          next_action?: string | null
+          reasons?: Json
+          remaining_label?: string | null
+          report_id?: string
+          schedule_id?: string | null
+          severity?: string | null
+          status?: string
+          trend?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_report_components_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "health_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      health_report_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          description: string | null
+          id: string
+          kind: string
+          metadata: Json
+          motorcycle_id: string
+          report_id: string
+          source_event_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          kind: string
+          metadata?: Json
+          motorcycle_id: string
+          report_id: string
+          source_event_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          kind?: string
+          metadata?: Json
+          motorcycle_id?: string
+          report_id?: string
+          source_event_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_report_events_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "health_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      health_report_recommendations: {
+        Row: {
+          action_group: string
+          created_at: string
+          due_estimate_label: string | null
+          id: string
+          is_safety_item: boolean
+          lifecycle_at_issue: string
+          recommendation: string
+          report_id: string
+          schedule_id: string | null
+          status_at_issue: string
+          title: string
+        }
+        Insert: {
+          action_group: string
+          created_at?: string
+          due_estimate_label?: string | null
+          id?: string
+          is_safety_item?: boolean
+          lifecycle_at_issue: string
+          recommendation: string
+          report_id: string
+          schedule_id?: string | null
+          status_at_issue: string
+          title: string
+        }
+        Update: {
+          action_group?: string
+          created_at?: string
+          due_estimate_label?: string | null
+          id?: string
+          is_safety_item?: boolean
+          lifecycle_at_issue?: string
+          recommendation?: string
+          report_id?: string
+          schedule_id?: string | null
+          status_at_issue?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_report_recommendations_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "health_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      health_report_shares: {
+        Row: {
+          allowed_sections: Json
+          created_at: string
+          created_by: string
+          expires_at: string | null
+          id: string
+          preset: Database["public"]["Enums"]["health_share_preset"]
+          public_token: string
+          report_id: string
+          revoked_at: string | null
+          revoked_reason: string | null
+          updated_at: string
+        }
+        Insert: {
+          allowed_sections?: Json
+          created_at?: string
+          created_by: string
+          expires_at?: string | null
+          id?: string
+          preset?: Database["public"]["Enums"]["health_share_preset"]
+          public_token: string
+          report_id: string
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          updated_at?: string
+        }
+        Update: {
+          allowed_sections?: Json
+          created_at?: string
+          created_by?: string
+          expires_at?: string | null
+          id?: string
+          preset?: Database["public"]["Enums"]["health_share_preset"]
+          public_token?: string
+          report_id?: string
+          revoked_at?: string | null
+          revoked_reason?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_report_shares_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "health_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      health_report_snapshots: {
+        Row: {
+          created_at: string
+          format_version: string
+          payload: Json
+          report_id: string
+          sha256: string
+        }
+        Insert: {
+          created_at?: string
+          format_version?: string
+          payload: Json
+          report_id: string
+          sha256: string
+        }
+        Update: {
+          created_at?: string
+          format_version?: string
+          payload?: Json
+          report_id?: string
+          sha256?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_report_snapshots_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: true
+            referencedRelation: "health_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      health_reports: {
+        Row: {
+          attention_count: number
+          code: string | null
+          confidence_level: string
+          conservation_index: number | null
+          created_at: string
+          critical_count: number
+          format_version: string
+          has_reservations: boolean
+          hours_at_issue: number | null
+          id: string
+          issued_at: string
+          issued_by: string
+          km_at_issue: number | null
+          motorcycle_id: string
+          ok_count: number
+          outdated_at: string | null
+          outdated_event_id: string | null
+          outdated_reason: string | null
+          overall_status: string
+          owner_id: string
+          reservations: Json
+          revoked_at: string | null
+          revoked_by: string | null
+          revoked_reason_code: string | null
+          revoked_reason_notes: string | null
+          rule_version: string
+          run_id: string | null
+          snapshot_sha256: string
+          status: Database["public"]["Enums"]["health_report_status"]
+          superseded_by: string | null
+          til_version: string
+          timezone: string
+          unknown_count: number
+          updated_at: string
+          valid_hours_limit: number | null
+          valid_km_limit: number | null
+          valid_until: string | null
+          validity_reason: string | null
+        }
+        Insert: {
+          attention_count?: number
+          code?: string | null
+          confidence_level: string
+          conservation_index?: number | null
+          created_at?: string
+          critical_count?: number
+          format_version?: string
+          has_reservations?: boolean
+          hours_at_issue?: number | null
+          id?: string
+          issued_at?: string
+          issued_by: string
+          km_at_issue?: number | null
+          motorcycle_id: string
+          ok_count?: number
+          outdated_at?: string | null
+          outdated_event_id?: string | null
+          outdated_reason?: string | null
+          overall_status: string
+          owner_id: string
+          reservations?: Json
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason_code?: string | null
+          revoked_reason_notes?: string | null
+          rule_version: string
+          run_id?: string | null
+          snapshot_sha256: string
+          status?: Database["public"]["Enums"]["health_report_status"]
+          superseded_by?: string | null
+          til_version: string
+          timezone?: string
+          unknown_count?: number
+          updated_at?: string
+          valid_hours_limit?: number | null
+          valid_km_limit?: number | null
+          valid_until?: string | null
+          validity_reason?: string | null
+        }
+        Update: {
+          attention_count?: number
+          code?: string | null
+          confidence_level?: string
+          conservation_index?: number | null
+          created_at?: string
+          critical_count?: number
+          format_version?: string
+          has_reservations?: boolean
+          hours_at_issue?: number | null
+          id?: string
+          issued_at?: string
+          issued_by?: string
+          km_at_issue?: number | null
+          motorcycle_id?: string
+          ok_count?: number
+          outdated_at?: string | null
+          outdated_event_id?: string | null
+          outdated_reason?: string | null
+          overall_status?: string
+          owner_id?: string
+          reservations?: Json
+          revoked_at?: string | null
+          revoked_by?: string | null
+          revoked_reason_code?: string | null
+          revoked_reason_notes?: string | null
+          rule_version?: string
+          run_id?: string | null
+          snapshot_sha256?: string
+          status?: Database["public"]["Enums"]["health_report_status"]
+          superseded_by?: string | null
+          til_version?: string
+          timezone?: string
+          unknown_count?: number
+          updated_at?: string
+          valid_hours_limit?: number | null
+          valid_km_limit?: number | null
+          valid_until?: string | null
+          validity_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "health_reports_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "document_pendencies_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "health_reports_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycle_origin_document_view"
+            referencedColumns: ["motorcycle_id"]
+          },
+          {
+            foreignKeyName: "health_reports_motorcycle_id_fkey"
+            columns: ["motorcycle_id"]
+            isOneToOne: false
+            referencedRelation: "motorcycles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_reports_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "health_check_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "health_reports_superseded_by_fkey"
+            columns: ["superseded_by"]
+            isOneToOne: false
+            referencedRelation: "health_reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       help_requests: {
         Row: {
           admin_notes: string | null
@@ -3166,6 +3684,7 @@ export type Database = {
         }
       }
       get_public_certificate: { Args: { _token: string }; Returns: Json }
+      get_public_health_report: { Args: { _token: string }; Returns: Json }
       get_public_receipt: {
         Args: { _code: string }
         Returns: {
@@ -3244,6 +3763,15 @@ export type Database = {
           _country?: string
           _ip?: string
           _referer?: string
+          _token: string
+          _user_agent?: string
+        }
+        Returns: undefined
+      }
+      log_health_report_access: {
+        Args: {
+          _referer?: string
+          _result?: string
           _token: string
           _user_agent?: string
         }
@@ -3355,6 +3883,7 @@ export type Database = {
       }
       user_unread_count: { Args: never; Returns: number }
       validate_cpf: { Args: { _cpf: string }; Returns: boolean }
+      validate_health_report: { Args: { _code: string }; Returns: Json }
     }
     Enums: {
       app_role: "owner" | "mechanic" | "admin" | "USER_ADMIN"
@@ -3390,6 +3919,22 @@ export type Database = {
         | "note"
         | "incident"
         | "declaration"
+      health_report_status:
+        | "valid"
+        | "expiring"
+        | "outdated"
+        | "superseded"
+        | "revoked"
+      health_run_status:
+        | "started"
+        | "collecting"
+        | "processing"
+        | "previewed"
+        | "emitted"
+        | "blocked"
+        | "failed"
+        | "abandoned"
+      health_share_preset: "buyer" | "workshop" | "custom"
       help_request_status:
         | "open"
         | "in_analysis"
@@ -3708,6 +4253,24 @@ export const Constants = {
         "incident",
         "declaration",
       ],
+      health_report_status: [
+        "valid",
+        "expiring",
+        "outdated",
+        "superseded",
+        "revoked",
+      ],
+      health_run_status: [
+        "started",
+        "collecting",
+        "processing",
+        "previewed",
+        "emitted",
+        "blocked",
+        "failed",
+        "abandoned",
+      ],
+      health_share_preset: ["buyer", "workshop", "custom"],
       help_request_status: [
         "open",
         "in_analysis",
