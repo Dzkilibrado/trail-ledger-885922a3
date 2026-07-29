@@ -62,6 +62,8 @@ import { Route as AuthenticatedMotorcyclesIdComponentsRouteImport } from './rout
 import { Route as AuthenticatedMotorcyclesIdCertificateRouteImport } from './routes/_authenticated/motorcycles.$id.certificate'
 import { Route as AuthenticatedMotorcyclesIdCheckupsIndexRouteImport } from './routes/_authenticated/motorcycles.$id.checkups.index'
 import { Route as AuthenticatedMotorcyclesIdCheckupsNovoRouteImport } from './routes/_authenticated/motorcycles.$id.checkups.novo'
+import { Route as AuthenticatedMotorcyclesIdCheckupsCompararRouteImport } from './routes/_authenticated/motorcycles.$id.checkups.comparar'
+import { Route as AuthenticatedMotorcyclesIdCheckupsCodeRouteImport } from './routes/_authenticated/motorcycles.$id.checkups.$code'
 
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
@@ -354,6 +356,18 @@ const AuthenticatedMotorcyclesIdCheckupsNovoRoute =
     path: '/checkups/novo',
     getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
   } as any)
+const AuthenticatedMotorcyclesIdCheckupsCompararRoute =
+  AuthenticatedMotorcyclesIdCheckupsCompararRouteImport.update({
+    id: '/checkups/comparar',
+    path: '/checkups/comparar',
+    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
+  } as any)
+const AuthenticatedMotorcyclesIdCheckupsCodeRoute =
+  AuthenticatedMotorcyclesIdCheckupsCodeRouteImport.update({
+    id: '/checkups/$code',
+    path: '/checkups/$code',
+    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -406,6 +420,8 @@ export interface FileRoutesByFullPath {
   '/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
   '/recibos/$code/visualizar': typeof AuthenticatedRecibosCodeVisualizarRoute
   '/motorcycles/$id/': typeof AuthenticatedMotorcyclesIdIndexRoute
+  '/motorcycles/$id/checkups/$code': typeof AuthenticatedMotorcyclesIdCheckupsCodeRoute
+  '/motorcycles/$id/checkups/comparar': typeof AuthenticatedMotorcyclesIdCheckupsCompararRoute
   '/motorcycles/$id/checkups/novo': typeof AuthenticatedMotorcyclesIdCheckupsNovoRoute
   '/motorcycles/$id/checkups/': typeof AuthenticatedMotorcyclesIdCheckupsIndexRoute
 }
@@ -457,6 +473,8 @@ export interface FileRoutesByTo {
   '/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
   '/recibos/$code/visualizar': typeof AuthenticatedRecibosCodeVisualizarRoute
   '/motorcycles/$id': typeof AuthenticatedMotorcyclesIdIndexRoute
+  '/motorcycles/$id/checkups/$code': typeof AuthenticatedMotorcyclesIdCheckupsCodeRoute
+  '/motorcycles/$id/checkups/comparar': typeof AuthenticatedMotorcyclesIdCheckupsCompararRoute
   '/motorcycles/$id/checkups/novo': typeof AuthenticatedMotorcyclesIdCheckupsNovoRoute
   '/motorcycles/$id/checkups': typeof AuthenticatedMotorcyclesIdCheckupsIndexRoute
 }
@@ -513,6 +531,8 @@ export interface FileRoutesById {
   '/_authenticated/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
   '/_authenticated/recibos/$code/visualizar': typeof AuthenticatedRecibosCodeVisualizarRoute
   '/_authenticated/motorcycles/$id/': typeof AuthenticatedMotorcyclesIdIndexRoute
+  '/_authenticated/motorcycles/$id/checkups/$code': typeof AuthenticatedMotorcyclesIdCheckupsCodeRoute
+  '/_authenticated/motorcycles/$id/checkups/comparar': typeof AuthenticatedMotorcyclesIdCheckupsCompararRoute
   '/_authenticated/motorcycles/$id/checkups/novo': typeof AuthenticatedMotorcyclesIdCheckupsNovoRoute
   '/_authenticated/motorcycles/$id/checkups/': typeof AuthenticatedMotorcyclesIdCheckupsIndexRoute
 }
@@ -569,6 +589,8 @@ export interface FileRouteTypes {
     | '/motorcycles/$id/plan'
     | '/recibos/$code/visualizar'
     | '/motorcycles/$id/'
+    | '/motorcycles/$id/checkups/$code'
+    | '/motorcycles/$id/checkups/comparar'
     | '/motorcycles/$id/checkups/novo'
     | '/motorcycles/$id/checkups/'
   fileRoutesByTo: FileRoutesByTo
@@ -620,6 +642,8 @@ export interface FileRouteTypes {
     | '/motorcycles/$id/plan'
     | '/recibos/$code/visualizar'
     | '/motorcycles/$id'
+    | '/motorcycles/$id/checkups/$code'
+    | '/motorcycles/$id/checkups/comparar'
     | '/motorcycles/$id/checkups/novo'
     | '/motorcycles/$id/checkups'
   id:
@@ -675,6 +699,8 @@ export interface FileRouteTypes {
     | '/_authenticated/motorcycles/$id/plan'
     | '/_authenticated/recibos/$code/visualizar'
     | '/_authenticated/motorcycles/$id/'
+    | '/_authenticated/motorcycles/$id/checkups/$code'
+    | '/_authenticated/motorcycles/$id/checkups/comparar'
     | '/_authenticated/motorcycles/$id/checkups/novo'
     | '/_authenticated/motorcycles/$id/checkups/'
   fileRoutesById: FileRoutesById
@@ -1063,6 +1089,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMotorcyclesIdCheckupsNovoRouteImport
       parentRoute: typeof AuthenticatedMotorcyclesIdRoute
     }
+    '/_authenticated/motorcycles/$id/checkups/comparar': {
+      id: '/_authenticated/motorcycles/$id/checkups/comparar'
+      path: '/checkups/comparar'
+      fullPath: '/motorcycles/$id/checkups/comparar'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdCheckupsCompararRouteImport
+      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
+    }
+    '/_authenticated/motorcycles/$id/checkups/$code': {
+      id: '/_authenticated/motorcycles/$id/checkups/$code'
+      path: '/checkups/$code'
+      fullPath: '/motorcycles/$id/checkups/$code'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdCheckupsCodeRouteImport
+      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
+    }
   }
 }
 
@@ -1114,6 +1154,8 @@ interface AuthenticatedMotorcyclesIdRouteChildren {
   AuthenticatedMotorcyclesIdPassportRoute: typeof AuthenticatedMotorcyclesIdPassportRoute
   AuthenticatedMotorcyclesIdPlanRoute: typeof AuthenticatedMotorcyclesIdPlanRoute
   AuthenticatedMotorcyclesIdIndexRoute: typeof AuthenticatedMotorcyclesIdIndexRoute
+  AuthenticatedMotorcyclesIdCheckupsCodeRoute: typeof AuthenticatedMotorcyclesIdCheckupsCodeRoute
+  AuthenticatedMotorcyclesIdCheckupsCompararRoute: typeof AuthenticatedMotorcyclesIdCheckupsCompararRoute
   AuthenticatedMotorcyclesIdCheckupsNovoRoute: typeof AuthenticatedMotorcyclesIdCheckupsNovoRoute
   AuthenticatedMotorcyclesIdCheckupsIndexRoute: typeof AuthenticatedMotorcyclesIdCheckupsIndexRoute
 }
@@ -1132,6 +1174,10 @@ const AuthenticatedMotorcyclesIdRouteChildren: AuthenticatedMotorcyclesIdRouteCh
       AuthenticatedMotorcyclesIdPassportRoute,
     AuthenticatedMotorcyclesIdPlanRoute: AuthenticatedMotorcyclesIdPlanRoute,
     AuthenticatedMotorcyclesIdIndexRoute: AuthenticatedMotorcyclesIdIndexRoute,
+    AuthenticatedMotorcyclesIdCheckupsCodeRoute:
+      AuthenticatedMotorcyclesIdCheckupsCodeRoute,
+    AuthenticatedMotorcyclesIdCheckupsCompararRoute:
+      AuthenticatedMotorcyclesIdCheckupsCompararRoute,
     AuthenticatedMotorcyclesIdCheckupsNovoRoute:
       AuthenticatedMotorcyclesIdCheckupsNovoRoute,
     AuthenticatedMotorcyclesIdCheckupsIndexRoute:

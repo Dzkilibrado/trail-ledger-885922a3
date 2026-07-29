@@ -77,18 +77,14 @@ function ComparePage() {
       ) : (
         <>
           <TBCard className="grid gap-3 sm:grid-cols-2">
-            <TBSelect
-              label="Laudo anterior"
-              value={a || options[1]?.value}
-              onValueChange={setA}
-              options={options}
-            />
-            <TBSelect
-              label="Laudo mais recente"
-              value={b || options[0]?.value}
-              onValueChange={setB}
-              options={options}
-            />
+            <div className="space-y-1">
+              <span className="text-xs font-semibold text-muted-foreground">Laudo anterior</span>
+              <TBSelect value={a || options[1]?.value} onValueChange={setA} options={options} />
+            </div>
+            <div className="space-y-1">
+              <span className="text-xs font-semibold text-muted-foreground">Laudo mais recente</span>
+              <TBSelect value={b || options[0]?.value} onValueChange={setB} options={options} />
+            </div>
           </TBCard>
           {comparison ? (
             <CompareView comparison={comparison} />
