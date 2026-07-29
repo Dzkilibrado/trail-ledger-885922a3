@@ -18,7 +18,7 @@ export const EVENT_TYPE_LABEL: Record<EventType, string> = {
   sale: "Venda",
   ownership_transfer: "Troca de proprietário",
   recall: "Recall",
-  warranty: "Garantia",
+  warranty: "Garantia de peça, acessório ou serviço",
   note: "Observação",
   incident: "Sinistro / Ocorrência",
   declaration: "Declaração do proprietário",
@@ -38,8 +38,6 @@ export const ACTIVITY_EVENT_TYPES: EventType[] = [
   "accessory",
   "warranty",
   "recall",
-  "purchase",
-  "sale",
   "note",
 ];
 
