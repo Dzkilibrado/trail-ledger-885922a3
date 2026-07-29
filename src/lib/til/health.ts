@@ -3,6 +3,7 @@ import type { ScheduleStatus } from "@/lib/maintenance-engine";
 import type { HealthSnapshot, HealthGrade, HealthBuckets, EventRow, Attachment, Moto } from "./types";
 import { HEALTH_GRADE_LABEL } from "./types";
 import { HEALTH_STATUS_LABEL, HEALTH_STATUS_MEANING, worstStatus, type HealthStatus } from "./status";
+import { RIDE_ANSWER_MESSAGE } from "./messages";
 import type { ComponentView } from "./components";
 
 const SEVERITY_WEIGHT: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
@@ -95,15 +96,9 @@ export function computeHealth(input: {
       .map((c) => c.diagnosis.status),
   );
   const canRideAnswer =
-    status === "action"
-      ? topAttention
-        ? `Não recomendado: ${topAttention.name} precisa ser resolvido antes de rodar.`
-        : "Não recomendado: existe um item que precisa ser resolvido antes de rodar."
-      : status === "attention"
-        ? "Sim, você pode rodar hoje. Programe as manutenções indicadas."
-        : status === "unknown"
-          ? "Ainda não é possível responder com segurança: faltam informações dos componentes."
-          : "Sim, sua moto está pronta para rodar.";
+    status === "action" && topAttention
+      ? `${RIDE_ANSWER_MESSAGE.action} Comece por ${topAttention.name}.`
+      : RIDE_ANSWER_MESSAGE[status];
 
   return {
     score, tone, label,

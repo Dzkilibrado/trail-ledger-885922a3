@@ -99,6 +99,11 @@ export function computeComponentViews(
   events: EventRow[],
   itemsByScheduleId: Record<string, { event_id: string; created_at: string }[]>,
   inspectionsByScheduleId: Record<string, ComponentInspection[]> = {},
+  context: {
+    usage?: { hours: number | null; km: number | null } | null;
+    workshopScheduleIds?: Set<string>;
+    photoScheduleIds?: Set<string>;
+  } = {},
 ): ComponentView[] {
   const statusById = new Map(statuses.map((s) => [s.schedule.id, s] as const));
   const eventById = new Map(events.map((e) => [e.id, e] as const));
@@ -175,6 +180,9 @@ export function computeComponentViews(
       lastHistoryAt: history[0]?.occurredAt ?? null,
       lastInspection: inspections[0] ?? null,
       notes: sch.notes ?? null,
+      usage: context.usage ?? null,
+      hasPhotoEvidence: context.photoScheduleIds?.has(sch.id) ?? false,
+      hasWorkshopRecord: context.workshopScheduleIds?.has(sch.id) ?? false,
     });
 
     return {

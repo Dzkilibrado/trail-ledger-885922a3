@@ -1,21 +1,46 @@
 import type { ComponentView } from "./components";
 import type { HealthStatus } from "./status";
 import { HEALTH_STATUS_WEIGHT } from "./status";
+import {
+  RECOMMENDATION_ACTION_LABEL,
+  type RecommendationAction,
+  type RecommendationStatus,
+} from "./recommendations";
 
 /**
  * TrailBook Health — Plano de Ação.
  *
- * Regra oficial: o TrailBook nunca entrega apenas um diagnóstico.
- * Todo diagnóstico gera uma recomendação clara e priorizada.
- *
- * Ordem: 🔴 Crítico → 🟡 Preventivo → ⚪ Informação faltando.
+ * Todo diagnóstico gera uma recomendação clara, priorizada e rastreável.
+ * Grupos oficiais (nesta ordem):
+ *   1. Faça antes de usar   — segurança / funcionamento comprometido
+ *   2. Programe em breve    — próximo da manutenção recomendada
+ *   3. Acompanhe            — ainda não exige intervenção
+ *   4. Complete os dados    — não foi possível avaliar
  */
 
-export type ActionPriority = "critical" | "preventive" | "informative";
+export type ActionGroup = "before_use" | "schedule_soon" | "monitor" | "complete_data";
+
+export const ACTION_GROUP_LABEL: Record<ActionGroup, string> = {
+  before_use: "Faça antes de usar",
+  schedule_soon: "Programe em breve",
+  monitor: "Acompanhe",
+  complete_data: "Complete os dados",
+};
+
+export const ACTION_GROUP_DESCRIPTION: Record<ActionGroup, string> = {
+  before_use: "Itens que podem comprometer segurança ou funcionamento.",
+  schedule_soon: "Itens próximos da manutenção recomendada.",
+  monitor: "Itens que ainda não exigem intervenção.",
+  complete_data: "Itens que não puderam ser avaliados por falta de informação.",
+};
+
+/** Compatibilidade com a Etapa 1. */
+export type ActionPriority = "critical" | "preventive" | "informative" | "monitor";
 
 export const ACTION_PRIORITY_LABEL: Record<ActionPriority, string> = {
   critical: "Resolver antes de rodar",
   preventive: "Programar manutenção",
+  monitor: "Acompanhar",
   informative: "Completar informação",
 };
 
@@ -24,21 +49,73 @@ export interface ActionPlanItem {
   title: string;
   category: string;
   status: HealthStatus;
+  group: ActionGroup;
   priority: ActionPriority;
-  /** Por que está aqui — uma frase. */
+  /** Por que está aqui. */
   reason: string;
-  /** O que fazer — uma frase. */
+  /** O que fazer. */
   recommendation: string;
+  /** Prazo estimado em linguagem natural. */
+  dueEstimateLabel: string;
+  /** Origem do diagnóstico (regras acionadas + versão do algoritmo). */
+  origin: { rules: string[]; ruleVersion: string; computedAt: string };
+  /** Ação sugerida principal + alternativas. */
+  suggestedAction: RecommendationAction;
+  suggestedActionLabel: string;
+  alternativeActions: RecommendationAction[];
+  /** Estado de acompanhamento derivado (ciclo de vida). */
+  lifecycle: RecommendationStatus;
+  confidenceLevel: string;
+  isSafetyItem: boolean;
   actionHint: string;
 }
 
+const GROUP_ORDER: ActionGroup[] = ["before_use", "schedule_soon", "monitor", "complete_data"];
+
 const SEVERITY_WEIGHT: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3 };
 
-function priorityFor(status: HealthStatus): ActionPriority | null {
-  if (status === "action") return "critical";
-  if (status === "attention") return "preventive";
-  if (status === "unknown") return "informative";
-  return null;
+function groupFor(c: ComponentView): ActionGroup {
+  const s = c.diagnosis.status;
+  if (s === "action") return "before_use";
+  if (s === "attention") return "schedule_soon";
+  if (s === "unknown") return "complete_data";
+  // OK entra em "Acompanhe" apenas quando existe sinal a observar
+  return "monitor";
+}
+
+function priorityFor(group: ActionGroup): ActionPriority {
+  switch (group) {
+    case "before_use": return "critical";
+    case "schedule_soon": return "preventive";
+    case "monitor": return "monitor";
+    case "complete_data": return "informative";
+  }
+}
+
+function suggestedActionFor(group: ActionGroup, c: ComponentView): RecommendationAction {
+  if (group === "complete_data") return "complete_data";
+  if (group === "before_use") return "register_maintenance";
+  if (group === "schedule_soon") return "schedule_service";
+  return "add_inspection";
+}
+
+function alternativesFor(group: ActionGroup): RecommendationAction[] {
+  if (group === "complete_data") return ["add_inspection", "register_maintenance", "attach_photo", "mark_not_applicable"];
+  if (group === "before_use") return ["schedule_service", "add_inspection", "attach_photo", "open_history"];
+  if (group === "schedule_soon") return ["register_maintenance", "add_inspection", "mark_resolved", "open_history"];
+  return ["attach_photo", "open_history", "mark_not_applicable"];
+}
+
+/**
+ * Ciclo de vida derivado. Enquanto não houver persistência, a TIL infere:
+ * - "resolved" quando houve manutenção recente e o item voltou a ficar OK;
+ * - "expired" quando o intervalo já foi ultrapassado;
+ * - "open" nos demais casos.
+ */
+function lifecycleFor(c: ComponentView): RecommendationStatus {
+  if (c.diagnosis.status === "action") return "expired";
+  if (c.diagnosis.trend === "improving" && c.diagnosis.status === "ok") return "resolved";
+  return "open";
 }
 
 /** Constrói o plano de ação priorizado a partir dos componentes da moto. */
@@ -47,26 +124,40 @@ export function computeActionPlan(components: ComponentView[]): ActionPlanItem[]
 
   for (const c of components) {
     if (c.hidden || c.rawStatus === "not_applicable") continue;
-    const status = c.diagnosis.status;
-    const priority = priorityFor(status);
-    if (!priority) continue;
+    const d = c.diagnosis;
+    const group = groupFor(c);
+
+    // "Acompanhe" só recebe itens OK com algum sinal relevante — evita ruído.
+    if (group === "monitor") {
+      const worthMonitoring = d.isSafetyItem || d.hasConflict || d.trend === "worsening";
+      if (!worthMonitoring) continue;
+    }
 
     items.push({
       scheduleId: c.scheduleId,
       title: c.name,
       category: c.categoryLabel,
-      status,
-      priority,
-      reason: c.diagnosis.reasons[c.diagnosis.reasons.length - 1] ?? c.statusLabel,
-      recommendation: c.diagnosis.conclusion,
+      status: d.status,
+      group,
+      priority: priorityFor(group),
+      reason: d.reasons[0] ?? c.statusLabel,
+      recommendation: d.conclusion,
+      dueEstimateLabel: d.dueEstimateLabel,
+      origin: { rules: d.rulesFired, ruleVersion: d.ruleVersion, computedAt: d.computedAt },
+      suggestedAction: suggestedActionFor(group, c),
+      suggestedActionLabel: RECOMMENDATION_ACTION_LABEL[suggestedActionFor(group, c)],
+      alternativeActions: alternativesFor(group),
+      lifecycle: lifecycleFor(c),
+      confidenceLevel: d.confidence.level,
+      isSafetyItem: d.isSafetyItem,
       actionHint: c.actionHint,
     });
   }
 
-  const order: ActionPriority[] = ["critical", "preventive", "informative"];
   return items.sort((a, b) => {
-    const p = order.indexOf(a.priority) - order.indexOf(b.priority);
-    if (p !== 0) return p;
+    const g = GROUP_ORDER.indexOf(a.group) - GROUP_ORDER.indexOf(b.group);
+    if (g !== 0) return g;
+    if (a.isSafetyItem !== b.isSafetyItem) return a.isSafetyItem ? -1 : 1;
     const s = HEALTH_STATUS_WEIGHT[a.status] - HEALTH_STATUS_WEIGHT[b.status];
     if (s !== 0) return s;
     return a.title.localeCompare(b.title);
@@ -75,26 +166,24 @@ export function computeActionPlan(components: ComponentView[]): ActionPlanItem[]
 
 /** Resumo curto do plano — usado no Cockpit e no cabeçalho da Saúde. */
 export function summarizeActionPlan(plan: ActionPlanItem[]): string {
-  const critical = plan.filter((i) => i.priority === "critical").length;
-  const preventive = plan.filter((i) => i.priority === "preventive").length;
-  const informative = plan.filter((i) => i.priority === "informative").length;
+  const before = plan.filter((i) => i.group === "before_use").length;
+  const soon = plan.filter((i) => i.group === "schedule_soon").length;
+  const data = plan.filter((i) => i.group === "complete_data").length;
 
-  if (critical > 0) {
-    return critical === 1
-      ? "1 item precisa ser resolvido antes de rodar"
-      : `${critical} itens precisam ser resolvidos antes de rodar`;
+  if (before > 0) {
+    return before === 1
+      ? "1 item precisa ser verificado antes de rodar"
+      : `${before} itens precisam ser verificados antes de rodar`;
   }
-  if (preventive > 0) {
-    return preventive === 1
-      ? "1 manutenção deve ser programada"
-      : `${preventive} manutenções devem ser programadas`;
+  if (soon > 0) {
+    return soon === 1 ? "1 manutenção deve ser programada" : `${soon} manutenções devem ser programadas`;
   }
-  if (informative > 0) {
-    return informative === 1
-      ? "1 componente ainda sem informação"
-      : `${informative} componentes ainda sem informação`;
+  if (data > 0) {
+    return data === 1
+      ? "1 componente ainda sem dados suficientes"
+      : `${data} componentes ainda sem dados suficientes`;
   }
   return "Nenhuma ação pendente";
 }
 
-export { SEVERITY_WEIGHT as ACTION_SEVERITY_WEIGHT };
+export { SEVERITY_WEIGHT as ACTION_SEVERITY_WEIGHT, GROUP_ORDER as ACTION_GROUP_ORDER };

@@ -12,7 +12,7 @@ import { invalidateMotorcycleState, setStoredActiveMotorcycleId, useAllMyMotorcy
 
 export const Route = createFileRoute("/_authenticated/motorcycles/")({
   head: () => ({ meta: [{ title: "Motos — TrailBook" }] }),
-  validateSearch: (s: Record<string, unknown>) => ({
+  validateSearch: (s: Record<string, unknown>): { tab?: "active" | "archived" } => ({
     tab: s.tab === "archived" ? "archived" : "active",
   }),
   component: MotorcyclesList,
