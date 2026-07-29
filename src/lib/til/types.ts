@@ -1,5 +1,7 @@
 import type { Database } from "@/integrations/supabase/types";
 import type { ComponentView } from "./components";
+import type { ActionPlanItem } from "./action-plan";
+import type { HealthStatus } from "./status";
 
 export type Moto = Database["public"]["Tables"]["motorcycles"]["Row"];
 export type EventRow = Database["public"]["Tables"]["events"]["Row"];
@@ -33,6 +35,12 @@ export interface HealthSnapshot {
   headline: string;           // frase curta acionável ("Pronta para uso" / "Existe algo a resolver")
   buckets: HealthBuckets;     // agrupamento inteligente
   topAttention: ComponentView | null; // componente mais urgente (para o Cockpit)
+  /** Linguagem oficial de status (TrailBook Health) — substitui a nota na UI. */
+  status: HealthStatus;
+  statusLabel: string;
+  statusMeaning: string;
+  /** Resposta direta à pergunta "posso rodar hoje?". */
+  canRideAnswer: string;
 }
 
 export interface NextMaintenanceSnapshot {
@@ -80,4 +88,8 @@ export interface CockpitSnapshot {
   components: ComponentView[];
   /** Frase curta e contextual do assistente TrailBook. */
   greeting: string;
+  /** Plano de ação priorizado — todo diagnóstico gera recomendação. */
+  actionPlan: ActionPlanItem[];
+  /** Resumo curto do plano de ação. */
+  actionSummary: string;
 }

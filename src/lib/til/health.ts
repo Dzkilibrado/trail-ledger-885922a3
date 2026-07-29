@@ -2,6 +2,7 @@ import { computeConservation } from "@/lib/conservation";
 import type { ScheduleStatus } from "@/lib/maintenance-engine";
 import type { HealthSnapshot, HealthGrade, HealthBuckets, EventRow, Attachment, Moto } from "./types";
 import { HEALTH_GRADE_LABEL } from "./types";
+import { HEALTH_STATUS_LABEL, HEALTH_STATUS_MEANING, worstStatus, type HealthStatus } from "./status";
 import type { ComponentView } from "./components";
 
 const SEVERITY_WEIGHT: Record<string, number> = { critical: 4, high: 3, medium: 2, low: 1 };
@@ -86,6 +87,24 @@ export function computeHealth(input: {
     grade === "attention" ? "Sua moto pede atenção" :
                             "Sua moto precisa de cuidados";
   const topAttention = buckets.overdue[0] ?? buckets.attention[0] ?? null;
+
+  // Linguagem oficial de status — o usuário nunca interpreta números.
+  const status: HealthStatus = worstStatus(
+    input.components
+      .filter((c) => !c.hidden && c.tone !== "not_applicable")
+      .map((c) => c.diagnosis.status),
+  );
+  const canRideAnswer =
+    status === "action"
+      ? topAttention
+        ? `Não recomendado: ${topAttention.name} precisa ser resolvido antes de rodar.`
+        : "Não recomendado: existe um item que precisa ser resolvido antes de rodar."
+      : status === "attention"
+        ? "Sim, você pode rodar hoje. Programe as manutenções indicadas."
+        : status === "unknown"
+          ? "Ainda não é possível responder com segurança: faltam informações dos componentes."
+          : "Sim, sua moto está pronta para rodar.";
+
   return {
     score, tone, label,
     grade,
@@ -93,5 +112,9 @@ export function computeHealth(input: {
     headline: headlineFor(grade, buckets),
     buckets,
     topAttention,
+    status,
+    statusLabel: HEALTH_STATUS_LABEL[status],
+    statusMeaning: HEALTH_STATUS_MEANING[status],
+    canRideAnswer,
   };
 }
