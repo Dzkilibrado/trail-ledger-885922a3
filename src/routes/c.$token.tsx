@@ -14,6 +14,8 @@ import { generateCertificatePdf } from "@/lib/cert-pdf";
 import { prepareCertPhotoDataUrl } from "@/lib/cert-pdf";
 import { saveFile } from "@/lib/save-file";
 import { isAllowed, type CertSectionKey } from "@/lib/cert-sections";
+import { EvaluationPill } from "@/components/health/EvaluationPill";
+import { stateFromScore, RIDE_VERDICT } from "@/lib/ui/evaluation";
 import { OwnershipTimeline } from "@/components/OwnershipTimeline";
 
 export const Route = createFileRoute("/c/$token")({
@@ -301,22 +303,17 @@ function PublicCert() {
           {show("conservation") ? (
           <div className="surface-elevated rounded-3xl p-6">
             <div className="flex items-center justify-between">
-              <h2 className="font-display text-lg font-bold">Índice de Conservação</h2>
+              <h2 className="font-display text-lg font-bold">Avaliação TrailBook</h2>
               <span className="text-xs text-muted-foreground">Avaliação automática TrailBook</span>
             </div>
             <div className="mt-4 flex items-center gap-6">
-              <div className="text-center">
-                <div className="font-display text-6xl font-bold text-primary">{computed.conservation.score}</div>
-                <div className="mt-1 inline-block rounded-full bg-primary/15 px-3 py-0.5 text-xs font-bold text-primary">NOTA {computed.conservation.grade}</div>
+              <div className="space-y-2">
+                <EvaluationPill state={stateFromScore(computed.conservation.score)} />
+                <p className="max-w-md text-sm text-muted-foreground">
+                  O TrailBook avaliou esta motocicleta utilizando todas as informações registradas até a emissão deste certificado.
+                </p>
+                <p className="max-w-md text-sm">{RIDE_VERDICT[stateFromScore(computed.conservation.score)]}</p>
               </div>
-              <ul className="flex-1 space-y-1.5 text-sm">
-                {computed.conservation.factors.map((f) => (
-                  <li key={f.key} className="flex items-center justify-between border-b border-border/40 pb-1.5 last:border-0">
-                    <span className="text-muted-foreground">{f.label}{f.detail ? <span className="ml-1 text-xs">({f.detail})</span> : null}</span>
-                    <span className={`font-mono text-xs font-bold ${f.delta >= 0 ? "text-green-500" : "text-destructive"}`}>{f.delta >= 0 ? "+" : ""}{f.delta}</span>
-                  </li>
-                ))}
-              </ul>
             </div>
           </div>
           ) : <div />}
@@ -343,7 +340,7 @@ function PublicCert() {
                     <div className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{h.label}</div>
                     <Icon className={`h-4 w-4 ${iconTone}`} />
                   </div>
-                  <div className="mt-2 font-display text-2xl font-bold">{h.score}</div>
+                  <div className="mt-2"><EvaluationPill state={stateFromScore(h.score)} size="sm" /></div>
                   <div className="text-xs text-muted-foreground">{h.reason}</div>
                 </div>
               );
