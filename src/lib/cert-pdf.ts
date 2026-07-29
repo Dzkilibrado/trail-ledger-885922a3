@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import { brl, formatDate, EVENT_TYPE_LABEL, MAINT_CATEGORY_LABEL, type EventRow, type Motorcycle } from "./trailbook";
 import type { ConservationResult, CategoryHealth } from "./conservation";
 import type { ScheduleStatus } from "./maintenance-engine";
+import { sanitizeFileName } from "./save-file";
 
 const ORANGE: [number, number, number] = [234, 88, 12];
 const DARK: [number, number, number] = [17, 17, 19];
@@ -21,7 +22,12 @@ export interface CertPdfInput {
   workshopsCount: number;
 }
 
-export async function generateCertificatePdf(input: CertPdfInput) {
+export interface CertPdfOutput {
+  blob: Blob;
+  fileName: string;
+}
+
+export async function generateCertificatePdf(input: CertPdfInput): Promise<CertPdfOutput> {
   const { moto, events, conservation, health, upcoming, publicUrl, photoDataUrl, attachmentsCount, workshopsCount } = input;
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
@@ -53,7 +59,11 @@ export async function generateCertificatePdf(input: CertPdfInput) {
 
   // Photo + title
   if (photoDataUrl) {
-    try { doc.addImage(photoDataUrl, "JPEG", M, y, 160, 110); } catch { /* ignore */ }
+    try {
+      // photoDataUrl chega já normalizado para JPEG pelo helper prepareCertPhotoDataUrl;
+      // ainda assim, deixamos o jsPDF detectar o formato para tolerar PNG/WEBP legados.
+      doc.addImage(photoDataUrl, M, y, 160, 110);
+    } catch { /* placeholder abaixo */ }
   } else {
     doc.setFillColor(245, 245, 248); doc.rect(M, y, 160, 110, "F");
   }
@@ -178,12 +188,58 @@ export async function generateCertificatePdf(input: CertPdfInput) {
     doc.text(`${attachmentsCount} evidência(s) · ${workshopsCount} oficina(s) registrada(s) · Página ${p}/${pages}`, W - M, H - 22, { align: "right" });
   }
 
-  const name = `trailbook-${(moto.nickname || moto.model || "moto").replace(/\s+/g, "-").toLowerCase()}.pdf`;
-  doc.save(name);
+  const brandPart = sanitizeFileName(moto.brand || "", "");
+  const modelPart = sanitizeFileName(moto.model || moto.nickname || "", "");
+  const tbid = ((moto as unknown as { trailbook_id?: string }).trailbook_id || "").toString();
+  const idPart = sanitizeFileName(tbid, "");
+  const parts = ["TrailBook", "Certificado", brandPart, modelPart, idPart].filter((p) => p && p.trim().length > 0);
+  const fallback = "TrailBook-Certificado-Motocicleta";
+  const baseName = parts.length > 2 ? parts.join("-") : fallback;
+  const fileName = `${sanitizeFileName(baseName, fallback)}.pdf`;
+  const blob = doc.output("blob");
+  return { blob, fileName };
 }
 
 function section(doc: jsPDF, title: string, x: number, y: number, w: number) {
   doc.setDrawColor(...LINE); doc.line(x, y + 14, x + w, y + 14);
   doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(...DARK);
   doc.text(title, x, y + 10);
+}
+
+/**
+ * Normaliza a foto principal para JPEG via canvas, preservando proporção
+ * e limitando a resolução. Retorna null em qualquer falha (HEIC, CORS, etc.)
+ * para que o PDF continue sendo gerado com placeholder.
+ */
+export async function prepareCertPhotoDataUrl(sourceUrl: string, maxSide = 1200): Promise<string | null> {
+  try {
+    const res = await fetch(sourceUrl, { mode: "cors", credentials: "omit" });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const url = URL.createObjectURL(blob);
+      const el = new Image();
+      el.crossOrigin = "anonymous";
+      el.onload = () => { URL.revokeObjectURL(url); resolve(el); };
+      el.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
+      el.src = url;
+    });
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+    if (!w || !h) return null;
+    const scale = Math.min(1, maxSide / Math.max(w, h));
+    const tw = Math.max(1, Math.round(w * scale));
+    const th = Math.max(1, Math.round(h * scale));
+    const canvas = document.createElement("canvas");
+    canvas.width = tw; canvas.height = th;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    // fundo neutro para tratar transparência (PNG/WEBP)
+    ctx.fillStyle = "#FFFFFF";
+    ctx.fillRect(0, 0, tw, th);
+    ctx.drawImage(img, 0, 0, tw, th);
+    return canvas.toDataURL("image/jpeg", 0.85);
+  } catch {
+    return null;
+  }
 }

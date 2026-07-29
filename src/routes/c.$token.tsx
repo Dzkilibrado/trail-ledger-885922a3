@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { priorityList } from "@/lib/maintenance-engine";
 import { computeConservation, categoryHealth, docsHealth, historyHealth } from "@/lib/conservation";
 import { generateCertificatePdf } from "@/lib/cert-pdf";
+import { prepareCertPhotoDataUrl } from "@/lib/cert-pdf";
+import { saveFile } from "@/lib/save-file";
 import { isAllowed, type CertSectionKey } from "@/lib/cert-sections";
 import { OwnershipTimeline } from "@/components/OwnershipTimeline";
 
@@ -132,24 +134,39 @@ function PublicCert() {
   }
 
   async function downloadPdf() {
-    toast.info("Gerando PDF…");
-    let photoDataUrl: string | null = null;
-    if (photoUrl) {
-      try {
-        const r = await fetch(photoUrl); const b = await r.blob();
-        photoDataUrl = await new Promise((res) => { const fr = new FileReader(); fr.onload = () => res(fr.result as string); fr.readAsDataURL(b); });
-      } catch { /* ignore */ }
+    const loadingId = toast.loading("Preparando certificado…");
+    try {
+      // Respeita allowed_sections.photo: se a seção estiver desabilitada,
+      // nem sequer buscamos os bytes da imagem para o PDF.
+      let photoDataUrl: string | null = null;
+      if (show("photo") && photoUrl) {
+        photoDataUrl = await prepareCertPhotoDataUrl(photoUrl);
+      }
+      const { blob, fileName } = await generateCertificatePdf({
+        moto, events: data!.events,
+        conservation: computed!.conservation,
+        health: computed!.health,
+        upcoming: computed!.statuses.slice(0, 6),
+        publicUrl, photoDataUrl,
+        attachmentsCount: data!.attachments.length,
+        workshopsCount: data!.workshops.length,
+      });
+      toast.dismiss(loadingId);
+      const result = await saveFile({
+        blob,
+        fileName,
+        mime: "application/pdf",
+        shareTitle: `TrailBook — ${moto.nickname || moto.model}`,
+      });
+      if (result.outcome === "saved") toast.success("Certificado salvo com sucesso.");
+      else if (result.outcome === "shared") toast.success("Certificado enviado para compartilhamento.");
+      else if (result.outcome === "downloaded") toast.success("Download iniciado. Verifique a pasta de downloads ou o aplicativo de arquivos.");
+      else if (result.outcome === "cancelled") toast("Salvamento cancelado.");
+      else toast.error("Não foi possível preparar o certificado. Tente novamente.");
+    } catch {
+      toast.dismiss(loadingId);
+      toast.error("Não foi possível preparar o certificado. Tente novamente.");
     }
-    await generateCertificatePdf({
-      moto, events: data!.events,
-      conservation: computed!.conservation,
-      health: computed!.health,
-      upcoming: computed!.statuses.slice(0, 6),
-      publicUrl, photoDataUrl,
-      attachmentsCount: data!.attachments.length,
-      workshopsCount: data!.workshops.length,
-    });
-    toast.success("PDF gerado");
   }
 
   return (
@@ -167,7 +184,7 @@ function PublicCert() {
           <div className="col-span-2 flex flex-wrap justify-end gap-2 sm:col-span-1">
             <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(publicUrl); toast.success("Link copiado"); }}><Copy className="h-4 w-4" /> <span className="hidden sm:inline">Copiar link</span></Button>
             <Button variant="outline" size="sm" onClick={share}><Share2 className="h-4 w-4" /> <span className="hidden sm:inline">Compartilhar</span></Button>
-            <Button size="sm" onClick={downloadPdf}><Download className="h-4 w-4" /> <span className="hidden sm:inline">Baixar </span>PDF</Button>
+            <Button size="sm" onClick={downloadPdf}><Download className="h-4 w-4" /> <span className="hidden sm:inline">Salvar certificado</span><span className="sm:hidden">PDF</span></Button>
           </div>
         </header>
 
