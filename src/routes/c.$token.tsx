@@ -187,6 +187,8 @@ function PublicCert() {
   );
 
   const moto = data.motorcycle;
+  const certData = data;
+  const certComputed = computed;
   const allowed = data.certificate.allowed_sections ?? [];
   const show = (k: CertSectionKey) => isAllowed(allowed, k);
   const upcoming = computed.statuses.filter((s) => s.status !== "ok").slice(0, 6);
@@ -218,9 +220,9 @@ function PublicCert() {
         hasNavigatorCanShare: typeof navigator !== "undefined" && typeof (navigator as Navigator & { canShare?: unknown }).canShare === "function",
       });
       logCertificateDownloadStep(3, "payload do certificado pronto", {
-        events: data.events.length,
-        attachments: data.attachments.length,
-        workshops: data.workshops.length,
+        events: certData.events.length,
+        attachments: certData.attachments.length,
+        workshops: certData.workshops.length,
       });
       logCertificateDownloadStep(4, "url pública preparada", { origin: typeof window !== "undefined" ? window.location.origin : "server" });
       // Respeita allowed_sections.photo: se a seção estiver desabilitada,
@@ -239,13 +241,13 @@ function PublicCert() {
       stage = "gerando PDF";
       logCertificateDownloadStep(8, "geração do PDF iniciada", { motorcycle: moto.nickname || moto.model });
       const { blob, fileName } = await generateCertificatePdf({
-        moto, events: data.events,
-        conservation: computed.conservation,
-        health: computed.health,
-        upcoming: computed.statuses.slice(0, 6),
+        moto, events: certData.events,
+        conservation: certComputed.conservation,
+        health: certComputed.health,
+        upcoming: certComputed.statuses.slice(0, 6),
         publicUrl, photoDataUrl,
-        attachmentsCount: data.attachments.length,
-        workshopsCount: data.workshops.length,
+        attachmentsCount: certData.attachments.length,
+        workshopsCount: certData.workshops.length,
       });
       logCertificateDownloadStep(9, "PDF gerado", { size: blob.size, type: blob.type, fileName });
       logCertificateDownloadStep(10, "blob validado antes do salvamento", { valid: blob.size > 0 && blob.type === "application/pdf" });
