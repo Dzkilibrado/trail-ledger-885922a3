@@ -14,8 +14,9 @@ import { SingleBadgeChip } from "@/components/badges/BadgeSection";
 import { computeReviewState } from "@/lib/review-state";
 import { ReviewStateNotice } from "@/components/review-state/ReviewStateNotice";
 import { ActionPlanCard } from "./ActionPlanCard";
-import { TBStatusPill } from "@/design-system/primitives/TBStatusPill";
-import { HEALTH_STATUS_TEXT } from "@/lib/til/status";
+import { RideAnswerCard } from "./RideAnswerCard";
+import { AdminDiagnosisPanel } from "./AdminDiagnosisPanel";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
 
 /**
  * Saúde da Moto — check-up visual do estado atual, alimentado 100% pela TIL.
@@ -25,6 +26,7 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [openBucket, setOpenBucket] = useState<BucketKey | null>(null);
   const [query, setQuery] = useState("");
+  const { isAdmin } = useIsAdmin();
 
   const events = useQuery({
     queryKey: ["events", moto.id],
@@ -88,8 +90,6 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
 
   const { health } = snapshot;
   const reviewState = computeReviewState({ moto: moto as any, schedules: schedules.data ?? [] });
-  const status = health.status;
-  const StatusIcon = status === "action" ? AlertTriangle : status === "attention" ? Clock : status === "unknown" ? HelpCircle : CheckCircle2;
 
   const buckets: Array<{
     key: BucketKey;
@@ -118,18 +118,8 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
         <SingleBadgeChip motorcycleId={moto.id} badgeId="origin_proven" />
       </div>
 
-      {/* Diagnóstico geral — linguagem de status, nunca nota */}
-      <section aria-label="Diagnóstico geral" className="surface-elevated rounded-3xl px-5 py-6">
-        <div className="flex items-center justify-between gap-3">
-          <div className={`inline-flex items-center gap-2 text-xs uppercase tracking-widest ${HEALTH_STATUS_TEXT[status]}`}>
-            <StatusIcon className="h-4 w-4" aria-hidden />
-            <span>Diagnóstico</span>
-          </div>
-          <TBStatusPill status={status} />
-        </div>
-        <p className="mt-4 font-display text-xl font-bold leading-snug sm:text-2xl">{health.canRideAnswer}</p>
-        <p className="mt-2 text-sm text-muted-foreground">{snapshot.actionSummary}</p>
-      </section>
+      {/* Saúde geral — status, justificativa e próxima ação (nunca nota) */}
+      <RideAnswerCard answer={snapshot.rideAnswer} />
 
       {reviewState.isPending && reviewState.state !== "unknown" && (
         <ReviewStateNotice snapshot={reviewState} compact />
@@ -190,6 +180,8 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
           </div>
         )}
       </TBBottomSheet>
+
+      {isAdmin && <AdminDiagnosisPanel components={snapshot.components} />}
 
       <ComponentSheet
         moto={moto}

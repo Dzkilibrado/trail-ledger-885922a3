@@ -2,6 +2,7 @@ import type { Database } from "@/integrations/supabase/types";
 import type { ComponentView } from "./components";
 import type { ActionPlanItem } from "./action-plan";
 import type { HealthStatus } from "./status";
+import type { RideAnswer } from "./ride-answer";
 
 export type Moto = Database["public"]["Tables"]["motorcycles"]["Row"];
 export type EventRow = Database["public"]["Tables"]["events"]["Row"];
@@ -92,4 +93,6 @@ export interface CockpitSnapshot {
   actionPlan: ActionPlanItem[];
   /** Resumo curto do plano de ação. */
   actionSummary: string;
+  /** Resposta oficial para "Posso rodar hoje?". */
+  rideAnswer: RideAnswer;
 }

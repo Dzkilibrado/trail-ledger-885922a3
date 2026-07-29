@@ -5,6 +5,7 @@ import { computeNextAlert } from "./alerts";
 import { computeNextAction } from "./suggestions";
 import { computeComponentViews, type ComponentInspection } from "./components";
 import { computeActionPlan, summarizeActionPlan } from "./action-plan";
+import { computeRideAnswer } from "./ride-answer";
 import { computeGreeting } from "./greeting";
 import type {
   Attachment,
@@ -19,6 +20,10 @@ export * from "./components";
 export * from "./status";
 export * from "./diagnosis";
 export * from "./action-plan";
+export * from "./messages";
+export * from "./confidence";
+export * from "./recommendations";
+export * from "./ride-answer";
 
 /**
  * Fachada oficial da TrailBook Intelligence Layer.
@@ -57,8 +62,23 @@ export function computeCockpitSnapshot(input: {
     });
   }
 
-  const components = computeComponentViews(schedules, statuses, events, itemsByScheduleId, inspectionsByScheduleId);
+  // Sinais de evidência por componente (oficina / foto) — alimentam a confiabilidade.
+  const workshopScheduleIds = new Set<string>();
+  const photoScheduleIds = new Set<string>();
+  const attachmentEventIds = new Set(attachments.map((a) => a.event_id));
+  for (const it of maintenanceItems ?? []) {
+    if (!it.schedule_id) continue;
+    if (workshopEventIds.has(it.event_id)) workshopScheduleIds.add(it.schedule_id);
+    if (attachmentEventIds.has(it.event_id)) photoScheduleIds.add(it.schedule_id);
+  }
+
+  const components = computeComponentViews(schedules, statuses, events, itemsByScheduleId, inspectionsByScheduleId, {
+    usage: { hours: moto.hours_total != null ? Number(moto.hours_total) : null, km: moto.km_total != null ? Number(moto.km_total) : null },
+    workshopScheduleIds,
+    photoScheduleIds,
+  });
   const actionPlan = computeActionPlan(components);
+  const rideAnswer = computeRideAnswer({ components, actionPlan });
   const health = computeHealth({ moto, events, attachments, statuses, workshopEventIds, components });
   const greeting = computeGreeting({ moto, health, nextMaintenance, nextAction });
 
@@ -74,5 +94,6 @@ export function computeCockpitSnapshot(input: {
     greeting,
     actionPlan,
     actionSummary: summarizeActionPlan(actionPlan),
+    rideAnswer,
   };
 }
