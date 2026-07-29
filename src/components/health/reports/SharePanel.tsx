@@ -97,7 +97,8 @@ export function SharePanel({ reportId, canManage }: { reportId: string; canManag
 
   const showQr = async (token: string) => {
     if (qr[token]) return;
-    setQr((prev) => ({ ...prev, [token]: await QRCode.toDataURL(urlOf(token), { width: 320, margin: 1 }) }));
+    const dataUrl = await QRCode.toDataURL(urlOf(token), { width: 320, margin: 1 });
+    setQr((prev) => ({ ...prev, [token]: dataUrl }));
   };
 
   const copy = async (token: string) => {
