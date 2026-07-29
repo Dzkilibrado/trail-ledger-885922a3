@@ -60,10 +60,14 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
   // Photo + title
   if (photoDataUrl) {
     try {
-      // photoDataUrl chega já normalizado para JPEG pelo helper prepareCertPhotoDataUrl;
-      // ainda assim, deixamos o jsPDF detectar o formato para tolerar PNG/WEBP legados.
-      doc.addImage(photoDataUrl, M, y, 160, 110);
-    } catch { /* placeholder abaixo */ }
+      // photoDataUrl chega normalizado como JPEG pelo helper prepareCertPhotoDataUrl.
+      // O parâmetro `format` do jsPDF é obrigatório quando passamos coordenadas numéricas —
+      // omiti-lo faz o jsPDF interpretar `x` como formato e lançar exceção.
+      doc.addImage(photoDataUrl, "JPEG", M, y, 160, 110);
+    } catch (err) {
+      console.error("[cert-pdf] addImage falhou, seguindo com placeholder", err);
+      doc.setFillColor(245, 245, 248); doc.rect(M, y, 160, 110, "F");
+    }
   } else {
     doc.setFillColor(245, 245, 248); doc.rect(M, y, 160, 110, "F");
   }
