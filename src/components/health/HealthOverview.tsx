@@ -13,6 +13,9 @@ import type { ComponentView } from "@/lib/til/components";
 import { SingleBadgeChip } from "@/components/badges/BadgeSection";
 import { computeReviewState } from "@/lib/review-state";
 import { ReviewStateNotice } from "@/components/review-state/ReviewStateNotice";
+import { ActionPlanCard } from "./ActionPlanCard";
+import { TBStatusPill } from "@/design-system/primitives/TBStatusPill";
+import { HEALTH_STATUS_TEXT } from "@/lib/til/status";
 
 /**
  * Saúde da Moto — check-up visual do estado atual, alimentado 100% pela TIL.
@@ -52,6 +55,15 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
     enabled: !!events.data,
   });
 
+  const inspections = useQuery({
+    queryKey: ["maintenance-inspections", moto.id],
+    queryFn: async () =>
+      (await supabase
+        .from("maintenance_inspections")
+        .select("schedule_id, created_at, decision, notes")
+        .eq("motorcycle_id", moto.id)).data ?? [],
+  });
+
   const snapshot: CockpitSnapshot | null = useMemo(() => {
     if (!schedules.data || !events.data) return null;
     return computeCockpitSnapshot({
@@ -60,9 +72,10 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
       schedules: schedules.data,
       attachments: attachments.data ?? [],
       maintenanceItems: items.data ?? [],
+      inspections: (inspections.data ?? []) as never,
       isOwner,
     });
-  }, [moto, events.data, schedules.data, attachments.data, items.data, isOwner]);
+  }, [moto, events.data, schedules.data, attachments.data, items.data, inspections.data, isOwner]);
 
   const selected = useMemo(
     () => snapshot?.components.find((c) => c.scheduleId === selectedId) ?? null,
@@ -75,13 +88,8 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
 
   const { health } = snapshot;
   const reviewState = computeReviewState({ moto: moto as any, schedules: schedules.data ?? [] });
-  const grade = health.grade;
-  const accent =
-    grade === "excellent" ? "text-emerald-400"
-    : grade === "good"    ? "text-primary"
-    : grade === "attention" ? "text-amber-400"
-                            : "text-destructive";
-  const GradeIcon = grade === "critical" ? AlertTriangle : grade === "attention" ? Clock : Heart;
+  const status = health.status;
+  const StatusIcon = status === "action" ? AlertTriangle : status === "attention" ? Clock : status === "unknown" ? HelpCircle : CheckCircle2;
 
   const buckets: Array<{
     key: BucketKey;
@@ -92,10 +100,10 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
     items: ComponentView[];
     emptyLabel: string;
   }> = [
-    { key: "overdue",   title: "Vencidos",         subtitle: "Resolva antes de rodar",           tone: "critical",  icon: AlertTriangle, items: health.buckets.overdue,   emptyLabel: "Nenhum componente vencido" },
-    { key: "attention", title: "Merecem atenção",  subtitle: "Planeje a próxima manutenção",     tone: "attention", icon: Clock,         items: health.buckets.attention, emptyLabel: "Nada pendente por enquanto" },
-    { key: "noInfo",    title: "Sem informação",   subtitle: "Informe a última manutenção",      tone: "no_info",   icon: HelpCircle,    items: health.buckets.noInfo,    emptyLabel: "Todos já têm histórico" },
-    { key: "ok",        title: "Em dia",           subtitle: "Dentro do intervalo previsto",     tone: "ok",        icon: CheckCircle2,  items: health.buckets.ok,        emptyLabel: "—" },
+    { key: "overdue",   title: "Necessitam ação",     subtitle: "Resolva antes de rodar",         tone: "critical",  icon: AlertTriangle, items: health.buckets.overdue,   emptyLabel: "Nenhum componente nesta situação" },
+    { key: "attention", title: "Merecem atenção",     subtitle: "Planeje a próxima manutenção",   tone: "attention", icon: Clock,         items: health.buckets.attention, emptyLabel: "Nada pendente por enquanto" },
+    { key: "noInfo",    title: "Dados insuficientes", subtitle: "Informe a última manutenção",    tone: "no_info",   icon: HelpCircle,    items: health.buckets.noInfo,    emptyLabel: "Todos já têm histórico" },
+    { key: "ok",        title: "OK",                  subtitle: "Dentro do intervalo previsto",   tone: "ok",        icon: CheckCircle2,  items: health.buckets.ok,        emptyLabel: "—" },
   ];
 
   const active = buckets.find((b) => b.key === openBucket) ?? null;
@@ -109,24 +117,25 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
         <SingleBadgeChip motorcycleId={moto.id} badgeId="maintenance_on_track" />
         <SingleBadgeChip motorcycleId={moto.id} badgeId="origin_proven" />
       </div>
-      {/* Diagnóstico geral */}
-      <section
-        aria-label="Diagnóstico geral"
-        className="surface-elevated rounded-3xl px-6 py-7 text-center"
-      >
-        <div className={`inline-flex items-center gap-2 text-xs uppercase tracking-widest ${accent}`}>
-          <GradeIcon className="h-4 w-4" />
-          <span>{health.gradeLabel}</span>
+
+      {/* Diagnóstico geral — linguagem de status, nunca nota */}
+      <section aria-label="Diagnóstico geral" className="surface-elevated rounded-3xl px-5 py-6">
+        <div className="flex items-center justify-between gap-3">
+          <div className={`inline-flex items-center gap-2 text-xs uppercase tracking-widest ${HEALTH_STATUS_TEXT[status]}`}>
+            <StatusIcon className="h-4 w-4" aria-hidden />
+            <span>Diagnóstico</span>
+          </div>
+          <TBStatusPill status={status} />
         </div>
-        <div className="mt-3 font-display text-5xl font-bold sm:text-6xl">
-          {health.score}<span className="ml-1 text-xl text-muted-foreground sm:text-2xl">%</span>
-        </div>
-        <p className="mt-2 text-sm text-muted-foreground">{health.headline}</p>
+        <p className="mt-4 font-display text-xl font-bold leading-snug sm:text-2xl">{health.canRideAnswer}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{snapshot.actionSummary}</p>
       </section>
 
       {reviewState.isPending && reviewState.state !== "unknown" && (
         <ReviewStateNotice snapshot={reviewState} compact />
       )}
+
+      <ActionPlanCard plan={snapshot.actionPlan} onOpen={setSelectedId} />
 
       {/* Cards executáveis — abrem bottom sheet com a categoria */}
       <div className="space-y-2">
