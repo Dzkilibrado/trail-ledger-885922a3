@@ -1,4 +1,6 @@
 import { TBCard, TBStatusPill } from "@/design-system";
+import { EvaluationPill } from "@/components/health/EvaluationPill";
+import { stateFromScore } from "@/lib/ui/evaluation";
 import { CHANGE_LABEL, type ReportComparison } from "@/lib/health-reports/compare";
 import type { HealthStatus } from "@/lib/til/status";
 import { formatDate } from "@/lib/trailbook";
