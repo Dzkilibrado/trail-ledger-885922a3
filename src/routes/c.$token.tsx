@@ -29,6 +29,15 @@ function makePublicClient() {
   );
 }
 
+function normalizeSignedStorageUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  if (/^https?:\/\//i.test(url)) return url;
+  const storageOrigin = import.meta.env.VITE_SUPABASE_URL;
+  if (!storageOrigin) return url;
+  const path = url.startsWith("/") ? url : `/${url}`;
+  return `${storageOrigin}${path.startsWith("/storage/v1") ? "" : "/storage/v1"}${path}`;
+}
+
 type CertPayload = {
   certificate: { public_token: string; created_at: string; expires_at: string | null; status?: string; allowed_sections?: CertSectionKey[] };
   motorcycle: Motorcycle;
@@ -63,18 +72,27 @@ function PublicCert() {
       setLoading(false);
       const allowedSections = (payload.certificate.allowed_sections ?? []) as string[];
       const photo = payload.motorcycle.main_photo_url;
-      console.log("[cert] payload recebido", {
-        hasPhoto: !!photo,
-        photoAllowed: allowedSections.includes("photo"),
-        photoPath: photo,
-      });
-      if (photo && allowedSections.includes("photo")) {
-        const { data: signed, error: sErr } = await sb.storage
-          .from("motorcycle-photos")
-          .createSignedUrl(photo, 3600);
-        if (sErr) console.error("[cert] createSignedUrl falhou", sErr);
-        console.log("[cert] signed URL", signed?.signedUrl ?? null);
-        if (active) setPhotoUrl(signed?.signedUrl ?? null);
+      const photoAllowed = allowedSections.includes("photo");
+      console.log("[cert-photo] allowed", photoAllowed);
+      console.log("[cert-photo] main-photo-path-present", Boolean(photo));
+      console.log("[cert-photo] bucket", "motorcycle-photos");
+      console.log("[cert-photo] path-has-duplicated-bucket-prefix", Boolean(photo?.startsWith("motorcycle-photos/")));
+      if (photo && photoAllowed) {
+        try {
+          const normalizedPath = photo.startsWith("motorcycle-photos/")
+            ? photo.replace(/^motorcycle-photos\//, "")
+            : photo;
+          const { data: signed, error: sErr } = await sb.storage
+            .from("motorcycle-photos")
+            .createSignedUrl(normalizedPath, 3600);
+          if (sErr) console.error("[cert-photo] signed-url-error", sErr);
+          const normalizedUrl = normalizeSignedStorageUrl(signed?.signedUrl);
+          console.log("[cert-photo] signed-url-created", Boolean(normalizedUrl));
+          if (active) setPhotoUrl(normalizedUrl);
+        } catch (err) {
+          console.error("[cert-photo] signed-url-exception", err);
+          if (active) setPhotoUrl(null);
+        }
       }
       // Log access — best-effort, silent on failure.
       try {
@@ -176,6 +194,7 @@ function PublicCert() {
         shareTitle: `TrailBook — ${moto.nickname || moto.model}`,
       });
       console.log("[PDF] saveFile resultado", result);
+      toast.dismiss(loadingId);
       if (result.outcome === "saved") toast.success("Certificado salvo com sucesso.");
       else if (result.outcome === "shared") toast.success("Certificado enviado para compartilhamento.");
       else if (result.outcome === "downloaded") toast.success("Download iniciado. Verifique a pasta de downloads ou o aplicativo de arquivos.");
@@ -185,6 +204,7 @@ function PublicCert() {
       const msg = err instanceof Error ? err.message : String(err);
       const stack = err instanceof Error ? err.stack : undefined;
       console.error(`[PDF] falha na etapa "${stage}"`, { message: msg, stack, err });
+      toast.dismiss(loadingId);
       toast.error(`Falha ao gerar o certificado (${stage}): ${msg}`);
     } finally {
       toast.dismiss(loadingId);
@@ -215,7 +235,21 @@ function PublicCert() {
           <div className="grid gap-0 md:grid-cols-[1.4fr_1fr]">
             <div className="relative aspect-[4/3] bg-elevated md:aspect-auto">
               {photoUrl && show("photo") ? (
-                <img src={photoUrl} alt={moto.nickname || moto.model} className="h-full w-full object-cover" />
+                <img
+                  src={photoUrl}
+                  alt={moto.nickname || moto.model}
+                  className="h-full w-full object-cover"
+                  onLoad={() => console.log("[cert-photo] image-load-success")}
+                  onError={(event) => {
+                    const target = event.currentTarget;
+                    console.error("[cert-photo] image-load-error", {
+                      srcPresent: Boolean(target.currentSrc || target.src),
+                      naturalWidth: target.naturalWidth,
+                      naturalHeight: target.naturalHeight,
+                    });
+                    setPhotoUrl(null);
+                  }}
+                />
               ) : (
                 <div className="grid h-full w-full place-items-center text-muted-foreground"><Bike className="h-16 w-16 opacity-40" /></div>
               )}
