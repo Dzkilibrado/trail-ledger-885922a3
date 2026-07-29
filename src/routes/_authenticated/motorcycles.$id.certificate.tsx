@@ -16,7 +16,7 @@ import { usePlan } from "@/hooks/usePlan";
 import { canCreateCertificate } from "@/lib/plans";
 import { effectiveStatus, STATUS_LABEL, STATUS_TONE, type CertStatus } from "@/lib/cert-sections";
 import {
-  ArrowLeft, BadgeCheck, Copy, ExternalLink, Eye, Globe2, Lock,
+  ArrowLeft, BadgeCheck, Copy, Download, Eye, Globe2, Lock,
   QrCode, RefreshCcw, Settings2, ShieldOff, Share2, Sparkles, Activity, X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -43,6 +43,7 @@ function CertificatePage() {
   const { plan } = usePlan();
   const [revokeOpen, setRevokeOpen] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
+  const [viewerAutoDownload, setViewerAutoDownload] = useState(false);
 
   const moto = useQuery({
     queryKey: ["motorcycle", id],
@@ -95,22 +96,36 @@ function CertificatePage() {
 
   function copyLink() {
     if (!publicUrl) return;
-    navigator.clipboard.writeText(publicUrl);
-    toast.success("Link copiado");
+    navigator.clipboard.writeText(publicUrl).then(
+      () => toast.success("Link copiado."),
+      () => toast.error("Não foi possível copiar o link."),
+    );
   }
   async function shareLink() {
     if (!publicUrl) return;
-    try {
-      if (typeof navigator !== "undefined" && (navigator as any).share) {
+    if (typeof navigator !== "undefined" && typeof (navigator as any).share === "function") {
+      try {
         await (navigator as any).share({
-          title: "Certificado Digital — TrailBook",
-          text: `Certificado Digital de ${moto.data?.nickname || moto.data?.model || "moto"}`,
+          title: "TrailBook – Certificado Digital",
+          text: "Confira o Certificado Digital desta motocicleta no TrailBook.",
           url: publicUrl,
         });
         return;
+      } catch (err) {
+        if (err instanceof Error && err.name === "AbortError") return;
+        // fall through to clipboard fallback
       }
-    } catch { /* usuário cancelou */ }
-    copyLink();
+    }
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      toast.info("Compartilhamento não disponível neste navegador. O link foi copiado.");
+    } catch {
+      toast.error("Não foi possível compartilhar nem copiar o link.");
+    }
+  }
+  function openViewer(download = false) {
+    setViewerAutoDownload(download);
+    setViewerOpen(true);
   }
   function downloadQr() {
     if (!qrDataUrl) return;
@@ -242,17 +257,17 @@ function CertificatePage() {
 
                 {eff === "active" && (
                   <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-                    <Button className="btn-glow min-h-[44px] rounded-xl" onClick={() => setViewerOpen(true)}>
+                    <Button className="btn-glow min-h-[44px] rounded-xl" onClick={() => openViewer(false)}>
                       <Eye className="h-4 w-4" /> Visualizar
+                    </Button>
+                    <Button variant="outline" className="min-h-[44px] rounded-xl" onClick={() => openViewer(true)}>
+                      <Download className="h-4 w-4" /> PDF
                     </Button>
                     <Button variant="outline" className="min-h-[44px] rounded-xl" onClick={shareLink}>
                       <Share2 className="h-4 w-4" /> Compartilhar
                     </Button>
                     <Button variant="outline" className="min-h-[44px] rounded-xl" onClick={copyLink}>
                       <Copy className="h-4 w-4" /> Copiar link
-                    </Button>
-                    <Button variant="outline" className="min-h-[44px] rounded-xl" onClick={downloadQr} disabled={!qrDataUrl}>
-                      <QrCode className="h-4 w-4" /> Baixar QR
                     </Button>
                   </div>
                 )}
@@ -309,13 +324,14 @@ function CertificatePage() {
                         </Button>
                       }
                     />
-                    {publicUrl && eff === "active" && (
-                      <Button variant="outline" className="min-h-[44px] rounded-xl" asChild>
-                        <a href={publicUrl} target="_blank" rel="noreferrer">
-                          <ExternalLink className="h-4 w-4" /> Abrir em nova aba
-                        </a>
-                      </Button>
-                    )}
+                    <Button
+                      variant="outline"
+                      className="min-h-[44px] rounded-xl"
+                      onClick={downloadQr}
+                      disabled={!qrDataUrl}
+                    >
+                      <QrCode className="h-4 w-4" /> Baixar QR
+                    </Button>
                     {eff === "revoked" ? (
                       <Button variant="outline" className="min-h-[44px] rounded-xl" onClick={reactivateCert}>
                         <RefreshCcw className="h-4 w-4" /> Reativar
@@ -343,7 +359,7 @@ function CertificatePage() {
             />
           )}
           {/* Viewer interno — tela cheia mobile-first */}
-          <Sheet open={viewerOpen} onOpenChange={setViewerOpen}>
+          <Sheet open={viewerOpen} onOpenChange={(o) => { setViewerOpen(o); if (!o) setViewerAutoDownload(false); }}>
             <SheetContent
               side="bottom"
               className="flex h-[100dvh] w-screen max-w-none flex-col gap-0 border-0 p-0 sm:max-w-none"
@@ -370,7 +386,7 @@ function CertificatePage() {
               </div>
               {publicUrl && viewerOpen && (
                 <iframe
-                  src={publicUrl}
+                  src={viewerAutoDownload ? `${publicUrl}#download` : publicUrl}
                   title="Certificado Digital"
                   className="h-full w-full flex-1 border-0 bg-background"
                 />

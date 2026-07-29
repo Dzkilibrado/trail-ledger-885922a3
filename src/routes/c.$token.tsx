@@ -57,8 +57,18 @@ function PublicCert() {
   const [error, setError] = useState<string | null>(null);
   const [qrUrl, setQrUrl] = useState<string | null>(null);
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const [autoDownload, setAutoDownload] = useState(false);
+  const [autoDownloadDone, setAutoDownloadDone] = useState(false);
 
   const publicUrl = typeof window !== "undefined" ? `${window.location.origin}/c/${token}` : `/c/${token}`;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const check = () => setAutoDownload(window.location.hash === "#download");
+    check();
+    window.addEventListener("hashchange", check);
+    return () => window.removeEventListener("hashchange", check);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -73,32 +83,31 @@ function PublicCert() {
       const allowedSections = (payload.certificate.allowed_sections ?? []) as string[];
       const photo = payload.motorcycle.main_photo_url;
       const photoAllowed = allowedSections.includes("photo");
-      if (photo && photoAllowed) {
-        try {
-          const normalizedPath = photo.startsWith("motorcycle-photos/")
-            ? photo.replace(/^motorcycle-photos\//, "")
-            : photo;
-          const { data: signed, error: sErr } = await sb.storage
-            .from("motorcycle-photos")
-            .createSignedUrl(normalizedPath, 3600);
-          if (sErr) console.error("[cert-photo] signed-url-error", sErr);
-          const normalizedUrl = normalizeSignedStorageUrl(signed?.signedUrl);
-          if (active) setPhotoUrl(normalizedUrl);
-        } catch (err) {
-          console.error("[cert-photo] signed-url-exception", err);
-          if (active) setPhotoUrl(null);
-        }
-      }
-      // Log access — best-effort, silent on failure.
-      try {
-        await sb.rpc("log_certificate_access", {
-          _token: token,
-          _ip: undefined,
-          _user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 512) : undefined,
-          _referer: typeof document !== "undefined" ? (document.referrer || undefined) : undefined,
-          _country: undefined,
-        });
-      } catch { /* ignore */ }
+      // Parallelize the follow-up calls — none depend on each other.
+      const photoTask = (photo && photoAllowed)
+        ? (async () => {
+            try {
+              const normalizedPath = photo.startsWith("motorcycle-photos/")
+                ? photo.replace(/^motorcycle-photos\//, "")
+                : photo;
+              const { data: signed } = await sb.storage
+                .from("motorcycle-photos")
+                .createSignedUrl(normalizedPath, 3600);
+              const normalizedUrl = normalizeSignedStorageUrl(signed?.signedUrl);
+              if (active) setPhotoUrl(normalizedUrl);
+            } catch {
+              if (active) setPhotoUrl(null);
+            }
+          })()
+        : Promise.resolve();
+      const logTask = sb.rpc("log_certificate_access", {
+        _token: token,
+        _ip: undefined,
+        _user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 512) : undefined,
+        _referer: typeof document !== "undefined" ? (document.referrer || undefined) : undefined,
+        _country: undefined,
+      }).then(() => undefined, () => undefined);
+      void Promise.all([photoTask, logTask]);
     })();
     QRCode.toDataURL(publicUrl, { margin: 1, width: 320, color: { dark: "#111113", light: "#FFFFFF" } }).then((u) => active && setQrUrl(u));
     return () => { active = false; };
@@ -151,11 +160,33 @@ function PublicCert() {
   const evidenceVisible = show("photos") || show("documents") || show("workshop") || hasOriginDoc;
 
   async function share() {
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try { await navigator.share({ title: `TrailBook — ${moto.nickname || moto.model}`, url: publicUrl }); return; } catch { /* cancel */ }
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share({
+          title: "TrailBook – Certificado Digital",
+          text: "Confira o Certificado Digital desta motocicleta no TrailBook.",
+          url: publicUrl,
+        });
+        return;
+      } catch (err) {
+        // User cancelled the native sheet — do nothing, do not silently copy.
+        if (err instanceof Error && err.name === "AbortError") return;
+        // Other errors fall through to clipboard fallback below.
+      }
     }
-    navigator.clipboard.writeText(publicUrl);
-    toast.success("Link copiado");
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      toast.info("Compartilhamento não disponível neste navegador. O link foi copiado.");
+    } catch {
+      toast.error("Não foi possível compartilhar nem copiar o link.");
+    }
+  }
+
+  function copyLink() {
+    navigator.clipboard.writeText(publicUrl).then(
+      () => toast.success("Link copiado."),
+      () => toast.error("Não foi possível copiar o link."),
+    );
   }
 
   async function downloadPdf() {
@@ -200,15 +231,15 @@ function PublicCert() {
 
   return (
     <div className="min-h-dvh surface-hero">
-      <div className="container mx-auto max-w-5xl px-4 py-8 sm:py-12">
+      <div className="container mx-auto max-w-5xl px-4 py-4 sm:py-8">
+        {autoDownload && !autoDownloadDone ? (
+          <AutoDownload run={() => { setAutoDownloadDone(true); downloadPdf(); }} />
+        ) : null}
         {/* Header */}
-        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 sm:flex sm:flex-wrap sm:justify-between">
+        <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:flex sm:flex-wrap sm:justify-between">
           <div className="flex min-w-0 items-center gap-2">
-            <div className="grid h-9 w-9 place-items-center rounded-xl bg-primary text-primary-foreground"><Bike className="h-5 w-5" /></div>
-            <div className="min-w-0">
-              <div className="truncate font-display text-lg font-bold leading-none">TrailBook</div>
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Prontuário digital</div>
-            </div>
+            <div className="grid h-7 w-7 place-items-center rounded-lg bg-primary text-primary-foreground"><Bike className="h-4 w-4" /></div>
+            <div className="min-w-0 truncate font-display text-sm font-bold leading-none">TrailBook <span className="ml-1 text-[10px] font-normal uppercase tracking-widest text-muted-foreground">Prontuário digital</span></div>
           </div>
           <div className="col-span-2 flex flex-wrap justify-end gap-2 sm:col-span-1">
             <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(publicUrl); toast.success("Link copiado"); }}><Copy className="h-4 w-4" /> <span className="hidden sm:inline">Copiar link</span></Button>
@@ -218,9 +249,9 @@ function PublicCert() {
         </header>
 
         {/* Hero */}
-        <section className="mt-6 surface-elevated overflow-hidden rounded-3xl">
+        <section className="mt-4 surface-elevated overflow-hidden rounded-3xl">
           <div className="grid gap-0 md:grid-cols-[1.4fr_1fr]">
-            <div className="relative aspect-[16/9] bg-elevated md:aspect-auto">
+            <div className="relative aspect-[2/1] bg-elevated md:aspect-auto">
               {photoUrl && show("photo") ? (
                 <img
                   src={photoUrl}
@@ -231,8 +262,8 @@ function PublicCert() {
               ) : (
                 <div className="grid h-full w-full place-items-center text-muted-foreground"><Bike className="h-16 w-16 opacity-40" /></div>
               )}
-              <div className="absolute left-5 top-5 flex items-center gap-1.5 rounded-full bg-primary px-3 py-1.5 text-xs font-bold text-primary-foreground btn-glow">
-                <ShieldCheck className="h-3.5 w-3.5" /> TRAILBOOK CERTIFIED
+              <div className="absolute left-4 top-4 flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground btn-glow">
+                <ShieldCheck className="h-3 w-3" /> TrailBook Certified
               </div>
             </div>
             <div className="flex flex-col justify-between p-6 md:p-8">
@@ -428,4 +459,13 @@ function EvidenceCard({ icon: Icon, label, value, extra }: { icon: any; label: s
       {extra ? <div className="text-xs text-primary">{extra}</div> : null}
     </div>
   );
+}
+
+function AutoDownload({ run }: { run: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(run, 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
 }
