@@ -576,7 +576,20 @@ export function NewEventDialog({
             </>
           )}
 
-          {(type === "accessory" || type === "warranty" || type === "recall" || type === "purchase" || type === "sale" || type === "note") && (
+          {type === "accessory" && (
+            <F label="Ação do acessório">
+              <Select value={accessoryAction} onValueChange={setAccessoryAction}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ACCESSORY_ACTIONS.map((a) => (
+                    <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </F>
+          )}
+
+          {(type === "accessory" || type === "warranty" || type === "recall" || type === "note") && (
             <F label={type === "note" ? "Título" : "Descrição breve"}>
               <Input name="title" placeholder={EVENT_TYPE_LABEL[type]} />
             </F>
