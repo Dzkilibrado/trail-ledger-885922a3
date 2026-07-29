@@ -1,3 +1,11 @@
+## [1.9.0] — TrailBook Health · Etapa 3 homologada
+
+- Homologação final do Check-up Inteligente, Laudo Inteligente, PDF e compartilhamento (`docs/homologacao/etapa-3-health.md`).
+- PDF: estado "Preparando seu Laudo TrailBook…", trava contra toques repetidos, mensagens oficiais de sucesso/erro e fallback de abertura em nova aba quando o download é bloqueado.
+- Registro de acessos passa a mostrar dispositivo e navegador resumidos, sem dados invasivos.
+- Telemetria técnica da Etapa 3 (`src/lib/health-reports/telemetry.ts`), sem rastreamento pessoal.
+- Validado: download com nome oficial, fidelidade ao snapshot, QR Code, payload público sanitizado, token inválido sem vazamento e ausência de erros de console.
+
 ## [1.6.10] — Fase 2: Notificações (caixa de entrada)
 
 - Filtros rápidos: Todas / Não lidas / Lidas com contagem.
