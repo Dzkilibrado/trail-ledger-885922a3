@@ -46,10 +46,13 @@ export function EvaluationCard({
       </div>
 
       <div className="flex items-start justify-between gap-3">
-        <h2 className={`flex min-w-0 items-center gap-2 font-display font-bold ${compact ? "text-base" : "text-xl"} ${EVALUATION_TEXT[ev.state]}`}>
-          <Icon className="h-5 w-5 shrink-0" aria-hidden />
-          <span className="min-w-0">{ev.label}</span>
-        </h2>
+        <div className="min-w-0">
+          <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Diagnóstico</p>
+            <h2 className={`mt-0.5 flex min-w-0 items-center gap-2 font-display font-bold ${compact ? "text-base" : "text-xl"} ${EVALUATION_TEXT[ev.state]}`}>
+            <Icon className="h-5 w-5 shrink-0" aria-hidden />
+            <span className="min-w-0">{ev.label}</span>
+          </h2>
+        </div>
         <EvaluationPill state={ev.state} size={compact ? "sm" : "md"} className="shrink-0" />
       </div>
 

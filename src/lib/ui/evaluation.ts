@@ -151,7 +151,7 @@ export function buildEvaluation(
     findings.push("Não localizamos registros suficientes para avaliar esta motocicleta.");
   }
   if (answer.nextAction) {
-    findings.push(`Próxima ação sugerida: ${answer.nextAction.label}.`);
+    findings.push(`Próxima ação sugerida: ${answer.nextAction.label.replace(/\.$/, "")}.`);
   }
   for (const extra of extras?.findings ?? []) findings.push(extra);
 
