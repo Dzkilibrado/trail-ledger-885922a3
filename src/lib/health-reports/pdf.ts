@@ -1,4 +1,10 @@
 import jsPDF from "jspdf";
+import {
+  EVALUATION_INTRO,
+  EVALUATION_LABEL,
+  buildEvaluation,
+  stateFromRideAnswer,
+} from "@/lib/ui/evaluation";
 import autoTable from "jspdf-autotable";
 import { formatDate } from "@/lib/trailbook";
 import type { HealthReportSnapshot } from "./types";
@@ -8,7 +14,7 @@ const W = 210;
 const H = 297;
 
 const STATUS_TEXT: Record<string, string> = {
-  ok: "OK",
+  ok: "Saudavel",
   attention: "Atencao",
   action: "Necessita acao",
   unknown: "Sem dados",
@@ -127,16 +133,24 @@ export async function buildReportPdf(input: {
   y = Math.max(iy, y + 44) + 6;
 
   // ---------- Resumo ----------
-  title("Resumo geral");
-  para(s.overall.headline);
-  para(`Índice de Conservação: ${s.indices.conservation} · Confiabilidade: ${s.indices.confidenceLabel}`);
+  const evalState = stateFromRideAnswer(s.rideAnswer as any);
+  const evaluation = buildEvaluation(s.rideAnswer as any);
+
+  title("Avaliação da motocicleta");
+  para(EVALUATION_INTRO);
+
+  title("Diagnóstico");
+  para(`${EVALUATION_LABEL[evalState]} — ${s.overall.headline}`);
+
+  title("O que encontramos durante a avaliação?");
+  bullets(evaluation.findings);
+
+  title("O que recomendamos fazer agora?");
+  para(evaluation.recommendation);
 
   title("Posso rodar hoje?");
-  para(`${s.rideAnswer.title} — ${s.rideAnswer.message}`);
+  para(evaluation.verdict);
   if (s.rideAnswer.rationale) para(s.rideAnswer.rationale);
-  para(
-    `Itens críticos: ${s.rideAnswer.counts.critical} · Em atenção: ${s.rideAnswer.counts.attention} · OK: ${s.rideAnswer.counts.ok} · Sem dados: ${s.rideAnswer.counts.unknown}`,
-  );
 
   // ---------- Componentes ----------
   ensure(30);
@@ -198,9 +212,9 @@ export async function buildReportPdf(input: {
 
   // ---------- Índices ----------
   ensure(24);
-  title("Índices");
-  para(`Índice de Conservação: ${s.indices.conservation}. ${s.indices.conservationExplanation}`);
-  para(`Confiabilidade: ${s.indices.confidenceLabel}. ${s.indices.confidenceExplanation}`);
+  title("Sobre esta avaliação");
+  para(s.indices.conservationExplanation);
+  para(`Confiabilidade da análise: ${s.indices.confidenceLabel}. ${s.indices.confidenceExplanation}`);
 
   // ---------- Ressalvas ----------
   ensure(24);
