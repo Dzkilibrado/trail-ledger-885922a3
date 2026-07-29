@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RCodeRouteImport } from './routes/r.$code'
+import { Route as LTokenRouteImport } from './routes/l.$token'
 import { Route as CTokenRouteImport } from './routes/c.$token'
 import { Route as AuthenticatedWorkshopsRouteImport } from './routes/_authenticated/workshops'
 import { Route as AuthenticatedTransfersRouteImport } from './routes/_authenticated/transfers'
@@ -92,6 +93,11 @@ const IndexRoute = IndexRouteImport.update({
 const RCodeRoute = RCodeRouteImport.update({
   id: '/r/$code',
   path: '/r/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LTokenRoute = LTokenRouteImport.update({
+  id: '/l/$token',
+  path: '/l/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CTokenRoute = CTokenRouteImport.update({
@@ -394,6 +400,7 @@ export interface FileRoutesByFullPath {
   '/transfers': typeof AuthenticatedTransfersRoute
   '/workshops': typeof AuthenticatedWorkshopsRoute
   '/c/$token': typeof CTokenRoute
+  '/l/$token': typeof LTokenRoute
   '/r/$code': typeof RCodeRoute
   '/admin/documents': typeof AuthenticatedAdminDocumentsRoute
   '/admin/homolog': typeof AuthenticatedAdminHomologRoute
@@ -448,6 +455,7 @@ export interface FileRoutesByTo {
   '/transfers': typeof AuthenticatedTransfersRoute
   '/workshops': typeof AuthenticatedWorkshopsRoute
   '/c/$token': typeof CTokenRoute
+  '/l/$token': typeof LTokenRoute
   '/r/$code': typeof RCodeRoute
   '/admin/documents': typeof AuthenticatedAdminDocumentsRoute
   '/admin/homolog': typeof AuthenticatedAdminHomologRoute
@@ -505,6 +513,7 @@ export interface FileRoutesById {
   '/_authenticated/transfers': typeof AuthenticatedTransfersRoute
   '/_authenticated/workshops': typeof AuthenticatedWorkshopsRoute
   '/c/$token': typeof CTokenRoute
+  '/l/$token': typeof LTokenRoute
   '/r/$code': typeof RCodeRoute
   '/_authenticated/admin/documents': typeof AuthenticatedAdminDocumentsRoute
   '/_authenticated/admin/homolog': typeof AuthenticatedAdminHomologRoute
@@ -563,6 +572,7 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/workshops'
     | '/c/$token'
+    | '/l/$token'
     | '/r/$code'
     | '/admin/documents'
     | '/admin/homolog'
@@ -617,6 +627,7 @@ export interface FileRouteTypes {
     | '/transfers'
     | '/workshops'
     | '/c/$token'
+    | '/l/$token'
     | '/r/$code'
     | '/admin/documents'
     | '/admin/homolog'
@@ -673,6 +684,7 @@ export interface FileRouteTypes {
     | '/_authenticated/transfers'
     | '/_authenticated/workshops'
     | '/c/$token'
+    | '/l/$token'
     | '/r/$code'
     | '/_authenticated/admin/documents'
     | '/_authenticated/admin/homolog'
@@ -712,6 +724,7 @@ export interface RootRouteChildren {
   HelpRoute: typeof HelpRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   CTokenRoute: typeof CTokenRoute
+  LTokenRoute: typeof LTokenRoute
   RCodeRoute: typeof RCodeRoute
   ApiPublicAppVersionRoute: typeof ApiPublicAppVersionRoute
 }
@@ -758,6 +771,13 @@ declare module '@tanstack/react-router' {
       path: '/r/$code'
       fullPath: '/r/$code'
       preLoaderRoute: typeof RCodeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/l/$token': {
+      id: '/l/$token'
+      path: '/l/$token'
+      fullPath: '/l/$token'
+      preLoaderRoute: typeof LTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/c/$token': {
@@ -1256,6 +1276,7 @@ const rootRouteChildren: RootRouteChildren = {
   HelpRoute: HelpRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   CTokenRoute: CTokenRoute,
+  LTokenRoute: LTokenRoute,
   RCodeRoute: RCodeRoute,
   ApiPublicAppVersionRoute: ApiPublicAppVersionRoute,
 }
