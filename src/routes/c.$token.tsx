@@ -184,7 +184,7 @@ function PublicCert() {
           <div className="col-span-2 flex flex-wrap justify-end gap-2 sm:col-span-1">
             <Button variant="outline" size="sm" onClick={() => { navigator.clipboard.writeText(publicUrl); toast.success("Link copiado"); }}><Copy className="h-4 w-4" /> <span className="hidden sm:inline">Copiar link</span></Button>
             <Button variant="outline" size="sm" onClick={share}><Share2 className="h-4 w-4" /> <span className="hidden sm:inline">Compartilhar</span></Button>
-            <Button size="sm" onClick={downloadPdf}><Download className="h-4 w-4" /> <span className="hidden sm:inline">Baixar </span>PDF</Button>
+            <Button size="sm" onClick={downloadPdf}><Download className="h-4 w-4" /> <span className="hidden sm:inline">Salvar certificado</span><span className="sm:hidden">PDF</span></Button>
           </div>
         </header>
 
