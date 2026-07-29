@@ -83,32 +83,31 @@ function PublicCert() {
       const allowedSections = (payload.certificate.allowed_sections ?? []) as string[];
       const photo = payload.motorcycle.main_photo_url;
       const photoAllowed = allowedSections.includes("photo");
-      if (photo && photoAllowed) {
-        try {
-          const normalizedPath = photo.startsWith("motorcycle-photos/")
-            ? photo.replace(/^motorcycle-photos\//, "")
-            : photo;
-          const { data: signed, error: sErr } = await sb.storage
-            .from("motorcycle-photos")
-            .createSignedUrl(normalizedPath, 3600);
-          if (sErr) console.error("[cert-photo] signed-url-error", sErr);
-          const normalizedUrl = normalizeSignedStorageUrl(signed?.signedUrl);
-          if (active) setPhotoUrl(normalizedUrl);
-        } catch (err) {
-          console.error("[cert-photo] signed-url-exception", err);
-          if (active) setPhotoUrl(null);
-        }
-      }
-      // Log access — best-effort, silent on failure.
-      try {
-        await sb.rpc("log_certificate_access", {
-          _token: token,
-          _ip: undefined,
-          _user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 512) : undefined,
-          _referer: typeof document !== "undefined" ? (document.referrer || undefined) : undefined,
-          _country: undefined,
-        });
-      } catch { /* ignore */ }
+      // Parallelize the follow-up calls — none depend on each other.
+      const photoTask = (photo && photoAllowed)
+        ? (async () => {
+            try {
+              const normalizedPath = photo.startsWith("motorcycle-photos/")
+                ? photo.replace(/^motorcycle-photos\//, "")
+                : photo;
+              const { data: signed } = await sb.storage
+                .from("motorcycle-photos")
+                .createSignedUrl(normalizedPath, 3600);
+              const normalizedUrl = normalizeSignedStorageUrl(signed?.signedUrl);
+              if (active) setPhotoUrl(normalizedUrl);
+            } catch {
+              if (active) setPhotoUrl(null);
+            }
+          })()
+        : Promise.resolve();
+      const logTask = sb.rpc("log_certificate_access", {
+        _token: token,
+        _ip: undefined,
+        _user_agent: typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 512) : undefined,
+        _referer: typeof document !== "undefined" ? (document.referrer || undefined) : undefined,
+        _country: undefined,
+      }).then(() => undefined, () => undefined);
+      void Promise.all([photoTask, logTask]);
     })();
     QRCode.toDataURL(publicUrl, { margin: 1, width: 320, color: { dark: "#111113", light: "#FFFFFF" } }).then((u) => active && setQrUrl(u));
     return () => { active = false; };
