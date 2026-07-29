@@ -61,9 +61,19 @@ function PublicCert() {
       const payload = res as unknown as CertPayload;
       setData(payload);
       setLoading(false);
+      const allowedSections = (payload.certificate.allowed_sections ?? []) as string[];
       const photo = payload.motorcycle.main_photo_url;
-      if (photo) {
-        const { data: signed } = await sb.storage.from("motorcycle-photos").createSignedUrl(photo, 3600);
+      console.log("[cert] payload recebido", {
+        hasPhoto: !!photo,
+        photoAllowed: allowedSections.includes("photo"),
+        photoPath: photo,
+      });
+      if (photo && allowedSections.includes("photo")) {
+        const { data: signed, error: sErr } = await sb.storage
+          .from("motorcycle-photos")
+          .createSignedUrl(photo, 3600);
+        if (sErr) console.error("[cert] createSignedUrl falhou", sErr);
+        console.log("[cert] signed URL", signed?.signedUrl ?? null);
         if (active) setPhotoUrl(signed?.signedUrl ?? null);
       }
       // Log access — best-effort, silent on failure.
