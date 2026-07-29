@@ -61,9 +61,19 @@ function PublicCert() {
       const payload = res as unknown as CertPayload;
       setData(payload);
       setLoading(false);
+      const allowedSections = (payload.certificate.allowed_sections ?? []) as string[];
       const photo = payload.motorcycle.main_photo_url;
-      if (photo) {
-        const { data: signed } = await sb.storage.from("motorcycle-photos").createSignedUrl(photo, 3600);
+      console.log("[cert] payload recebido", {
+        hasPhoto: !!photo,
+        photoAllowed: allowedSections.includes("photo"),
+        photoPath: photo,
+      });
+      if (photo && allowedSections.includes("photo")) {
+        const { data: signed, error: sErr } = await sb.storage
+          .from("motorcycle-photos")
+          .createSignedUrl(photo, 3600);
+        if (sErr) console.error("[cert] createSignedUrl falhou", sErr);
+        console.log("[cert] signed URL", signed?.signedUrl ?? null);
         if (active) setPhotoUrl(signed?.signedUrl ?? null);
       }
       // Log access — best-effort, silent on failure.
@@ -135,13 +145,19 @@ function PublicCert() {
 
   async function downloadPdf() {
     const loadingId = toast.loading("Preparando certificado…");
+    let stage = "iniciando";
     try {
+      console.log("[PDF] iniciando geração");
       // Respeita allowed_sections.photo: se a seção estiver desabilitada,
       // nem sequer buscamos os bytes da imagem para o PDF.
       let photoDataUrl: string | null = null;
       if (show("photo") && photoUrl) {
+        stage = "preparando foto";
+        console.log("[PDF] preparando foto", photoUrl);
         photoDataUrl = await prepareCertPhotoDataUrl(photoUrl);
+        console.log("[PDF] foto convertida", photoDataUrl ? "ok" : "null");
       }
+      stage = "gerando PDF";
       const { blob, fileName } = await generateCertificatePdf({
         moto, events: data!.events,
         conservation: computed!.conservation,
@@ -151,21 +167,27 @@ function PublicCert() {
         attachmentsCount: data!.attachments.length,
         workshopsCount: data!.workshops.length,
       });
-      toast.dismiss(loadingId);
+      console.log("[PDF] blob criado", blob.size, fileName);
+      stage = "salvando arquivo";
       const result = await saveFile({
         blob,
         fileName,
         mime: "application/pdf",
         shareTitle: `TrailBook — ${moto.nickname || moto.model}`,
       });
+      console.log("[PDF] saveFile resultado", result);
       if (result.outcome === "saved") toast.success("Certificado salvo com sucesso.");
       else if (result.outcome === "shared") toast.success("Certificado enviado para compartilhamento.");
       else if (result.outcome === "downloaded") toast.success("Download iniciado. Verifique a pasta de downloads ou o aplicativo de arquivos.");
       else if (result.outcome === "cancelled") toast("Salvamento cancelado.");
-      else toast.error("Não foi possível preparar o certificado. Tente novamente.");
-    } catch {
+      else toast.error("Não foi possível salvar o certificado. Tente novamente.");
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const stack = err instanceof Error ? err.stack : undefined;
+      console.error(`[PDF] falha na etapa "${stage}"`, { message: msg, stack, err });
+      toast.error(`Falha ao gerar o certificado (${stage}): ${msg}`);
+    } finally {
       toast.dismiss(loadingId);
-      toast.error("Não foi possível preparar o certificado. Tente novamente.");
     }
   }
 
