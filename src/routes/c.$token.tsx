@@ -161,11 +161,33 @@ function PublicCert() {
   const evidenceVisible = show("photos") || show("documents") || show("workshop") || hasOriginDoc;
 
   async function share() {
-    if (typeof navigator !== "undefined" && navigator.share) {
-      try { await navigator.share({ title: `TrailBook — ${moto.nickname || moto.model}`, url: publicUrl }); return; } catch { /* cancel */ }
+    if (typeof navigator !== "undefined" && typeof navigator.share === "function") {
+      try {
+        await navigator.share({
+          title: "TrailBook – Certificado Digital",
+          text: "Confira o Certificado Digital desta motocicleta no TrailBook.",
+          url: publicUrl,
+        });
+        return;
+      } catch (err) {
+        // User cancelled the native sheet — do nothing, do not silently copy.
+        if (err instanceof Error && err.name === "AbortError") return;
+        // Other errors fall through to clipboard fallback below.
+      }
     }
-    navigator.clipboard.writeText(publicUrl);
-    toast.success("Link copiado");
+    try {
+      await navigator.clipboard.writeText(publicUrl);
+      toast.info("Compartilhamento não disponível neste navegador. O link foi copiado.");
+    } catch {
+      toast.error("Não foi possível compartilhar nem copiar o link.");
+    }
+  }
+
+  function copyLink() {
+    navigator.clipboard.writeText(publicUrl).then(
+      () => toast.success("Link copiado."),
+      () => toast.error("Não foi possível copiar o link."),
+    );
   }
 
   async function downloadPdf() {
@@ -211,6 +233,9 @@ function PublicCert() {
   return (
     <div className="min-h-dvh surface-hero">
       <div className="container mx-auto max-w-5xl px-4 py-4 sm:py-8">
+        {autoDownload && !autoDownloadDone ? (
+          <AutoDownload run={() => { setAutoDownloadDone(true); downloadPdf(); }} />
+        ) : null}
         {/* Header */}
         <header className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 sm:flex sm:flex-wrap sm:justify-between">
           <div className="flex min-w-0 items-center gap-2">
