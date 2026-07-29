@@ -415,6 +415,7 @@ export function MotorcycleDocuments({
                   <DocCard
                     key={d.id} doc={d} authorName={profiles[d.created_by ?? ""] ?? "—"}
                     isTrash={tab === "trash"}
+                    linkCount={links.data?.[d.id] ?? 0}
                     onView={() => openFile(d)} onDownload={() => openFile(d, true)}
                     onEdit={() => setEditing(d)} onReplace={() => setReplacing(d)}
                     onRemove={() => softDelete(d)} onRestore={() => restoreDoc(d)}
