@@ -1,66 +1,62 @@
-# Centro de Transferência TrailBook — Plano
+# TrailBook Health — A Inteligência que acompanha a saúde da sua motocicleta
 
-Escopo apenas de UX/apresentação e unificação. Sem mudar regras de negócio, banco, permissões ou fluxo jurídico.
+Reposicionamento completo: o TrailBook deixa de exibir notas e passa a entregar **diagnósticos, respostas e planos de ação**. A nota continua existindo, mas apenas como insumo interno de cálculo dentro da TIL.
 
-## 1. Visualizador único de PDF
+Fase 1 é grande demais para uma única entrega segura. Proponho executá-la em **5 etapas homologáveis**, na ordem abaixo. Cada etapa entra em produção funcionando sozinha.
 
-Criar componente oficial `TBPdfViewer` em `src/components/pdf/TBPdfViewer.tsx` (fullscreen, cabeçalho fixo, Voltar / Código / Status / Baixar / Compartilhar / Imprimir / Fechar, safe-area, loading e erro amigáveis, renderização por `blob:` mesma origem, sem URL do backend).
+---
 
-A rota `/_authenticated/recibos/$code/visualizar` passa a ser um wrapper fino que carrega os bytes via `getReceiptPdfBytes` e delega ao `TBPdfViewer`. Adicionar botão **Imprimir** (`iframe.contentWindow.print()`).
+## Etapa 1 — Linguagem de Status e Diagnóstico (base de tudo)
 
-## 2. Eliminar caminhos legados de PDF de recibo
+Fundação semântica usada por todas as telas seguintes.
 
-Auditar e reescrever todos os pontos que abrem PDF de recibo para navegar para `/recibos/$code/visualizar`:
+- Status universal oficial: 🟢 OK · 🟡 Atenção · 🔴 Necessita ação · ⚪ Dados insuficientes.
+- Novo módulo `src/lib/til/diagnosis.ts`: para cada componente gera **motivos** (lista de fatos observados), **conclusão** (frase de decisão) e **status**.
+- Enriquecimento do componente com: saúde estimada, vida útil restante, tendência (melhorando / estável / piorando), próxima manutenção, última manutenção, última inspeção.
+- Novo módulo `src/lib/til/action-plan.ts`: plano de ação ordenado por prioridade (crítico → atenção → preventivo).
+- UI: `TBStatusDot`, `TBDiagnosisCard`, `TBActionPlan` no design system.
+- Notas numéricas saem da superfície visível (Cockpit, Saúde, Componentes) e passam a ser detalhe interno.
 
-- `EmitReceiptDialog.tsx` — remover botões duplicados "Visualizar PDF / Baixar / Compartilhar / Imprimir" do bloco verde; deixar somente "Abrir Centro de Transferência".
-- `MotoControlCenter.tsx` — botões "Ver / Documento Original" devem navegar para o visualizador interno (não abrir Signed URL).
-- `ReceiptsHistorySheet.tsx` — idem.
-- `r.$code.tsx` — botão "Visualizar PDF (partes)" já navega; validar.
-- Remover/isolar `getReceiptSignedUrl` para uso admin/debug apenas (não referenciado por UI de usuário).
+Sem mudanças de banco nesta etapa.
 
-Busca global final por `window.open`, `createSignedUrl`, `signedUrl`, `pdf_url` para garantir que nenhum caminho de recibo escape.
+## Etapa 2 — Check-up Inteligente e Laudo TrailBook®
 
-## 3. Centro de Transferência
+- Botão principal **🔍 Fazer Check-up** no Cockpit e na tela de Saúde.
+- Motor `src/lib/til/checkup.ts` analisa manutenções, agenda, horas/KM, vida útil, documentação, histórico financeiro, fotos, proprietários, pendências, alertas, Índice de Conservação e Índice de Confiabilidade.
+- Resultado persistido como **Laudo Inteligente TrailBook®** com: resumo geral, diagnóstico, itens críticos / atenção / excelentes, próximas manutenções, recomendações, confiabilidade da análise, índices, timeline resumida, fotos relevantes, histórico, QR Code, hash de integridade, versão do algoritmo, data de emissão e validade.
+- Validade: 30 dias **ou** 20 horas de uso, o que ocorrer primeiro. Depois: 🟡 Desatualizado + "Gerar novo Check-up".
+- Laudos são imutáveis: nunca sobrescrever, sempre criar nova versão.
 
-Nova rota `_authenticated/transferencias.$code.tsx` (Centro de Transferência) reutilizando dados existentes do `smart_receipts`. Layout mobile-first por etapas:
+## Etapa 3 — Central de Check-ups, Timeline e Evolução
 
-```text
-┌ Cabeçalho: Código · Status · Data · Moto · Comprador · Valor
-├ [Resumo executivo verde] Próxima ação
-├ Timeline vertical (criado → gerado → aguardando assinatura →
-│   assinado anexado → aceite vendedor → aceite comprador → concluído)
-├ Documento Original — Visualizar / Baixar / Compartilhar / Imprimir
-├ Documento Assinado — anexar ou estado "nenhum anexado"
-├ Aceites — vendedor / comprador
-├ Transferência — status + próxima etapa
-├ Auditoria (colapsável) — quem criou / visualizou / baixou / anexou / aceitou
-└ Ações: Cancelar Processo · Fechar
-```
+- Módulo próprio com histórico permanente de todos os check-ups (Check-up 001, 002, …) com status e data.
+- **Timeline de Saúde**: evolução por período com status, principais acontecimentos e mudanças importantes.
+- **Evolução da Saúde**: gráficos de Índice de Conservação, Índice de Confiabilidade, itens críticos, itens em atenção e componentes excelentes ao longo do tempo.
 
-Etapas derivadas do `status` já persistido; sem alterar schema. Auditoria mostrada a partir dos campos existentes (`created_at`, `signed_at`, `viewed_by_*`, se disponíveis) — quando um campo não existir, mostrar "—" (nunca inventar dado).
+## Etapa 4 — Comparador, Recomendações e Perfil de Cuidado
 
-Todos os pontos que hoje abrem "Emitir Recibo" ou apontam para PDF passam a linkar para o Centro de Transferência; o visualizador de PDF é acessado a partir dele.
+- **Comparador de Laudos**: selecionar dois check-ups e ver componentes que melhoraram/pioraram, itens resolvidos, novos problemas e variação dos dois índices.
+- **Histórico de recomendações**: cada recomendação emitida vira registro com data de emissão e execução (✔ Executada / ⏳ Pendente), vinculada à atividade que a resolveu.
+- **Perfil de Cuidado do Proprietário**: métrica em estrelas baseada no % de recomendações cumpridas no prazo — comprometimento com prevenção, nunca habilidade.
+- **Previsão Inteligente** por regras: estimativa de horas/KM até a próxima substituição com base no padrão de uso.
 
-## 4. Bloco verde de sucesso
+## Etapa 5 — Compartilhamento do Laudo
 
-Reduzir para: ícone ✔, código, status, moto, comprador, valor, uma frase de próxima ação, um CTA único **"Abrir Centro de Transferência"**. Sem duplicar Baixar / Compartilhar / Imprimir.
+- Link público somente leitura protegido por token e QR Code, reutilizando a infraestrutura já validada do Certificado Digital.
+- Compartilhar (Web Share), imprimir, exportar PDF — usando a cascata de salvamento já homologada.
+- Público-alvo: compradores, oficinas, seguradoras, concessionárias.
 
-## 5. Padronização
+---
 
-`TBPdfViewer` passa a ser o componente oficial de qualquer PDF do TrailBook (recibo agora; certificados/anexos futuros). Mesmos ícones (`Eye`, `Download`, `Share2`, `Printer`, `X`, `ArrowLeft`) e ordem padrão.
+## Detalhes técnicos
 
-## 6. Fora de escopo
+- Toda inteligência permanece **exclusivamente na TIL** (`src/lib/til/`). Telas apenas leem o snapshot — nenhum cálculo em componente, conforme regra oficial do projeto.
+- Novos módulos TIL: `diagnosis.ts`, `action-plan.ts`, `checkup.ts`, `forecast.ts`, `care-profile.ts`, expostos pela fachada `computeCockpitSnapshot` e por um novo `computeCheckup`.
+- Banco (Etapa 2+): tabelas `health_checkups` (laudo imutável, snapshot JSONB, hash, versão do algoritmo, validade, token público) e `health_recommendations` (emissão, status, execução). RLS por propriedade da moto + GRANTs; leitura pública apenas via token do laudo.
+- Geração do laudo roda em server function; o cálculo em si vive em módulo puro reutilizável no cliente, garantindo mesmo resultado nas duas pontas.
+- Preparação para IA: o motor emite um **contexto estruturado** (fatos + evidências) e o texto do diagnóstico é gerado por uma camada substituível. Na Fase 2 basta trocar o gerador por IA sem tocar no motor.
+- Compatibilidade preservada com Índice de Conservação, Índice de Confiabilidade, Passaporte Digital, Agenda, MotorcycleReviewState e Selos de Qualidade.
+- Mobile-first absoluto em todas as telas, seguindo ADR 0004.
+- Cada etapa encerra com ADR próprio e entrada no CHANGELOG.
 
-- Sem mudanças de RLS, RPCs, migrações ou lógica de negócio.
-- Sem alterar o PDF em si (cláusulas mantidas como estão).
-- Certificados e outros documentos permanecem no fluxo atual; adoção do `TBPdfViewer` fora de recibos fica para próxima fase (registrada como follow-up).
-
-## 7. Testes / evidências
-
-- `tsgo` (typecheck).
-- Playwright: emitir recibo → abrir pelo Centro da Moto → abrir pelo Histórico → abrir pela página pública. Screenshots do visualizador e do Centro de Transferência em mobile (390×844) e desktop.
-- Grep final: nenhum `createSignedUrl`/`window.open` restante em fluxos de UI de recibo.
-
-## 8. Retorno ao final
-
-Lista de arquivos alterados, antes/depois resumido, screenshots dos testes, confirmação dos itens do check-list (visualizador único, sem Signed URL exposta, sem duplicidade, timeline funcional, Centro de Transferência ativo).
+Aprovando, começo pela Etapa 1.

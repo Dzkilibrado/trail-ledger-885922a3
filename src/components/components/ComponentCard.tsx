@@ -1,13 +1,15 @@
 import { ChevronRight, Pin } from "lucide-react";
 import type { ComponentView, ComponentTone } from "@/lib/til/components";
 import { ComponentIcon } from "./componentIcon";
+import { TBStatusDot } from "@/design-system/primitives/TBStatusPill";
+import { HEALTH_STATUS_TEXT } from "@/lib/til/status";
 
-const TONE_STYLES: Record<ComponentTone, { dot: string; text: string; ring: string }> = {
-  critical:       { dot: "bg-destructive",     text: "text-destructive",     ring: "ring-destructive/30" },
-  attention:      { dot: "bg-amber-400",       text: "text-amber-400",       ring: "ring-amber-400/30" },
-  ok:             { dot: "bg-emerald-500",     text: "text-emerald-500",     ring: "ring-emerald-500/20" },
-  no_info:        { dot: "bg-muted-foreground",text: "text-muted-foreground",ring: "ring-border" },
-  not_applicable: { dot: "bg-muted",           text: "text-muted-foreground",ring: "ring-border" },
+const TONE_STYLES: Record<ComponentTone, { text: string; ring: string }> = {
+  critical:       { text: "text-destructive",     ring: "ring-destructive/30" },
+  attention:      { text: "text-amber-400",       ring: "ring-amber-400/30" },
+  ok:             { text: "text-emerald-500",     ring: "ring-emerald-500/20" },
+  no_info:        { text: "text-muted-foreground",ring: "ring-border" },
+  not_applicable: { text: "text-muted-foreground",ring: "ring-border" },
 };
 
 export function ComponentCard({
@@ -39,8 +41,11 @@ export function ComponentCard({
           )}
         </div>
         <div className="mt-0.5 flex items-center gap-1.5 text-xs">
-          <span className={`inline-block h-1.5 w-1.5 rounded-full ${t.dot}`} />
-          <span className={t.text}>{component.statusLabel}</span>
+          <TBStatusDot status={component.diagnosis.status} className="h-1.5 w-1.5" />
+          <span className={HEALTH_STATUS_TEXT[component.diagnosis.status]}>
+            {component.diagnosis.statusLabel}
+          </span>
+          <span className="truncate text-muted-foreground">· {component.statusLabel}</span>
         </div>
       </div>
       <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />

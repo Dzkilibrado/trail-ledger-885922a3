@@ -10,6 +10,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { NewEventDialog } from "@/components/NewEventDialog";
 import { ComponentIcon } from "./componentIcon";
+import { DiagnosisCard } from "@/components/health/DiagnosisCard";
+import { TBStatusPill } from "@/design-system/primitives/TBStatusPill";
 import type { ComponentView, ComponentSeverity } from "@/lib/til/components";
 import { SEVERITY_LABEL } from "@/lib/til/components";
 import { MAINT_CATEGORY_LABEL, type MaintenanceCategory, formatDate } from "@/lib/trailbook";
@@ -86,6 +88,7 @@ export function ComponentSheet({
                 </div>
                 <SheetTitle className="truncate font-display text-xl">{c.name}</SheetTitle>
                 <SheetDescription className="mt-0.5 text-sm">{c.statusLabel}</SheetDescription>
+                <TBStatusPill status={c.diagnosis.status} size="sm" className="mt-2" />
               </div>
             </div>
           </SheetHeader>
@@ -98,6 +101,11 @@ export function ComponentSheet({
               </Button>
             </div>
           )}
+
+          {/* Diagnóstico inteligente */}
+          <div className="mt-5">
+            <DiagnosisCard diagnosis={c.diagnosis} />
+          </div>
 
           {/* Próxima prevista + última */}
           <div className="mt-5 grid grid-cols-2 gap-3">

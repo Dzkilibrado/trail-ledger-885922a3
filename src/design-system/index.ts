@@ -16,6 +16,7 @@ export { TBSelect, type TBSelectOption } from "./primitives/TBSelect";
 export { TBBadge, type TBSeverity } from "./primitives/TBBadge";
 export { TBChip } from "./primitives/TBChip";
 export { TBIcon } from "./primitives/TBIcon";
+export { TBStatusPill, TBStatusDot } from "./primitives/TBStatusPill";
 
 // Inputs especializados
 export { TBNumberInput } from "./inputs/TBNumberInput";

@@ -1,6 +1,7 @@
 import type { ScheduleStatus } from "@/lib/maintenance-engine";
 import { MAINT_CATEGORY_LABEL, type MaintenanceCategory } from "@/lib/trailbook";
 import type { EventRow, Schedule } from "./types";
+import { computeComponentDiagnosis, type ComponentDiagnosis } from "./diagnosis";
 
 export type ComponentTone = "critical" | "attention" | "ok" | "no_info" | "not_applicable";
 
@@ -47,6 +48,14 @@ export interface ComponentView {
   rawStatus: string;               // schedule_status
   severity: ComponentSeverity;
   isCustom: boolean;
+  /** Diagnóstico inteligente (TrailBook Health) — explica o status em linguagem natural. */
+  diagnosis: ComponentDiagnosis;
+}
+
+export interface ComponentInspection {
+  at: string;
+  decision: string;
+  notes: string | null;
 }
 
 function labelFromStatus(s: ScheduleStatus): { tone: ComponentTone; label: string } {
@@ -89,6 +98,7 @@ export function computeComponentViews(
   statuses: ScheduleStatus[],
   events: EventRow[],
   itemsByScheduleId: Record<string, { event_id: string; created_at: string }[]>,
+  inspectionsByScheduleId: Record<string, ComponentInspection[]> = {},
 ): ComponentView[] {
   const statusById = new Map(statuses.map((s) => [s.schedule.id, s] as const));
   const eventById = new Map(events.map((e) => [e.id, e] as const));
@@ -149,6 +159,24 @@ export function computeComponentViews(
       .filter((x): x is ComponentHistoryEntry => !!x)
       .sort((a, b) => (a.occurredAt < b.occurredAt ? 1 : -1));
 
+    const inspections = (inspectionsByScheduleId[sch.id] ?? [])
+      .slice()
+      .sort((a, b) => (a.at < b.at ? 1 : -1));
+
+    const severity = ((sch as any).severity as ComponentSeverity) ?? "medium";
+
+    const diagnosis = computeComponentDiagnosis({
+      name: sch.name,
+      severity,
+      rawStatus: status,
+      status: s ?? null,
+      lastMaintenance,
+      historyCount: history.length,
+      lastHistoryAt: history[0]?.occurredAt ?? null,
+      lastInspection: inspections[0] ?? null,
+      notes: sch.notes ?? null,
+    });
+
     return {
       scheduleId: sch.id,
       name: sch.name,
@@ -164,8 +192,9 @@ export function computeComponentViews(
       pinned: !!(sch as any).pinned,
       hidden: !!(sch as any).hidden,
       rawStatus: status,
-      severity: ((sch as any).severity as ComponentSeverity) ?? "medium",
+      severity,
       isCustom: !!(sch as any).is_custom,
+      diagnosis,
     };
   });
 
