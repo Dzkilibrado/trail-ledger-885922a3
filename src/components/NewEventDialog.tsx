@@ -8,10 +8,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { EVENT_TYPE_LABEL, MAINT_CATEGORY_LABEL, uploadFile, type EventType, type Motorcycle, ACTIVITY_EVENT_TYPES } from "@/lib/trailbook";
-import { Plus, Upload, AlertTriangle } from "lucide-react";
+import { Plus, Upload, AlertTriangle, FileText } from "lucide-react";
 import { INCIDENT_TYPES } from "@/lib/motorcycle-catalog";
 import { fetchMaintenanceCatalog, type CatalogEntry } from "@/lib/maintenance-catalog";
 import { toDecimalHours, recomposeTimeline } from "@/lib/activity-recalc";
+import { attachDocumentsToEvent, isDocumentFile, DOC_ACCEPTED_MIME } from "@/lib/event-documents";
+import { DOC_TYPES, type DocType } from "@/lib/motorcycle-documents";
 import { toast } from "sonner";
 
 type SchedulePreset = {
@@ -36,6 +38,14 @@ const INCIDENT_SEVERITY = [
   { value: "high", label: "Grave" },
 ];
 
+const ACCESSORY_ACTIONS = [
+  { value: "buy",     label: "Compra de peça / acessório" },
+  { value: "sell",    label: "Venda de peça / acessório" },
+  { value: "install", label: "Instalação" },
+  { value: "remove",  label: "Remoção" },
+  { value: "replace", label: "Substituição" },
+];
+
 export function NewEventDialog({
   moto,
   preset,
@@ -56,6 +66,9 @@ export function NewEventDialog({
   const [type, setType] = useState<EventType>(preset ? "maintenance" : "usage");
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState<FileList | null>(null);
+  const [docFiles, setDocFiles] = useState<FileList | null>(null);
+  const [docType, setDocType] = useState<DocType>("other");
+  const [accessoryAction, setAccessoryAction] = useState<string>("buy");
   const [selectedCatalogId, setSelectedCatalogId] = useState<string>("");
   const [category, setCategory] = useState<string>(preset?.category || "engine");
   const [service, setService] = useState<string>(preset?.name || "");
@@ -213,6 +226,9 @@ export function NewEventDialog({
       // Enriquecimento de metadados por tipo — armazenado em description
       // para não exigir novas colunas no banco. Prefixado com tag legível.
       const meta: string[] = [];
+      if (type === "accessory") {
+        meta.push(`Ação: ${ACCESSORY_ACTIONS.find((a) => a.value === accessoryAction)?.label ?? accessoryAction}`);
+      }
       if (type === "usage") {
         const kind = String(fd.get("usage_kind") || "");
         const riders = String(fd.get("riders") || "");
@@ -254,7 +270,7 @@ export function NewEventDialog({
           _km_delta: km_delta,
           _cost: cost,
           _workshop_id: null,
-          _metadata: {},
+          _metadata: type === "accessory" ? { accessory_action: accessoryAction } : {},
         } as never,
       );
       if (error) throw error;
@@ -319,14 +335,47 @@ export function NewEventDialog({
         }
       }
 
-      // Attachments
+      // Anexos de mídia (fotos/vídeos) — permanecem em event_attachments.
       if (files && files.length > 0) {
-        const uploads = await Promise.all(Array.from(files).map(async (f) => {
-          const up = await uploadFile("event-media", f, uid);
-          const kind = f.type.startsWith("video/") ? "video" : f.type.startsWith("image/") ? "photo" : "document";
-          return { event_id: ev.id, storage_path: up.path, bucket: up.bucket, kind: kind as any };
-        }));
-        await supabase.from("event_attachments").insert(uploads);
+        const uploads: any[] = [];
+        for (const f of Array.from(files)) {
+          try {
+            const up = await uploadFile("event-media", f, uid);
+            const kind = f.type.startsWith("video/") ? "video" : f.type.startsWith("image/") ? "photo" : "document";
+            uploads.push({ event_id: ev.id, storage_path: up.path, bucket: up.bucket, kind });
+          } catch (e: any) {
+            toast.error(`Falha ao enviar mídia ${f.name}`, { description: e?.message });
+          }
+        }
+        if (uploads.length) await supabase.from("event_attachments").insert(uploads);
+      }
+
+      // Documentos — Central de Documentos como fonte única, vínculo N:N.
+      if (docFiles && docFiles.length > 0) {
+        const docs = Array.from(docFiles).filter(isDocumentFile);
+        if (docs.length) {
+          const results = await attachDocumentsToEvent({
+            motorcycleId: moto.id,
+            eventId: ev.id,
+            userId: uid,
+            files: docs,
+            docType,
+          });
+          const okCount = results.filter((r) => r.ok).length;
+          const reused = results.filter((r) => r.reused).length;
+          const failed = results.filter((r) => !r.ok);
+          if (reused) {
+            toast.info(`${reused} documento(s) já estavam armazenados e foram apenas vinculados à atividade.`);
+          }
+          if (okCount > reused && okCount - reused > 0) {
+            toast.success(`${okCount - reused} documento(s) novo(s) adicionado(s) à Central.`);
+          }
+          if (failed.length) {
+            toast.error(`${failed.length} documento(s) não foram enviados`, {
+              description: failed.map((f) => `${f.file}: ${f.error}`).join(" · "),
+            });
+          }
+        }
       }
 
       // v1.7: se acrescentamos maintenance_items depois do commit inicial,
@@ -616,11 +665,52 @@ export function NewEventDialog({
               <div className="min-w-0 flex-1 text-sm">
                 {files && files.length > 0
                   ? <span className="font-medium">{files.length} arquivo(s) selecionado(s)</span>
-                  : <span className="text-muted-foreground">Selecionar imagens ou vídeos (documentos vão em Documentação)</span>}
+                  : <span className="text-muted-foreground">Selecionar imagens ou vídeos</span>}
               </div>
               <input type="file" multiple accept="image/*,video/*" className="sr-only" onChange={(e) => setFiles(e.target.files)} />
             </label>
           </F>
+          <div className="space-y-2 rounded-2xl border border-border/60 bg-background/30 p-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                Documentos vinculados (opcional)
+              </div>
+              <span className="text-[10px] text-muted-foreground">Notas, orçamentos, garantias, laudos…</span>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
+              <F label="Classificação">
+                <Select value={docType} onValueChange={(v) => setDocType(v as DocType)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {DOC_TYPES.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>{t.icon} {t.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </F>
+            </div>
+            <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-border bg-card p-3 transition hover:border-primary/50">
+              <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary">
+                <FileText className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 flex-1 text-sm">
+                {docFiles && docFiles.length > 0
+                  ? <span className="font-medium">{docFiles.length} documento(s) selecionado(s)</span>
+                  : <span className="text-muted-foreground">Selecionar PDF, Word, planilha, TXT/CSV…</span>}
+              </div>
+              <input
+                type="file"
+                multiple
+                accept={DOC_ACCEPTED_MIME.join(",")}
+                className="sr-only"
+                onChange={(e) => setDocFiles(e.target.files)}
+              />
+            </label>
+            <p className="text-[11px] text-muted-foreground">
+              O documento vai para a Central de Documentos e fica vinculado a esta atividade.
+              Se já estiver armazenado (mesmo arquivo), reaproveitamos sem novo envio.
+            </p>
+          </div>
           <div className="flex gap-2">
             <Button type="button" variant="ghost" className="flex-1" onClick={() => setOpen(false)}>Cancelar</Button>
             <Button type="submit" className="flex-1 btn-glow" disabled={loading}>{loading ? "Salvando…" : "Registrar"}</Button>
