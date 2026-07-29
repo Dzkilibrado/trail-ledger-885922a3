@@ -7,9 +7,9 @@
  *      nativo com o arquivo real (iOS: "Salvar em Arquivos").
  *   3. Download convencional via <a download>.
  *
- * Cancelamentos (AbortError, "share canceled") NÃO são tratados como erro:
- * retornam { outcome: "cancelled" } para a UI decidir se mostra mensagem
- * neutra. Erros reais retornam { outcome: "error", error }.
+ * Cancelamentos/falhas nas etapas mediadas pelo navegador NÃO encerram a
+ * cascata. O fluxo sempre tenta a próxima estratégia até chegar ao download
+ * convencional. Apenas falhas no download final retornam { outcome: "error" }.
  */
 
 export type SaveOutcome = "saved" | "shared" | "downloaded" | "cancelled" | "error";
@@ -17,6 +17,29 @@ export type SaveOutcome = "saved" | "shared" | "downloaded" | "cancelled" | "err
 export interface SaveFileResult {
   outcome: SaveOutcome;
   error?: unknown;
+}
+
+type SaveStrategy = "file-picker" | "native-share" | "download";
+
+export interface SaveFileStep {
+  event: string;
+  strategy?: SaveStrategy;
+  fileName?: string;
+  mime?: string;
+  size?: number;
+  outcome?: SaveOutcome;
+  errorName?: string;
+  errorMessage?: string;
+}
+
+type SaveFileReporter = (step: SaveFileStep) => void;
+
+function errorMeta(err: unknown): Pick<SaveFileStep, "errorName" | "errorMessage"> {
+  const e = err as { name?: string; message?: string };
+  return {
+    errorName: e?.name ?? typeof err,
+    errorMessage: e?.message ?? String(err),
+  };
 }
 
 function isAbort(err: unknown): boolean {
@@ -63,41 +86,73 @@ function ensureExtension(fileName: string, mime: string): string {
   return lower.endsWith(`.${ext}`) ? fileName : `${fileName}.${ext}`;
 }
 
-async function trySaveFilePicker(blob: Blob, fileName: string, mime: string): Promise<SaveFileResult | null> {
+async function trySaveFilePicker(blob: Blob, fileName: string, mime: string, report?: SaveFileReporter): Promise<SaveFileResult | null> {
   const w = typeof window !== "undefined" ? (window as unknown as { showSaveFilePicker?: (opts: unknown) => Promise<{ createWritable: () => Promise<{ write: (b: Blob) => Promise<void>; close: () => Promise<void> }> }> }) : null;
-  if (!w || typeof w.showSaveFilePicker !== "function") return null;
+  if (!w || typeof w.showSaveFilePicker !== "function") {
+    report?.({ event: "unavailable", strategy: "file-picker", fileName, mime, size: blob.size });
+    return null;
+  }
   try {
+    report?.({ event: "start", strategy: "file-picker", fileName, mime, size: blob.size });
     const handle = await w.showSaveFilePicker({
       suggestedName: fileName,
       types: [{ description: "Arquivo", accept: { [mime]: [`.${extFromMime(mime)}`] } }],
     });
+    report?.({ event: "handle-created", strategy: "file-picker", fileName, mime, size: blob.size });
     const stream = await handle.createWritable();
     await stream.write(blob);
     await stream.close();
+    report?.({ event: "success", strategy: "file-picker", outcome: "saved", fileName, mime, size: blob.size });
     return { outcome: "saved" };
   } catch (err) {
-    if (isAbort(err)) return { outcome: "cancelled" };
-    return { outcome: "error", error: err };
+    report?.({
+      event: isAbort(err) ? "cancelled-continue" : "error-continue",
+      strategy: "file-picker",
+      fileName,
+      mime,
+      size: blob.size,
+      ...errorMeta(err),
+    });
+    return null;
   }
 }
 
-async function tryShareFile(blob: Blob, fileName: string, mime: string, title?: string): Promise<SaveFileResult | null> {
-  if (typeof navigator === "undefined") return null;
+async function tryShareFile(blob: Blob, fileName: string, mime: string, title?: string, report?: SaveFileReporter): Promise<SaveFileResult | null> {
+  if (typeof navigator === "undefined") {
+    report?.({ event: "unavailable", strategy: "native-share", fileName, mime, size: blob.size });
+    return null;
+  }
   const nav = navigator as Navigator & { canShare?: (data: ShareData) => boolean };
-  if (typeof nav.share !== "function") return null;
+  if (typeof nav.share !== "function") {
+    report?.({ event: "unavailable", strategy: "native-share", fileName, mime, size: blob.size });
+    return null;
+  }
   try {
+    report?.({ event: "start", strategy: "native-share", fileName, mime, size: blob.size });
     const file = new File([blob], fileName, { type: mime });
-    if (typeof nav.canShare === "function" && !nav.canShare({ files: [file] })) return null;
+    if (typeof nav.canShare === "function" && !nav.canShare({ files: [file] })) {
+      report?.({ event: "cannot-share-files", strategy: "native-share", fileName, mime, size: blob.size });
+      return null;
+    }
     await nav.share({ files: [file], title });
+    report?.({ event: "success", strategy: "native-share", outcome: "shared", fileName, mime, size: blob.size });
     return { outcome: "shared" };
   } catch (err) {
-    if (isAbort(err)) return { outcome: "cancelled" };
-    return null; // deixa cair para download convencional
+    report?.({
+      event: isAbort(err) ? "cancelled-continue" : "error-continue",
+      strategy: "native-share",
+      fileName,
+      mime,
+      size: blob.size,
+      ...errorMeta(err),
+    });
+    return null;
   }
 }
 
-function downloadBlob(blob: Blob, fileName: string): SaveFileResult {
+function downloadBlob(blob: Blob, fileName: string, report?: SaveFileReporter): SaveFileResult {
   try {
+    report?.({ event: "start", strategy: "download", fileName, mime: blob.type, size: blob.size });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -107,8 +162,10 @@ function downloadBlob(blob: Blob, fileName: string): SaveFileResult {
     a.click();
     a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    report?.({ event: "click-dispatched", strategy: "download", outcome: "downloaded", fileName, mime: blob.type, size: blob.size });
     return { outcome: "downloaded" };
   } catch (err) {
+    report?.({ event: "error", strategy: "download", fileName, mime: blob.type, size: blob.size, ...errorMeta(err) });
     return { outcome: "error", error: err };
   }
 }
@@ -122,15 +179,17 @@ export async function saveFile(params: {
   fileName: string;
   mime?: string;
   shareTitle?: string;
+  onStep?: SaveFileReporter;
 }): Promise<SaveFileResult> {
   const mime = params.mime || params.blob.type || "application/octet-stream";
   const name = ensureExtension(sanitizeFileName(params.fileName), mime);
+  params.onStep?.({ event: "prepared", fileName: name, mime, size: params.blob.size });
 
-  const picker = await trySaveFilePicker(params.blob, name, mime);
+  const picker = await trySaveFilePicker(params.blob, name, mime, params.onStep);
   if (picker) return picker;
 
-  const shared = await tryShareFile(params.blob, name, mime, params.shareTitle);
+  const shared = await tryShareFile(params.blob, name, mime, params.shareTitle, params.onStep);
   if (shared) return shared;
 
-  return downloadBlob(params.blob, name);
+  return downloadBlob(params.blob, name, params.onStep);
 }
