@@ -13,6 +13,7 @@ import { buildReportPdf, reportFileName } from "@/lib/health-reports/pdf";
 import { REPORT_STATUS_LABEL, type HealthReportSnapshot, type ReportStatus } from "@/lib/health-reports/types";
 import { effectiveValidity } from "@/lib/health-reports/validity";
 import { saveFile } from "@/lib/save-file";
+import { trackHealth } from "@/lib/health-reports/telemetry";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id/checkups/$code")({
   head: ({ params }) => ({
@@ -31,6 +32,7 @@ export const Route = createFileRoute("/_authenticated/motorcycles/$id/checkups/$
 function ReportPage() {
   const { id, code } = Route.useParams();
   const [saving, setSaving] = useState(false);
+  const [lastBlobUrl, setLastBlobUrl] = useState<string | null>(null);
 
   const q = useQuery({
     queryKey: ["health-report", code],
@@ -63,7 +65,7 @@ function ReportPage() {
   });
 
   const downloadPdf = async () => {
-    if (!snapshot) return;
+    if (!snapshot || saving) return;
     setSaving(true);
     try {
       const share = (
@@ -90,10 +92,22 @@ function ReportPage() {
         mime: "application/pdf",
         shareTitle: "Laudo Inteligente TrailBook",
       });
-      if (res.outcome === "error") toast.error("Não foi possível salvar o PDF.");
-      else if (res.outcome !== "cancelled") toast.success("Laudo salvo em PDF.");
+      if (res.outcome === "error") {
+        // Fallback seguro: abre o PDF para o usuário salvar pelo visualizador do aparelho.
+        const url = URL.createObjectURL(blob);
+        setLastBlobUrl(url);
+        window.open(url, "_blank", "noopener");
+        toast.warning("Abrimos o PDF em uma nova aba. Use o menu do visualizador para salvar ou compartilhar.");
+        trackHealth("pdf_erro", { code: report.code ?? code, fallback: "nova-aba" });
+      } else if (res.outcome !== "cancelled") {
+        toast.success("PDF gerado com sucesso.");
+        trackHealth("pdf_concluido", { code: report.code ?? code, outcome: res.outcome });
+      }
     } catch {
-      toast.error("Não foi possível gerar o PDF do laudo.");
+      toast.error(
+        `Não foi possível gerar o PDF. Tente novamente. Se o problema continuar, informe o código ${report.code ?? code} ao suporte.`,
+      );
+      trackHealth("pdf_erro", { code: report.code ?? code });
     } finally {
       setSaving(false);
     }
@@ -112,11 +126,23 @@ function ReportPage() {
       />
 
       <div className="flex flex-wrap gap-2">
-        <TBButton onClick={downloadPdf} disabled={saving || !snapshot}>
+        <TBButton onClick={downloadPdf} disabled={saving || !snapshot} aria-busy={saving}>
           {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Download className="h-4 w-4" aria-hidden />}
-          Salvar em PDF
+          {saving ? "Preparando seu Laudo TrailBook…" : "Salvar em PDF"}
         </TBButton>
+        {lastBlobUrl && !saving && (
+          <TBButton variant="outline" asChild>
+            <a href={lastBlobUrl} target="_blank" rel="noopener noreferrer">
+              Abrir PDF novamente
+            </a>
+          </TBButton>
+        )}
       </div>
+      {saving && (
+        <p className="text-sm text-muted-foreground" role="status" aria-live="polite">
+          Preparando seu Laudo TrailBook…
+        </p>
+      )}
 
       <SharePanel reportId={report.id} canManage />
 
