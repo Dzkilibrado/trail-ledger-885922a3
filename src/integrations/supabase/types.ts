@@ -3220,6 +3220,10 @@ export type Database = {
       }
       hash_cpf: { Args: { _cpf: string }; Returns: string }
       is_moto_owner: { Args: { _moto_id: string }; Returns: boolean }
+      is_public_certificate_motorcycle_photo: {
+        Args: { _object_name: string }
+        Returns: boolean
+      }
       is_user_admin: { Args: { _user_id: string }; Returns: boolean }
       list_workshops_public: {
         Args: never
