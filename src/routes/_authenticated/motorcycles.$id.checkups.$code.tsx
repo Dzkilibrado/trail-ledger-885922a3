@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import QRCode from "qrcode";
 import { Download, Loader2 } from "lucide-react";
@@ -33,6 +33,7 @@ function ReportPage() {
   const { id, code } = Route.useParams();
   const [saving, setSaving] = useState(false);
   const [lastBlobUrl, setLastBlobUrl] = useState<string | null>(null);
+  const lastRunRef = useRef(0);
 
   const q = useQuery({
     queryKey: ["health-report", code],
@@ -66,8 +67,12 @@ function ReportPage() {
 
   const downloadPdf = async () => {
     if (!snapshot || saving) return;
+    // Evita que toques repetidos gerem vários arquivos iguais.
+    if (Date.now() - lastRunRef.current < 2500) return;
+    lastRunRef.current = Date.now();
     setSaving(true);
     try {
+      trackHealth("pdf_iniciado", { code: report.code ?? code });
       const share = (
         await supabase
           .from("health_report_shares")
