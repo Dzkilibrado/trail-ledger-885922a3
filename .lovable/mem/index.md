@@ -1,6 +1,7 @@
 # Project Memory
 
 ## Core
+O usuário nunca vê nota/percentual: avaliação → diagnóstico → achados → recomendação → "posso rodar hoje?". Números só no Modo Técnico (admin).
 - TrailBook: identidade digital permanente da moto off-road. Tema escuro premium (grafite/laranja), fontes Inter + Space Grotesk. Nunca hardcode cores — usar tokens semânticos em `src/styles.css`.
 - UX oficial: aplicar SEMPRE os princípios `mem://principles/ux-official` — 3 perguntas antes de adicionar, regra do usuário cansado, uma tela = uma decisão, menos é mais, decisão acima da informação.
 - Evolução controlada: toda nova funcionalidade passa pelas 5 perguntas de `mem://principles/evolucao-controlada` (problema real, uso frequente, cabe em fluxo existente, impacto na complexidade, solução mais simples). Cada versão deve tornar o TrailBook melhor, nunca mais complexo. Na dúvida entre mais features e melhor UX → sempre UX.
@@ -23,6 +24,7 @@
 - Landing pública (`mem://principles/landing-page-conversao`, ADR 0013): missão = converter, não ensinar. Estrutura fixa em `src/routes/index.tsx`: Hero → Benefícios (≤5) → Como funciona (≤4) → Carrossel (≤4 telas, scroll-snap, sem autoplay) → FAQ (5) → CTA final → Rodapé mínimo. Detalhes vão para `/como-funciona`, `/faq` ou app. Proibido vídeo/autoplay/tour animado/bibliotecas pesadas de carrossel. Nova seção só entra passando pelas 3 perguntas de UX + ADR 0008.
 
 ## Memories
+- [Avaliação inteligente (Health 4.0)](.lovable/mem/principles/avaliacao-inteligente.md) — estrutura obrigatória da avaliação; nota só no Modo Técnico
 - [Diretrizes de desenvolvimento](mem://standards/dev-directives) — Padrões obrigatórios (18 pontos) aplicáveis a toda nova funcionalidade v1.0.1+
 - [Princípios oficiais de UX](mem://principles/ux-official) — Filosofia mandatória: 3 perguntas, usuário cansado, uma tela = uma decisão, menos é mais, decisão > informação
 - [Princípio da Evolução Controlada](mem://principles/evolucao-controlada) — 5 perguntas obrigatórias antes de qualquer nova funcionalidade + arquitetura evolutiva + prioridade da experiência

@@ -6,6 +6,13 @@
 - Telemetria técnica da Etapa 3 (`src/lib/health-reports/telemetry.ts`), sem rastreamento pessoal.
 - Validado: download com nome oficial, fidelidade ao snapshot, QR Code, payload público sanitizado, token inválido sem vazamento e ausência de erros de console.
 
+## [1.9.0] — TrailBook Health 4.0 — Avaliação Inteligente
+
+- Nova camada de apresentação `src/lib/ui/evaluation.ts` com os 5 estados oficiais.
+- `EvaluationCard`/`EvaluationPill` aplicados em Cockpit, Saúde, Passaporte, Central de Check-ups, Laudo, Comparador, Página Pública e Home.
+- Notas, percentuais e fatores de conservação restritos ao Modo Técnico (admin).
+- Nenhuma regra da TIL, snapshot, auditoria, validade ou telemetria foi alterada.
+
 ## [1.6.10] — Fase 2: Notificações (caixa de entrada)
 
 - Filtros rápidos: Todas / Não lidas / Lidas com contagem.
