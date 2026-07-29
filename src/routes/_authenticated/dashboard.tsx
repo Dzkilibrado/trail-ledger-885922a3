@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { StoragePhoto } from "@/components/StoragePhoto";
 import { ActiveMotoCard } from "@/components/ActiveMotoCard";
 import { DocumentPendenciesCard } from "@/components/DocumentPendenciesCard";
+import { EvaluationPill } from "@/components/health/EvaluationPill";
+import { stateFromScore } from "@/lib/ui/evaluation";
 import { WhatsNewCard } from "@/components/WhatsNewCard";
 import { useActiveMotorcycle, useArchivedMotorcyclesCount } from "@/hooks/useActiveMotorcycle";
 import { useDocumentPendencies } from "@/hooks/useDocumentPendencies";
@@ -164,7 +166,7 @@ function Dashboard() {
                         {m.brand || "Moto"} · {Number(m.hours_total).toFixed(1)} h · {Number(m.km_total).toFixed(0)} km
                       </div>
                     </div>
-                    <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[11px] font-semibold text-primary">{m.conservation_score}%</span>
+                    <EvaluationPill state={stateFromScore(m.conservation_score)} size="sm" className="shrink-0" />
                   </Link>
                 </li>
               ))}

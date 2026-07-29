@@ -1,3 +1,5 @@
+import { EvaluationPill } from "@/components/health/EvaluationPill";
+import { stateFromScore } from "@/lib/ui/evaluation";
 import { Link } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
@@ -62,9 +64,7 @@ export function ActiveMotoCard({ motos }: { motos: ActiveMotorcycle[] }) {
             {[active.brand, active.model].filter(Boolean).join(" · ") || "Moto ativa"}
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs">
-            <span className="rounded-full bg-primary/15 px-2 py-0.5 font-semibold text-primary">
-              {active.conservation_score}%
-            </span>
+            <EvaluationPill state={stateFromScore(active.conservation_score)} size="sm" />
             <span className="text-muted-foreground">
               {Number(active.hours_total).toFixed(1)} h
             </span>
@@ -114,7 +114,7 @@ export function ActiveMotoCard({ motos }: { motos: ActiveMotorcycle[] }) {
                       {m.nickname || m.model}
                     </div>
                     <div className="truncate text-xs text-muted-foreground">
-                      {m.brand || "Moto"} · {m.conservation_score}% ·{" "}
+                      {m.brand || "Moto"} ·{" "}
                       {Number(m.hours_total).toFixed(1)} h ·{" "}
                       {Number(m.km_total).toFixed(0)} km
                     </div>
