@@ -461,3 +461,12 @@ function EvidenceCard({ icon: Icon, label, value, extra }: { icon: any; label: s
     </div>
   );
 }
+
+function AutoDownload({ run }: { run: () => void }) {
+  useEffect(() => {
+    const t = setTimeout(run, 300);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
+}
