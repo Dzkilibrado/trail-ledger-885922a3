@@ -13,6 +13,7 @@ import { buildReportSnapshot } from "@/lib/health-reports/snapshot";
 import type { HealthReportSnapshot } from "@/lib/health-reports/types";
 import { issueHealthReport, startCheckRun, updateCheckRun } from "@/lib/health-reports.functions";
 import { ReportSnapshotView } from "@/components/health/reports/ReportSnapshotView";
+import { trackHealth } from "@/lib/health-reports/telemetry";
 import { cn } from "@/lib/utils";
 
 const STEPS = ["Identificação", "Revisão", "Análise", "Condições", "Prévia", "Emissão"] as const;
