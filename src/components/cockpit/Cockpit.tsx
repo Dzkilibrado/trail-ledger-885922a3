@@ -2,7 +2,7 @@ import { useMemo, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, AlertTriangle, Heart, Wrench, FolderOpen, Camera, Sparkles } from "lucide-react";
+import { ChevronRight, AlertTriangle, Heart, Wrench, FolderOpen, Camera, Sparkles, Stethoscope } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { computeCockpitSnapshot } from "@/lib/til";
 import { HealthHeroWidget } from "./widgets/HealthHeroWidget";
