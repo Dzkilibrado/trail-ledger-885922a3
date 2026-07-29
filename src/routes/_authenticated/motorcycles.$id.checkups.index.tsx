@@ -87,8 +87,13 @@ function CheckupsHub() {
           {list.map((r) => {
             const eff = effectiveValidity(r, current);
             return (
-              <TBCard key={r.id} as={Link} interactive className="block" to="/motorcycles/$id/checkups/$code" params={{ id, code: r.code ?? "" }}>
-                <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
+              <Link
+                key={r.id}
+                to="/motorcycles/$id/checkups/$code"
+                params={{ id, code: r.code ?? "" }}
+                className="block"
+              >
+                <TBCard interactive className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3">
                   <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <TBStatusPill status={(r.overall_status as HealthStatus) ?? "unknown"} size="sm" />
@@ -105,8 +110,8 @@ function CheckupsHub() {
                     )}
                   </div>
                   <ChevronRight className="h-5 w-5 text-muted-foreground" aria-hidden />
-                </div>
-              </TBCard>
+                </TBCard>
+              </Link>
             );
           })}
         </div>
