@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { computeCockpitSnapshot } from "@/lib/til";
+import { LastReportCard } from "@/components/health/reports/LastReportCard";
 import type { CockpitSnapshot } from "@/lib/til";
 import type { Motorcycle } from "@/lib/trailbook";
 import { ComponentCard } from "@/components/components/ComponentCard";

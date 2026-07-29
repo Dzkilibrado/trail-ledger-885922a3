@@ -165,6 +165,13 @@ export function Cockpit({ motoId }: { motoId: string }) {
           description="Plano de manutenção e componentes"
         />
         <ActionCard
+          to="/motorcycles/$id/checkups"
+          params={{ id: m.id }}
+          icon={<Stethoscope className="h-5 w-5 text-sky-400" />}
+          title="Check-ups e Laudos"
+          description="Emita e compartilhe o laudo da sua moto"
+        />
+        <ActionCard
           to="/motorcycles/$id/control"
           params={{ id: m.id }}
           icon={<FolderOpen className="h-5 w-5 text-amber-400" />}
