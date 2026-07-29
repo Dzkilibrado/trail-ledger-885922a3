@@ -5,6 +5,8 @@ import { SECTION_LABEL, type HealthReportSnapshot, type ReportSection } from "@/
 import type { HealthStatus } from "@/lib/til/status";
 import { formatDate } from "@/lib/trailbook";
 import { cn } from "@/lib/utils";
+import { EvaluationPill } from "@/components/health/EvaluationPill";
+import { stateFromScore } from "@/lib/ui/evaluation";
 
 const asStatus = (v: string): HealthStatus => (["ok", "attention", "action", "unknown"].includes(v) ? (v as HealthStatus) : "unknown");
 
@@ -203,10 +205,10 @@ export function ReportSnapshotView({
       {show("indices") && s.indices && (
         <Section title={SECTION_LABEL.indices}>
           <TBCard className="space-y-2">
-            <div className="text-3xl font-black">{s.indices.conservation}</div>
+            <EvaluationPill state={stateFromScore(s.indices.conservation)} />
             <p className="text-sm text-muted-foreground">{s.indices.conservationExplanation}</p>
             <p className="text-sm">
-              Confiabilidade: <strong>{s.indices.confidenceLabel}</strong>
+              Confiabilidade da avaliação: <strong>{s.indices.confidenceLabel}</strong>
             </p>
             <p className="text-sm text-muted-foreground">{s.indices.confidenceExplanation}</p>
           </TBCard>

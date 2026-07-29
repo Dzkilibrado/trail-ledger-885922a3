@@ -1,4 +1,6 @@
 import { TBCard, TBStatusPill } from "@/design-system";
+import { EvaluationPill } from "@/components/health/EvaluationPill";
+import { stateFromScore } from "@/lib/ui/evaluation";
 import { CHANGE_LABEL, type ReportComparison } from "@/lib/health-reports/compare";
 import type { HealthStatus } from "@/lib/til/status";
 import { formatDate } from "@/lib/trailbook";
@@ -45,17 +47,15 @@ export function CompareView({ comparison }: { comparison: ReportComparison }) {
       </TBCard>
 
       <TBCard className="space-y-1">
-        <div className="text-sm font-bold">Índice de Conservação</div>
-        <div className="text-2xl font-black">
-          {c.from.conservation} → {c.to.conservation}{" "}
-          <span className="text-sm font-semibold text-muted-foreground">
-            ({c.indices.conservationDelta >= 0 ? "+" : ""}
-            {c.indices.conservationDelta})
-          </span>
+        <div className="text-sm font-bold">Como a avaliação evoluiu</div>
+        <div className="flex flex-wrap items-center gap-2">
+          <EvaluationPill state={stateFromScore(c.from.conservation)} size="sm" />
+          <span aria-hidden>→</span>
+          <EvaluationPill state={stateFromScore(c.to.conservation)} size="sm" />
         </div>
         <p className="text-sm text-muted-foreground">{c.indices.conservationNarrative}</p>
         <p className="text-xs text-muted-foreground">
-          Confiabilidade: {c.indices.confidenceFrom} → {c.indices.confidenceTo}
+          Confiabilidade da avaliação: {c.indices.confidenceFrom} → {c.indices.confidenceTo}
         </p>
       </TBCard>
 

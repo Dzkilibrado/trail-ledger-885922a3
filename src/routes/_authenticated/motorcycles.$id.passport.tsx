@@ -1,3 +1,5 @@
+import { EvaluationPill } from "@/components/health/EvaluationPill";
+import { stateFromScore } from "@/lib/ui/evaluation";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -228,9 +230,7 @@ function Passport() {
                 </button>
               </div>
               <div className="flex flex-col items-end gap-2">
-                <div className="rounded-full bg-primary/15 px-4 py-1.5 text-sm font-semibold text-primary">
-                  Saúde {conservation.score}/100 · Nota {conservation.grade}
-                </div>
+                <EvaluationPill state={stateFromScore(conservation.score)} />
                 <div className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ${TIER_STYLE[tier]}`}>
                   <BadgeCheck className="mr-1 inline h-3.5 w-3.5" />
                   {CERTIFIED_TIER_LABEL[tier]}

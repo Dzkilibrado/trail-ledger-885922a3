@@ -15,7 +15,7 @@ import { SingleBadgeChip } from "@/components/badges/BadgeSection";
 import { computeReviewState } from "@/lib/review-state";
 import { ReviewStateNotice } from "@/components/review-state/ReviewStateNotice";
 import { ActionPlanCard } from "./ActionPlanCard";
-import { RideAnswerCard } from "./RideAnswerCard";
+import { EvaluationCard } from "./EvaluationCard";
 import { AdminDiagnosisPanel } from "./AdminDiagnosisPanel";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 
@@ -119,8 +119,8 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
         <SingleBadgeChip motorcycleId={moto.id} badgeId="origin_proven" />
       </div>
 
-      {/* Saúde geral — status, justificativa e próxima ação (nunca nota) */}
-      <RideAnswerCard answer={snapshot.rideAnswer} />
+      {/* Avaliação oficial: diagnóstico → achados → recomendação → posso rodar hoje */}
+      <EvaluationCard answer={snapshot.rideAnswer} />
 
       {reviewState.isPending && reviewState.state !== "unknown" && (
         <ReviewStateNotice snapshot={reviewState} compact />

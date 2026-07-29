@@ -21,7 +21,7 @@ export const STATUS_MEANING_TEXT: Record<HealthStatus, string> = {
 
 /** Título curto usado em cards e listas. */
 export const STATUS_TITLE: Record<HealthStatus, string> = {
-  ok: "OK",
+  ok: "Saudável",
   attention: "Atenção",
   action: "Necessita ação",
   unknown: "Ainda não avaliado",
@@ -29,7 +29,7 @@ export const STATUS_TITLE: Record<HealthStatus, string> = {
 
 /** Cabeçalho da explicação "por que este status?". */
 export const STATUS_WHY_TITLE: Record<HealthStatus, string> = {
-  ok: "Por que está OK?",
+  ok: "Por que está saudável?",
   attention: "Por que está em atenção?",
   action: "Por que necessita ação?",
   unknown: "Por que ainda não foi avaliado?",

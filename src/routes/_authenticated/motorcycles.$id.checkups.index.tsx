@@ -103,7 +103,7 @@ function CheckupsHub() {
                     </div>
                     <div className="truncate text-sm font-bold">{r.code}</div>
                     <div className="truncate text-xs text-muted-foreground">
-                      {formatDate(r.issued_at)} · Conservação {r.conservation_index ?? "—"} · {eff.label}
+                      {formatDate(r.issued_at)} · {eff.label}
                     </div>
                     {r.has_reservations && (
                       <div className="text-xs text-muted-foreground">Emitido com ressalvas</div>

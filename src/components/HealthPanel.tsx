@@ -1,5 +1,7 @@
 import type { CategoryHealth } from "@/lib/conservation";
 import { cn } from "@/lib/utils";
+import { EvaluationPill } from "@/components/health/EvaluationPill";
+import { stateFromScore } from "@/lib/ui/evaluation";
 import { Cog, Disc, Gauge, Settings, Zap, Snowflake, FileText, Clock, CircleDot } from "lucide-react";
 
 const ICONS: Record<string, any> = {
@@ -29,16 +31,10 @@ export function HealthPanel({ items }: { items: CategoryHealth[] }) {
               <div className={cn("grid h-9 w-9 place-items-center rounded-xl", color)}>
                 <Icon className="h-4 w-4" />
               </div>
-              <div className="font-display text-xl font-bold">{it.score}</div>
+              <EvaluationPill state={stateFromScore(it.score)} size="sm" />
             </div>
             <div className="mt-3 text-sm font-semibold">{it.label}</div>
             <div className="text-xs text-muted-foreground">{it.reason}</div>
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted">
-              <div
-                className={cn("h-full transition-all", it.status === "good" ? "bg-emerald-400" : it.status === "warn" ? "bg-amber-400" : "bg-destructive")}
-                style={{ width: `${it.score}%` }}
-              />
-            </div>
           </div>
         );
       })}

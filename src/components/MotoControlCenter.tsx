@@ -8,6 +8,8 @@ import { ComponentsList } from "@/components/components/ComponentsList";
 import { InitialReviewSheet } from "@/components/onboarding/InitialReviewSheet";
 import { HealthOverview } from "@/components/health/HealthOverview";
 import { ConservationCard } from "@/components/ConservationCard";
+import { EvaluationPill } from "@/components/health/EvaluationPill";
+import { stateFromScore } from "@/lib/ui/evaluation";
 import { brl, EVENT_TYPE_LABEL, formatDate } from "@/lib/trailbook";
 import { Button } from "@/components/ui/button";
 import { Trash2, QrCode, AlertTriangle, CheckCircle2, Clock, ArrowRightLeft, Copy, BadgeCheck, Archive, RotateCcw } from "lucide-react";
@@ -238,7 +240,7 @@ export function MotoControlCenter({ id }: { id: string }) {
                   <Copy className="h-3 w-3" /> {(m as any).trailbook_id}
                 </button>
               </div>
-              <div className="rounded-full bg-primary/15 px-4 py-1.5 text-sm font-semibold text-primary">{conservation.score}/100 · Nota {conservation.grade}</div>
+              <EvaluationPill state={stateFromScore(conservation.score)} />
             </div>
             {isArchived && (
               <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-200">
@@ -516,7 +518,12 @@ export function MotoControlCenter({ id }: { id: string }) {
             </ul>
           )}
         </div>
-        <ConservationCard result={conservation} />
+        {isAdmin && (
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">Modo técnico · visível apenas para administradores</p>
+            <ConservationCard result={conservation} />
+          </div>
+        )}
       </section>
 
       <section>
