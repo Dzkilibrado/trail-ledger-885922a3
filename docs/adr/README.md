@@ -29,3 +29,5 @@ preservando o racional das escolhas feitas.
 | [0002](./0002-cockpit-e-til.md) | TrailBook Cockpit + Intelligence Layer (TIL) | Aceita | v1.2 |
 | [0003](./0003-plano-editavel-saude-componentes.md) | Plano Editável, Componentes e Saúde da Moto | Aceita | v1.2.1 |
 | [0004](./0004-mobile-native-first.md) | Mobile Native First | Aceita | v1.2.1 |
+| [0015](./0015-avaliacao-inteligente-health-4.md) | Health 4.0 — da nota para a avaliação inteligente | Aceita | v1.9.0 |
+| [0016](./0016-constituicao-do-produto.md) | Constituição do Produto TrailBook | Aceita | permanente |
