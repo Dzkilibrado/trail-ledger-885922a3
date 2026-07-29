@@ -8,10 +8,27 @@ import { TBBottomSheet, TBButton, TBCard, TBEmptyState } from "@/design-system";
 import { NEVER_SHARED, PRESET_DESCRIPTION, PRESET_LABEL, PRESET_SECTIONS } from "@/lib/health-reports/sections";
 import { SECTION_LABEL, type ReportSection } from "@/lib/health-reports/types";
 import { formatDate } from "@/lib/trailbook";
+import { trackHealth } from "@/lib/health-reports/telemetry";
 
 type Preset = "buyer" | "workshop" | "custom";
 
 const ALL_SECTIONS = Object.keys(SECTION_LABEL) as ReportSection[];
+
+/** Resumo não invasivo do acesso: apenas tipo de aparelho e navegador. */
+function deviceSummary(ua: string | null): string {
+  if (!ua) return "Dispositivo não identificado";
+  const mobile = /iphone|ipad|android|mobile/i.test(ua);
+  const browser = /edg\//i.test(ua)
+    ? "Edge"
+    : /chrome|crios/i.test(ua)
+      ? "Chrome"
+      : /firefox|fxios/i.test(ua)
+        ? "Firefox"
+        : /safari/i.test(ua)
+          ? "Safari"
+          : "Outro navegador";
+  return `${mobile ? "Celular" : "Computador"} · ${browser}`;
+}
 
 function newToken() {
   const bytes = new Uint8Array(24);
@@ -48,7 +65,7 @@ export function SharePanel({ reportId, canManage }: { reportId: string; canManag
       (
         await supabase
           .from("health_report_access_logs")
-          .select("accessed_at, result")
+          .select("accessed_at, result, user_agent")
           .eq("report_id", reportId)
           .order("accessed_at", { ascending: false })
           .limit(20)
@@ -73,6 +90,7 @@ export function SharePanel({ reportId, canManage }: { reportId: string; canManag
       await qc.invalidateQueries({ queryKey: ["health-report-shares", reportId] });
       setOpen(false);
       toast.success("Link de compartilhamento criado.");
+      trackHealth("compartilhamento_criado", { reportId, preset, dias: days, secoes: sections.length });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -163,7 +181,8 @@ export function SharePanel({ reportId, canManage }: { reportId: string; canManag
           <ul className="space-y-1 text-xs text-muted-foreground">
             {logs.data!.map((l, i) => (
               <li key={i}>
-                {formatDate(l.accessed_at)} — {l.result === "ok" ? "acesso concluído" : "acesso negado"}
+                {formatDate(l.accessed_at)} · {deviceSummary(l.user_agent)} —{" "}
+                {l.result === "ok" ? "acesso concluído" : "acesso negado"}
               </li>
             ))}
           </ul>
