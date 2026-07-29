@@ -51,9 +51,7 @@ export function AdminDiagnosisPanel({ components }: { components: ComponentView[
 
       <TBFilterBar className="mt-3">
         {FILTERS.map((f) => (
-          <TBFilterChip key={f.key} active={filter === f.key} onClick={() => setFilter(f.key)}>
-            {f.label}
-          </TBFilterChip>
+          <TBFilterChip key={f.key} label={f.label} active={filter === f.key} onToggle={() => setFilter(f.key)} />
         ))}
       </TBFilterBar>
 
