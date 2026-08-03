@@ -69,7 +69,7 @@ function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
       <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
-        <Link to="/" className="flex min-w-0 items-center gap-2">
+        <Link to="/site" className="flex min-w-0 items-center gap-2">
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground btn-glow">
             <Bike className="h-5 w-5" />
           </div>
