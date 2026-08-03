@@ -22,7 +22,7 @@ import heroImage from "@/assets/landing-hero.jpg";
 import phoneImage from "@/assets/landing-phone.jpg";
 import certificateImage from "@/assets/landing-certificate.jpg";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/site")({
   head: () => ({
     meta: [
       { title: "TrailBook — O histórico completo da sua moto" },
