@@ -20,9 +20,9 @@ export function AppWelcome({ canSignUp = true }: { canSignUp?: boolean }) {
   }, []);
 
   return (
-    <div className="relative flex h-dvh w-full flex-col overflow-hidden bg-background text-foreground">
+    <div className="relative flex h-dvh w-full flex-col overflow-hidden text-foreground">
       {/* Fundo dinâmico — imagem sorteada e fixada por sessão */}
-      <div className="absolute inset-0 -z-10 bg-background">
+      <div className="absolute inset-0 z-0 bg-background">
         {image ? (
           <img
             key={image.id}
@@ -44,7 +44,7 @@ export function AppWelcome({ canSignUp = true }: { canSignUp?: boolean }) {
         />
       </div>
 
-      <main className="mx-auto flex w-full max-w-[420px] flex-1 flex-col justify-end px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]">
+      <main className="relative z-10 mx-auto flex w-full max-w-[420px] flex-1 flex-col justify-end px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]">
         <div className="animate-fade-in">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/40 bg-primary/15 backdrop-blur-sm">
             <Bike className="h-7 w-7 text-primary" aria-hidden />
