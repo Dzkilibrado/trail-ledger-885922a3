@@ -9,7 +9,9 @@ Nunca expor ao usuário final: frameworks, plataformas de desenvolvimento, prove
 
 **Como aplicar (ADR 0018):**
 - Toda URL pública/compartilhável (Certificado `/c/:token`, Laudo `/l/:token`, Recibo `/r/:code`, QR Codes, PDFs, e-mails, notificações, futuras APIs) usa `shareUrl(path)` de `src/lib/external-links.ts` → sempre `https://trailbook.com.br`.
-- Nunca usar `window.location.origin` para links que o usuário vê, copia, imprime ou vira QR Code. `publicOrigin()` é só para fluxos técnicos de mesma origem (ex.: redirect de autenticação).
+- Navegação pública App ↔ Site (`siteUrl()`, `appUrl()`, `appSignUpUrl()`) também usa o domínio oficial — nunca a origem do ambiente.
+- Nunca usar `window.location.origin` nem `publicUrl()` para links que o usuário vê, copia, imprime ou vira QR Code. `publicOrigin()` é só para fluxos técnicos de mesma origem (ex.: redirect de autenticação).
+- O selo da ferramenta de desenvolvimento fica oculto no site publicado.
 - Exibição curta do domínio: `TRAILBOOK_DISPLAY_DOMAIN`.
 - Metadados sociais (`og:image`, `twitter:image`) sempre no domínio oficial.
 - Arquitetura preparada para Android App Links / Apple Universal Links: app instalado abre o TrailBook; senão, abre o Site Institucional.
