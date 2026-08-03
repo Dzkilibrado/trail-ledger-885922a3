@@ -156,3 +156,18 @@
 @utility btn-glow {
   box-shadow: var(--shadow-glow);
 }
+
+/* Tela de Boas-vindas — efeito cinematográfico Ken Burns (100% GPU) */
+@keyframes ken-burns {
+  from { transform: scale(1) translate3d(0, 0, 0); }
+  to { transform: scale(1.06) translate3d(0, -1.5%, 0); }
+}
+
+@utility animate-ken-burns {
+  animation: ken-burns 28s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-ken-burns { animation: none; }
+}
