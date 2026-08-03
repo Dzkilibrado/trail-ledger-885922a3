@@ -62,9 +62,10 @@ function CertificatePage() {
 
   const cert = (certs.data?.[0] as CertRow | undefined) ?? null;
   const eff: CertStatus | null = cert ? effectiveStatus(cert as any) : null;
-  const publicUrl =
-    cert && typeof window !== "undefined" ? `${window.location.origin}/c/${cert.public_token}` : null;
-  const shortUrl = cert ? `trailbook.app/c/${cert.public_token.slice(0, 8)}…` : null;
+  const publicUrl = cert ? shareUrl(`/c/${cert.public_token}`) : null;
+  const shortUrl = cert
+    ? `${TRAILBOOK_DISPLAY_DOMAIN}/c/${cert.public_token.slice(0, 8)}…`
+    : null;
 
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   useEffect(() => {

@@ -62,7 +62,7 @@ function PublicCert() {
   const [autoDownload, setAutoDownload] = useState(false);
   const [autoDownloadDone, setAutoDownloadDone] = useState(false);
 
-  const publicUrl = typeof window !== "undefined" ? `${window.location.origin}/c/${token}` : `/c/${token}`;
+  const publicUrl = shareUrl(`/c/${token}`);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

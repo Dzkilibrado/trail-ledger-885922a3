@@ -55,7 +55,7 @@ function Certificates() {
       ) : data && data.length > 0 ? (
         <div className="space-y-3">
           {data.map((c) => {
-            const url = `${typeof window !== "undefined" ? window.location.origin : ""}/c/${c.public_token}`;
+            const url = shareUrl(`/c/${c.public_token}`);
             const m: any = c.motorcycles;
             const eff = effectiveStatus(c as any);
             const isActive = eff === "active";

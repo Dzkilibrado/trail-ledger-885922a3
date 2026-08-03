@@ -110,8 +110,7 @@ export function SharePanel({ reportId, canManage }: { reportId: string; canManag
     onError: (e: Error) => toast.error(e.message),
   });
 
-  const urlOf = (token: string) =>
-    `${typeof window !== "undefined" ? window.location.origin : ""}/l/${token}`;
+  const urlOf = (token: string) => shareUrl(`/l/${token}`);
 
   const showQr = async (token: string) => {
     if (qr[token]) return;

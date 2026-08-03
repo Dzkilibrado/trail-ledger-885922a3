@@ -81,7 +81,7 @@ function ReportPage() {
           .is("revoked_at", null)
           .limit(1)
       ).data?.[0];
-      const publicUrl = share ? `${window.location.origin}/l/${share.public_token}` : null;
+      const publicUrl = share ? shareUrl(`/l/${share.public_token}`) : null;
       const qrDataUrl = publicUrl ? await QRCode.toDataURL(publicUrl, { width: 320, margin: 1 }) : null;
       const blob = await buildReportPdf({
         snapshot,
