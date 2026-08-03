@@ -449,18 +449,24 @@ function FinalCTA() {
             Comece a organizar a{" "}
             <span className="text-gradient-primary">história da sua moto</span>.
           </h2>
-          <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link to="/auth" className="w-full sm:w-auto">
-              <Button size="lg" className="btn-glow w-full sm:w-auto">
-                Criar conta
-                <ArrowRight className="ml-1 h-4 w-4" />
-              </Button>
-            </Link>
-            <Link to="/auth" className="w-full sm:w-auto">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                Entrar
-              </Button>
-            </Link>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-sm text-muted-foreground">Ainda não utiliza o TrailBook?</p>
+              <a href={appSignUpUrl()} {...externalLinkProps} className="w-full sm:w-auto">
+                <Button size="lg" className="btn-glow w-full sm:w-auto">
+                  Criar uma conta
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              </a>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-sm text-muted-foreground">Já possui uma conta?</p>
+              <a href={appUrl()} {...externalLinkProps} className="w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                  Abrir o aplicativo
+                </Button>
+              </a>
+            </div>
           </div>
         </div>
       </div>
