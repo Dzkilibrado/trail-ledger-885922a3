@@ -51,6 +51,8 @@ O usuário nunca vê nota/percentual: avaliação → diagnóstico → achados �
 - [ADR 0012 — Erro com recuperação](docs/adr/0012-erro-com-recuperacao.md) — padrão oficial de tratamento de estados desatualizados
 - [Landing Page — conversão](mem://principles/landing-page-conversao) — estrutura fixa e divulgação progressiva
 - [ADR 0013 — Landing Page: conversão e divulgação progressiva](docs/adr/0013-landing-page-conversao.md) — redesign v1.6.5
+- [Tela de Boas-vindas do TrailBook](mem://principles/tela-de-boas-vindas) — app abre na Boas-vindas; Landing vira site institucional em /site
+- [ADR 0017 — Tela de Boas-vindas (UX 2.0)](docs/adr/0017-tela-de-boas-vindas.md) — background dinâmico, Ken Burns, saudação contextual
 - [Retorno perceptível a toda ação](mem://principles/retorno-perceptivel) — nenhum clique pode terminar em silêncio
 - [ADR 0014 — Retorno Perceptível a Toda Ação](docs/adr/0014-retorno-perceptivel.md) — Sprint v1.6.7 de navegação, comunicação e atendimento
 - [ADR 0015 — Health 4.0: da nota para a avaliação inteligente](docs/adr/0015-avaliacao-inteligente-health-4.md) — estrutura oficial da avaliação e Modo Técnico
