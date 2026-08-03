@@ -489,8 +489,12 @@ function SiteFooter() {
           <span className="font-display text-lg font-bold">TrailBook</span>
         </div>
         <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
-          <Link to="/auth" className="hover:text-foreground">Entrar</Link>
-          <Link to="/auth" className="hover:text-foreground">Criar conta</Link>
+          <a href={appUrl()} {...externalLinkProps} className="hover:text-foreground">
+            Abrir o aplicativo
+          </a>
+          <a href={appSignUpUrl()} {...externalLinkProps} className="hover:text-foreground">
+            Criar uma conta
+          </a>
           <span className="text-muted-foreground/70">Termos</span>
           <span className="text-muted-foreground/70">Privacidade</span>
           <span className="text-muted-foreground/70">Contato</span>
