@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SiteRouteImport } from './routes/site'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as HelpRouteImport } from './routes/help'
 import { Route as AuthRouteImport } from './routes/auth'
@@ -66,6 +67,11 @@ import { Route as AuthenticatedMotorcyclesIdCheckupsNovoRouteImport } from './ro
 import { Route as AuthenticatedMotorcyclesIdCheckupsCompararRouteImport } from './routes/_authenticated/motorcycles.$id.checkups.comparar'
 import { Route as AuthenticatedMotorcyclesIdCheckupsCodeRouteImport } from './routes/_authenticated/motorcycles.$id.checkups.$code'
 
+const SiteRoute = SiteRouteImport.update({
+  id: '/site',
+  path: '/site',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
   id: '/reset-password',
   path: '/reset-password',
@@ -380,6 +386,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/help': typeof HelpRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/site': typeof SiteRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/agenda': typeof AuthenticatedAgendaRoute
   '/central': typeof AuthenticatedCentralRoute
@@ -437,6 +444,7 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/help': typeof HelpRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/site': typeof SiteRoute
   '/agenda': typeof AuthenticatedAgendaRoute
   '/central': typeof AuthenticatedCentralRoute
   '/certificates': typeof AuthenticatedCertificatesRoute
@@ -493,6 +501,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/help': typeof HelpRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/site': typeof SiteRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/agenda': typeof AuthenticatedAgendaRoute
   '/_authenticated/central': typeof AuthenticatedCentralRoute
@@ -552,6 +561,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/help'
     | '/reset-password'
+    | '/site'
     | '/admin'
     | '/agenda'
     | '/central'
@@ -609,6 +619,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/help'
     | '/reset-password'
+    | '/site'
     | '/agenda'
     | '/central'
     | '/certificates'
@@ -664,6 +675,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/help'
     | '/reset-password'
+    | '/site'
     | '/_authenticated/admin'
     | '/_authenticated/agenda'
     | '/_authenticated/central'
@@ -723,6 +735,7 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   HelpRoute: typeof HelpRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  SiteRoute: typeof SiteRoute
   CTokenRoute: typeof CTokenRoute
   LTokenRoute: typeof LTokenRoute
   RCodeRoute: typeof RCodeRoute
@@ -731,6 +744,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/site': {
+      id: '/site'
+      path: '/site'
+      fullPath: '/site'
+      preLoaderRoute: typeof SiteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/reset-password': {
       id: '/reset-password'
       path: '/reset-password'
@@ -1275,6 +1295,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   HelpRoute: HelpRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  SiteRoute: SiteRoute,
   CTokenRoute: CTokenRoute,
   LTokenRoute: LTokenRoute,
   RCodeRoute: RCodeRoute,
@@ -1283,13 +1304,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { startInstance } from './start.ts'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-    config: Awaited<ReturnType<typeof startInstance.getOptions>>
-  }
-}

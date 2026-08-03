@@ -16,6 +16,10 @@ import { CpfConflictDialog } from "@/components/CpfConflictDialog";
 
 export const Route = createFileRoute("/auth")({
   ssr: false,
+  validateSearch: (search: Record<string, unknown>) => ({
+    tab: search["tab"] === "signup" ? ("signup" as const) : ("signin" as const),
+    recuperar: search["recuperar"] === "1" || search["recuperar"] === true ? true : undefined,
+  }),
   head: () => ({
     meta: [
       { title: "Entrar — TrailBook" },
@@ -54,6 +58,7 @@ function armEphemeralSession() {
 
 function AuthPage() {
   const navigate = useNavigate();
+  const search = Route.useSearch();
   const [loading, setLoading] = useState(false);
   const [blockedNotice, setBlockedNotice] = useState<{ status: string; reason: string } | null>(null);
   // Sign-in state
@@ -67,7 +72,7 @@ function AuthPage() {
     email: "", password: "", confirm: "", accept: false,
   });
   // Forgot-password state
-  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(Boolean(search.recuperar));
   const [forgotEmail, setForgotEmail] = useState("");
   // Post-signup confirmation state
   const [signupSent, setSignupSent] = useState<string | null>(null);
@@ -237,7 +242,7 @@ function AuthPage() {
               </div>
             </div>
           ) : (
-          <Tabs defaultValue="signin">
+          <Tabs defaultValue={search.tab}>
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="signin">Entrar</TabsTrigger>
               <TabsTrigger value="signup">Criar conta</TabsTrigger>
