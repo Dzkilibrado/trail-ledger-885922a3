@@ -56,3 +56,27 @@ Sessão ativa pula a tela e vai para o painel.
 - O site institucional evolui sem impactar o aplicativo, e vice-versa.
 - Evoluções futuras (novas imagens, campanhas sazonais, mensagens
   institucionais) entram pela biblioteca declarativa, sem tocar em componentes.
+
+## Complemento — Separação App × Site Institucional (v1.9.2)
+
+**APP = utilizar. SITE = conhecer.** As duas experiências deixam de compartilhar
+navegação.
+
+- "Conheça o TrailBook" não navega mais por rota interna: abre o Site
+  Institucional no **navegador padrão do aparelho** (Chrome no Android, Safari
+  no iPhone) via `<a href target="_blank" rel="noopener noreferrer">`. O
+  aplicativo permanece aberto em segundo plano com o estado intacto — sem
+  `navigate()`, sem reload, sem limpar `sessionStorage` (a imagem sorteada
+  `tb.welcome.bg` continua a mesma no retorno).
+- O Site Institucional deixa de ter função de autenticação: sem "Entrar", sem
+  recuperação de senha, sem formulário de login. No lugar, CTAs:
+  "Ainda não utiliza o TrailBook?" → Criar uma conta ·
+  "Já possui uma conta?" → Abrir o aplicativo.
+- Todos os links entre site e app usam URLs públicas absolutas resolvidas por
+  `src/lib/external-links.ts` — formato exigido por **Android App Links** e
+  **Apple Universal Links**. Na publicação nas lojas basta hospedar
+  `/.well-known/assetlinks.json` e `/.well-known/apple-app-site-association`
+  declarando `/` e `/auth`; nenhum componente precisará mudar. Sem o app
+  instalado, a mesma URL abre a versão web (fallback nativo).
+- Nenhuma funcionalidade do aplicativo é impactada: Entrar, Criar conta e
+  Esqueci minha senha seguem íntegros na Tela de Boas-vindas e em `/auth`.
