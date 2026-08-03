@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { createRouter } from "@tanstack/react-router";
 import { routeTree } from "./routeTree.gen";
+import { AppLoading } from "./components/AppLoading";
 
 export const getRouter = () => {
   // Defaults sensatos para o TrailBook (Sprint v1.6 — polimento):
@@ -32,6 +33,7 @@ export const getRouter = () => {
     // Evita "flash" de estado pendente em navegações rápidas.
     defaultPendingMs: 200,
     defaultPendingMinMs: 300,
+    defaultPendingComponent: AppLoading,
   });
 
   return router;
