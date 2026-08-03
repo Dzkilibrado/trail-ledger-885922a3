@@ -1,3 +1,4 @@
+import { shareUrl } from "@/lib/external-links";
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";

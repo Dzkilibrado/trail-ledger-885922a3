@@ -1,3 +1,4 @@
+import { shareUrl } from "@/lib/external-links";
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import QRCode from "qrcode";
