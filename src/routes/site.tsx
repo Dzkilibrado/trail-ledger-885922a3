@@ -18,6 +18,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
+import { appUrl, appSignUpUrl, externalLinkProps } from "@/lib/external-links";
 import heroImage from "@/assets/landing-hero.jpg";
 import phoneImage from "@/assets/landing-phone.jpg";
 import certificateImage from "@/assets/landing-certificate.jpg";
@@ -78,16 +79,16 @@ function SiteHeader() {
           </span>
         </Link>
         <nav className="flex items-center gap-2">
-          <Link to="/auth">
-            <Button variant="ghost" size="sm" className="text-sm font-medium">
-              Entrar
+          <a href={appUrl()} {...externalLinkProps}>
+            <Button variant="ghost" size="sm" className="whitespace-nowrap text-sm font-medium">
+              Abrir o aplicativo
             </Button>
-          </Link>
-          <Link to="/auth">
+          </a>
+          <a href={appSignUpUrl()} {...externalLinkProps}>
             <Button size="sm" className="btn-glow whitespace-nowrap">
-              Criar conta
+              Criar uma conta
             </Button>
-          </Link>
+          </a>
         </nav>
       </div>
     </header>
@@ -112,17 +113,17 @@ function Hero() {
             Digital que acompanha a motocicleta.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link to="/auth" className="w-full sm:w-auto">
+            <a href={appSignUpUrl()} {...externalLinkProps} className="w-full sm:w-auto">
               <Button size="lg" className="btn-glow w-full sm:w-auto">
-                Criar conta
+                Criar uma conta
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
-            </Link>
-            <Link to="/auth" className="w-full sm:w-auto">
+            </a>
+            <a href={appUrl()} {...externalLinkProps} className="w-full sm:w-auto">
               <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                Entrar
+                Abrir o aplicativo
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
 
