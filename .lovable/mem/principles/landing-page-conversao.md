@@ -24,6 +24,14 @@ para smartphones."
 6. CTA final
 7. Rodapé mínimo
 
+## Separação App × Site (v1.9.2)
+
+O Site Institucional vive em `/site` e **não possui autenticação**: sem login,
+sem recuperação de senha. Usa CTAs que abrem o aplicativo em URL pública
+absoluta (`src/lib/external-links.ts`), sempre `target="_blank"`. O app abre o
+site no navegador padrão do aparelho, nunca por rota interna. APP = utilizar ·
+SITE = conhecer.
+
 ## Proibições
 
 - Vídeo institucional, autoplay, tour animado, sequência automática de frames.
@@ -31,6 +39,8 @@ para smartphones."
 - Repetição de conteúdo do app (ensino fica no onboarding/`/como-funciona`/FAQ/HelpTooltips).
 - Bibliotecas pesadas de carrossel — usar scroll-snap nativo.
 - Modal para conteúdo longo.
+- Login, cadastro inline ou recuperação de senha dentro do site.
+- `<Link>` interno entre site e aplicativo.
 
 ## Como aplicar
 

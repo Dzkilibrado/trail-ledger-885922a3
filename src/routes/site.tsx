@@ -18,6 +18,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
+import { appUrl, appSignUpUrl, externalLinkProps } from "@/lib/external-links";
 import heroImage from "@/assets/landing-hero.jpg";
 import phoneImage from "@/assets/landing-phone.jpg";
 import certificateImage from "@/assets/landing-certificate.jpg";
@@ -78,16 +79,16 @@ function SiteHeader() {
           </span>
         </Link>
         <nav className="flex items-center gap-2">
-          <Link to="/auth">
-            <Button variant="ghost" size="sm" className="text-sm font-medium">
-              Entrar
+          <a href={appUrl()} {...externalLinkProps}>
+            <Button variant="ghost" size="sm" className="whitespace-nowrap text-sm font-medium">
+              Abrir o aplicativo
             </Button>
-          </Link>
-          <Link to="/auth">
+          </a>
+          <a href={appSignUpUrl()} {...externalLinkProps}>
             <Button size="sm" className="btn-glow whitespace-nowrap">
-              Criar conta
+              Criar uma conta
             </Button>
-          </Link>
+          </a>
         </nav>
       </div>
     </header>
@@ -112,17 +113,17 @@ function Hero() {
             Digital que acompanha a motocicleta.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Link to="/auth" className="w-full sm:w-auto">
+            <a href={appSignUpUrl()} {...externalLinkProps} className="w-full sm:w-auto">
               <Button size="lg" className="btn-glow w-full sm:w-auto">
-                Criar conta
+                Criar uma conta
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
-            </Link>
-            <Link to="/auth" className="w-full sm:w-auto">
+            </a>
+            <a href={appUrl()} {...externalLinkProps} className="w-full sm:w-auto">
               <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                Entrar
+                Abrir o aplicativo
               </Button>
-            </Link>
+            </a>
           </div>
         </div>
 
@@ -448,18 +449,24 @@ function FinalCTA() {
             Comece a organizar a{" "}
             <span className="text-gradient-primary">história da sua moto</span>.
           </h2>
-          <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Link to="/auth" className="w-full sm:w-auto">
-              <Button size="lg" className="btn-glow w-full sm:w-auto">
-                Criar conta
-                <ArrowRight className="ml-1 h-4 w-4" />
-              </Button>
-            </Link>
-            <Link to="/auth" className="w-full sm:w-auto">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto">
-                Entrar
-              </Button>
-            </Link>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-sm text-muted-foreground">Ainda não utiliza o TrailBook?</p>
+              <a href={appSignUpUrl()} {...externalLinkProps} className="w-full sm:w-auto">
+                <Button size="lg" className="btn-glow w-full sm:w-auto">
+                  Criar uma conta
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              </a>
+            </div>
+            <div className="flex flex-col items-center gap-2">
+              <p className="text-sm text-muted-foreground">Já possui uma conta?</p>
+              <a href={appUrl()} {...externalLinkProps} className="w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                  Abrir o aplicativo
+                </Button>
+              </a>
+            </div>
           </div>
         </div>
       </div>
@@ -482,8 +489,12 @@ function SiteFooter() {
           <span className="font-display text-lg font-bold">TrailBook</span>
         </div>
         <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
-          <Link to="/auth" className="hover:text-foreground">Entrar</Link>
-          <Link to="/auth" className="hover:text-foreground">Criar conta</Link>
+          <a href={appUrl()} {...externalLinkProps} className="hover:text-foreground">
+            Abrir o aplicativo
+          </a>
+          <a href={appSignUpUrl()} {...externalLinkProps} className="hover:text-foreground">
+            Criar uma conta
+          </a>
           <span className="text-muted-foreground/70">Termos</span>
           <span className="text-muted-foreground/70">Privacidade</span>
           <span className="text-muted-foreground/70">Contato</span>
