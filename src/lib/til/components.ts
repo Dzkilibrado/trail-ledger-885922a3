@@ -171,7 +171,7 @@ export function computeComponentViews(
     const severity = ((sch as any).severity as ComponentSeverity) ?? "medium";
 
     const diagnosis = computeComponentDiagnosis({
-      name: sch.name,
+      name: sch.name ?? "Componente",
       severity,
       rawStatus: status,
       status: s ?? null,
@@ -187,7 +187,7 @@ export function computeComponentViews(
 
     return {
       scheduleId: sch.id,
-      name: sch.name,
+      name: sch.name ?? "Componente",
       category: sch.category,
       categoryLabel: MAINT_CATEGORY_LABEL[sch.category] ?? sch.category,
       tone,
