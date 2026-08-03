@@ -12,9 +12,11 @@
 export const TRAILBOOK_PUBLIC_ORIGIN = "https://trailbook.com.br";
 
 /**
- * Origem pública a usar em links externos.
- * Em preview/publicado usa a própria origem (mantém o ambiente coerente);
- * fora do navegador cai no domínio oficial.
+ * Origem TÉCNICA da execução atual.
+ *
+ * Uso restrito a fluxos que exigem mesma origem (ex.: redirecionamentos de
+ * autenticação). NUNCA deve ser exibida, copiada, impressa ou transformada em
+ * link/QR Code visível ao usuário (ADR 0018).
  */
 export function publicOrigin(): string {
   if (typeof window === "undefined") return TRAILBOOK_PUBLIC_ORIGIN;
@@ -23,7 +25,7 @@ export function publicOrigin(): string {
   return origin;
 }
 
-/** URL absoluta de um caminho público. */
+/** @deprecated Use `shareUrl()`. Mantido apenas para fluxos técnicos internos. */
 export function publicUrl(path: string): string {
   return `${publicOrigin()}${path.startsWith("/") ? path : `/${path}`}`;
 }
@@ -43,13 +45,13 @@ export function shareUrl(path: string): string {
 export const TRAILBOOK_DISPLAY_DOMAIN = "trailbook.com.br";
 
 /** Site Institucional — "Conheça o TrailBook". */
-export const siteUrl = () => publicUrl("/site");
+export const siteUrl = () => shareUrl("/site");
 
 /** Aplicativo — Tela de Boas-vindas. */
-export const appUrl = () => publicUrl("/");
+export const appUrl = () => shareUrl("/");
 
 /** Aplicativo — criação de conta. */
-export const appSignUpUrl = () => publicUrl("/auth?tab=signup");
+export const appSignUpUrl = () => shareUrl("/auth?tab=signup");
 
 /** Props padrão de abertura externa (navegador padrão do aparelho). */
 export const externalLinkProps = {
