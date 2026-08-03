@@ -8,6 +8,7 @@ O usuário nunca vê nota/percentual: avaliação → diagnóstico → achados �
 - Evolução controlada: toda nova funcionalidade passa pelas 5 perguntas de `mem://principles/evolucao-controlada` (problema real, uso frequente, cabe em fluxo existente, impacto na complexidade, solução mais simples). Cada versão deve tornar o TrailBook melhor, nunca mais complexo. Na dúvida entre mais features e melhor UX → sempre UX.
 - Toda nova funcionalidade DEVE seguir as Diretrizes Permanentes de Desenvolvimento (`mem://standards/dev-directives`): arquitetura escalável, RLS + roles + ModuleGate, auditoria imutável, UX consistente, responsivo desktop/tablet/mobile, formulários com seletores + "Outros", confirmação em ações críticas, feedback via sonner, navegação com PageHeader, reuso de componentes shadcn, validação frontend+backend+DB, paginação/lazy/cache, homologação e atualização de docs.
 - Admin fixo: dzkilibrado@gmail.com. Trava de auto-rebaixamento ativa.
+- APP = utilizar (`/`, Tela de Boas-vindas) · SITE = conhecer (`/site`, sem autenticação). A navegação entre eles é SEMPRE link externo (`target="_blank"`) com URL pública absoluta de `src/lib/external-links.ts` — nunca `<Link>` interno (ADR 0017).
 - Módulos controlados por `platform_modules` (active/maintenance/disabled/beta) via `<ModuleGate />`. Sidebar reage ao status.
 - Auditoria: `audit_log` + triggers + `write_admin_audit`. Imutável.
 - Documentação oficial vive em `/mnt/documents/Documentation/`. Atualizar CHANGELOG/Release Notes/Manual ao concluir features.
