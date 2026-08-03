@@ -33,16 +33,14 @@ export function AppWelcome({ canSignUp = true }: { canSignUp?: boolean }) {
             fetchPriority="high"
             decoding="async"
             className={cn(
-              "h-full w-full object-cover opacity-0 transition-opacity duration-700",
-              "[animation-fill-mode:forwards]",
+              "h-full w-full object-cover",
               animate && "animate-ken-burns",
             )}
-            onLoad={(e) => e.currentTarget.classList.remove("opacity-0")}
           />
         ) : null}
         <div
           aria-hidden
-          className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/60 to-background"
+          className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background"
         />
       </div>
 
