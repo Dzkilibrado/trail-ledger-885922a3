@@ -5,6 +5,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useWelcomeBackground } from "./useWelcomeBackground";
 import { getWelcomeGreeting, type WelcomeGreeting } from "./greeting";
+import { siteUrl, externalLinkProps } from "@/lib/external-links";
 
 /**
  * Tela de Boas-vindas do TrailBook.
@@ -99,13 +100,16 @@ export function AppWelcome({ canSignUp = true }: { canSignUp?: boolean }) {
           </Link>
         </div>
 
-        <Link
-          to="/site"
+        {/* Site Institucional abre no navegador padrão do aparelho — o app
+            permanece aberto em segundo plano, preservando todo o estado. */}
+        <a
+          href={siteUrl()}
+          {...externalLinkProps}
           className="mx-auto mt-4 inline-flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-primary underline-offset-4 hover:underline"
         >
           Conheça o TrailBook
           <ArrowRight className="h-4 w-4" aria-hidden />
-        </Link>
+        </a>
       </main>
     </div>
   );
