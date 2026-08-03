@@ -1,3 +1,14 @@
+## [1.9.1] — 2026-08-03 — UX 2.0: Tela de Boas-vindas
+
+### Alterado
+- O aplicativo passa a abrir na **Tela de Boas-vindas do TrailBook** (`/`), com imagem premium, saudação contextual e acesso direto ao login.
+- A Landing Page institucional foi preservada integralmente e movida para `/site`, acessível pelo link "Conheça o TrailBook".
+
+### Adicionado
+- `src/components/welcome/` — `AppWelcome`, biblioteca oficial de imagens por coleção, sorteio fixado por sessão e saudação contextual.
+- Efeito Ken Burns em CSS puro, desligado automaticamente em dispositivos modestos ou com movimento reduzido.
+- ADR 0017 — Tela de Boas-vindas do TrailBook.
+
 ## [1.9.0] — TrailBook Health · Etapa 3 homologada
 
 - Homologação final do Check-up Inteligente, Laudo Inteligente, PDF e compartilhamento (`docs/homologacao/etapa-3-health.md`).
