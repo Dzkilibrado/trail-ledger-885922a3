@@ -40,7 +40,7 @@ export function AppWelcome({ canSignUp = true }: { canSignUp?: boolean }) {
         ) : null}
         <div
           aria-hidden
-          className="absolute inset-0 bg-gradient-to-b from-background/40 via-background/70 to-background"
+          className="absolute inset-0 bg-gradient-to-b from-background/45 via-background/80 to-background"
         />
       </div>
 
