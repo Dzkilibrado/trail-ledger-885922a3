@@ -6,6 +6,7 @@ import { useMotorcycleBadges } from "@/hooks/useMotorcycleBadges";
 import { cn } from "@/lib/utils";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";
+import { SectionBoundary } from "@/components/SectionBoundary";
 
 /**
  * Bloco reutilizável "Selos de Qualidade do Histórico".
@@ -13,6 +14,26 @@ import { HELP } from "@/lib/help/texts";
  * Modo full: sempre exibe a grade completa (usado no Passaporte).
  */
 export function BadgeSection({
+  motorcycleId,
+  variant = "compact",
+  className,
+}: {
+  motorcycleId: string;
+  variant?: "compact" | "full";
+  className?: string;
+}) {
+  return (
+    <SectionBoundary title="Não foi possível carregar os selos">
+      <BadgeSectionContent
+        motorcycleId={motorcycleId}
+        variant={variant}
+        className={className}
+      />
+    </SectionBoundary>
+  );
+}
+
+function BadgeSectionContent({
   motorcycleId,
   variant = "compact",
   className,
