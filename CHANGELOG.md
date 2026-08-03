@@ -1,3 +1,13 @@
+## [1.9.2] — 2026-08-03 — Separação App × Site Institucional
+
+### Alterado
+- "Conheça o TrailBook" abre o Site Institucional no **navegador padrão do aparelho**; o aplicativo permanece em segundo plano com o estado preservado.
+- O Site Institucional deixa de ter função de autenticação (sem Entrar, sem recuperação de senha) e passa a usar CTAs: "Ainda não utiliza o TrailBook?" → Criar uma conta · "Já possui uma conta?" → Abrir o aplicativo.
+
+### Adicionado
+- `src/lib/external-links.ts` — URLs públicas absolutas entre app e site, já no formato exigido por Android App Links e Apple Universal Links.
+- ADR 0017 complementado com a diretriz APP = utilizar · SITE = conhecer.
+
 ## [1.9.1] — 2026-08-03 — UX 2.0: Tela de Boas-vindas
 
 ### Alterado
