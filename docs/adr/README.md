@@ -31,3 +31,5 @@ preservando o racional das escolhas feitas.
 | [0004](./0004-mobile-native-first.md) | Mobile Native First | Aceita | v1.2.1 |
 | [0015](./0015-avaliacao-inteligente-health-4.md) | Health 4.0 — da nota para a avaliação inteligente | Aceita | v1.9.0 |
 | [0016](./0016-constituicao-do-produto.md) | Constituição do Produto TrailBook | Aceita | permanente |
+| [0017](./0017-tela-de-boas-vindas.md) | Tela de Boas-vindas e separação App × Site | Aceita | v1.9.1 |
+| [0018](./0018-identidade-invisivel.md) | Identidade Invisível: o usuário vê apenas TrailBook | Aceita | permanente |

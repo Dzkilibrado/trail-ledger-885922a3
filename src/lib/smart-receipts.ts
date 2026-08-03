@@ -44,8 +44,8 @@ export const RECEIPT_OPEN_STATES: readonly ReceiptStatus[] = [
  * Ex.: https://trailbook.com.br/r/TB-RCV-2026-000001
  */
 export function publicReceiptUrl(code: string, origin?: string): string {
-  const base = (origin ?? (typeof window !== "undefined" ? window.location.origin : "https://trailbook.com.br"))
-    .replace(/\/$/, "");
+  // Identidade TrailBook: links públicos sempre no domínio oficial.
+  const base = (origin ?? "https://trailbook.com.br").replace(/\/$/, "");
   return `${base}/r/${code}`;
 }
 

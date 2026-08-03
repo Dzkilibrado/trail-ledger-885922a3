@@ -28,6 +28,20 @@ export function publicUrl(path: string): string {
   return `${publicOrigin()}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
+/**
+ * URL de compartilhamento — SEMPRE no domínio oficial do TrailBook.
+ *
+ * Diferente de `publicUrl`, nunca reflete a origem técnica do ambiente
+ * (preview, homologação, hospedagem). Todo link que o usuário vê, copia,
+ * envia, imprime ou transforma em QR Code deve usar esta função.
+ */
+export function shareUrl(path: string): string {
+  return `${TRAILBOOK_PUBLIC_ORIGIN}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
+/** Domínio oficial em formato curto, para exibição em telas e documentos. */
+export const TRAILBOOK_DISPLAY_DOMAIN = "trailbook.com.br";
+
 /** Site Institucional — "Conheça o TrailBook". */
 export const siteUrl = () => publicUrl("/site");
 

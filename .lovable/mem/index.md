@@ -25,6 +25,7 @@ O usuário nunca vê nota/percentual: avaliação → diagnóstico → achados �
 - Erro com recuperação (`mem://principles/erro-com-recuperacao`, ADR 0012): falhas por estado desatualizado disparam sincronia automática (refetch + invalidate) ANTES de qualquer mensagem. Backend lança `STALE_STATE:` (helper `src/lib/errors/stale-state.ts`), frontend sincroniza e só então mostra mensagem amigável — nunca "recarregue a página". Retry só habilita após sincronia e é idempotente. Par permanente com ADR 0011.
 - App abre na **Tela de Boas-vindas** (`/`, `src/components/welcome/`); a Landing Page é apenas site institucional em `/site` (ADR 0017). Nunca chamar de "Tela de Login".
 - Landing pública (`mem://principles/landing-page-conversao`, ADR 0013): missão = converter, não ensinar. Estrutura fixa em `src/routes/index.tsx`: Hero → Benefícios (≤5) → Como funciona (≤4) → Carrossel (≤4 telas, scroll-snap, sem autoplay) → FAQ (5) → CTA final → Rodapé mínimo. Detalhes vão para `/como-funciona`, `/faq` ou app. Proibido vídeo/autoplay/tour animado/bibliotecas pesadas de carrossel. Nova seção só entra passando pelas 3 perguntas de UX + ADR 0008.
+- **Identidade Invisível (ADR 0018, `mem://principles/identidade-invisivel`) — diretriz permanente.** O usuário nunca percebe como o TrailBook foi feito: nada de frameworks, hospedagem, ambientes, domínios temporários, URLs técnicas, IDs internos ou erros crus. Todo link público/QR/PDF usa `shareUrl()` de `src/lib/external-links.ts` → sempre `https://trailbook.com.br`; nunca `window.location.origin`.
 
 ## Memories
 - [Avaliação inteligente (Health 4.0)](.lovable/mem/principles/avaliacao-inteligente.md) — estrutura obrigatória da avaliação; nota só no Modo Técnico
@@ -60,3 +61,5 @@ O usuário nunca vê nota/percentual: avaliação → diagnóstico → achados �
 - [ADR 0015 — Health 4.0: da nota para a avaliação inteligente](docs/adr/0015-avaliacao-inteligente-health-4.md) — estrutura oficial da avaliação e Modo Técnico
 - [Constituição do Produto TrailBook](mem://principles/constituicao-trailbook) — missão e 10 princípios permanentes
 - [ADR 0016 — Constituição do Produto TrailBook](docs/adr/0016-constituicao-do-produto.md) — registro oficial das diretrizes permanentes
+- [Identidade Invisível do TrailBook](mem://principles/identidade-invisivel) — tecnologia transparente ao usuário e domínios oficiais em todo link público
+- [ADR 0018 — Identidade Invisível](docs/adr/0018-identidade-invisivel.md) — `shareUrl()`, domínio oficial, preparo para App Links/Universal Links

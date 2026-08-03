@@ -1,3 +1,4 @@
+import { shareUrl } from "@/lib/external-links";
 import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
@@ -88,7 +89,7 @@ export function CertificateSettingsDialog({ motorcycleId, existing, trigger, onS
   }
 
   const eff = effectiveStatus({ status, expires_at: expires ? new Date(expires).toISOString() : null });
-  const publicUrl = existing && typeof window !== "undefined" ? `${window.location.origin}/c/${existing.public_token}` : null;
+  const publicUrl = existing ? shareUrl(`/c/${existing.public_token}`) : null;
   const sensitiveOn = CERT_SECTIONS.filter((s) => s.sensitive && sections.has(s.key));
 
   useEffect(() => {

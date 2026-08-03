@@ -1,3 +1,4 @@
+import { shareUrl } from "@/lib/external-links";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@supabase/supabase-js";
@@ -62,7 +63,7 @@ function PublicCert() {
   const [autoDownload, setAutoDownload] = useState(false);
   const [autoDownloadDone, setAutoDownloadDone] = useState(false);
 
-  const publicUrl = typeof window !== "undefined" ? `${window.location.origin}/c/${token}` : `/c/${token}`;
+  const publicUrl = shareUrl(`/c/${token}`);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
