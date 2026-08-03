@@ -22,7 +22,7 @@ function bucketize(components: ComponentView[]): HealthBuckets {
   }
   const bySeverityThenName = (a: ComponentView, b: ComponentView) => {
     const w = (SEVERITY_WEIGHT[b.severity] ?? 0) - (SEVERITY_WEIGHT[a.severity] ?? 0);
-    return w !== 0 ? w : a.name.localeCompare(b.name);
+    return w !== 0 ? w : (a.name ?? "").localeCompare(b.name ?? "");
   };
   overdue.sort(bySeverityThenName);
   attention.sort(bySeverityThenName);

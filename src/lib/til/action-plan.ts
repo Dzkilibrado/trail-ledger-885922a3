@@ -135,7 +135,7 @@ export function computeActionPlan(components: ComponentView[]): ActionPlanItem[]
 
     items.push({
       scheduleId: c.scheduleId,
-      title: c.name,
+      title: c.name ?? "Componente",
       category: c.categoryLabel,
       status: d.status,
       group,
@@ -160,7 +160,7 @@ export function computeActionPlan(components: ComponentView[]): ActionPlanItem[]
     if (a.isSafetyItem !== b.isSafetyItem) return a.isSafetyItem ? -1 : 1;
     const s = HEALTH_STATUS_WEIGHT[a.status] - HEALTH_STATUS_WEIGHT[b.status];
     if (s !== 0) return s;
-    return a.title.localeCompare(b.title);
+    return (a.title ?? "").localeCompare(b.title ?? "");
   });
 }
 
