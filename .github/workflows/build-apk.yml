@@ -35,6 +35,9 @@ jobs:
       - name: Instalar dependências
         run: npm ci
 
+      - name: Verificar pasta webDir do Capacitor
+        run: test -f capacitor-www/index.html
+
       - name: Adicionar/sincronizar plataforma Android
         run: |
           if [ ! -d "android" ]; then

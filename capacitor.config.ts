@@ -3,7 +3,10 @@ import type { CapacitorConfig } from "@capacitor/cli";
 const config: CapacitorConfig = {
   appId: "br.com.trailbook.app",
   appName: "TrailBook",
-  webDir: "dist/client",
+  // Não usamos o build SSR completo aqui: o app carrega o site publicado
+  // via server.url abaixo. Esta pasta só serve de fallback local mínimo,
+  // exigido pelo Capacitor para inicializar o projeto Android.
+  webDir: "capacitor-www",
   server: {
     // O app carrega o site já publicado via Lovable neste domínio próprio.
     // Isso mantém o app sempre sincronizado com o que está publicado,
