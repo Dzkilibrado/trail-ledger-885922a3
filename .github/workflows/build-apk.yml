@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       versionName:
-        description: "Versão exibida no app (ex: 1.0.0)"
+        description: "Versão exibida no app (ex: 1.0.0). Deixe em branco para usar a do package.json"
         required: false
         default: ""
   push:
@@ -44,6 +44,25 @@ jobs:
             npx cap add android
           fi
           npx cap sync android
+
+      - name: Aplicar ícone do app
+        run: npx capacitor-assets generate --android --assetPath assets --iconBackgroundColor "#1a1815" --iconBackgroundColorDark "#1a1815"
+
+      - name: Definir nome e número da versão
+        run: |
+          VERSION_NAME="${{ github.event.inputs.versionName }}"
+          if [ -z "$VERSION_NAME" ]; then
+            VERSION_NAME=$(node -p "require('./package.json').version")
+          fi
+          VERSION_CODE=${{ github.run_number }}
+          echo "Versao: $VERSION_NAME ($VERSION_CODE)"
+          sed -i "s/versionName \".*\"/versionName \"$VERSION_NAME\"/" android/app/build.gradle
+          sed -i "s/versionCode .*/versionCode $VERSION_CODE/" android/app/build.gradle
+
+      - name: Usar keystore de debug fixo (evita precisar desinstalar a cada build)
+        run: |
+          mkdir -p ~/.android
+          cp android-assets/debug.keystore ~/.android/debug.keystore
 
       - name: Build do APK (debug)
         working-directory: android
