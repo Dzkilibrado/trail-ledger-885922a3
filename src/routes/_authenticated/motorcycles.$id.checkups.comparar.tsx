@@ -13,9 +13,15 @@ export const Route = createFileRoute("/_authenticated/motorcycles/$id/checkups/c
   head: () => ({
     meta: [
       { title: "Comparar laudos — TrailBook" },
-      { name: "description", content: "Compare dois laudos e veja a evolução da saúde da sua moto." },
+      {
+        name: "description",
+        content: "Compare dois laudos e veja a evolução da saúde da sua moto.",
+      },
       { property: "og:title", content: "Comparar laudos — TrailBook" },
-      { property: "og:description", content: "Evolução entre dois check-ups da mesma motocicleta." },
+      {
+        property: "og:description",
+        content: "Evolução entre dois check-ups da mesma motocicleta.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -42,17 +48,23 @@ function ComparePage() {
   const [a, setA] = useState<string>("");
   const [b, setB] = useState<string>("");
 
-  const options = list.map((r) => ({ value: r.code ?? r.id, label: `${r.code} — ${formatDate(r.issued_at)}` }));
+  const options = list.map((r) => ({
+    value: r.code ?? r.id,
+    label: `${r.code} — ${formatDate(r.issued_at)}`,
+  }));
   const older = list.find((r) => (r.code ?? r.id) === (a || options[1]?.value));
   const newer = list.find((r) => (r.code ?? r.id) === (b || options[0]?.value));
 
   const comparison = useMemo(() => {
-    const sa = (older as unknown as { health_report_snapshots?: { payload: unknown } })?.health_report_snapshots
-      ?.payload as HealthReportSnapshot | undefined;
-    const sb = (newer as unknown as { health_report_snapshots?: { payload: unknown } })?.health_report_snapshots
-      ?.payload as HealthReportSnapshot | undefined;
+    const sa = (older as unknown as { health_report_snapshots?: { payload: unknown } })
+      ?.health_report_snapshots?.payload as HealthReportSnapshot | undefined;
+    const sb = (newer as unknown as { health_report_snapshots?: { payload: unknown } })
+      ?.health_report_snapshots?.payload as HealthReportSnapshot | undefined;
     if (!sa || !sb || older?.id === newer?.id) return null;
-    return compareReports({ code: older!.code ?? "", snapshot: sa }, { code: newer!.code ?? "", snapshot: sb });
+    return compareReports(
+      { code: older!.code ?? "", snapshot: sa },
+      { code: newer!.code ?? "", snapshot: sb },
+    );
   }, [older, newer]);
 
   if (q.isLoading) return <TBLoadingState label="Carregando laudos…" />;
@@ -77,19 +89,24 @@ function ComparePage() {
       ) : (
         <>
           <TBCard className="grid gap-3 sm:grid-cols-2">
-            <div className="space-y-1">
+            <div className="min-w-0 space-y-1">
               <span className="text-xs font-semibold text-muted-foreground">Laudo anterior</span>
               <TBSelect value={a || options[1]?.value} onValueChange={setA} options={options} />
             </div>
-            <div className="space-y-1">
-              <span className="text-xs font-semibold text-muted-foreground">Laudo mais recente</span>
+            <div className="min-w-0 space-y-1">
+              <span className="text-xs font-semibold text-muted-foreground">
+                Laudo mais recente
+              </span>
               <TBSelect value={b || options[0]?.value} onValueChange={setB} options={options} />
             </div>
           </TBCard>
           {comparison ? (
             <CompareView comparison={comparison} />
           ) : (
-            <TBEmptyState title="Selecione dois laudos diferentes" description="Escolha períodos distintos para comparar." />
+            <TBEmptyState
+              title="Selecione dois laudos diferentes"
+              description="Escolha períodos distintos para comparar."
+            />
           )}
         </>
       )}

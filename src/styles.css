@@ -63,9 +63,9 @@
   --radius: 0.75rem;
 
   /* Dark premium base */
-  --background: oklch(0.16 0.005 250);       /* preto grafite */
-  --foreground: oklch(0.97 0.005 80);        /* branco quente */
-  --elevated: oklch(0.20 0.006 250);         /* cinza escuro elevado */
+  --background: oklch(0.16 0.005 250); /* preto grafite */
+  --foreground: oklch(0.97 0.005 80); /* branco quente */
+  --elevated: oklch(0.2 0.006 250); /* cinza escuro elevado */
   --card: oklch(0.205 0.006 250);
   --card-foreground: oklch(0.97 0.005 80);
   --popover: oklch(0.205 0.006 250);
@@ -74,7 +74,7 @@
   /* Laranja principal */
   --primary: oklch(0.72 0.19 50);
   --primary-foreground: oklch(0.14 0.01 50);
-  --primary-glow: oklch(0.80 0.18 60);
+  --primary-glow: oklch(0.8 0.18 60);
 
   --secondary: oklch(0.24 0.008 250);
   --secondary-foreground: oklch(0.97 0.005 80);
@@ -85,17 +85,17 @@
 
   --destructive: oklch(0.62 0.22 27);
   --destructive-foreground: oklch(0.98 0 0);
-  --success: oklch(0.70 0.16 150);
-  --warning: oklch(0.80 0.17 85);
+  --success: oklch(0.7 0.16 150);
+  --warning: oklch(0.8 0.17 85);
 
   --border: oklch(1 0 0 / 8%);
   --input: oklch(1 0 0 / 10%);
   --ring: oklch(0.72 0.19 50 / 60%);
 
   --chart-1: oklch(0.72 0.19 50);
-  --chart-2: oklch(0.70 0.16 150);
+  --chart-2: oklch(0.7 0.16 150);
   --chart-3: oklch(0.65 0.15 240);
-  --chart-4: oklch(0.80 0.17 85);
+  --chart-4: oklch(0.8 0.17 85);
   --chart-5: oklch(0.62 0.22 27);
 
   --sidebar: oklch(0.14 0.005 250);
@@ -108,20 +108,28 @@
   --sidebar-ring: oklch(0.72 0.19 50 / 50%);
 
   /* Gradients & shadows */
-  --gradient-primary: linear-gradient(135deg, oklch(0.72 0.19 50), oklch(0.80 0.18 60));
-  --gradient-hero: radial-gradient(1200px 600px at 80% -10%, oklch(0.72 0.19 50 / 0.35), transparent 60%),
-                   radial-gradient(900px 500px at 0% 110%, oklch(0.30 0.04 50 / 0.55), transparent 60%),
-                   linear-gradient(180deg, oklch(0.14 0.005 250), oklch(0.18 0.006 250));
+  --gradient-primary: linear-gradient(135deg, oklch(0.72 0.19 50), oklch(0.8 0.18 60));
+  --gradient-hero:
+    radial-gradient(1200px 600px at 80% -10%, oklch(0.72 0.19 50 / 0.35), transparent 60%),
+    radial-gradient(900px 500px at 0% 110%, oklch(0.3 0.04 50 / 0.55), transparent 60%),
+    linear-gradient(180deg, oklch(0.14 0.005 250), oklch(0.18 0.006 250));
   --gradient-card: linear-gradient(180deg, oklch(0.22 0.007 250), oklch(0.18 0.006 250));
   --shadow-glow: 0 10px 40px -10px oklch(0.72 0.19 50 / 0.45);
   --shadow-elevated: 0 12px 32px -12px oklch(0 0 0 / 0.6);
 }
 
 @layer base {
-  html, body, #root {
+  html,
+  body,
+  #root {
     background-color: var(--color-background);
     color: var(--color-foreground);
     min-height: 100%;
+    /* Rede de segurança: nenhum elemento — texto longo, select, tabela, etc. —
+       pode empurrar a página além da largura da tela. Isso evita o efeito de
+       "estourar" a tela e cortar conteúdo à esquerda em qualquer rota do app. */
+    max-width: 100vw;
+    overflow-x: hidden;
   }
   * {
     border-color: var(--color-border);
@@ -130,7 +138,10 @@
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
   }
-  h1, h2, h3, h4 {
+  h1,
+  h2,
+  h3,
+  h4 {
     font-family: var(--font-display);
     letter-spacing: -0.02em;
   }
@@ -159,8 +170,12 @@
 
 /* Tela de Boas-vindas — efeito cinematográfico Ken Burns (100% GPU) */
 @keyframes ken-burns {
-  from { transform: scale(1) translate3d(0, 0, 0); }
-  to { transform: scale(1.06) translate3d(0, -1.5%, 0); }
+  from {
+    transform: scale(1) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.06) translate3d(0, -1.5%, 0);
+  }
 }
 
 @utility animate-ken-burns {
@@ -169,5 +184,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-ken-burns { animation: none; }
+  .animate-ken-burns {
+    animation: none;
+  }
 }
