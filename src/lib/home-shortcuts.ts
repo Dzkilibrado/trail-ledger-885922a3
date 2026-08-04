@@ -35,6 +35,8 @@ export interface HomeShortcutDef {
   description: string;
   icon: LucideIcon;
   to: string;
+  /** Parâmetros de busca opcionais — ex: abrir um formulário direto na tela de destino. */
+  search?: Record<string, string>;
 }
 
 export const HOME_SHORTCUT_CATALOG: HomeShortcutDef[] = [
@@ -58,6 +60,7 @@ export const HOME_SHORTCUT_CATALOG: HomeShortcutDef[] = [
     description: "Manutenção, sinistro, acessório e outros eventos",
     icon: Plus,
     to: "/motorcycles/$id/control",
+    search: { action: "registrar" },
   },
   {
     key: "checkups",
@@ -125,7 +128,9 @@ export const DEFAULT_HOME_SHORTCUTS: HomeShortcutKey[] = [
   "cockpit",
 ];
 
-export const MAX_HOME_SHORTCUTS = 8;
+// 9 preenche perfeitamente 3 linhas completas no grid de 3 colunas (mobile),
+// evitando um espaço vago sobrando na última linha (ex: com 8, sobra 1 vazio).
+export const MAX_HOME_SHORTCUTS = 9;
 
 /** Resolve as chaves salvas do usuário para definições válidas, ignorando chaves desconhecidas. */
 export function resolveHomeShortcuts(keys: string[] | null | undefined): HomeShortcutDef[] {

@@ -89,7 +89,7 @@ function EditShortcutsPage() {
       <PageHeader
         title="Personalizar atalhos"
         crumbs={[{ label: "Minha Conta", to: "/perfil" }, { label: "Atalhos" }]}
-        description="Escolha e ordene o que aparece na seção Atalhos da tela inicial. Até 8 itens."
+        description="Escolha e ordene o que aparece na seção Atalhos da tela inicial. Até 9 itens."
       />
 
       <div className="space-y-2">

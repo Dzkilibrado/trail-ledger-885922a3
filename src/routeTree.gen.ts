@@ -24,7 +24,6 @@ import { Route as AuthenticatedTicketsRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
 import { Route as AuthenticatedPlansRouteImport } from './routes/_authenticated/plans'
-import { Route as AuthenticatedPerfilRouteImport } from './routes/_authenticated/perfil'
 import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
 import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated/messages'
 import { Route as AuthenticatedFinancialRouteImport } from './routes/_authenticated/financial'
@@ -38,6 +37,7 @@ import { Route as AuthenticatedCentralRouteImport } from './routes/_authenticate
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated/agenda'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedTicketsIndexRouteImport } from './routes/_authenticated/tickets.index'
+import { Route as AuthenticatedPerfilIndexRouteImport } from './routes/_authenticated/perfil.index'
 import { Route as AuthenticatedMotorcyclesIndexRouteImport } from './routes/_authenticated/motorcycles.index'
 import { Route as AuthenticatedDocumentsIndexRouteImport } from './routes/_authenticated/documents.index'
 import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
@@ -142,11 +142,6 @@ const AuthenticatedPlansRoute = AuthenticatedPlansRouteImport.update({
   path: '/plans',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedPerfilRoute = AuthenticatedPerfilRouteImport.update({
-  id: '/perfil',
-  path: '/perfil',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
 const AuthenticatedNotificationsRoute =
   AuthenticatedNotificationsRouteImport.update({
     id: '/notifications',
@@ -218,6 +213,12 @@ const AuthenticatedTicketsIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedTicketsRoute,
   } as any)
+const AuthenticatedPerfilIndexRoute =
+  AuthenticatedPerfilIndexRouteImport.update({
+    id: '/perfil/',
+    path: '/perfil/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedMotorcyclesIndexRoute =
   AuthenticatedMotorcyclesIndexRouteImport.update({
     id: '/motorcycles/',
@@ -258,9 +259,9 @@ const AuthenticatedTicketsIdRoute = AuthenticatedTicketsIdRouteImport.update({
 } as any)
 const AuthenticatedPerfilAtalhosRoute =
   AuthenticatedPerfilAtalhosRouteImport.update({
-    id: '/atalhos',
-    path: '/atalhos',
-    getParentRoute: () => AuthenticatedPerfilRoute,
+    id: '/perfil/atalhos',
+    path: '/perfil/atalhos',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedMotorcyclesNewRoute =
   AuthenticatedMotorcyclesNewRouteImport.update({
@@ -406,7 +407,6 @@ export interface FileRoutesByFullPath {
   '/financial': typeof AuthenticatedFinancialRoute
   '/messages': typeof AuthenticatedMessagesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
-  '/perfil': typeof AuthenticatedPerfilRouteWithChildren
   '/plans': typeof AuthenticatedPlansRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -433,6 +433,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthenticatedAdminIndexRoute
   '/documents/': typeof AuthenticatedDocumentsIndexRoute
   '/motorcycles/': typeof AuthenticatedMotorcyclesIndexRoute
+  '/perfil/': typeof AuthenticatedPerfilIndexRoute
   '/tickets/': typeof AuthenticatedTicketsIndexRoute
   '/motorcycles/$id/certificate': typeof AuthenticatedMotorcyclesIdCertificateRoute
   '/motorcycles/$id/components': typeof AuthenticatedMotorcyclesIdComponentsRoute
@@ -464,7 +465,6 @@ export interface FileRoutesByTo {
   '/financial': typeof AuthenticatedFinancialRoute
   '/messages': typeof AuthenticatedMessagesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
-  '/perfil': typeof AuthenticatedPerfilRouteWithChildren
   '/plans': typeof AuthenticatedPlansRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -489,6 +489,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthenticatedAdminIndexRoute
   '/documents': typeof AuthenticatedDocumentsIndexRoute
   '/motorcycles': typeof AuthenticatedMotorcyclesIndexRoute
+  '/perfil': typeof AuthenticatedPerfilIndexRoute
   '/tickets': typeof AuthenticatedTicketsIndexRoute
   '/motorcycles/$id/certificate': typeof AuthenticatedMotorcyclesIdCertificateRoute
   '/motorcycles/$id/components': typeof AuthenticatedMotorcyclesIdComponentsRoute
@@ -523,7 +524,6 @@ export interface FileRoutesById {
   '/_authenticated/financial': typeof AuthenticatedFinancialRoute
   '/_authenticated/messages': typeof AuthenticatedMessagesRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
-  '/_authenticated/perfil': typeof AuthenticatedPerfilRouteWithChildren
   '/_authenticated/plans': typeof AuthenticatedPlansRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -550,6 +550,7 @@ export interface FileRoutesById {
   '/_authenticated/admin/': typeof AuthenticatedAdminIndexRoute
   '/_authenticated/documents/': typeof AuthenticatedDocumentsIndexRoute
   '/_authenticated/motorcycles/': typeof AuthenticatedMotorcyclesIndexRoute
+  '/_authenticated/perfil/': typeof AuthenticatedPerfilIndexRoute
   '/_authenticated/tickets/': typeof AuthenticatedTicketsIndexRoute
   '/_authenticated/motorcycles/$id/certificate': typeof AuthenticatedMotorcyclesIdCertificateRoute
   '/_authenticated/motorcycles/$id/components': typeof AuthenticatedMotorcyclesIdComponentsRoute
@@ -584,7 +585,6 @@ export interface FileRouteTypes {
     | '/financial'
     | '/messages'
     | '/notifications'
-    | '/perfil'
     | '/plans'
     | '/profile'
     | '/settings'
@@ -611,6 +611,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/documents/'
     | '/motorcycles/'
+    | '/perfil/'
     | '/tickets/'
     | '/motorcycles/$id/certificate'
     | '/motorcycles/$id/components'
@@ -642,7 +643,6 @@ export interface FileRouteTypes {
     | '/financial'
     | '/messages'
     | '/notifications'
-    | '/perfil'
     | '/plans'
     | '/profile'
     | '/settings'
@@ -667,6 +667,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/documents'
     | '/motorcycles'
+    | '/perfil'
     | '/tickets'
     | '/motorcycles/$id/certificate'
     | '/motorcycles/$id/components'
@@ -700,7 +701,6 @@ export interface FileRouteTypes {
     | '/_authenticated/financial'
     | '/_authenticated/messages'
     | '/_authenticated/notifications'
-    | '/_authenticated/perfil'
     | '/_authenticated/plans'
     | '/_authenticated/profile'
     | '/_authenticated/settings'
@@ -727,6 +727,7 @@ export interface FileRouteTypes {
     | '/_authenticated/admin/'
     | '/_authenticated/documents/'
     | '/_authenticated/motorcycles/'
+    | '/_authenticated/perfil/'
     | '/_authenticated/tickets/'
     | '/_authenticated/motorcycles/$id/certificate'
     | '/_authenticated/motorcycles/$id/components'
@@ -862,13 +863,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlansRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/perfil': {
-      id: '/_authenticated/perfil'
-      path: '/perfil'
-      fullPath: '/perfil'
-      preLoaderRoute: typeof AuthenticatedPerfilRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/notifications': {
       id: '/_authenticated/notifications'
       path: '/notifications'
@@ -960,6 +954,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTicketsIndexRouteImport
       parentRoute: typeof AuthenticatedTicketsRoute
     }
+    '/_authenticated/perfil/': {
+      id: '/_authenticated/perfil/'
+      path: '/perfil'
+      fullPath: '/perfil/'
+      preLoaderRoute: typeof AuthenticatedPerfilIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/motorcycles/': {
       id: '/_authenticated/motorcycles/'
       path: '/motorcycles'
@@ -1011,10 +1012,10 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/perfil/atalhos': {
       id: '/_authenticated/perfil/atalhos'
-      path: '/atalhos'
+      path: '/perfil/atalhos'
       fullPath: '/perfil/atalhos'
       preLoaderRoute: typeof AuthenticatedPerfilAtalhosRouteImport
-      parentRoute: typeof AuthenticatedPerfilRoute
+      parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/motorcycles/new': {
       id: '/_authenticated/motorcycles/new'
@@ -1189,17 +1190,6 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
 const AuthenticatedAdminRouteWithChildren =
   AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
-interface AuthenticatedPerfilRouteChildren {
-  AuthenticatedPerfilAtalhosRoute: typeof AuthenticatedPerfilAtalhosRoute
-}
-
-const AuthenticatedPerfilRouteChildren: AuthenticatedPerfilRouteChildren = {
-  AuthenticatedPerfilAtalhosRoute: AuthenticatedPerfilAtalhosRoute,
-}
-
-const AuthenticatedPerfilRouteWithChildren =
-  AuthenticatedPerfilRoute._addFileChildren(AuthenticatedPerfilRouteChildren)
-
 interface AuthenticatedTicketsRouteChildren {
   AuthenticatedTicketsIdRoute: typeof AuthenticatedTicketsIdRoute
   AuthenticatedTicketsCpfChangeRoute: typeof AuthenticatedTicketsCpfChangeRoute
@@ -1273,7 +1263,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFinancialRoute: typeof AuthenticatedFinancialRoute
   AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
-  AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRouteWithChildren
   AuthenticatedPlansRoute: typeof AuthenticatedPlansRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -1283,8 +1272,10 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedDocumentsIdRoute: typeof AuthenticatedDocumentsIdRoute
   AuthenticatedMotorcyclesIdRoute: typeof AuthenticatedMotorcyclesIdRouteWithChildren
   AuthenticatedMotorcyclesNewRoute: typeof AuthenticatedMotorcyclesNewRoute
+  AuthenticatedPerfilAtalhosRoute: typeof AuthenticatedPerfilAtalhosRoute
   AuthenticatedDocumentsIndexRoute: typeof AuthenticatedDocumentsIndexRoute
   AuthenticatedMotorcyclesIndexRoute: typeof AuthenticatedMotorcyclesIndexRoute
+  AuthenticatedPerfilIndexRoute: typeof AuthenticatedPerfilIndexRoute
   AuthenticatedRecibosCodeVisualizarRoute: typeof AuthenticatedRecibosCodeVisualizarRoute
 }
 
@@ -1301,7 +1292,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFinancialRoute: AuthenticatedFinancialRoute,
   AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
-  AuthenticatedPerfilRoute: AuthenticatedPerfilRouteWithChildren,
   AuthenticatedPlansRoute: AuthenticatedPlansRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
@@ -1311,8 +1301,10 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDocumentsIdRoute: AuthenticatedDocumentsIdRoute,
   AuthenticatedMotorcyclesIdRoute: AuthenticatedMotorcyclesIdRouteWithChildren,
   AuthenticatedMotorcyclesNewRoute: AuthenticatedMotorcyclesNewRoute,
+  AuthenticatedPerfilAtalhosRoute: AuthenticatedPerfilAtalhosRoute,
   AuthenticatedDocumentsIndexRoute: AuthenticatedDocumentsIndexRoute,
   AuthenticatedMotorcyclesIndexRoute: AuthenticatedMotorcyclesIndexRoute,
+  AuthenticatedPerfilIndexRoute: AuthenticatedPerfilIndexRoute,
   AuthenticatedRecibosCodeVisualizarRoute:
     AuthenticatedRecibosCodeVisualizarRoute,
 }

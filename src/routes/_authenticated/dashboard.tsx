@@ -248,6 +248,7 @@ const QuickActions = memo(function QuickActions({ motoId }: { motoId: string }) 
               key={it.key}
               to={it.to as any}
               params={{ id: motoId } as any}
+              search={(it.search ?? undefined) as any}
               className="group flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-border bg-card px-2 py-3 text-center transition-colors hover:border-primary/40 hover:bg-accent/40"
             >
               <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
