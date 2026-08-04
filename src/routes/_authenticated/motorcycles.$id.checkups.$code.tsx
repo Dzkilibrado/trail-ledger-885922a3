@@ -43,7 +43,7 @@ export const Route = createFileRoute("/_authenticated/motorcycles/$id/checkups/$
 function ReportPage() {
   const { id, code } = Route.useParams();
   const [saving, setSaving] = useState(false);
-  const [lastBlobUrl, setLastBlobUrl] = useState<string | null>(null);
+  const [reopenPdf, setReopenPdf] = useState<(() => void | Promise<void>) | null>(null);
   const lastRunRef = useRef(0);
 
   const q = useQuery({
@@ -108,19 +108,17 @@ function ReportPage() {
         qrDataUrl,
         publicUrl,
       });
-      // Guardamos a blob URL sempre (não só no erro), para o usuário poder
-      // reabrir o PDF independente de qual estratégia de salvamento rodou.
-      const blobUrl = URL.createObjectURL(blob);
-      setLastBlobUrl(blobUrl);
       const res = await saveFile({
         blob,
         fileName: reportFileName(report.code ?? code, report.issued_at),
         mime: "application/pdf",
         shareTitle: "Laudo Inteligente TrailBook",
       });
+      setReopenPdf(() => res.reopen ?? null);
       if (res.outcome === "error") {
         // Fallback seguro: abre o PDF para o usuário salvar pelo visualizador do aparelho.
-        window.open(blobUrl, "_blank", "noopener");
+        const fallbackUrl = URL.createObjectURL(blob);
+        window.open(fallbackUrl, "_blank", "noopener");
         toast.warning(
           "Abrimos o PDF em uma nova aba. Use o menu do visualizador para salvar ou compartilhar.",
         );
@@ -129,16 +127,18 @@ function ReportPage() {
         toast.success("PDF salvo no local que você escolheu.");
         trackHealth("pdf_concluido", { code: report.code ?? code, outcome: res.outcome });
       } else if (res.outcome === "shared") {
-        toast.success("PDF compartilhado com sucesso.");
+        toast.success("PDF pronto. Escolha onde salvar ou qual app usar para abrir.");
         trackHealth("pdf_concluido", { code: report.code ?? code, outcome: res.outcome });
       } else if (res.outcome === "downloaded") {
         toast.success(
-          "PDF baixado para a pasta Downloads do seu aparelho. Toque em “Abrir PDF novamente” para visualizar.",
+          "PDF baixado para a pasta Downloads do seu aparelho. Toque em “Abrir PDF” para visualizar.",
           {
             duration: 6000,
           },
         );
         trackHealth("pdf_concluido", { code: report.code ?? code, outcome: res.outcome });
+      } else if (res.outcome === "cancelled") {
+        toast.info("O PDF já está pronto no aparelho. Toque em “Abrir PDF” quando quiser.");
       }
     } catch {
       toast.error(
@@ -171,11 +171,9 @@ function ReportPage() {
           )}
           {saving ? "Preparando seu Laudo TrailBook…" : "Salvar em PDF"}
         </TBButton>
-        {lastBlobUrl && !saving && (
-          <TBButton variant="outline" asChild>
-            <a href={lastBlobUrl} target="_blank" rel="noopener noreferrer">
-              Abrir PDF novamente
-            </a>
+        {reopenPdf && !saving && (
+          <TBButton variant="outline" onClick={() => reopenPdf()}>
+            Abrir PDF
           </TBButton>
         )}
       </div>
