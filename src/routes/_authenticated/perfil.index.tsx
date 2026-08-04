@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-export const Route = createFileRoute("/_authenticated/perfil")({
+export const Route = createFileRoute("/_authenticated/perfil/")({
   head: () => ({ meta: [{ title: "Minha Conta — TrailBook" }] }),
   component: AccountCenter,
 });
