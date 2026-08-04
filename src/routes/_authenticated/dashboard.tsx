@@ -1,5 +1,14 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Plus, ChevronDown, ChevronUp, Bike, Share2, ShieldCheck, FileSignature, Award, FolderOpen, Heart, Wrench, HelpCircle, CheckCircle2, Archive } from "lucide-react";
+import {
+  Plus,
+  ChevronDown,
+  ChevronUp,
+  Bike,
+  HelpCircle,
+  CheckCircle2,
+  Archive,
+  Settings2,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StoragePhoto } from "@/components/StoragePhoto";
 import { ActiveMotoCard } from "@/components/ActiveMotoCard";
@@ -10,6 +19,7 @@ import { WhatsNewCard } from "@/components/WhatsNewCard";
 import { useActiveMotorcycle, useArchivedMotorcyclesCount } from "@/hooks/useActiveMotorcycle";
 import { useDocumentPendencies } from "@/hooks/useDocumentPendencies";
 import { useMotorcycleEvidence } from "@/hooks/useMotorcycleEvidence";
+import { useHomeShortcuts } from "@/hooks/useHomeShortcuts";
 import { InitialReviewPendingCard } from "@/components/InitialReviewPendingCard";
 import { computeReviewState } from "@/lib/review-state";
 import { useQuery } from "@tanstack/react-query";
@@ -20,10 +30,15 @@ import { memo, useState } from "react";
 import { DashboardSkeleton } from "@/components/Skeletons";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [
-    { title: "Início — TrailBook" },
-    { name: "description", content: "Seu painel do TrailBook: motos, pendências, novidades e atalhos rápidos." },
-  ] }),
+  head: () => ({
+    meta: [
+      { title: "Início — TrailBook" },
+      {
+        name: "description",
+        content: "Seu painel do TrailBook: motos, pendências, novidades e atalhos rápidos.",
+      },
+    ],
+  }),
   component: Dashboard,
 });
 
@@ -43,7 +58,8 @@ function Dashboard() {
   // mesmo snapshot da TIL para decidir "Tudo em dia". Evita divergência entre
   // Dashboard (só documentos) e a tela de Manutenção (saúde completa).
   const focusEvidence = useMotorcycleEvidence(focusMotoId ?? undefined);
-  const maintenanceClean = !!focusEvidence.evidence &&
+  const maintenanceClean =
+    !!focusEvidence.evidence &&
     focusEvidence.evidence.maintenance.overdueCount === 0 &&
     focusEvidence.evidence.maintenance.attentionCount === 0;
 
@@ -56,15 +72,18 @@ function Dashboard() {
     enabled: !!focusMotoId,
     queryKey: ["schedules", focusMotoId],
     queryFn: async () =>
-      (await supabase
-        .from("maintenance_schedules")
-        .select("id, status, last_done_at, last_done_hours, last_done_km")
-        .eq("motorcycle_id", focusMotoId!)).data ?? [],
+      (
+        await supabase
+          .from("maintenance_schedules")
+          .select("id, status, last_done_at, last_done_hours, last_done_km")
+          .eq("motorcycle_id", focusMotoId!)
+      ).data ?? [],
   });
   const reviewState = focusMoto
     ? computeReviewState({ moto: focusMoto, schedules: focusSchedules.data ?? [] })
     : null;
-  const initialReviewPending = !!reviewState && reviewState.isPending && reviewState.state !== "unknown";
+  const initialReviewPending =
+    !!reviewState && reviewState.isPending && reviewState.state !== "unknown";
 
   if (isLoading) return <DashboardSkeleton />;
 
@@ -79,15 +98,21 @@ function Dashboard() {
         </p>
         <div className="mt-6 flex flex-wrap justify-center gap-2">
           <Link to="/motorcycles/new">
-            <Button className="btn-glow"><Plus className="h-4 w-4" /> Cadastrar moto</Button>
+            <Button className="btn-glow">
+              <Plus className="h-4 w-4" /> Cadastrar moto
+            </Button>
           </Link>
           {(archivedCount.data ?? 0) > 0 && (
             <Link to="/motorcycles" search={{ tab: "archived" } as any}>
-              <Button variant="outline"><Archive className="h-4 w-4" /> Ver motos arquivadas ({archivedCount.data})</Button>
+              <Button variant="outline">
+                <Archive className="h-4 w-4" /> Ver motos arquivadas ({archivedCount.data})
+              </Button>
             </Link>
           )}
           <Link to="/como-funciona">
-            <Button variant="outline"><HelpCircle className="h-4 w-4" /> Como funciona</Button>
+            <Button variant="outline">
+              <HelpCircle className="h-4 w-4" /> Como funciona
+            </Button>
           </Link>
         </div>
       </div>
@@ -99,7 +124,7 @@ function Dashboard() {
       {/* Ordem Sprint v1.6 (polimento):
           Moto ativa → Pendências → Atalhos → Últimas atividades → Novidades.
           "Investido" já aparece no card da moto ativa; métrica duplicada removida. */}
-        <ActiveMotoCard motos={motos} />
+      <ActiveMotoCard motos={motos} />
 
       {/* Pendências do card da moto em foco — nunca mistura motos (v1.6.11). */}
       <DocumentPendenciesCard scopeMotoId={focusMotoId} />
@@ -108,20 +133,21 @@ function Dashboard() {
         focusMotoId &&
         !focusEvidence.isLoading &&
         (pendencies.data ?? []).filter((p) => p.motorcycle_id === focusMotoId).length === 0 &&
-        maintenanceClean && !initialReviewPending && (
-        <section
-          aria-label="Sem pendências"
-          className="flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4"
-        >
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-500/15 text-emerald-400">
-            <CheckCircle2 className="h-4 w-4" />
-          </div>
-          <div className="min-w-0">
-            <div className="text-sm font-semibold text-emerald-100">Tudo em dia por aqui.</div>
-            <div className="text-xs text-emerald-200/70">Nenhuma pendência para esta moto.</div>
-          </div>
-        </section>
-      )}
+        maintenanceClean &&
+        !initialReviewPending && (
+          <section
+            aria-label="Sem pendências"
+            className="flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4"
+          >
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-emerald-500/15 text-emerald-400">
+              <CheckCircle2 className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <div className="text-sm font-semibold text-emerald-100">Tudo em dia por aqui.</div>
+              <div className="text-xs text-emerald-200/70">Nenhuma pendência para esta moto.</div>
+            </div>
+          </section>
+        )}
 
       {focusMoto && initialReviewPending && (
         <InitialReviewPendingCard
@@ -154,19 +180,29 @@ function Dashboard() {
                     className="surface-elevated grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl p-3 transition-colors hover:bg-accent/30"
                   >
                     {m.main_photo_url ? (
-                      <StoragePhoto path={m.main_photo_url} className="h-12 w-12 shrink-0 overflow-hidden rounded-lg" />
+                      <StoragePhoto
+                        path={m.main_photo_url}
+                        className="h-12 w-12 shrink-0 overflow-hidden rounded-lg"
+                      />
                     ) : (
                       <div className="grid h-12 w-12 shrink-0 place-items-center rounded-lg bg-muted text-muted-foreground">
                         <Bike className="h-5 w-5" />
                       </div>
                     )}
                     <div className="min-w-0">
-                      <div className="truncate text-sm font-semibold">{m.nickname || m.model || "Motocicleta"}</div>
+                      <div className="truncate text-sm font-semibold">
+                        {m.nickname || m.model || "Motocicleta"}
+                      </div>
                       <div className="truncate text-xs text-muted-foreground">
-                        {m.brand || "Moto"} · {Number(m.hours_total).toFixed(1)} h · {Number(m.km_total).toFixed(0)} km
+                        {m.brand || "Moto"} · {Number(m.hours_total).toFixed(1)} h ·{" "}
+                        {Number(m.km_total).toFixed(0)} km
                       </div>
                     </div>
-                    <EvaluationPill state={stateFromScore(m.conservation_score)} size="sm" className="shrink-0" />
+                    <EvaluationPill
+                      state={stateFromScore(m.conservation_score)}
+                      size="sm"
+                      className="shrink-0"
+                    />
                   </Link>
                 </li>
               ))}
@@ -181,36 +217,47 @@ function Dashboard() {
 }
 
 const QuickActions = memo(function QuickActions({ motoId }: { motoId: string }) {
-  const items = [
-    { to: "/motorcycles/$id/passport", icon: Share2, label: "Passaporte" },
-    { to: "/motorcycles/$id/control", icon: ShieldCheck, label: "Documentos" },
-    { to: "/motorcycles/$id/control", icon: FileSignature, label: "Recibo" },
-    { to: "/motorcycles/$id/passport", icon: Award, label: "Selos" },
-    { to: "/motorcycles/$id/health", icon: Heart, label: "Saúde" },
-    { to: "/motorcycles/$id/plan", icon: Wrench, label: "Manutenções" },
-    { to: "/motorcycles/$id", icon: FolderOpen, label: "Cockpit" },
-  ] as const;
+  const { shortcuts, isLoading } = useHomeShortcuts();
   return (
     <section aria-label="Atalhos rápidos">
-      <div className="mb-3 flex items-center gap-1.5">
-        <h2 className="font-display text-sm font-bold uppercase tracking-widest text-muted-foreground">Atalhos</h2>
-        <HelpTooltip label="Atalhos" text={HELP.quickShortcuts} />
+      <div className="mb-3 flex items-center justify-between gap-1.5">
+        <div className="flex items-center gap-1.5">
+          <h2 className="font-display text-sm font-bold uppercase tracking-widest text-muted-foreground">
+            Atalhos
+          </h2>
+          <HelpTooltip label="Atalhos" text={HELP.quickShortcuts} />
+        </div>
+        <Link
+          to="/perfil/atalhos"
+          className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary"
+        >
+          <Settings2 className="h-3.5 w-3.5" aria-hidden /> Personalizar
+        </Link>
       </div>
-      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-        {items.map((it) => (
-          <Link
-            key={it.label + it.to}
-            to={it.to as any}
-            params={{ id: motoId } as any}
-            className="group flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-border bg-card px-2 py-3 text-center transition-colors hover:border-primary/40 hover:bg-accent/40"
-          >
-            <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
-              <it.icon className="h-4 w-4" />
-            </span>
-            <span className="text-[11px] font-semibold leading-tight sm:text-xs">{it.label}</span>
-          </Link>
-        ))}
-      </div>
+      {!isLoading && shortcuts.length === 0 ? (
+        <Link
+          to="/perfil/atalhos"
+          className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-border px-4 py-5 text-center text-sm text-muted-foreground hover:border-primary/40 hover:text-primary"
+        >
+          <Settings2 className="h-4 w-4" aria-hidden /> Escolha seus atalhos
+        </Link>
+      ) : (
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {shortcuts.map((it) => (
+            <Link
+              key={it.key}
+              to={it.to as any}
+              params={{ id: motoId } as any}
+              className="group flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-border bg-card px-2 py-3 text-center transition-colors hover:border-primary/40 hover:bg-accent/40"
+            >
+              <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
+                <it.icon className="h-4 w-4" />
+              </span>
+              <span className="text-[11px] font-semibold leading-tight sm:text-xs">{it.label}</span>
+            </Link>
+          ))}
+        </div>
+      )}
     </section>
   );
 });

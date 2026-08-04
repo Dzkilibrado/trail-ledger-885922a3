@@ -1,8 +1,17 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useState } from "react";
 import {
-  Pencil, Settings, Crown, KeyRound, ShieldCheck,
-  HelpCircle, FileText, LogOut, ChevronRight, UserRound,
+  Pencil,
+  Settings,
+  Crown,
+  KeyRound,
+  ShieldCheck,
+  HelpCircle,
+  FileText,
+  LogOut,
+  ChevronRight,
+  UserRound,
+  LayoutGrid,
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,8 +19,14 @@ import { Button } from "@/components/ui/button";
 import { usePlan } from "@/hooks/usePlan";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/perfil")({
@@ -24,16 +39,25 @@ const APP_VERSION = "1.2.1";
 type Row = { to: string; label: string; icon: any; hint?: string; external?: boolean };
 
 const PREFERENCES: Row[] = [
+  {
+    to: "/perfil/atalhos",
+    label: "Personalizar atalhos",
+    icon: LayoutGrid,
+    hint: "Escolha o que aparece na tela inicial",
+  },
   { to: "/settings", label: "Configurações", icon: Settings, hint: "Tema e preferências gerais" },
   { to: "/plans", label: "Plano atual", icon: Crown, hint: "Seu plano e benefícios" },
 ];
 
-const SECURITY: Row[] = [
-  { to: "/reset-password", label: "Alterar senha", icon: KeyRound },
-];
+const SECURITY: Row[] = [{ to: "/reset-password", label: "Alterar senha", icon: KeyRound }];
 
 const SUPPORT: Row[] = [
-  { to: "/faq", label: "Perguntas frequentes", icon: HelpCircle, hint: "Dúvidas comuns sobre o TrailBook" },
+  {
+    to: "/faq",
+    label: "Perguntas frequentes",
+    icon: HelpCircle,
+    hint: "Dúvidas comuns sobre o TrailBook",
+  },
 ];
 
 function SectionHeader({ icon: Icon, title }: { icon: any; title: string }) {
@@ -86,9 +110,13 @@ function AccountCenter() {
 
   const p = meQ.data;
   const fullName = p?.full_name || p?.email || "Minha conta";
-  const initials = fullName
-    .split(" ").filter(Boolean).slice(0, 2)
-    .map((s: string) => s[0]?.toUpperCase() ?? "").join("") || "?";
+  const initials =
+    fullName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((s: string) => s[0]?.toUpperCase() ?? "")
+      .join("") || "?";
 
   async function signOut() {
     await qc.cancelQueries();
@@ -114,7 +142,9 @@ function AccountCenter() {
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <div className="truncate font-display text-lg font-bold text-foreground">{fullName}</div>
+            <div className="truncate font-display text-lg font-bold text-foreground">
+              {fullName}
+            </div>
             <div className="truncate text-xs text-muted-foreground">{p?.email ?? ""}</div>
             <div className="mt-1.5 flex flex-wrap items-center gap-1">
               <span className="rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-primary">
@@ -148,7 +178,9 @@ function AccountCenter() {
       <section>
         <SectionHeader icon={Settings} title="Preferências" />
         <div className="space-y-2">
-          {PREFERENCES.map((r) => <RowLink key={r.label} {...r} />)}
+          {PREFERENCES.map((r) => (
+            <RowLink key={r.label} {...r} />
+          ))}
         </div>
       </section>
 
@@ -156,7 +188,9 @@ function AccountCenter() {
       <section>
         <SectionHeader icon={ShieldCheck} title="Segurança" />
         <div className="space-y-2">
-          {SECURITY.map((r) => <RowLink key={r.label} {...r} />)}
+          {SECURITY.map((r) => (
+            <RowLink key={r.label} {...r} />
+          ))}
         </div>
       </section>
 
@@ -164,10 +198,14 @@ function AccountCenter() {
       <section>
         <SectionHeader icon={HelpCircle} title="Suporte" />
         <div className="space-y-2">
-          {SUPPORT.map((r) => <RowLink key={r.label} {...r} />)}
+          {SUPPORT.map((r) => (
+            <RowLink key={r.label} {...r} />
+          ))}
         </div>
         <div className="mt-3 flex items-center justify-between rounded-xl border border-dashed border-border/60 bg-card/30 px-4 py-2 text-[11px] text-muted-foreground">
-          <span className="flex items-center gap-1.5"><FileText className="h-3.5 w-3.5" /> Política de Privacidade · Termos de Uso</span>
+          <span className="flex items-center gap-1.5">
+            <FileText className="h-3.5 w-3.5" /> Política de Privacidade · Termos de Uso
+          </span>
           <span className="font-mono">v{APP_VERSION}</span>
         </div>
       </section>
@@ -188,7 +226,9 @@ function AccountCenter() {
       </AlertDialog>
 
       {/* silenciar o import não usado — reservado para futuras seções */}
-      <span className="sr-only" aria-hidden><UserRound /></span>
+      <span className="sr-only" aria-hidden>
+        <UserRound />
+      </span>
     </div>
   );
 }

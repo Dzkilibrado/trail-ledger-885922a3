@@ -45,6 +45,7 @@ import { Route as ApiPublicAppVersionRouteImport } from './routes/api/public/app
 import { Route as AuthenticatedTicketsNewRouteImport } from './routes/_authenticated/tickets.new'
 import { Route as AuthenticatedTicketsCpfChangeRouteImport } from './routes/_authenticated/tickets.cpf-change'
 import { Route as AuthenticatedTicketsIdRouteImport } from './routes/_authenticated/tickets.$id'
+import { Route as AuthenticatedPerfilAtalhosRouteImport } from './routes/_authenticated/perfil.atalhos'
 import { Route as AuthenticatedMotorcyclesNewRouteImport } from './routes/_authenticated/motorcycles.new'
 import { Route as AuthenticatedMotorcyclesIdRouteImport } from './routes/_authenticated/motorcycles.$id'
 import { Route as AuthenticatedDocumentsIdRouteImport } from './routes/_authenticated/documents.$id'
@@ -255,6 +256,12 @@ const AuthenticatedTicketsIdRoute = AuthenticatedTicketsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedTicketsRoute,
 } as any)
+const AuthenticatedPerfilAtalhosRoute =
+  AuthenticatedPerfilAtalhosRouteImport.update({
+    id: '/atalhos',
+    path: '/atalhos',
+    getParentRoute: () => AuthenticatedPerfilRoute,
+  } as any)
 const AuthenticatedMotorcyclesNewRoute =
   AuthenticatedMotorcyclesNewRouteImport.update({
     id: '/motorcycles/new',
@@ -399,7 +406,7 @@ export interface FileRoutesByFullPath {
   '/financial': typeof AuthenticatedFinancialRoute
   '/messages': typeof AuthenticatedMessagesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
-  '/perfil': typeof AuthenticatedPerfilRoute
+  '/perfil': typeof AuthenticatedPerfilRouteWithChildren
   '/plans': typeof AuthenticatedPlansRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -418,6 +425,7 @@ export interface FileRoutesByFullPath {
   '/documents/$id': typeof AuthenticatedDocumentsIdRoute
   '/motorcycles/$id': typeof AuthenticatedMotorcyclesIdRouteWithChildren
   '/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
+  '/perfil/atalhos': typeof AuthenticatedPerfilAtalhosRoute
   '/tickets/$id': typeof AuthenticatedTicketsIdRoute
   '/tickets/cpf-change': typeof AuthenticatedTicketsCpfChangeRoute
   '/tickets/new': typeof AuthenticatedTicketsNewRoute
@@ -456,7 +464,7 @@ export interface FileRoutesByTo {
   '/financial': typeof AuthenticatedFinancialRoute
   '/messages': typeof AuthenticatedMessagesRoute
   '/notifications': typeof AuthenticatedNotificationsRoute
-  '/perfil': typeof AuthenticatedPerfilRoute
+  '/perfil': typeof AuthenticatedPerfilRouteWithChildren
   '/plans': typeof AuthenticatedPlansRoute
   '/profile': typeof AuthenticatedProfileRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -473,6 +481,7 @@ export interface FileRoutesByTo {
   '/admin/users': typeof AuthenticatedAdminUsersRoute
   '/documents/$id': typeof AuthenticatedDocumentsIdRoute
   '/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
+  '/perfil/atalhos': typeof AuthenticatedPerfilAtalhosRoute
   '/tickets/$id': typeof AuthenticatedTicketsIdRoute
   '/tickets/cpf-change': typeof AuthenticatedTicketsCpfChangeRoute
   '/tickets/new': typeof AuthenticatedTicketsNewRoute
@@ -514,7 +523,7 @@ export interface FileRoutesById {
   '/_authenticated/financial': typeof AuthenticatedFinancialRoute
   '/_authenticated/messages': typeof AuthenticatedMessagesRoute
   '/_authenticated/notifications': typeof AuthenticatedNotificationsRoute
-  '/_authenticated/perfil': typeof AuthenticatedPerfilRoute
+  '/_authenticated/perfil': typeof AuthenticatedPerfilRouteWithChildren
   '/_authenticated/plans': typeof AuthenticatedPlansRoute
   '/_authenticated/profile': typeof AuthenticatedProfileRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -533,6 +542,7 @@ export interface FileRoutesById {
   '/_authenticated/documents/$id': typeof AuthenticatedDocumentsIdRoute
   '/_authenticated/motorcycles/$id': typeof AuthenticatedMotorcyclesIdRouteWithChildren
   '/_authenticated/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
+  '/_authenticated/perfil/atalhos': typeof AuthenticatedPerfilAtalhosRoute
   '/_authenticated/tickets/$id': typeof AuthenticatedTicketsIdRoute
   '/_authenticated/tickets/cpf-change': typeof AuthenticatedTicketsCpfChangeRoute
   '/_authenticated/tickets/new': typeof AuthenticatedTicketsNewRoute
@@ -593,6 +603,7 @@ export interface FileRouteTypes {
     | '/documents/$id'
     | '/motorcycles/$id'
     | '/motorcycles/new'
+    | '/perfil/atalhos'
     | '/tickets/$id'
     | '/tickets/cpf-change'
     | '/tickets/new'
@@ -648,6 +659,7 @@ export interface FileRouteTypes {
     | '/admin/users'
     | '/documents/$id'
     | '/motorcycles/new'
+    | '/perfil/atalhos'
     | '/tickets/$id'
     | '/tickets/cpf-change'
     | '/tickets/new'
@@ -707,6 +719,7 @@ export interface FileRouteTypes {
     | '/_authenticated/documents/$id'
     | '/_authenticated/motorcycles/$id'
     | '/_authenticated/motorcycles/new'
+    | '/_authenticated/perfil/atalhos'
     | '/_authenticated/tickets/$id'
     | '/_authenticated/tickets/cpf-change'
     | '/_authenticated/tickets/new'
@@ -996,6 +1009,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTicketsIdRouteImport
       parentRoute: typeof AuthenticatedTicketsRoute
     }
+    '/_authenticated/perfil/atalhos': {
+      id: '/_authenticated/perfil/atalhos'
+      path: '/atalhos'
+      fullPath: '/perfil/atalhos'
+      preLoaderRoute: typeof AuthenticatedPerfilAtalhosRouteImport
+      parentRoute: typeof AuthenticatedPerfilRoute
+    }
     '/_authenticated/motorcycles/new': {
       id: '/_authenticated/motorcycles/new'
       path: '/motorcycles/new'
@@ -1169,6 +1189,17 @@ const AuthenticatedAdminRouteChildren: AuthenticatedAdminRouteChildren = {
 const AuthenticatedAdminRouteWithChildren =
   AuthenticatedAdminRoute._addFileChildren(AuthenticatedAdminRouteChildren)
 
+interface AuthenticatedPerfilRouteChildren {
+  AuthenticatedPerfilAtalhosRoute: typeof AuthenticatedPerfilAtalhosRoute
+}
+
+const AuthenticatedPerfilRouteChildren: AuthenticatedPerfilRouteChildren = {
+  AuthenticatedPerfilAtalhosRoute: AuthenticatedPerfilAtalhosRoute,
+}
+
+const AuthenticatedPerfilRouteWithChildren =
+  AuthenticatedPerfilRoute._addFileChildren(AuthenticatedPerfilRouteChildren)
+
 interface AuthenticatedTicketsRouteChildren {
   AuthenticatedTicketsIdRoute: typeof AuthenticatedTicketsIdRoute
   AuthenticatedTicketsCpfChangeRoute: typeof AuthenticatedTicketsCpfChangeRoute
@@ -1242,7 +1273,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedFinancialRoute: typeof AuthenticatedFinancialRoute
   AuthenticatedMessagesRoute: typeof AuthenticatedMessagesRoute
   AuthenticatedNotificationsRoute: typeof AuthenticatedNotificationsRoute
-  AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRoute
+  AuthenticatedPerfilRoute: typeof AuthenticatedPerfilRouteWithChildren
   AuthenticatedPlansRoute: typeof AuthenticatedPlansRoute
   AuthenticatedProfileRoute: typeof AuthenticatedProfileRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -1270,7 +1301,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedFinancialRoute: AuthenticatedFinancialRoute,
   AuthenticatedMessagesRoute: AuthenticatedMessagesRoute,
   AuthenticatedNotificationsRoute: AuthenticatedNotificationsRoute,
-  AuthenticatedPerfilRoute: AuthenticatedPerfilRoute,
+  AuthenticatedPerfilRoute: AuthenticatedPerfilRouteWithChildren,
   AuthenticatedPlansRoute: AuthenticatedPlansRoute,
   AuthenticatedProfileRoute: AuthenticatedProfileRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,

@@ -1,0 +1,134 @@
+import {
+  Award,
+  FileSignature,
+  FolderOpen,
+  Heart,
+  Plus,
+  Share2,
+  ShieldCheck,
+  Stethoscope,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
+
+/**
+ * Catálogo de atalhos que o usuário pode escolher para a tela inicial.
+ *
+ * `to` sempre relativo à moto ativa (usa params={{ id }} na Link). Se um dia
+ * fizer sentido ter atalho que não depende de moto, adicionar `needsMoto: false`.
+ */
+export type HomeShortcutKey =
+  | "passaporte"
+  | "documentos"
+  | "recibo"
+  | "selos"
+  | "saude"
+  | "manutencoes"
+  | "cockpit"
+  | "checkups"
+  | "central-moto"
+  | "registrar-atividade";
+
+export interface HomeShortcutDef {
+  key: HomeShortcutKey;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+  to: string;
+}
+
+export const HOME_SHORTCUT_CATALOG: HomeShortcutDef[] = [
+  {
+    key: "cockpit",
+    label: "Cockpit",
+    description: "Visão geral da moto",
+    icon: FolderOpen,
+    to: "/motorcycles/$id",
+  },
+  {
+    key: "central-moto",
+    label: "Central da moto",
+    description: "Documentos, recibos e ações da moto",
+    icon: ShieldCheck,
+    to: "/motorcycles/$id/control",
+  },
+  {
+    key: "registrar-atividade",
+    label: "Registrar atividade",
+    description: "Manutenção, sinistro, acessório e outros eventos",
+    icon: Plus,
+    to: "/motorcycles/$id/control",
+  },
+  {
+    key: "checkups",
+    label: "Check-ups e Laudos",
+    description: "Histórico de check-ups e laudos emitidos",
+    icon: Stethoscope,
+    to: "/motorcycles/$id/checkups",
+  },
+  {
+    key: "saude",
+    label: "Saúde",
+    description: "Estado geral de conservação",
+    icon: Heart,
+    to: "/motorcycles/$id/health",
+  },
+  {
+    key: "manutencoes",
+    label: "Manutenções",
+    description: "Plano de manutenção da moto",
+    icon: Wrench,
+    to: "/motorcycles/$id/plan",
+  },
+  {
+    key: "passaporte",
+    label: "Passaporte",
+    description: "Compartilhar histórico com terceiros",
+    icon: Share2,
+    to: "/motorcycles/$id/passport",
+  },
+  {
+    key: "selos",
+    label: "Selos",
+    description: "Selos e conquistas da moto",
+    icon: Award,
+    to: "/motorcycles/$id/passport",
+  },
+  {
+    key: "documentos",
+    label: "Documentos",
+    description: "Documentação da motocicleta",
+    icon: ShieldCheck,
+    to: "/motorcycles/$id/control",
+  },
+  {
+    key: "recibo",
+    label: "Recibo",
+    description: "Emitir recibo/comprovante",
+    icon: FileSignature,
+    to: "/motorcycles/$id/control",
+  },
+];
+
+export const HOME_SHORTCUT_BY_KEY: Record<string, HomeShortcutDef> = Object.fromEntries(
+  HOME_SHORTCUT_CATALOG.map((s) => [s.key, s]),
+);
+
+/** Conjunto padrão para quem nunca personalizou (mantém o comportamento atual). */
+export const DEFAULT_HOME_SHORTCUTS: HomeShortcutKey[] = [
+  "passaporte",
+  "documentos",
+  "recibo",
+  "selos",
+  "saude",
+  "manutencoes",
+  "cockpit",
+];
+
+export const MAX_HOME_SHORTCUTS = 8;
+
+/** Resolve as chaves salvas do usuário para definições válidas, ignorando chaves desconhecidas. */
+export function resolveHomeShortcuts(keys: string[] | null | undefined): HomeShortcutDef[] {
+  const source = keys && keys.length > 0 ? keys : DEFAULT_HOME_SHORTCUTS;
+  return source.map((k) => HOME_SHORTCUT_BY_KEY[k]).filter((s): s is HomeShortcutDef => !!s);
+}

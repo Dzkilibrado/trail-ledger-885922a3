@@ -1,3908 +1,3869 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
-  }
+    PostgrestVersion: "14.5";
+  };
   public: {
     Tables: {
       admin_user_events: {
         Row: {
-          action: string
-          actor_id: string | null
-          created_at: string
-          field: string | null
-          id: string
-          ip: string | null
-          metadata: Json
-          new_value: Json | null
-          notes: string | null
-          old_value: Json | null
-          reason: string | null
-          target_snapshot: Json | null
-          target_user_id: string | null
-          user_agent: string | null
-        }
+          action: string;
+          actor_id: string | null;
+          created_at: string;
+          field: string | null;
+          id: string;
+          ip: string | null;
+          metadata: Json;
+          new_value: Json | null;
+          notes: string | null;
+          old_value: Json | null;
+          reason: string | null;
+          target_snapshot: Json | null;
+          target_user_id: string | null;
+          user_agent: string | null;
+        };
         Insert: {
-          action: string
-          actor_id?: string | null
-          created_at?: string
-          field?: string | null
-          id?: string
-          ip?: string | null
-          metadata?: Json
-          new_value?: Json | null
-          notes?: string | null
-          old_value?: Json | null
-          reason?: string | null
-          target_snapshot?: Json | null
-          target_user_id?: string | null
-          user_agent?: string | null
-        }
+          action: string;
+          actor_id?: string | null;
+          created_at?: string;
+          field?: string | null;
+          id?: string;
+          ip?: string | null;
+          metadata?: Json;
+          new_value?: Json | null;
+          notes?: string | null;
+          old_value?: Json | null;
+          reason?: string | null;
+          target_snapshot?: Json | null;
+          target_user_id?: string | null;
+          user_agent?: string | null;
+        };
         Update: {
-          action?: string
-          actor_id?: string | null
-          created_at?: string
-          field?: string | null
-          id?: string
-          ip?: string | null
-          metadata?: Json
-          new_value?: Json | null
-          notes?: string | null
-          old_value?: Json | null
-          reason?: string | null
-          target_snapshot?: Json | null
-          target_user_id?: string | null
-          user_agent?: string | null
-        }
-        Relationships: []
-      }
+          action?: string;
+          actor_id?: string | null;
+          created_at?: string;
+          field?: string | null;
+          id?: string;
+          ip?: string | null;
+          metadata?: Json;
+          new_value?: Json | null;
+          notes?: string | null;
+          old_value?: Json | null;
+          reason?: string | null;
+          target_snapshot?: Json | null;
+          target_user_id?: string | null;
+          user_agent?: string | null;
+        };
+        Relationships: [];
+      };
       audit_log: {
         Row: {
-          action: Database["public"]["Enums"]["audit_action"]
-          actor_id: string | null
-          created_at: string
-          id: string
-          motorcycle_id: string | null
-          new_values: Json | null
-          old_values: Json | null
-          record_id: string
-          table_name: string
-        }
+          action: Database["public"]["Enums"]["audit_action"];
+          actor_id: string | null;
+          created_at: string;
+          id: string;
+          motorcycle_id: string | null;
+          new_values: Json | null;
+          old_values: Json | null;
+          record_id: string;
+          table_name: string;
+        };
         Insert: {
-          action: Database["public"]["Enums"]["audit_action"]
-          actor_id?: string | null
-          created_at?: string
-          id?: string
-          motorcycle_id?: string | null
-          new_values?: Json | null
-          old_values?: Json | null
-          record_id: string
-          table_name: string
-        }
+          action: Database["public"]["Enums"]["audit_action"];
+          actor_id?: string | null;
+          created_at?: string;
+          id?: string;
+          motorcycle_id?: string | null;
+          new_values?: Json | null;
+          old_values?: Json | null;
+          record_id: string;
+          table_name: string;
+        };
         Update: {
-          action?: Database["public"]["Enums"]["audit_action"]
-          actor_id?: string | null
-          created_at?: string
-          id?: string
-          motorcycle_id?: string | null
-          new_values?: Json | null
-          old_values?: Json | null
-          record_id?: string
-          table_name?: string
-        }
-        Relationships: []
-      }
+          action?: Database["public"]["Enums"]["audit_action"];
+          actor_id?: string | null;
+          created_at?: string;
+          id?: string;
+          motorcycle_id?: string | null;
+          new_values?: Json | null;
+          old_values?: Json | null;
+          record_id?: string;
+          table_name?: string;
+        };
+        Relationships: [];
+      };
       buyer_search_audit: {
         Row: {
-          error_code: string | null
-          found: boolean
-          id: string
-          query_hash: string
-          search_type: string
-          searched_at: string
-          searcher_id: string
-        }
+          error_code: string | null;
+          found: boolean;
+          id: string;
+          query_hash: string;
+          search_type: string;
+          searched_at: string;
+          searcher_id: string;
+        };
         Insert: {
-          error_code?: string | null
-          found: boolean
-          id?: string
-          query_hash: string
-          search_type: string
-          searched_at?: string
-          searcher_id: string
-        }
+          error_code?: string | null;
+          found: boolean;
+          id?: string;
+          query_hash: string;
+          search_type: string;
+          searched_at?: string;
+          searcher_id: string;
+        };
         Update: {
-          error_code?: string | null
-          found?: boolean
-          id?: string
-          query_hash?: string
-          search_type?: string
-          searched_at?: string
-          searcher_id?: string
-        }
-        Relationships: []
-      }
+          error_code?: string | null;
+          found?: boolean;
+          id?: string;
+          query_hash?: string;
+          search_type?: string;
+          searched_at?: string;
+          searcher_id?: string;
+        };
+        Relationships: [];
+      };
       buyer_search_secret: {
         Row: {
-          created_at: string
-          id: boolean
-          pepper: string
-        }
+          created_at: string;
+          id: boolean;
+          pepper: string;
+        };
         Insert: {
-          created_at?: string
-          id?: boolean
-          pepper: string
-        }
+          created_at?: string;
+          id?: boolean;
+          pepper: string;
+        };
         Update: {
-          created_at?: string
-          id?: boolean
-          pepper?: string
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          id?: boolean;
+          pepper?: string;
+        };
+        Relationships: [];
+      };
       certificate_access_log: {
         Row: {
-          accessed_at: string
-          certificate_id: string
-          country: string | null
-          id: string
-          ip: string | null
-          referer: string | null
-          user_agent: string | null
-        }
+          accessed_at: string;
+          certificate_id: string;
+          country: string | null;
+          id: string;
+          ip: string | null;
+          referer: string | null;
+          user_agent: string | null;
+        };
         Insert: {
-          accessed_at?: string
-          certificate_id: string
-          country?: string | null
-          id?: string
-          ip?: string | null
-          referer?: string | null
-          user_agent?: string | null
-        }
+          accessed_at?: string;
+          certificate_id: string;
+          country?: string | null;
+          id?: string;
+          ip?: string | null;
+          referer?: string | null;
+          user_agent?: string | null;
+        };
         Update: {
-          accessed_at?: string
-          certificate_id?: string
-          country?: string | null
-          id?: string
-          ip?: string | null
-          referer?: string | null
-          user_agent?: string | null
-        }
+          accessed_at?: string;
+          certificate_id?: string;
+          country?: string | null;
+          id?: string;
+          ip?: string | null;
+          referer?: string | null;
+          user_agent?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "certificate_access_log_certificate_id_fkey"
-            columns: ["certificate_id"]
-            isOneToOne: false
-            referencedRelation: "certificates"
-            referencedColumns: ["id"]
+            foreignKeyName: "certificate_access_log_certificate_id_fkey";
+            columns: ["certificate_id"];
+            isOneToOne: false;
+            referencedRelation: "certificates";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       certificates: {
         Row: {
-          allowed_sections: Json
-          audience: string | null
-          created_at: string
-          expires_at: string | null
-          id: string
-          motorcycle_id: string
-          public_token: string
-          revoked_at: string | null
-          revoked_reason_code: string | null
-          revoked_reason_notes: string | null
-          status: string
-        }
+          allowed_sections: Json;
+          audience: string | null;
+          created_at: string;
+          expires_at: string | null;
+          id: string;
+          motorcycle_id: string;
+          public_token: string;
+          revoked_at: string | null;
+          revoked_reason_code: string | null;
+          revoked_reason_notes: string | null;
+          status: string;
+        };
         Insert: {
-          allowed_sections?: Json
-          audience?: string | null
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          motorcycle_id: string
-          public_token?: string
-          revoked_at?: string | null
-          revoked_reason_code?: string | null
-          revoked_reason_notes?: string | null
-          status?: string
-        }
+          allowed_sections?: Json;
+          audience?: string | null;
+          created_at?: string;
+          expires_at?: string | null;
+          id?: string;
+          motorcycle_id: string;
+          public_token?: string;
+          revoked_at?: string | null;
+          revoked_reason_code?: string | null;
+          revoked_reason_notes?: string | null;
+          status?: string;
+        };
         Update: {
-          allowed_sections?: Json
-          audience?: string | null
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          motorcycle_id?: string
-          public_token?: string
-          revoked_at?: string | null
-          revoked_reason_code?: string | null
-          revoked_reason_notes?: string | null
-          status?: string
-        }
+          allowed_sections?: Json;
+          audience?: string | null;
+          created_at?: string;
+          expires_at?: string | null;
+          id?: string;
+          motorcycle_id?: string;
+          public_token?: string;
+          revoked_at?: string | null;
+          revoked_reason_code?: string | null;
+          revoked_reason_notes?: string | null;
+          status?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "certificates_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "document_pendencies_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "certificates_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "document_pendencies_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "certificates_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_origin_document_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "certificates_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_origin_document_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "certificates_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycles"
-            referencedColumns: ["id"]
+            foreignKeyName: "certificates_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycles";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       comm_audit: {
         Row: {
-          action: string
-          actor_id: string | null
-          channel: Database["public"]["Enums"]["message_channel"] | null
-          created_at: string
-          id: string
-          message_id: string | null
-          metadata: Json
-          recipient_id: string | null
-          status: string | null
-          subject_text: string | null
-          type: Database["public"]["Enums"]["message_type"] | null
-        }
+          action: string;
+          actor_id: string | null;
+          channel: Database["public"]["Enums"]["message_channel"] | null;
+          created_at: string;
+          id: string;
+          message_id: string | null;
+          metadata: Json;
+          recipient_id: string | null;
+          status: string | null;
+          subject_text: string | null;
+          type: Database["public"]["Enums"]["message_type"] | null;
+        };
         Insert: {
-          action: string
-          actor_id?: string | null
-          channel?: Database["public"]["Enums"]["message_channel"] | null
-          created_at?: string
-          id?: string
-          message_id?: string | null
-          metadata?: Json
-          recipient_id?: string | null
-          status?: string | null
-          subject_text?: string | null
-          type?: Database["public"]["Enums"]["message_type"] | null
-        }
+          action: string;
+          actor_id?: string | null;
+          channel?: Database["public"]["Enums"]["message_channel"] | null;
+          created_at?: string;
+          id?: string;
+          message_id?: string | null;
+          metadata?: Json;
+          recipient_id?: string | null;
+          status?: string | null;
+          subject_text?: string | null;
+          type?: Database["public"]["Enums"]["message_type"] | null;
+        };
         Update: {
-          action?: string
-          actor_id?: string | null
-          channel?: Database["public"]["Enums"]["message_channel"] | null
-          created_at?: string
-          id?: string
-          message_id?: string | null
-          metadata?: Json
-          recipient_id?: string | null
-          status?: string | null
-          subject_text?: string | null
-          type?: Database["public"]["Enums"]["message_type"] | null
-        }
-        Relationships: []
-      }
+          action?: string;
+          actor_id?: string | null;
+          channel?: Database["public"]["Enums"]["message_channel"] | null;
+          created_at?: string;
+          id?: string;
+          message_id?: string | null;
+          metadata?: Json;
+          recipient_id?: string | null;
+          status?: string | null;
+          subject_text?: string | null;
+          type?: Database["public"]["Enums"]["message_type"] | null;
+        };
+        Relationships: [];
+      };
       comm_settings: {
         Row: {
-          email_enabled: boolean
-          email_from: string | null
-          email_provider: string | null
-          email_test_redirect: string | null
-          homologation_mode: boolean
-          id: number
-          internal_enabled: boolean
-          push_enabled: boolean
-          sms_enabled: boolean
-          updated_at: string
-          updated_by: string | null
-          whatsapp_enabled: boolean
-        }
+          email_enabled: boolean;
+          email_from: string | null;
+          email_provider: string | null;
+          email_test_redirect: string | null;
+          homologation_mode: boolean;
+          id: number;
+          internal_enabled: boolean;
+          push_enabled: boolean;
+          sms_enabled: boolean;
+          updated_at: string;
+          updated_by: string | null;
+          whatsapp_enabled: boolean;
+        };
         Insert: {
-          email_enabled?: boolean
-          email_from?: string | null
-          email_provider?: string | null
-          email_test_redirect?: string | null
-          homologation_mode?: boolean
-          id?: number
-          internal_enabled?: boolean
-          push_enabled?: boolean
-          sms_enabled?: boolean
-          updated_at?: string
-          updated_by?: string | null
-          whatsapp_enabled?: boolean
-        }
+          email_enabled?: boolean;
+          email_from?: string | null;
+          email_provider?: string | null;
+          email_test_redirect?: string | null;
+          homologation_mode?: boolean;
+          id?: number;
+          internal_enabled?: boolean;
+          push_enabled?: boolean;
+          sms_enabled?: boolean;
+          updated_at?: string;
+          updated_by?: string | null;
+          whatsapp_enabled?: boolean;
+        };
         Update: {
-          email_enabled?: boolean
-          email_from?: string | null
-          email_provider?: string | null
-          email_test_redirect?: string | null
-          homologation_mode?: boolean
-          id?: number
-          internal_enabled?: boolean
-          push_enabled?: boolean
-          sms_enabled?: boolean
-          updated_at?: string
-          updated_by?: string | null
-          whatsapp_enabled?: boolean
-        }
-        Relationships: []
-      }
+          email_enabled?: boolean;
+          email_from?: string | null;
+          email_provider?: string | null;
+          email_test_redirect?: string | null;
+          homologation_mode?: boolean;
+          id?: number;
+          internal_enabled?: boolean;
+          push_enabled?: boolean;
+          sms_enabled?: boolean;
+          updated_at?: string;
+          updated_by?: string | null;
+          whatsapp_enabled?: boolean;
+        };
+        Relationships: [];
+      };
       cpf_change_requests: {
         Row: {
-          created_at: string
-          current_cpf_hash: string
-          decided_at: string | null
-          decided_by: string | null
-          decision_notes: string | null
-          document_path: string
-          id: string
-          new_cpf: string | null
-          new_cpf_hash: string
-          reason: string
-          status: Database["public"]["Enums"]["cpf_change_status"]
-          ticket_id: string
-          updated_at: string
-          user_id: string
-        }
+          created_at: string;
+          current_cpf_hash: string;
+          decided_at: string | null;
+          decided_by: string | null;
+          decision_notes: string | null;
+          document_path: string;
+          id: string;
+          new_cpf: string | null;
+          new_cpf_hash: string;
+          reason: string;
+          status: Database["public"]["Enums"]["cpf_change_status"];
+          ticket_id: string;
+          updated_at: string;
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          current_cpf_hash: string
-          decided_at?: string | null
-          decided_by?: string | null
-          decision_notes?: string | null
-          document_path: string
-          id?: string
-          new_cpf?: string | null
-          new_cpf_hash: string
-          reason: string
-          status?: Database["public"]["Enums"]["cpf_change_status"]
-          ticket_id: string
-          updated_at?: string
-          user_id: string
-        }
+          created_at?: string;
+          current_cpf_hash: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          decision_notes?: string | null;
+          document_path: string;
+          id?: string;
+          new_cpf?: string | null;
+          new_cpf_hash: string;
+          reason: string;
+          status?: Database["public"]["Enums"]["cpf_change_status"];
+          ticket_id: string;
+          updated_at?: string;
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          current_cpf_hash?: string
-          decided_at?: string | null
-          decided_by?: string | null
-          decision_notes?: string | null
-          document_path?: string
-          id?: string
-          new_cpf?: string | null
-          new_cpf_hash?: string
-          reason?: string
-          status?: Database["public"]["Enums"]["cpf_change_status"]
-          ticket_id?: string
-          updated_at?: string
-          user_id?: string
-        }
+          created_at?: string;
+          current_cpf_hash?: string;
+          decided_at?: string | null;
+          decided_by?: string | null;
+          decision_notes?: string | null;
+          document_path?: string;
+          id?: string;
+          new_cpf?: string | null;
+          new_cpf_hash?: string;
+          reason?: string;
+          status?: Database["public"]["Enums"]["cpf_change_status"];
+          ticket_id?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "cpf_change_requests_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: true
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
+            foreignKeyName: "cpf_change_requests_ticket_id_fkey";
+            columns: ["ticket_id"];
+            isOneToOne: true;
+            referencedRelation: "tickets";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       event_attachments: {
         Row: {
-          bucket: string
-          caption: string | null
-          created_at: string
-          event_id: string
-          id: string
-          kind: Database["public"]["Enums"]["attachment_kind"]
-          storage_path: string
-        }
+          bucket: string;
+          caption: string | null;
+          created_at: string;
+          event_id: string;
+          id: string;
+          kind: Database["public"]["Enums"]["attachment_kind"];
+          storage_path: string;
+        };
         Insert: {
-          bucket: string
-          caption?: string | null
-          created_at?: string
-          event_id: string
-          id?: string
-          kind: Database["public"]["Enums"]["attachment_kind"]
-          storage_path: string
-        }
+          bucket: string;
+          caption?: string | null;
+          created_at?: string;
+          event_id: string;
+          id?: string;
+          kind: Database["public"]["Enums"]["attachment_kind"];
+          storage_path: string;
+        };
         Update: {
-          bucket?: string
-          caption?: string | null
-          created_at?: string
-          event_id?: string
-          id?: string
-          kind?: Database["public"]["Enums"]["attachment_kind"]
-          storage_path?: string
-        }
+          bucket?: string;
+          caption?: string | null;
+          created_at?: string;
+          event_id?: string;
+          id?: string;
+          kind?: Database["public"]["Enums"]["attachment_kind"];
+          storage_path?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "event_attachments_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
+            foreignKeyName: "event_attachments_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       event_documents: {
         Row: {
-          created_at: string
-          created_by: string | null
-          document_id: string
-          event_id: string
-          id: string
-        }
+          created_at: string;
+          created_by: string | null;
+          document_id: string;
+          event_id: string;
+          id: string;
+        };
         Insert: {
-          created_at?: string
-          created_by?: string | null
-          document_id: string
-          event_id: string
-          id?: string
-        }
+          created_at?: string;
+          created_by?: string | null;
+          document_id: string;
+          event_id: string;
+          id?: string;
+        };
         Update: {
-          created_at?: string
-          created_by?: string | null
-          document_id?: string
-          event_id?: string
-          id?: string
-        }
+          created_at?: string;
+          created_by?: string | null;
+          document_id?: string;
+          event_id?: string;
+          id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "event_documents_document_id_fkey"
-            columns: ["document_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_documents"
-            referencedColumns: ["id"]
+            foreignKeyName: "event_documents_document_id_fkey";
+            columns: ["document_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_documents";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "event_documents_document_id_fkey"
-            columns: ["document_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_origin_document_view"
-            referencedColumns: ["document_id"]
+            foreignKeyName: "event_documents_document_id_fkey";
+            columns: ["document_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_origin_document_view";
+            referencedColumns: ["document_id"];
           },
           {
-            foreignKeyName: "event_documents_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
+            foreignKeyName: "event_documents_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       events: {
         Row: {
-          cost: number | null
-          created_at: string
-          created_by: string
-          description: string | null
-          hours_at_event: number | null
-          hours_delta: number | null
-          id: string
-          km_at_event: number | null
-          km_delta: number | null
-          location: string | null
-          metadata: Json
-          motorcycle_id: string
-          occurred_at: string
-          signed_at: string | null
-          signed_by: string | null
-          title: string
-          type: Database["public"]["Enums"]["event_type"]
-          updated_at: string
-          workshop_id: string | null
-        }
+          cost: number | null;
+          created_at: string;
+          created_by: string;
+          description: string | null;
+          hours_at_event: number | null;
+          hours_delta: number | null;
+          id: string;
+          km_at_event: number | null;
+          km_delta: number | null;
+          location: string | null;
+          metadata: Json;
+          motorcycle_id: string;
+          occurred_at: string;
+          signed_at: string | null;
+          signed_by: string | null;
+          title: string;
+          type: Database["public"]["Enums"]["event_type"];
+          updated_at: string;
+          workshop_id: string | null;
+        };
         Insert: {
-          cost?: number | null
-          created_at?: string
-          created_by: string
-          description?: string | null
-          hours_at_event?: number | null
-          hours_delta?: number | null
-          id?: string
-          km_at_event?: number | null
-          km_delta?: number | null
-          location?: string | null
-          metadata?: Json
-          motorcycle_id: string
-          occurred_at?: string
-          signed_at?: string | null
-          signed_by?: string | null
-          title: string
-          type: Database["public"]["Enums"]["event_type"]
-          updated_at?: string
-          workshop_id?: string | null
-        }
+          cost?: number | null;
+          created_at?: string;
+          created_by: string;
+          description?: string | null;
+          hours_at_event?: number | null;
+          hours_delta?: number | null;
+          id?: string;
+          km_at_event?: number | null;
+          km_delta?: number | null;
+          location?: string | null;
+          metadata?: Json;
+          motorcycle_id: string;
+          occurred_at?: string;
+          signed_at?: string | null;
+          signed_by?: string | null;
+          title: string;
+          type: Database["public"]["Enums"]["event_type"];
+          updated_at?: string;
+          workshop_id?: string | null;
+        };
         Update: {
-          cost?: number | null
-          created_at?: string
-          created_by?: string
-          description?: string | null
-          hours_at_event?: number | null
-          hours_delta?: number | null
-          id?: string
-          km_at_event?: number | null
-          km_delta?: number | null
-          location?: string | null
-          metadata?: Json
-          motorcycle_id?: string
-          occurred_at?: string
-          signed_at?: string | null
-          signed_by?: string | null
-          title?: string
-          type?: Database["public"]["Enums"]["event_type"]
-          updated_at?: string
-          workshop_id?: string | null
-        }
+          cost?: number | null;
+          created_at?: string;
+          created_by?: string;
+          description?: string | null;
+          hours_at_event?: number | null;
+          hours_delta?: number | null;
+          id?: string;
+          km_at_event?: number | null;
+          km_delta?: number | null;
+          location?: string | null;
+          metadata?: Json;
+          motorcycle_id?: string;
+          occurred_at?: string;
+          signed_at?: string | null;
+          signed_by?: string | null;
+          title?: string;
+          type?: Database["public"]["Enums"]["event_type"];
+          updated_at?: string;
+          workshop_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "events_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "document_pendencies_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "events_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "document_pendencies_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "events_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_origin_document_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "events_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_origin_document_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "events_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycles"
-            referencedColumns: ["id"]
+            foreignKeyName: "events_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycles";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "events_workshop_id_fkey"
-            columns: ["workshop_id"]
-            isOneToOne: false
-            referencedRelation: "workshops"
-            referencedColumns: ["id"]
+            foreignKeyName: "events_workshop_id_fkey";
+            columns: ["workshop_id"];
+            isOneToOne: false;
+            referencedRelation: "workshops";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       health_check_runs: {
         Row: {
-          blockers: Json
-          completed_at: string | null
-          created_at: string
-          error: string | null
-          id: string
-          motorcycle_id: string
-          preview: Json | null
-          rule_version: string | null
-          status: Database["public"]["Enums"]["health_run_status"]
-          til_version: string | null
-          updated_at: string
-          user_id: string
-          warnings: Json
-        }
+          blockers: Json;
+          completed_at: string | null;
+          created_at: string;
+          error: string | null;
+          id: string;
+          motorcycle_id: string;
+          preview: Json | null;
+          rule_version: string | null;
+          status: Database["public"]["Enums"]["health_run_status"];
+          til_version: string | null;
+          updated_at: string;
+          user_id: string;
+          warnings: Json;
+        };
         Insert: {
-          blockers?: Json
-          completed_at?: string | null
-          created_at?: string
-          error?: string | null
-          id?: string
-          motorcycle_id: string
-          preview?: Json | null
-          rule_version?: string | null
-          status?: Database["public"]["Enums"]["health_run_status"]
-          til_version?: string | null
-          updated_at?: string
-          user_id: string
-          warnings?: Json
-        }
+          blockers?: Json;
+          completed_at?: string | null;
+          created_at?: string;
+          error?: string | null;
+          id?: string;
+          motorcycle_id: string;
+          preview?: Json | null;
+          rule_version?: string | null;
+          status?: Database["public"]["Enums"]["health_run_status"];
+          til_version?: string | null;
+          updated_at?: string;
+          user_id: string;
+          warnings?: Json;
+        };
         Update: {
-          blockers?: Json
-          completed_at?: string | null
-          created_at?: string
-          error?: string | null
-          id?: string
-          motorcycle_id?: string
-          preview?: Json | null
-          rule_version?: string | null
-          status?: Database["public"]["Enums"]["health_run_status"]
-          til_version?: string | null
-          updated_at?: string
-          user_id?: string
-          warnings?: Json
-        }
+          blockers?: Json;
+          completed_at?: string | null;
+          created_at?: string;
+          error?: string | null;
+          id?: string;
+          motorcycle_id?: string;
+          preview?: Json | null;
+          rule_version?: string | null;
+          status?: Database["public"]["Enums"]["health_run_status"];
+          til_version?: string | null;
+          updated_at?: string;
+          user_id?: string;
+          warnings?: Json;
+        };
         Relationships: [
           {
-            foreignKeyName: "health_check_runs_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "document_pendencies_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "health_check_runs_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "document_pendencies_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "health_check_runs_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_origin_document_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "health_check_runs_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_origin_document_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "health_check_runs_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycles"
-            referencedColumns: ["id"]
+            foreignKeyName: "health_check_runs_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycles";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       health_report_access_logs: {
         Row: {
-          accessed_at: string
-          id: string
-          ip: string | null
-          referer: string | null
-          report_id: string
-          result: string
-          share_id: string
-          user_agent: string | null
-        }
+          accessed_at: string;
+          id: string;
+          ip: string | null;
+          referer: string | null;
+          report_id: string;
+          result: string;
+          share_id: string;
+          user_agent: string | null;
+        };
         Insert: {
-          accessed_at?: string
-          id?: string
-          ip?: string | null
-          referer?: string | null
-          report_id: string
-          result?: string
-          share_id: string
-          user_agent?: string | null
-        }
+          accessed_at?: string;
+          id?: string;
+          ip?: string | null;
+          referer?: string | null;
+          report_id: string;
+          result?: string;
+          share_id: string;
+          user_agent?: string | null;
+        };
         Update: {
-          accessed_at?: string
-          id?: string
-          ip?: string | null
-          referer?: string | null
-          report_id?: string
-          result?: string
-          share_id?: string
-          user_agent?: string | null
-        }
+          accessed_at?: string;
+          id?: string;
+          ip?: string | null;
+          referer?: string | null;
+          report_id?: string;
+          result?: string;
+          share_id?: string;
+          user_agent?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "health_report_access_logs_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "health_reports"
-            referencedColumns: ["id"]
+            foreignKeyName: "health_report_access_logs_report_id_fkey";
+            columns: ["report_id"];
+            isOneToOne: false;
+            referencedRelation: "health_reports";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "health_report_access_logs_share_id_fkey"
-            columns: ["share_id"]
-            isOneToOne: false
-            referencedRelation: "health_report_shares"
-            referencedColumns: ["id"]
+            foreignKeyName: "health_report_access_logs_share_id_fkey";
+            columns: ["share_id"];
+            isOneToOne: false;
+            referencedRelation: "health_report_shares";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       health_report_components: {
         Row: {
-          category: string
-          conclusion: string | null
-          confidence_level: string | null
-          created_at: string
-          id: string
-          is_safety_item: boolean
-          missing_data: Json
-          name: string
-          next_action: string | null
-          reasons: Json
-          remaining_label: string | null
-          report_id: string
-          schedule_id: string | null
-          severity: string | null
-          status: string
-          trend: string | null
-        }
+          category: string;
+          conclusion: string | null;
+          confidence_level: string | null;
+          created_at: string;
+          id: string;
+          is_safety_item: boolean;
+          missing_data: Json;
+          name: string;
+          next_action: string | null;
+          reasons: Json;
+          remaining_label: string | null;
+          report_id: string;
+          schedule_id: string | null;
+          severity: string | null;
+          status: string;
+          trend: string | null;
+        };
         Insert: {
-          category: string
-          conclusion?: string | null
-          confidence_level?: string | null
-          created_at?: string
-          id?: string
-          is_safety_item?: boolean
-          missing_data?: Json
-          name: string
-          next_action?: string | null
-          reasons?: Json
-          remaining_label?: string | null
-          report_id: string
-          schedule_id?: string | null
-          severity?: string | null
-          status: string
-          trend?: string | null
-        }
+          category: string;
+          conclusion?: string | null;
+          confidence_level?: string | null;
+          created_at?: string;
+          id?: string;
+          is_safety_item?: boolean;
+          missing_data?: Json;
+          name: string;
+          next_action?: string | null;
+          reasons?: Json;
+          remaining_label?: string | null;
+          report_id: string;
+          schedule_id?: string | null;
+          severity?: string | null;
+          status: string;
+          trend?: string | null;
+        };
         Update: {
-          category?: string
-          conclusion?: string | null
-          confidence_level?: string | null
-          created_at?: string
-          id?: string
-          is_safety_item?: boolean
-          missing_data?: Json
-          name?: string
-          next_action?: string | null
-          reasons?: Json
-          remaining_label?: string | null
-          report_id?: string
-          schedule_id?: string | null
-          severity?: string | null
-          status?: string
-          trend?: string | null
-        }
+          category?: string;
+          conclusion?: string | null;
+          confidence_level?: string | null;
+          created_at?: string;
+          id?: string;
+          is_safety_item?: boolean;
+          missing_data?: Json;
+          name?: string;
+          next_action?: string | null;
+          reasons?: Json;
+          remaining_label?: string | null;
+          report_id?: string;
+          schedule_id?: string | null;
+          severity?: string | null;
+          status?: string;
+          trend?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "health_report_components_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "health_reports"
-            referencedColumns: ["id"]
+            foreignKeyName: "health_report_components_report_id_fkey";
+            columns: ["report_id"];
+            isOneToOne: false;
+            referencedRelation: "health_reports";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       health_report_events: {
         Row: {
-          actor_id: string | null
-          created_at: string
-          description: string | null
-          id: string
-          kind: string
-          metadata: Json
-          motorcycle_id: string
-          report_id: string
-          source_event_id: string | null
-        }
+          actor_id: string | null;
+          created_at: string;
+          description: string | null;
+          id: string;
+          kind: string;
+          metadata: Json;
+          motorcycle_id: string;
+          report_id: string;
+          source_event_id: string | null;
+        };
         Insert: {
-          actor_id?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          kind: string
-          metadata?: Json
-          motorcycle_id: string
-          report_id: string
-          source_event_id?: string | null
-        }
+          actor_id?: string | null;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          kind: string;
+          metadata?: Json;
+          motorcycle_id: string;
+          report_id: string;
+          source_event_id?: string | null;
+        };
         Update: {
-          actor_id?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          kind?: string
-          metadata?: Json
-          motorcycle_id?: string
-          report_id?: string
-          source_event_id?: string | null
-        }
+          actor_id?: string | null;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          kind?: string;
+          metadata?: Json;
+          motorcycle_id?: string;
+          report_id?: string;
+          source_event_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "health_report_events_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "health_reports"
-            referencedColumns: ["id"]
+            foreignKeyName: "health_report_events_report_id_fkey";
+            columns: ["report_id"];
+            isOneToOne: false;
+            referencedRelation: "health_reports";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       health_report_recommendations: {
         Row: {
-          action_group: string
-          created_at: string
-          due_estimate_label: string | null
-          id: string
-          is_safety_item: boolean
-          lifecycle_at_issue: string
-          recommendation: string
-          report_id: string
-          schedule_id: string | null
-          status_at_issue: string
-          title: string
-        }
+          action_group: string;
+          created_at: string;
+          due_estimate_label: string | null;
+          id: string;
+          is_safety_item: boolean;
+          lifecycle_at_issue: string;
+          recommendation: string;
+          report_id: string;
+          schedule_id: string | null;
+          status_at_issue: string;
+          title: string;
+        };
         Insert: {
-          action_group: string
-          created_at?: string
-          due_estimate_label?: string | null
-          id?: string
-          is_safety_item?: boolean
-          lifecycle_at_issue: string
-          recommendation: string
-          report_id: string
-          schedule_id?: string | null
-          status_at_issue: string
-          title: string
-        }
+          action_group: string;
+          created_at?: string;
+          due_estimate_label?: string | null;
+          id?: string;
+          is_safety_item?: boolean;
+          lifecycle_at_issue: string;
+          recommendation: string;
+          report_id: string;
+          schedule_id?: string | null;
+          status_at_issue: string;
+          title: string;
+        };
         Update: {
-          action_group?: string
-          created_at?: string
-          due_estimate_label?: string | null
-          id?: string
-          is_safety_item?: boolean
-          lifecycle_at_issue?: string
-          recommendation?: string
-          report_id?: string
-          schedule_id?: string | null
-          status_at_issue?: string
-          title?: string
-        }
+          action_group?: string;
+          created_at?: string;
+          due_estimate_label?: string | null;
+          id?: string;
+          is_safety_item?: boolean;
+          lifecycle_at_issue?: string;
+          recommendation?: string;
+          report_id?: string;
+          schedule_id?: string | null;
+          status_at_issue?: string;
+          title?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "health_report_recommendations_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "health_reports"
-            referencedColumns: ["id"]
+            foreignKeyName: "health_report_recommendations_report_id_fkey";
+            columns: ["report_id"];
+            isOneToOne: false;
+            referencedRelation: "health_reports";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       health_report_shares: {
         Row: {
-          allowed_sections: Json
-          created_at: string
-          created_by: string
-          expires_at: string | null
-          id: string
-          preset: Database["public"]["Enums"]["health_share_preset"]
-          public_token: string
-          report_id: string
-          revoked_at: string | null
-          revoked_reason: string | null
-          updated_at: string
-        }
+          allowed_sections: Json;
+          created_at: string;
+          created_by: string;
+          expires_at: string | null;
+          id: string;
+          preset: Database["public"]["Enums"]["health_share_preset"];
+          public_token: string;
+          report_id: string;
+          revoked_at: string | null;
+          revoked_reason: string | null;
+          updated_at: string;
+        };
         Insert: {
-          allowed_sections?: Json
-          created_at?: string
-          created_by: string
-          expires_at?: string | null
-          id?: string
-          preset?: Database["public"]["Enums"]["health_share_preset"]
-          public_token: string
-          report_id: string
-          revoked_at?: string | null
-          revoked_reason?: string | null
-          updated_at?: string
-        }
+          allowed_sections?: Json;
+          created_at?: string;
+          created_by: string;
+          expires_at?: string | null;
+          id?: string;
+          preset?: Database["public"]["Enums"]["health_share_preset"];
+          public_token: string;
+          report_id: string;
+          revoked_at?: string | null;
+          revoked_reason?: string | null;
+          updated_at?: string;
+        };
         Update: {
-          allowed_sections?: Json
-          created_at?: string
-          created_by?: string
-          expires_at?: string | null
-          id?: string
-          preset?: Database["public"]["Enums"]["health_share_preset"]
-          public_token?: string
-          report_id?: string
-          revoked_at?: string | null
-          revoked_reason?: string | null
-          updated_at?: string
-        }
+          allowed_sections?: Json;
+          created_at?: string;
+          created_by?: string;
+          expires_at?: string | null;
+          id?: string;
+          preset?: Database["public"]["Enums"]["health_share_preset"];
+          public_token?: string;
+          report_id?: string;
+          revoked_at?: string | null;
+          revoked_reason?: string | null;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "health_report_shares_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: false
-            referencedRelation: "health_reports"
-            referencedColumns: ["id"]
+            foreignKeyName: "health_report_shares_report_id_fkey";
+            columns: ["report_id"];
+            isOneToOne: false;
+            referencedRelation: "health_reports";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       health_report_snapshots: {
         Row: {
-          created_at: string
-          format_version: string
-          payload: Json
-          report_id: string
-          sha256: string
-        }
+          created_at: string;
+          format_version: string;
+          payload: Json;
+          report_id: string;
+          sha256: string;
+        };
         Insert: {
-          created_at?: string
-          format_version?: string
-          payload: Json
-          report_id: string
-          sha256: string
-        }
+          created_at?: string;
+          format_version?: string;
+          payload: Json;
+          report_id: string;
+          sha256: string;
+        };
         Update: {
-          created_at?: string
-          format_version?: string
-          payload?: Json
-          report_id?: string
-          sha256?: string
-        }
+          created_at?: string;
+          format_version?: string;
+          payload?: Json;
+          report_id?: string;
+          sha256?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "health_report_snapshots_report_id_fkey"
-            columns: ["report_id"]
-            isOneToOne: true
-            referencedRelation: "health_reports"
-            referencedColumns: ["id"]
+            foreignKeyName: "health_report_snapshots_report_id_fkey";
+            columns: ["report_id"];
+            isOneToOne: true;
+            referencedRelation: "health_reports";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       health_reports: {
         Row: {
-          attention_count: number
-          code: string | null
-          confidence_level: string
-          conservation_index: number | null
-          created_at: string
-          critical_count: number
-          format_version: string
-          has_reservations: boolean
-          hours_at_issue: number | null
-          id: string
-          issued_at: string
-          issued_by: string
-          km_at_issue: number | null
-          motorcycle_id: string
-          ok_count: number
-          outdated_at: string | null
-          outdated_event_id: string | null
-          outdated_reason: string | null
-          overall_status: string
-          owner_id: string
-          reservations: Json
-          revoked_at: string | null
-          revoked_by: string | null
-          revoked_reason_code: string | null
-          revoked_reason_notes: string | null
-          rule_version: string
-          run_id: string | null
-          snapshot_sha256: string
-          status: Database["public"]["Enums"]["health_report_status"]
-          superseded_by: string | null
-          til_version: string
-          timezone: string
-          unknown_count: number
-          updated_at: string
-          valid_hours_limit: number | null
-          valid_km_limit: number | null
-          valid_until: string | null
-          validity_reason: string | null
-        }
+          attention_count: number;
+          code: string | null;
+          confidence_level: string;
+          conservation_index: number | null;
+          created_at: string;
+          critical_count: number;
+          format_version: string;
+          has_reservations: boolean;
+          hours_at_issue: number | null;
+          id: string;
+          issued_at: string;
+          issued_by: string;
+          km_at_issue: number | null;
+          motorcycle_id: string;
+          ok_count: number;
+          outdated_at: string | null;
+          outdated_event_id: string | null;
+          outdated_reason: string | null;
+          overall_status: string;
+          owner_id: string;
+          reservations: Json;
+          revoked_at: string | null;
+          revoked_by: string | null;
+          revoked_reason_code: string | null;
+          revoked_reason_notes: string | null;
+          rule_version: string;
+          run_id: string | null;
+          snapshot_sha256: string;
+          status: Database["public"]["Enums"]["health_report_status"];
+          superseded_by: string | null;
+          til_version: string;
+          timezone: string;
+          unknown_count: number;
+          updated_at: string;
+          valid_hours_limit: number | null;
+          valid_km_limit: number | null;
+          valid_until: string | null;
+          validity_reason: string | null;
+        };
         Insert: {
-          attention_count?: number
-          code?: string | null
-          confidence_level: string
-          conservation_index?: number | null
-          created_at?: string
-          critical_count?: number
-          format_version?: string
-          has_reservations?: boolean
-          hours_at_issue?: number | null
-          id?: string
-          issued_at?: string
-          issued_by: string
-          km_at_issue?: number | null
-          motorcycle_id: string
-          ok_count?: number
-          outdated_at?: string | null
-          outdated_event_id?: string | null
-          outdated_reason?: string | null
-          overall_status: string
-          owner_id: string
-          reservations?: Json
-          revoked_at?: string | null
-          revoked_by?: string | null
-          revoked_reason_code?: string | null
-          revoked_reason_notes?: string | null
-          rule_version: string
-          run_id?: string | null
-          snapshot_sha256: string
-          status?: Database["public"]["Enums"]["health_report_status"]
-          superseded_by?: string | null
-          til_version: string
-          timezone?: string
-          unknown_count?: number
-          updated_at?: string
-          valid_hours_limit?: number | null
-          valid_km_limit?: number | null
-          valid_until?: string | null
-          validity_reason?: string | null
-        }
+          attention_count?: number;
+          code?: string | null;
+          confidence_level: string;
+          conservation_index?: number | null;
+          created_at?: string;
+          critical_count?: number;
+          format_version?: string;
+          has_reservations?: boolean;
+          hours_at_issue?: number | null;
+          id?: string;
+          issued_at?: string;
+          issued_by: string;
+          km_at_issue?: number | null;
+          motorcycle_id: string;
+          ok_count?: number;
+          outdated_at?: string | null;
+          outdated_event_id?: string | null;
+          outdated_reason?: string | null;
+          overall_status: string;
+          owner_id: string;
+          reservations?: Json;
+          revoked_at?: string | null;
+          revoked_by?: string | null;
+          revoked_reason_code?: string | null;
+          revoked_reason_notes?: string | null;
+          rule_version: string;
+          run_id?: string | null;
+          snapshot_sha256: string;
+          status?: Database["public"]["Enums"]["health_report_status"];
+          superseded_by?: string | null;
+          til_version: string;
+          timezone?: string;
+          unknown_count?: number;
+          updated_at?: string;
+          valid_hours_limit?: number | null;
+          valid_km_limit?: number | null;
+          valid_until?: string | null;
+          validity_reason?: string | null;
+        };
         Update: {
-          attention_count?: number
-          code?: string | null
-          confidence_level?: string
-          conservation_index?: number | null
-          created_at?: string
-          critical_count?: number
-          format_version?: string
-          has_reservations?: boolean
-          hours_at_issue?: number | null
-          id?: string
-          issued_at?: string
-          issued_by?: string
-          km_at_issue?: number | null
-          motorcycle_id?: string
-          ok_count?: number
-          outdated_at?: string | null
-          outdated_event_id?: string | null
-          outdated_reason?: string | null
-          overall_status?: string
-          owner_id?: string
-          reservations?: Json
-          revoked_at?: string | null
-          revoked_by?: string | null
-          revoked_reason_code?: string | null
-          revoked_reason_notes?: string | null
-          rule_version?: string
-          run_id?: string | null
-          snapshot_sha256?: string
-          status?: Database["public"]["Enums"]["health_report_status"]
-          superseded_by?: string | null
-          til_version?: string
-          timezone?: string
-          unknown_count?: number
-          updated_at?: string
-          valid_hours_limit?: number | null
-          valid_km_limit?: number | null
-          valid_until?: string | null
-          validity_reason?: string | null
-        }
+          attention_count?: number;
+          code?: string | null;
+          confidence_level?: string;
+          conservation_index?: number | null;
+          created_at?: string;
+          critical_count?: number;
+          format_version?: string;
+          has_reservations?: boolean;
+          hours_at_issue?: number | null;
+          id?: string;
+          issued_at?: string;
+          issued_by?: string;
+          km_at_issue?: number | null;
+          motorcycle_id?: string;
+          ok_count?: number;
+          outdated_at?: string | null;
+          outdated_event_id?: string | null;
+          outdated_reason?: string | null;
+          overall_status?: string;
+          owner_id?: string;
+          reservations?: Json;
+          revoked_at?: string | null;
+          revoked_by?: string | null;
+          revoked_reason_code?: string | null;
+          revoked_reason_notes?: string | null;
+          rule_version?: string;
+          run_id?: string | null;
+          snapshot_sha256?: string;
+          status?: Database["public"]["Enums"]["health_report_status"];
+          superseded_by?: string | null;
+          til_version?: string;
+          timezone?: string;
+          unknown_count?: number;
+          updated_at?: string;
+          valid_hours_limit?: number | null;
+          valid_km_limit?: number | null;
+          valid_until?: string | null;
+          validity_reason?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "health_reports_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "document_pendencies_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "health_reports_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "document_pendencies_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "health_reports_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_origin_document_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "health_reports_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_origin_document_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "health_reports_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycles"
-            referencedColumns: ["id"]
+            foreignKeyName: "health_reports_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycles";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "health_reports_run_id_fkey"
-            columns: ["run_id"]
-            isOneToOne: false
-            referencedRelation: "health_check_runs"
-            referencedColumns: ["id"]
+            foreignKeyName: "health_reports_run_id_fkey";
+            columns: ["run_id"];
+            isOneToOne: false;
+            referencedRelation: "health_check_runs";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "health_reports_superseded_by_fkey"
-            columns: ["superseded_by"]
-            isOneToOne: false
-            referencedRelation: "health_reports"
-            referencedColumns: ["id"]
+            foreignKeyName: "health_reports_superseded_by_fkey";
+            columns: ["superseded_by"];
+            isOneToOne: false;
+            referencedRelation: "health_reports";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       help_requests: {
         Row: {
-          admin_notes: string | null
-          birth_date: string | null
-          code: string | null
-          cpf: string | null
-          created_at: string
-          description: string
-          email: string
-          full_name: string
-          id: string
-          ip: string | null
-          linked_user_id: string | null
-          phone: string
-          problem_other: string | null
-          problem_type: Database["public"]["Enums"]["help_request_type"]
-          resolved_at: string | null
-          status: Database["public"]["Enums"]["help_request_status"]
-          updated_at: string
-          user_agent: string | null
-        }
+          admin_notes: string | null;
+          birth_date: string | null;
+          code: string | null;
+          cpf: string | null;
+          created_at: string;
+          description: string;
+          email: string;
+          full_name: string;
+          id: string;
+          ip: string | null;
+          linked_user_id: string | null;
+          phone: string;
+          problem_other: string | null;
+          problem_type: Database["public"]["Enums"]["help_request_type"];
+          resolved_at: string | null;
+          status: Database["public"]["Enums"]["help_request_status"];
+          updated_at: string;
+          user_agent: string | null;
+        };
         Insert: {
-          admin_notes?: string | null
-          birth_date?: string | null
-          code?: string | null
-          cpf?: string | null
-          created_at?: string
-          description: string
-          email: string
-          full_name: string
-          id?: string
-          ip?: string | null
-          linked_user_id?: string | null
-          phone: string
-          problem_other?: string | null
-          problem_type: Database["public"]["Enums"]["help_request_type"]
-          resolved_at?: string | null
-          status?: Database["public"]["Enums"]["help_request_status"]
-          updated_at?: string
-          user_agent?: string | null
-        }
+          admin_notes?: string | null;
+          birth_date?: string | null;
+          code?: string | null;
+          cpf?: string | null;
+          created_at?: string;
+          description: string;
+          email: string;
+          full_name: string;
+          id?: string;
+          ip?: string | null;
+          linked_user_id?: string | null;
+          phone: string;
+          problem_other?: string | null;
+          problem_type: Database["public"]["Enums"]["help_request_type"];
+          resolved_at?: string | null;
+          status?: Database["public"]["Enums"]["help_request_status"];
+          updated_at?: string;
+          user_agent?: string | null;
+        };
         Update: {
-          admin_notes?: string | null
-          birth_date?: string | null
-          code?: string | null
-          cpf?: string | null
-          created_at?: string
-          description?: string
-          email?: string
-          full_name?: string
-          id?: string
-          ip?: string | null
-          linked_user_id?: string | null
-          phone?: string
-          problem_other?: string | null
-          problem_type?: Database["public"]["Enums"]["help_request_type"]
-          resolved_at?: string | null
-          status?: Database["public"]["Enums"]["help_request_status"]
-          updated_at?: string
-          user_agent?: string | null
-        }
-        Relationships: []
-      }
+          admin_notes?: string | null;
+          birth_date?: string | null;
+          code?: string | null;
+          cpf?: string | null;
+          created_at?: string;
+          description?: string;
+          email?: string;
+          full_name?: string;
+          id?: string;
+          ip?: string | null;
+          linked_user_id?: string | null;
+          phone?: string;
+          problem_other?: string | null;
+          problem_type?: Database["public"]["Enums"]["help_request_type"];
+          resolved_at?: string | null;
+          status?: Database["public"]["Enums"]["help_request_status"];
+          updated_at?: string;
+          user_agent?: string | null;
+        };
+        Relationships: [];
+      };
       maintenance_inspections: {
         Row: {
-          created_at: string
-          created_by: string | null
-          decision: Database["public"]["Enums"]["inspection_decision"]
-          event_id: string | null
-          hours_at: number | null
-          id: string
-          km_at: number | null
-          motorcycle_id: string
-          notes: string | null
-          schedule_id: string | null
-          signs: Json
-        }
+          created_at: string;
+          created_by: string | null;
+          decision: Database["public"]["Enums"]["inspection_decision"];
+          event_id: string | null;
+          hours_at: number | null;
+          id: string;
+          km_at: number | null;
+          motorcycle_id: string;
+          notes: string | null;
+          schedule_id: string | null;
+          signs: Json;
+        };
         Insert: {
-          created_at?: string
-          created_by?: string | null
-          decision: Database["public"]["Enums"]["inspection_decision"]
-          event_id?: string | null
-          hours_at?: number | null
-          id?: string
-          km_at?: number | null
-          motorcycle_id: string
-          notes?: string | null
-          schedule_id?: string | null
-          signs?: Json
-        }
+          created_at?: string;
+          created_by?: string | null;
+          decision: Database["public"]["Enums"]["inspection_decision"];
+          event_id?: string | null;
+          hours_at?: number | null;
+          id?: string;
+          km_at?: number | null;
+          motorcycle_id: string;
+          notes?: string | null;
+          schedule_id?: string | null;
+          signs?: Json;
+        };
         Update: {
-          created_at?: string
-          created_by?: string | null
-          decision?: Database["public"]["Enums"]["inspection_decision"]
-          event_id?: string | null
-          hours_at?: number | null
-          id?: string
-          km_at?: number | null
-          motorcycle_id?: string
-          notes?: string | null
-          schedule_id?: string | null
-          signs?: Json
-        }
+          created_at?: string;
+          created_by?: string | null;
+          decision?: Database["public"]["Enums"]["inspection_decision"];
+          event_id?: string | null;
+          hours_at?: number | null;
+          id?: string;
+          km_at?: number | null;
+          motorcycle_id?: string;
+          notes?: string | null;
+          schedule_id?: string | null;
+          signs?: Json;
+        };
         Relationships: [
           {
-            foreignKeyName: "maintenance_inspections_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
+            foreignKeyName: "maintenance_inspections_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "maintenance_inspections_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "document_pendencies_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "maintenance_inspections_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "document_pendencies_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "maintenance_inspections_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_origin_document_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "maintenance_inspections_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_origin_document_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "maintenance_inspections_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycles"
-            referencedColumns: ["id"]
+            foreignKeyName: "maintenance_inspections_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycles";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "maintenance_inspections_schedule_id_fkey"
-            columns: ["schedule_id"]
-            isOneToOne: false
-            referencedRelation: "maintenance_schedules"
-            referencedColumns: ["id"]
+            foreignKeyName: "maintenance_inspections_schedule_id_fkey";
+            columns: ["schedule_id"];
+            isOneToOne: false;
+            referencedRelation: "maintenance_schedules";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       maintenance_items: {
         Row: {
-          brand: string | null
-          category: Database["public"]["Enums"]["maintenance_category"]
-          created_at: string
-          event_id: string
-          id: string
-          product: string | null
-          qty: number | null
-          schedule_id: string | null
-          service: string
-          template_item_id: string | null
-          unit_value: number | null
-          warranty_months: number | null
-        }
+          brand: string | null;
+          category: Database["public"]["Enums"]["maintenance_category"];
+          created_at: string;
+          event_id: string;
+          id: string;
+          product: string | null;
+          qty: number | null;
+          schedule_id: string | null;
+          service: string;
+          template_item_id: string | null;
+          unit_value: number | null;
+          warranty_months: number | null;
+        };
         Insert: {
-          brand?: string | null
-          category: Database["public"]["Enums"]["maintenance_category"]
-          created_at?: string
-          event_id: string
-          id?: string
-          product?: string | null
-          qty?: number | null
-          schedule_id?: string | null
-          service: string
-          template_item_id?: string | null
-          unit_value?: number | null
-          warranty_months?: number | null
-        }
+          brand?: string | null;
+          category: Database["public"]["Enums"]["maintenance_category"];
+          created_at?: string;
+          event_id: string;
+          id?: string;
+          product?: string | null;
+          qty?: number | null;
+          schedule_id?: string | null;
+          service: string;
+          template_item_id?: string | null;
+          unit_value?: number | null;
+          warranty_months?: number | null;
+        };
         Update: {
-          brand?: string | null
-          category?: Database["public"]["Enums"]["maintenance_category"]
-          created_at?: string
-          event_id?: string
-          id?: string
-          product?: string | null
-          qty?: number | null
-          schedule_id?: string | null
-          service?: string
-          template_item_id?: string | null
-          unit_value?: number | null
-          warranty_months?: number | null
-        }
+          brand?: string | null;
+          category?: Database["public"]["Enums"]["maintenance_category"];
+          created_at?: string;
+          event_id?: string;
+          id?: string;
+          product?: string | null;
+          qty?: number | null;
+          schedule_id?: string | null;
+          service?: string;
+          template_item_id?: string | null;
+          unit_value?: number | null;
+          warranty_months?: number | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "maintenance_items_event_id_fkey"
-            columns: ["event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
+            foreignKeyName: "maintenance_items_event_id_fkey";
+            columns: ["event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "maintenance_items_schedule_id_fkey"
-            columns: ["schedule_id"]
-            isOneToOne: false
-            referencedRelation: "maintenance_schedules"
-            referencedColumns: ["id"]
+            foreignKeyName: "maintenance_items_schedule_id_fkey";
+            columns: ["schedule_id"];
+            isOneToOne: false;
+            referencedRelation: "maintenance_schedules";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "maintenance_items_template_item_id_fkey"
-            columns: ["template_item_id"]
-            isOneToOne: false
-            referencedRelation: "maintenance_plan_items"
-            referencedColumns: ["id"]
+            foreignKeyName: "maintenance_items_template_item_id_fkey";
+            columns: ["template_item_id"];
+            isOneToOne: false;
+            referencedRelation: "maintenance_plan_items";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       maintenance_plan_items: {
         Row: {
-          action: Database["public"]["Enums"]["plan_item_action"]
-          category: Database["public"]["Enums"]["maintenance_category"]
-          created_at: string
-          id: string
-          interval_days: number | null
-          interval_hours: number | null
-          interval_km: number | null
-          item_name: string
-          notes: string | null
-          replace_days: number | null
-          replace_hours: number | null
-          replace_km: number | null
-          severity: Database["public"]["Enums"]["plan_severity"]
-          sort_order: number
-          template_id: string
-          updated_at: string
-        }
+          action: Database["public"]["Enums"]["plan_item_action"];
+          category: Database["public"]["Enums"]["maintenance_category"];
+          created_at: string;
+          id: string;
+          interval_days: number | null;
+          interval_hours: number | null;
+          interval_km: number | null;
+          item_name: string;
+          notes: string | null;
+          replace_days: number | null;
+          replace_hours: number | null;
+          replace_km: number | null;
+          severity: Database["public"]["Enums"]["plan_severity"];
+          sort_order: number;
+          template_id: string;
+          updated_at: string;
+        };
         Insert: {
-          action?: Database["public"]["Enums"]["plan_item_action"]
-          category: Database["public"]["Enums"]["maintenance_category"]
-          created_at?: string
-          id?: string
-          interval_days?: number | null
-          interval_hours?: number | null
-          interval_km?: number | null
-          item_name: string
-          notes?: string | null
-          replace_days?: number | null
-          replace_hours?: number | null
-          replace_km?: number | null
-          severity?: Database["public"]["Enums"]["plan_severity"]
-          sort_order?: number
-          template_id: string
-          updated_at?: string
-        }
+          action?: Database["public"]["Enums"]["plan_item_action"];
+          category: Database["public"]["Enums"]["maintenance_category"];
+          created_at?: string;
+          id?: string;
+          interval_days?: number | null;
+          interval_hours?: number | null;
+          interval_km?: number | null;
+          item_name: string;
+          notes?: string | null;
+          replace_days?: number | null;
+          replace_hours?: number | null;
+          replace_km?: number | null;
+          severity?: Database["public"]["Enums"]["plan_severity"];
+          sort_order?: number;
+          template_id: string;
+          updated_at?: string;
+        };
         Update: {
-          action?: Database["public"]["Enums"]["plan_item_action"]
-          category?: Database["public"]["Enums"]["maintenance_category"]
-          created_at?: string
-          id?: string
-          interval_days?: number | null
-          interval_hours?: number | null
-          interval_km?: number | null
-          item_name?: string
-          notes?: string | null
-          replace_days?: number | null
-          replace_hours?: number | null
-          replace_km?: number | null
-          severity?: Database["public"]["Enums"]["plan_severity"]
-          sort_order?: number
-          template_id?: string
-          updated_at?: string
-        }
+          action?: Database["public"]["Enums"]["plan_item_action"];
+          category?: Database["public"]["Enums"]["maintenance_category"];
+          created_at?: string;
+          id?: string;
+          interval_days?: number | null;
+          interval_hours?: number | null;
+          interval_km?: number | null;
+          item_name?: string;
+          notes?: string | null;
+          replace_days?: number | null;
+          replace_hours?: number | null;
+          replace_km?: number | null;
+          severity?: Database["public"]["Enums"]["plan_severity"];
+          sort_order?: number;
+          template_id?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "maintenance_plan_items_template_id_fkey"
-            columns: ["template_id"]
-            isOneToOne: false
-            referencedRelation: "maintenance_plan_templates"
-            referencedColumns: ["id"]
+            foreignKeyName: "maintenance_plan_items_template_id_fkey";
+            columns: ["template_id"];
+            isOneToOne: false;
+            referencedRelation: "maintenance_plan_templates";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       maintenance_plan_templates: {
         Row: {
-          active: boolean
-          brand: string | null
-          created_at: string
-          description: string | null
-          id: string
-          is_default: boolean
-          model: string | null
-          name: string
-          updated_at: string
-          year_from: number | null
-          year_to: number | null
-        }
+          active: boolean;
+          brand: string | null;
+          created_at: string;
+          description: string | null;
+          id: string;
+          is_default: boolean;
+          model: string | null;
+          name: string;
+          updated_at: string;
+          year_from: number | null;
+          year_to: number | null;
+        };
         Insert: {
-          active?: boolean
-          brand?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_default?: boolean
-          model?: string | null
-          name: string
-          updated_at?: string
-          year_from?: number | null
-          year_to?: number | null
-        }
+          active?: boolean;
+          brand?: string | null;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_default?: boolean;
+          model?: string | null;
+          name: string;
+          updated_at?: string;
+          year_from?: number | null;
+          year_to?: number | null;
+        };
         Update: {
-          active?: boolean
-          brand?: string | null
-          created_at?: string
-          description?: string | null
-          id?: string
-          is_default?: boolean
-          model?: string | null
-          name?: string
-          updated_at?: string
-          year_from?: number | null
-          year_to?: number | null
-        }
-        Relationships: []
-      }
+          active?: boolean;
+          brand?: string | null;
+          created_at?: string;
+          description?: string | null;
+          id?: string;
+          is_default?: boolean;
+          model?: string | null;
+          name?: string;
+          updated_at?: string;
+          year_from?: number | null;
+          year_to?: number | null;
+        };
+        Relationships: [];
+      };
       maintenance_schedules: {
         Row: {
-          active: boolean
-          category: Database["public"]["Enums"]["maintenance_category"]
-          created_at: string
-          hidden: boolean
-          id: string
-          interval_days: number | null
-          interval_hours: number | null
-          interval_km: number | null
-          is_custom: boolean
-          last_completed_event_id: string | null
-          last_done_at: string | null
-          last_done_hours: number | null
-          last_done_km: number | null
-          motorcycle_id: string
-          name: string
-          needs_review: boolean
-          notes: string | null
-          pinned: boolean
-          severity: string | null
-          snoozed_until: string | null
-          sort_order: number | null
-          status: Database["public"]["Enums"]["schedule_status"]
-          template_item_id: string | null
-          updated_at: string
-        }
+          active: boolean;
+          category: Database["public"]["Enums"]["maintenance_category"];
+          created_at: string;
+          hidden: boolean;
+          id: string;
+          interval_days: number | null;
+          interval_hours: number | null;
+          interval_km: number | null;
+          is_custom: boolean;
+          last_completed_event_id: string | null;
+          last_done_at: string | null;
+          last_done_hours: number | null;
+          last_done_km: number | null;
+          motorcycle_id: string;
+          name: string;
+          needs_review: boolean;
+          notes: string | null;
+          pinned: boolean;
+          severity: string | null;
+          snoozed_until: string | null;
+          sort_order: number | null;
+          status: Database["public"]["Enums"]["schedule_status"];
+          template_item_id: string | null;
+          updated_at: string;
+        };
         Insert: {
-          active?: boolean
-          category: Database["public"]["Enums"]["maintenance_category"]
-          created_at?: string
-          hidden?: boolean
-          id?: string
-          interval_days?: number | null
-          interval_hours?: number | null
-          interval_km?: number | null
-          is_custom?: boolean
-          last_completed_event_id?: string | null
-          last_done_at?: string | null
-          last_done_hours?: number | null
-          last_done_km?: number | null
-          motorcycle_id: string
-          name: string
-          needs_review?: boolean
-          notes?: string | null
-          pinned?: boolean
-          severity?: string | null
-          snoozed_until?: string | null
-          sort_order?: number | null
-          status?: Database["public"]["Enums"]["schedule_status"]
-          template_item_id?: string | null
-          updated_at?: string
-        }
+          active?: boolean;
+          category: Database["public"]["Enums"]["maintenance_category"];
+          created_at?: string;
+          hidden?: boolean;
+          id?: string;
+          interval_days?: number | null;
+          interval_hours?: number | null;
+          interval_km?: number | null;
+          is_custom?: boolean;
+          last_completed_event_id?: string | null;
+          last_done_at?: string | null;
+          last_done_hours?: number | null;
+          last_done_km?: number | null;
+          motorcycle_id: string;
+          name: string;
+          needs_review?: boolean;
+          notes?: string | null;
+          pinned?: boolean;
+          severity?: string | null;
+          snoozed_until?: string | null;
+          sort_order?: number | null;
+          status?: Database["public"]["Enums"]["schedule_status"];
+          template_item_id?: string | null;
+          updated_at?: string;
+        };
         Update: {
-          active?: boolean
-          category?: Database["public"]["Enums"]["maintenance_category"]
-          created_at?: string
-          hidden?: boolean
-          id?: string
-          interval_days?: number | null
-          interval_hours?: number | null
-          interval_km?: number | null
-          is_custom?: boolean
-          last_completed_event_id?: string | null
-          last_done_at?: string | null
-          last_done_hours?: number | null
-          last_done_km?: number | null
-          motorcycle_id?: string
-          name?: string
-          needs_review?: boolean
-          notes?: string | null
-          pinned?: boolean
-          severity?: string | null
-          snoozed_until?: string | null
-          sort_order?: number | null
-          status?: Database["public"]["Enums"]["schedule_status"]
-          template_item_id?: string | null
-          updated_at?: string
-        }
+          active?: boolean;
+          category?: Database["public"]["Enums"]["maintenance_category"];
+          created_at?: string;
+          hidden?: boolean;
+          id?: string;
+          interval_days?: number | null;
+          interval_hours?: number | null;
+          interval_km?: number | null;
+          is_custom?: boolean;
+          last_completed_event_id?: string | null;
+          last_done_at?: string | null;
+          last_done_hours?: number | null;
+          last_done_km?: number | null;
+          motorcycle_id?: string;
+          name?: string;
+          needs_review?: boolean;
+          notes?: string | null;
+          pinned?: boolean;
+          severity?: string | null;
+          snoozed_until?: string | null;
+          sort_order?: number | null;
+          status?: Database["public"]["Enums"]["schedule_status"];
+          template_item_id?: string | null;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "maintenance_schedules_last_completed_event_id_fkey"
-            columns: ["last_completed_event_id"]
-            isOneToOne: false
-            referencedRelation: "events"
-            referencedColumns: ["id"]
+            foreignKeyName: "maintenance_schedules_last_completed_event_id_fkey";
+            columns: ["last_completed_event_id"];
+            isOneToOne: false;
+            referencedRelation: "events";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "maintenance_schedules_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "document_pendencies_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "maintenance_schedules_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "document_pendencies_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "maintenance_schedules_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_origin_document_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "maintenance_schedules_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_origin_document_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "maintenance_schedules_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycles"
-            referencedColumns: ["id"]
+            foreignKeyName: "maintenance_schedules_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycles";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "maintenance_schedules_template_item_id_fkey"
-            columns: ["template_item_id"]
-            isOneToOne: false
-            referencedRelation: "maintenance_plan_items"
-            referencedColumns: ["id"]
+            foreignKeyName: "maintenance_schedules_template_item_id_fkey";
+            columns: ["template_item_id"];
+            isOneToOne: false;
+            referencedRelation: "maintenance_plan_items";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       maintenance_wear_signs: {
         Row: {
-          category: Database["public"]["Enums"]["maintenance_category"]
-          created_at: string
-          id: string
-          item_name: string | null
-          label: string
-          sort_order: number
-        }
+          category: Database["public"]["Enums"]["maintenance_category"];
+          created_at: string;
+          id: string;
+          item_name: string | null;
+          label: string;
+          sort_order: number;
+        };
         Insert: {
-          category: Database["public"]["Enums"]["maintenance_category"]
-          created_at?: string
-          id?: string
-          item_name?: string | null
-          label: string
-          sort_order?: number
-        }
+          category: Database["public"]["Enums"]["maintenance_category"];
+          created_at?: string;
+          id?: string;
+          item_name?: string | null;
+          label: string;
+          sort_order?: number;
+        };
         Update: {
-          category?: Database["public"]["Enums"]["maintenance_category"]
-          created_at?: string
-          id?: string
-          item_name?: string | null
-          label?: string
-          sort_order?: number
-        }
-        Relationships: []
-      }
+          category?: Database["public"]["Enums"]["maintenance_category"];
+          created_at?: string;
+          id?: string;
+          item_name?: string | null;
+          label?: string;
+          sort_order?: number;
+        };
+        Relationships: [];
+      };
       message_deliveries: {
         Row: {
-          channel: Database["public"]["Enums"]["message_channel"]
-          created_at: string
-          error: string | null
-          id: string
-          message_id: string
-          payload: Json
-          simulated: boolean
-          status: Database["public"]["Enums"]["delivery_status"]
-          user_id: string | null
-        }
+          channel: Database["public"]["Enums"]["message_channel"];
+          created_at: string;
+          error: string | null;
+          id: string;
+          message_id: string;
+          payload: Json;
+          simulated: boolean;
+          status: Database["public"]["Enums"]["delivery_status"];
+          user_id: string | null;
+        };
         Insert: {
-          channel: Database["public"]["Enums"]["message_channel"]
-          created_at?: string
-          error?: string | null
-          id?: string
-          message_id: string
-          payload?: Json
-          simulated?: boolean
-          status?: Database["public"]["Enums"]["delivery_status"]
-          user_id?: string | null
-        }
+          channel: Database["public"]["Enums"]["message_channel"];
+          created_at?: string;
+          error?: string | null;
+          id?: string;
+          message_id: string;
+          payload?: Json;
+          simulated?: boolean;
+          status?: Database["public"]["Enums"]["delivery_status"];
+          user_id?: string | null;
+        };
         Update: {
-          channel?: Database["public"]["Enums"]["message_channel"]
-          created_at?: string
-          error?: string | null
-          id?: string
-          message_id?: string
-          payload?: Json
-          simulated?: boolean
-          status?: Database["public"]["Enums"]["delivery_status"]
-          user_id?: string | null
-        }
+          channel?: Database["public"]["Enums"]["message_channel"];
+          created_at?: string;
+          error?: string | null;
+          id?: string;
+          message_id?: string;
+          payload?: Json;
+          simulated?: boolean;
+          status?: Database["public"]["Enums"]["delivery_status"];
+          user_id?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "message_deliveries_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
+            foreignKeyName: "message_deliveries_message_id_fkey";
+            columns: ["message_id"];
+            isOneToOne: false;
+            referencedRelation: "messages";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       message_recipients: {
         Row: {
-          archived_at: string | null
-          created_at: string
-          message_id: string
-          read_at: string | null
-          replied_at: string | null
-          status: Database["public"]["Enums"]["recipient_status"]
-          user_id: string
-        }
+          archived_at: string | null;
+          created_at: string;
+          message_id: string;
+          read_at: string | null;
+          replied_at: string | null;
+          status: Database["public"]["Enums"]["recipient_status"];
+          user_id: string;
+        };
         Insert: {
-          archived_at?: string | null
-          created_at?: string
-          message_id: string
-          read_at?: string | null
-          replied_at?: string | null
-          status?: Database["public"]["Enums"]["recipient_status"]
-          user_id: string
-        }
+          archived_at?: string | null;
+          created_at?: string;
+          message_id: string;
+          read_at?: string | null;
+          replied_at?: string | null;
+          status?: Database["public"]["Enums"]["recipient_status"];
+          user_id: string;
+        };
         Update: {
-          archived_at?: string | null
-          created_at?: string
-          message_id?: string
-          read_at?: string | null
-          replied_at?: string | null
-          status?: Database["public"]["Enums"]["recipient_status"]
-          user_id?: string
-        }
+          archived_at?: string | null;
+          created_at?: string;
+          message_id?: string;
+          read_at?: string | null;
+          replied_at?: string | null;
+          status?: Database["public"]["Enums"]["recipient_status"];
+          user_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "message_recipients_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
+            foreignKeyName: "message_recipients_message_id_fkey";
+            columns: ["message_id"];
+            isOneToOne: false;
+            referencedRelation: "messages";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       messages: {
         Row: {
-          allow_reply: boolean
-          audience: Database["public"]["Enums"]["message_audience"]
-          audience_filter: Json
-          body: string
-          code: string | null
-          created_at: string
-          id: string
-          is_automatic: boolean
-          parent_message_id: string | null
-          priority: Database["public"]["Enums"]["message_priority"]
-          related_ticket_id: string | null
-          sender_id: string | null
-          status: Database["public"]["Enums"]["message_status"]
-          subject_key: Database["public"]["Enums"]["message_subject_key"]
-          subject_other: string | null
-          subject_text: string
-          type: Database["public"]["Enums"]["message_type"]
-          updated_at: string
-        }
+          allow_reply: boolean;
+          audience: Database["public"]["Enums"]["message_audience"];
+          audience_filter: Json;
+          body: string;
+          code: string | null;
+          created_at: string;
+          id: string;
+          is_automatic: boolean;
+          parent_message_id: string | null;
+          priority: Database["public"]["Enums"]["message_priority"];
+          related_ticket_id: string | null;
+          sender_id: string | null;
+          status: Database["public"]["Enums"]["message_status"];
+          subject_key: Database["public"]["Enums"]["message_subject_key"];
+          subject_other: string | null;
+          subject_text: string;
+          type: Database["public"]["Enums"]["message_type"];
+          updated_at: string;
+        };
         Insert: {
-          allow_reply?: boolean
-          audience?: Database["public"]["Enums"]["message_audience"]
-          audience_filter?: Json
-          body: string
-          code?: string | null
-          created_at?: string
-          id?: string
-          is_automatic?: boolean
-          parent_message_id?: string | null
-          priority?: Database["public"]["Enums"]["message_priority"]
-          related_ticket_id?: string | null
-          sender_id?: string | null
-          status?: Database["public"]["Enums"]["message_status"]
-          subject_key?: Database["public"]["Enums"]["message_subject_key"]
-          subject_other?: string | null
-          subject_text: string
-          type?: Database["public"]["Enums"]["message_type"]
-          updated_at?: string
-        }
+          allow_reply?: boolean;
+          audience?: Database["public"]["Enums"]["message_audience"];
+          audience_filter?: Json;
+          body: string;
+          code?: string | null;
+          created_at?: string;
+          id?: string;
+          is_automatic?: boolean;
+          parent_message_id?: string | null;
+          priority?: Database["public"]["Enums"]["message_priority"];
+          related_ticket_id?: string | null;
+          sender_id?: string | null;
+          status?: Database["public"]["Enums"]["message_status"];
+          subject_key?: Database["public"]["Enums"]["message_subject_key"];
+          subject_other?: string | null;
+          subject_text: string;
+          type?: Database["public"]["Enums"]["message_type"];
+          updated_at?: string;
+        };
         Update: {
-          allow_reply?: boolean
-          audience?: Database["public"]["Enums"]["message_audience"]
-          audience_filter?: Json
-          body?: string
-          code?: string | null
-          created_at?: string
-          id?: string
-          is_automatic?: boolean
-          parent_message_id?: string | null
-          priority?: Database["public"]["Enums"]["message_priority"]
-          related_ticket_id?: string | null
-          sender_id?: string | null
-          status?: Database["public"]["Enums"]["message_status"]
-          subject_key?: Database["public"]["Enums"]["message_subject_key"]
-          subject_other?: string | null
-          subject_text?: string
-          type?: Database["public"]["Enums"]["message_type"]
-          updated_at?: string
-        }
+          allow_reply?: boolean;
+          audience?: Database["public"]["Enums"]["message_audience"];
+          audience_filter?: Json;
+          body?: string;
+          code?: string | null;
+          created_at?: string;
+          id?: string;
+          is_automatic?: boolean;
+          parent_message_id?: string | null;
+          priority?: Database["public"]["Enums"]["message_priority"];
+          related_ticket_id?: string | null;
+          sender_id?: string | null;
+          status?: Database["public"]["Enums"]["message_status"];
+          subject_key?: Database["public"]["Enums"]["message_subject_key"];
+          subject_other?: string | null;
+          subject_text?: string;
+          type?: Database["public"]["Enums"]["message_type"];
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "messages_parent_message_id_fkey"
-            columns: ["parent_message_id"]
-            isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
+            foreignKeyName: "messages_parent_message_id_fkey";
+            columns: ["parent_message_id"];
+            isOneToOne: false;
+            referencedRelation: "messages";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "messages_related_ticket_id_fkey"
-            columns: ["related_ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
+            foreignKeyName: "messages_related_ticket_id_fkey";
+            columns: ["related_ticket_id"];
+            isOneToOne: false;
+            referencedRelation: "tickets";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       motorcycle_brands: {
         Row: {
-          active: boolean
-          created_at: string
-          id: string
-          name: string
-          sort_order: number
-          updated_at: string
-        }
+          active: boolean;
+          created_at: string;
+          id: string;
+          name: string;
+          sort_order: number;
+          updated_at: string;
+        };
         Insert: {
-          active?: boolean
-          created_at?: string
-          id?: string
-          name: string
-          sort_order?: number
-          updated_at?: string
-        }
+          active?: boolean;
+          created_at?: string;
+          id?: string;
+          name: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
         Update: {
-          active?: boolean
-          created_at?: string
-          id?: string
-          name?: string
-          sort_order?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
+          active?: boolean;
+          created_at?: string;
+          id?: string;
+          name?: string;
+          sort_order?: number;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       motorcycle_documents: {
         Row: {
-          amount: number | null
-          bucket: string
-          created_at: string
-          created_by: string | null
-          custom_label: string | null
-          deleted_at: string | null
-          deleted_by: string | null
-          doc_date: string | null
-          doc_number: string | null
-          doc_type: Database["public"]["Enums"]["motorcycle_document_type"]
-          file_name: string | null
-          id: string
-          is_current: boolean
-          is_origin_document: boolean
-          issuer: string | null
-          mime_type: string | null
-          motorcycle_id: string
-          notes: string | null
-          parent_id: string | null
-          sha256: string | null
-          size_bytes: number | null
-          storage_path: string
-          updated_at: string
-          version: number
-        }
+          amount: number | null;
+          bucket: string;
+          created_at: string;
+          created_by: string | null;
+          custom_label: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
+          doc_date: string | null;
+          doc_number: string | null;
+          doc_type: Database["public"]["Enums"]["motorcycle_document_type"];
+          file_name: string | null;
+          id: string;
+          is_current: boolean;
+          is_origin_document: boolean;
+          issuer: string | null;
+          mime_type: string | null;
+          motorcycle_id: string;
+          notes: string | null;
+          parent_id: string | null;
+          sha256: string | null;
+          size_bytes: number | null;
+          storage_path: string;
+          updated_at: string;
+          version: number;
+        };
         Insert: {
-          amount?: number | null
-          bucket?: string
-          created_at?: string
-          created_by?: string | null
-          custom_label?: string | null
-          deleted_at?: string | null
-          deleted_by?: string | null
-          doc_date?: string | null
-          doc_number?: string | null
-          doc_type: Database["public"]["Enums"]["motorcycle_document_type"]
-          file_name?: string | null
-          id?: string
-          is_current?: boolean
-          is_origin_document?: boolean
-          issuer?: string | null
-          mime_type?: string | null
-          motorcycle_id: string
-          notes?: string | null
-          parent_id?: string | null
-          sha256?: string | null
-          size_bytes?: number | null
-          storage_path: string
-          updated_at?: string
-          version?: number
-        }
+          amount?: number | null;
+          bucket?: string;
+          created_at?: string;
+          created_by?: string | null;
+          custom_label?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          doc_date?: string | null;
+          doc_number?: string | null;
+          doc_type: Database["public"]["Enums"]["motorcycle_document_type"];
+          file_name?: string | null;
+          id?: string;
+          is_current?: boolean;
+          is_origin_document?: boolean;
+          issuer?: string | null;
+          mime_type?: string | null;
+          motorcycle_id: string;
+          notes?: string | null;
+          parent_id?: string | null;
+          sha256?: string | null;
+          size_bytes?: number | null;
+          storage_path: string;
+          updated_at?: string;
+          version?: number;
+        };
         Update: {
-          amount?: number | null
-          bucket?: string
-          created_at?: string
-          created_by?: string | null
-          custom_label?: string | null
-          deleted_at?: string | null
-          deleted_by?: string | null
-          doc_date?: string | null
-          doc_number?: string | null
-          doc_type?: Database["public"]["Enums"]["motorcycle_document_type"]
-          file_name?: string | null
-          id?: string
-          is_current?: boolean
-          is_origin_document?: boolean
-          issuer?: string | null
-          mime_type?: string | null
-          motorcycle_id?: string
-          notes?: string | null
-          parent_id?: string | null
-          sha256?: string | null
-          size_bytes?: number | null
-          storage_path?: string
-          updated_at?: string
-          version?: number
-        }
+          amount?: number | null;
+          bucket?: string;
+          created_at?: string;
+          created_by?: string | null;
+          custom_label?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
+          doc_date?: string | null;
+          doc_number?: string | null;
+          doc_type?: Database["public"]["Enums"]["motorcycle_document_type"];
+          file_name?: string | null;
+          id?: string;
+          is_current?: boolean;
+          is_origin_document?: boolean;
+          issuer?: string | null;
+          mime_type?: string | null;
+          motorcycle_id?: string;
+          notes?: string | null;
+          parent_id?: string | null;
+          sha256?: string | null;
+          size_bytes?: number | null;
+          storage_path?: string;
+          updated_at?: string;
+          version?: number;
+        };
         Relationships: [
           {
-            foreignKeyName: "motorcycle_documents_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "document_pendencies_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "motorcycle_documents_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "document_pendencies_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "motorcycle_documents_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_origin_document_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "motorcycle_documents_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_origin_document_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "motorcycle_documents_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycles"
-            referencedColumns: ["id"]
+            foreignKeyName: "motorcycle_documents_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycles";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "motorcycle_documents_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_documents"
-            referencedColumns: ["id"]
+            foreignKeyName: "motorcycle_documents_parent_id_fkey";
+            columns: ["parent_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_documents";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "motorcycle_documents_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_origin_document_view"
-            referencedColumns: ["document_id"]
+            foreignKeyName: "motorcycle_documents_parent_id_fkey";
+            columns: ["parent_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_origin_document_view";
+            referencedColumns: ["document_id"];
           },
-        ]
-      }
+        ];
+      };
       motorcycle_model_defaults: {
         Row: {
-          model_id: string
-          notes: string | null
-          suggested_control_type:
-            | Database["public"]["Enums"]["control_type"]
-            | null
-          updated_at: string
-        }
+          model_id: string;
+          notes: string | null;
+          suggested_control_type: Database["public"]["Enums"]["control_type"] | null;
+          updated_at: string;
+        };
         Insert: {
-          model_id: string
-          notes?: string | null
-          suggested_control_type?:
-            | Database["public"]["Enums"]["control_type"]
-            | null
-          updated_at?: string
-        }
+          model_id: string;
+          notes?: string | null;
+          suggested_control_type?: Database["public"]["Enums"]["control_type"] | null;
+          updated_at?: string;
+        };
         Update: {
-          model_id?: string
-          notes?: string | null
-          suggested_control_type?:
-            | Database["public"]["Enums"]["control_type"]
-            | null
-          updated_at?: string
-        }
+          model_id?: string;
+          notes?: string | null;
+          suggested_control_type?: Database["public"]["Enums"]["control_type"] | null;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "motorcycle_model_defaults_model_id_fkey"
-            columns: ["model_id"]
-            isOneToOne: true
-            referencedRelation: "motorcycle_models"
-            referencedColumns: ["id"]
+            foreignKeyName: "motorcycle_model_defaults_model_id_fkey";
+            columns: ["model_id"];
+            isOneToOne: true;
+            referencedRelation: "motorcycle_models";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       motorcycle_model_engines: {
         Row: {
-          active: boolean
-          created_at: string
-          displacement: number
-          id: string
-          model_id: string
-          sort_order: number
-        }
+          active: boolean;
+          created_at: string;
+          displacement: number;
+          id: string;
+          model_id: string;
+          sort_order: number;
+        };
         Insert: {
-          active?: boolean
-          created_at?: string
-          displacement: number
-          id?: string
-          model_id: string
-          sort_order?: number
-        }
+          active?: boolean;
+          created_at?: string;
+          displacement: number;
+          id?: string;
+          model_id: string;
+          sort_order?: number;
+        };
         Update: {
-          active?: boolean
-          created_at?: string
-          displacement?: number
-          id?: string
-          model_id?: string
-          sort_order?: number
-        }
+          active?: boolean;
+          created_at?: string;
+          displacement?: number;
+          id?: string;
+          model_id?: string;
+          sort_order?: number;
+        };
         Relationships: [
           {
-            foreignKeyName: "motorcycle_model_engines_model_id_fkey"
-            columns: ["model_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_models"
-            referencedColumns: ["id"]
+            foreignKeyName: "motorcycle_model_engines_model_id_fkey";
+            columns: ["model_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_models";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       motorcycle_model_years: {
         Row: {
-          created_at: string
-          id: string
-          model_id: string
-          year_make: number
-          year_model: number
-        }
+          created_at: string;
+          id: string;
+          model_id: string;
+          year_make: number;
+          year_model: number;
+        };
         Insert: {
-          created_at?: string
-          id?: string
-          model_id: string
-          year_make: number
-          year_model: number
-        }
+          created_at?: string;
+          id?: string;
+          model_id: string;
+          year_make: number;
+          year_model: number;
+        };
         Update: {
-          created_at?: string
-          id?: string
-          model_id?: string
-          year_make?: number
-          year_model?: number
-        }
+          created_at?: string;
+          id?: string;
+          model_id?: string;
+          year_make?: number;
+          year_model?: number;
+        };
         Relationships: [
           {
-            foreignKeyName: "motorcycle_model_years_model_id_fkey"
-            columns: ["model_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_models"
-            referencedColumns: ["id"]
+            foreignKeyName: "motorcycle_model_years_model_id_fkey";
+            columns: ["model_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_models";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       motorcycle_models: {
         Row: {
-          active: boolean
-          brand_id: string
-          created_at: string
-          id: string
-          name: string
-          notes: string | null
-          sort_order: number
-          type_code: string
-          updated_at: string
-        }
+          active: boolean;
+          brand_id: string;
+          created_at: string;
+          id: string;
+          name: string;
+          notes: string | null;
+          sort_order: number;
+          type_code: string;
+          updated_at: string;
+        };
         Insert: {
-          active?: boolean
-          brand_id: string
-          created_at?: string
-          id?: string
-          name: string
-          notes?: string | null
-          sort_order?: number
-          type_code: string
-          updated_at?: string
-        }
+          active?: boolean;
+          brand_id: string;
+          created_at?: string;
+          id?: string;
+          name: string;
+          notes?: string | null;
+          sort_order?: number;
+          type_code: string;
+          updated_at?: string;
+        };
         Update: {
-          active?: boolean
-          brand_id?: string
-          created_at?: string
-          id?: string
-          name?: string
-          notes?: string | null
-          sort_order?: number
-          type_code?: string
-          updated_at?: string
-        }
+          active?: boolean;
+          brand_id?: string;
+          created_at?: string;
+          id?: string;
+          name?: string;
+          notes?: string | null;
+          sort_order?: number;
+          type_code?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "motorcycle_models_brand_id_fkey"
-            columns: ["brand_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_brands"
-            referencedColumns: ["id"]
+            foreignKeyName: "motorcycle_models_brand_id_fkey";
+            columns: ["brand_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_brands";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "motorcycle_models_type_code_fkey"
-            columns: ["type_code"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_types_ref"
-            referencedColumns: ["code"]
+            foreignKeyName: "motorcycle_models_type_code_fkey";
+            columns: ["type_code"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_types_ref";
+            referencedColumns: ["code"];
           },
-        ]
-      }
+        ];
+      };
       motorcycle_photos: {
         Row: {
-          bucket: string
-          caption: string | null
-          created_at: string
-          created_by: string | null
-          id: string
-          is_primary: boolean
-          kind: Database["public"]["Enums"]["media_kind"]
-          motorcycle_id: string
-          position: number
-          storage_path: string
-          updated_at: string
-        }
+          bucket: string;
+          caption: string | null;
+          created_at: string;
+          created_by: string | null;
+          id: string;
+          is_primary: boolean;
+          kind: Database["public"]["Enums"]["media_kind"];
+          motorcycle_id: string;
+          position: number;
+          storage_path: string;
+          updated_at: string;
+        };
         Insert: {
-          bucket?: string
-          caption?: string | null
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_primary?: boolean
-          kind?: Database["public"]["Enums"]["media_kind"]
-          motorcycle_id: string
-          position?: number
-          storage_path: string
-          updated_at?: string
-        }
+          bucket?: string;
+          caption?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          is_primary?: boolean;
+          kind?: Database["public"]["Enums"]["media_kind"];
+          motorcycle_id: string;
+          position?: number;
+          storage_path: string;
+          updated_at?: string;
+        };
         Update: {
-          bucket?: string
-          caption?: string | null
-          created_at?: string
-          created_by?: string | null
-          id?: string
-          is_primary?: boolean
-          kind?: Database["public"]["Enums"]["media_kind"]
-          motorcycle_id?: string
-          position?: number
-          storage_path?: string
-          updated_at?: string
-        }
+          bucket?: string;
+          caption?: string | null;
+          created_at?: string;
+          created_by?: string | null;
+          id?: string;
+          is_primary?: boolean;
+          kind?: Database["public"]["Enums"]["media_kind"];
+          motorcycle_id?: string;
+          position?: number;
+          storage_path?: string;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "motorcycle_photos_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "document_pendencies_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "motorcycle_photos_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "document_pendencies_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "motorcycle_photos_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_origin_document_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "motorcycle_photos_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_origin_document_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "motorcycle_photos_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycles"
-            referencedColumns: ["id"]
+            foreignKeyName: "motorcycle_photos_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycles";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       motorcycle_types_ref: {
         Row: {
-          active: boolean
-          code: string
-          created_at: string
-          label: string
-          sort_order: number
-        }
+          active: boolean;
+          code: string;
+          created_at: string;
+          label: string;
+          sort_order: number;
+        };
         Insert: {
-          active?: boolean
-          code: string
-          created_at?: string
-          label: string
-          sort_order?: number
-        }
+          active?: boolean;
+          code: string;
+          created_at?: string;
+          label: string;
+          sort_order?: number;
+        };
         Update: {
-          active?: boolean
-          code?: string
-          created_at?: string
-          label?: string
-          sort_order?: number
-        }
-        Relationships: []
-      }
+          active?: boolean;
+          code?: string;
+          created_at?: string;
+          label?: string;
+          sort_order?: number;
+        };
+        Relationships: [];
+      };
       motorcycles: {
         Row: {
-          archive_reason: string | null
-          archived_at: string | null
-          archived_by: string | null
-          brand: string
-          catalog_model_id: string | null
-          chassis: string | null
-          condition: string
-          conservation_score: number
-          control_type: Database["public"]["Enums"]["control_type"]
-          created_at: string
-          displacement: number | null
-          engine_number: string | null
-          hours_initial: number
-          hours_total: number
-          id: string
-          incident_declaration: Json | null
-          initial_review_done_at: string | null
-          is_homologation: boolean
-          km_initial: number
-          km_total: number
-          main_photo_url: string | null
-          model: string
-          nickname: string | null
-          origin_notes: string | null
-          origin_set_at: string | null
-          origin_type:
-            | Database["public"]["Enums"]["motorcycle_origin_type"]
-            | null
-          owner_id: string
-          plan_review_status: string
-          plate: string | null
-          renavam: string | null
-          status: string
-          trailbook_id: string
-          updated_at: string
-          use_profile: Database["public"]["Enums"]["use_profile"] | null
-          use_profile_note: string | null
-          year_make: number | null
-          year_model: number | null
-        }
+          archive_reason: string | null;
+          archived_at: string | null;
+          archived_by: string | null;
+          brand: string;
+          catalog_model_id: string | null;
+          chassis: string | null;
+          condition: string;
+          conservation_score: number;
+          control_type: Database["public"]["Enums"]["control_type"];
+          created_at: string;
+          displacement: number | null;
+          engine_number: string | null;
+          hours_initial: number;
+          hours_total: number;
+          id: string;
+          incident_declaration: Json | null;
+          initial_review_done_at: string | null;
+          is_homologation: boolean;
+          km_initial: number;
+          km_total: number;
+          main_photo_url: string | null;
+          model: string;
+          nickname: string | null;
+          origin_notes: string | null;
+          origin_set_at: string | null;
+          origin_type: Database["public"]["Enums"]["motorcycle_origin_type"] | null;
+          owner_id: string;
+          plan_review_status: string;
+          plate: string | null;
+          renavam: string | null;
+          status: string;
+          trailbook_id: string;
+          updated_at: string;
+          use_profile: Database["public"]["Enums"]["use_profile"] | null;
+          use_profile_note: string | null;
+          year_make: number | null;
+          year_model: number | null;
+        };
         Insert: {
-          archive_reason?: string | null
-          archived_at?: string | null
-          archived_by?: string | null
-          brand: string
-          catalog_model_id?: string | null
-          chassis?: string | null
-          condition?: string
-          conservation_score?: number
-          control_type?: Database["public"]["Enums"]["control_type"]
-          created_at?: string
-          displacement?: number | null
-          engine_number?: string | null
-          hours_initial?: number
-          hours_total?: number
-          id?: string
-          incident_declaration?: Json | null
-          initial_review_done_at?: string | null
-          is_homologation?: boolean
-          km_initial?: number
-          km_total?: number
-          main_photo_url?: string | null
-          model: string
-          nickname?: string | null
-          origin_notes?: string | null
-          origin_set_at?: string | null
-          origin_type?:
-            | Database["public"]["Enums"]["motorcycle_origin_type"]
-            | null
-          owner_id: string
-          plan_review_status?: string
-          plate?: string | null
-          renavam?: string | null
-          status?: string
-          trailbook_id: string
-          updated_at?: string
-          use_profile?: Database["public"]["Enums"]["use_profile"] | null
-          use_profile_note?: string | null
-          year_make?: number | null
-          year_model?: number | null
-        }
+          archive_reason?: string | null;
+          archived_at?: string | null;
+          archived_by?: string | null;
+          brand: string;
+          catalog_model_id?: string | null;
+          chassis?: string | null;
+          condition?: string;
+          conservation_score?: number;
+          control_type?: Database["public"]["Enums"]["control_type"];
+          created_at?: string;
+          displacement?: number | null;
+          engine_number?: string | null;
+          hours_initial?: number;
+          hours_total?: number;
+          id?: string;
+          incident_declaration?: Json | null;
+          initial_review_done_at?: string | null;
+          is_homologation?: boolean;
+          km_initial?: number;
+          km_total?: number;
+          main_photo_url?: string | null;
+          model: string;
+          nickname?: string | null;
+          origin_notes?: string | null;
+          origin_set_at?: string | null;
+          origin_type?: Database["public"]["Enums"]["motorcycle_origin_type"] | null;
+          owner_id: string;
+          plan_review_status?: string;
+          plate?: string | null;
+          renavam?: string | null;
+          status?: string;
+          trailbook_id: string;
+          updated_at?: string;
+          use_profile?: Database["public"]["Enums"]["use_profile"] | null;
+          use_profile_note?: string | null;
+          year_make?: number | null;
+          year_model?: number | null;
+        };
         Update: {
-          archive_reason?: string | null
-          archived_at?: string | null
-          archived_by?: string | null
-          brand?: string
-          catalog_model_id?: string | null
-          chassis?: string | null
-          condition?: string
-          conservation_score?: number
-          control_type?: Database["public"]["Enums"]["control_type"]
-          created_at?: string
-          displacement?: number | null
-          engine_number?: string | null
-          hours_initial?: number
-          hours_total?: number
-          id?: string
-          incident_declaration?: Json | null
-          initial_review_done_at?: string | null
-          is_homologation?: boolean
-          km_initial?: number
-          km_total?: number
-          main_photo_url?: string | null
-          model?: string
-          nickname?: string | null
-          origin_notes?: string | null
-          origin_set_at?: string | null
-          origin_type?:
-            | Database["public"]["Enums"]["motorcycle_origin_type"]
-            | null
-          owner_id?: string
-          plan_review_status?: string
-          plate?: string | null
-          renavam?: string | null
-          status?: string
-          trailbook_id?: string
-          updated_at?: string
-          use_profile?: Database["public"]["Enums"]["use_profile"] | null
-          use_profile_note?: string | null
-          year_make?: number | null
-          year_model?: number | null
-        }
+          archive_reason?: string | null;
+          archived_at?: string | null;
+          archived_by?: string | null;
+          brand?: string;
+          catalog_model_id?: string | null;
+          chassis?: string | null;
+          condition?: string;
+          conservation_score?: number;
+          control_type?: Database["public"]["Enums"]["control_type"];
+          created_at?: string;
+          displacement?: number | null;
+          engine_number?: string | null;
+          hours_initial?: number;
+          hours_total?: number;
+          id?: string;
+          incident_declaration?: Json | null;
+          initial_review_done_at?: string | null;
+          is_homologation?: boolean;
+          km_initial?: number;
+          km_total?: number;
+          main_photo_url?: string | null;
+          model?: string;
+          nickname?: string | null;
+          origin_notes?: string | null;
+          origin_set_at?: string | null;
+          origin_type?: Database["public"]["Enums"]["motorcycle_origin_type"] | null;
+          owner_id?: string;
+          plan_review_status?: string;
+          plate?: string | null;
+          renavam?: string | null;
+          status?: string;
+          trailbook_id?: string;
+          updated_at?: string;
+          use_profile?: Database["public"]["Enums"]["use_profile"] | null;
+          use_profile_note?: string | null;
+          year_make?: number | null;
+          year_model?: number | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "motorcycles_catalog_model_id_fkey"
-            columns: ["catalog_model_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_models"
-            referencedColumns: ["id"]
+            foreignKeyName: "motorcycles_catalog_model_id_fkey";
+            columns: ["catalog_model_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_models";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       notifications: {
         Row: {
-          body: string | null
-          created_at: string
-          id: string
-          kind: string
-          link: string | null
-          read_at: string | null
-          title: string
-          user_id: string
-        }
+          body: string | null;
+          created_at: string;
+          id: string;
+          kind: string;
+          link: string | null;
+          read_at: string | null;
+          title: string;
+          user_id: string;
+        };
         Insert: {
-          body?: string | null
-          created_at?: string
-          id?: string
-          kind: string
-          link?: string | null
-          read_at?: string | null
-          title: string
-          user_id: string
-        }
+          body?: string | null;
+          created_at?: string;
+          id?: string;
+          kind: string;
+          link?: string | null;
+          read_at?: string | null;
+          title: string;
+          user_id: string;
+        };
         Update: {
-          body?: string | null
-          created_at?: string
-          id?: string
-          kind?: string
-          link?: string | null
-          read_at?: string | null
-          title?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
+          body?: string | null;
+          created_at?: string;
+          id?: string;
+          kind?: string;
+          link?: string | null;
+          read_at?: string | null;
+          title?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       ownership_history: {
         Row: {
-          created_at: string
-          ended_at: string | null
-          id: string
-          method: Database["public"]["Enums"]["ownership_method"]
-          motorcycle_id: string
-          notes: string | null
-          owner_id: string
-          started_at: string
-        }
+          created_at: string;
+          ended_at: string | null;
+          id: string;
+          method: Database["public"]["Enums"]["ownership_method"];
+          motorcycle_id: string;
+          notes: string | null;
+          owner_id: string;
+          started_at: string;
+        };
         Insert: {
-          created_at?: string
-          ended_at?: string | null
-          id?: string
-          method?: Database["public"]["Enums"]["ownership_method"]
-          motorcycle_id: string
-          notes?: string | null
-          owner_id: string
-          started_at?: string
-        }
+          created_at?: string;
+          ended_at?: string | null;
+          id?: string;
+          method?: Database["public"]["Enums"]["ownership_method"];
+          motorcycle_id: string;
+          notes?: string | null;
+          owner_id: string;
+          started_at?: string;
+        };
         Update: {
-          created_at?: string
-          ended_at?: string | null
-          id?: string
-          method?: Database["public"]["Enums"]["ownership_method"]
-          motorcycle_id?: string
-          notes?: string | null
-          owner_id?: string
-          started_at?: string
-        }
+          created_at?: string;
+          ended_at?: string | null;
+          id?: string;
+          method?: Database["public"]["Enums"]["ownership_method"];
+          motorcycle_id?: string;
+          notes?: string | null;
+          owner_id?: string;
+          started_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "ownership_history_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "document_pendencies_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "ownership_history_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "document_pendencies_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "ownership_history_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_origin_document_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "ownership_history_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_origin_document_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "ownership_history_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycles"
-            referencedColumns: ["id"]
+            foreignKeyName: "ownership_history_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycles";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       ownership_transfers: {
         Row: {
-          created_at: string
-          from_user_id: string
-          id: string
-          message: string | null
-          motorcycle_id: string
-          requested_at: string
-          resolved_at: string | null
-          resolved_by: string | null
-          status: Database["public"]["Enums"]["transfer_status"]
-          to_email: string
-          to_user_id: string | null
-          updated_at: string
-        }
+          created_at: string;
+          from_user_id: string;
+          id: string;
+          message: string | null;
+          motorcycle_id: string;
+          requested_at: string;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          status: Database["public"]["Enums"]["transfer_status"];
+          to_email: string;
+          to_user_id: string | null;
+          updated_at: string;
+        };
         Insert: {
-          created_at?: string
-          from_user_id: string
-          id?: string
-          message?: string | null
-          motorcycle_id: string
-          requested_at?: string
-          resolved_at?: string | null
-          resolved_by?: string | null
-          status?: Database["public"]["Enums"]["transfer_status"]
-          to_email: string
-          to_user_id?: string | null
-          updated_at?: string
-        }
+          created_at?: string;
+          from_user_id: string;
+          id?: string;
+          message?: string | null;
+          motorcycle_id: string;
+          requested_at?: string;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          status?: Database["public"]["Enums"]["transfer_status"];
+          to_email: string;
+          to_user_id?: string | null;
+          updated_at?: string;
+        };
         Update: {
-          created_at?: string
-          from_user_id?: string
-          id?: string
-          message?: string | null
-          motorcycle_id?: string
-          requested_at?: string
-          resolved_at?: string | null
-          resolved_by?: string | null
-          status?: Database["public"]["Enums"]["transfer_status"]
-          to_email?: string
-          to_user_id?: string | null
-          updated_at?: string
-        }
+          created_at?: string;
+          from_user_id?: string;
+          id?: string;
+          message?: string | null;
+          motorcycle_id?: string;
+          requested_at?: string;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          status?: Database["public"]["Enums"]["transfer_status"];
+          to_email?: string;
+          to_user_id?: string | null;
+          updated_at?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "ownership_transfers_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "document_pendencies_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "ownership_transfers_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "document_pendencies_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "ownership_transfers_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_origin_document_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "ownership_transfers_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_origin_document_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "ownership_transfers_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycles"
-            referencedColumns: ["id"]
+            foreignKeyName: "ownership_transfers_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycles";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       platform_modules: {
         Row: {
-          created_at: string
-          description: string | null
-          hide_when_disabled: boolean
-          id: string
-          key: string
-          label: string
-          maintenance_message: string | null
-          maintenance_reason: string | null
-          maintenance_until: string | null
-          sort_order: number
-          status: Database["public"]["Enums"]["module_status"]
-          updated_at: string
-          updated_by: string | null
-        }
+          created_at: string;
+          description: string | null;
+          hide_when_disabled: boolean;
+          id: string;
+          key: string;
+          label: string;
+          maintenance_message: string | null;
+          maintenance_reason: string | null;
+          maintenance_until: string | null;
+          sort_order: number;
+          status: Database["public"]["Enums"]["module_status"];
+          updated_at: string;
+          updated_by: string | null;
+        };
         Insert: {
-          created_at?: string
-          description?: string | null
-          hide_when_disabled?: boolean
-          id?: string
-          key: string
-          label: string
-          maintenance_message?: string | null
-          maintenance_reason?: string | null
-          maintenance_until?: string | null
-          sort_order?: number
-          status?: Database["public"]["Enums"]["module_status"]
-          updated_at?: string
-          updated_by?: string | null
-        }
+          created_at?: string;
+          description?: string | null;
+          hide_when_disabled?: boolean;
+          id?: string;
+          key: string;
+          label: string;
+          maintenance_message?: string | null;
+          maintenance_reason?: string | null;
+          maintenance_until?: string | null;
+          sort_order?: number;
+          status?: Database["public"]["Enums"]["module_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
         Update: {
-          created_at?: string
-          description?: string | null
-          hide_when_disabled?: boolean
-          id?: string
-          key?: string
-          label?: string
-          maintenance_message?: string | null
-          maintenance_reason?: string | null
-          maintenance_until?: string | null
-          sort_order?: number
-          status?: Database["public"]["Enums"]["module_status"]
-          updated_at?: string
-          updated_by?: string | null
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          description?: string | null;
+          hide_when_disabled?: boolean;
+          id?: string;
+          key?: string;
+          label?: string;
+          maintenance_message?: string | null;
+          maintenance_reason?: string | null;
+          maintenance_until?: string | null;
+          sort_order?: number;
+          status?: Database["public"]["Enums"]["module_status"];
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
       profiles: {
         Row: {
-          avatar_url: string | null
-          bairro: string | null
-          birth_date: string | null
-          blocked_at: string | null
-          blocked_notes: string | null
-          blocked_reason: string | null
-          cep: string | null
-          city: string | null
-          complemento: string | null
-          cpf: string | null
-          cpf_locked_at: string | null
-          created_at: string
-          display_name: string | null
-          email: string | null
-          full_name: string | null
-          ibge_code: string | null
-          id: string
-          inactive_at: string | null
-          inactive_notes: string | null
-          inactive_reason: string | null
-          is_homologation: boolean
-          last_seen_at: string | null
-          login_provider: string | null
-          logradouro: string | null
-          numero: string | null
-          phone: string | null
-          plan: Database["public"]["Enums"]["plan_tier"]
-          plan_since: string
-          profile_completed_at: string | null
-          status: Database["public"]["Enums"]["user_status"]
-          uf: string | null
-          updated_at: string
-          whatsapp: string | null
-          whatsapp_same_as_phone: boolean
-        }
+          avatar_url: string | null;
+          bairro: string | null;
+          birth_date: string | null;
+          blocked_at: string | null;
+          blocked_notes: string | null;
+          blocked_reason: string | null;
+          cep: string | null;
+          city: string | null;
+          complemento: string | null;
+          cpf: string | null;
+          cpf_locked_at: string | null;
+          created_at: string;
+          display_name: string | null;
+          email: string | null;
+          full_name: string | null;
+          home_shortcuts: string[] | null;
+          ibge_code: string | null;
+          id: string;
+          inactive_at: string | null;
+          inactive_notes: string | null;
+          inactive_reason: string | null;
+          is_homologation: boolean;
+          last_seen_at: string | null;
+          login_provider: string | null;
+          logradouro: string | null;
+          numero: string | null;
+          phone: string | null;
+          plan: Database["public"]["Enums"]["plan_tier"];
+          plan_since: string;
+          profile_completed_at: string | null;
+          status: Database["public"]["Enums"]["user_status"];
+          uf: string | null;
+          updated_at: string;
+          whatsapp: string | null;
+          whatsapp_same_as_phone: boolean;
+        };
         Insert: {
-          avatar_url?: string | null
-          bairro?: string | null
-          birth_date?: string | null
-          blocked_at?: string | null
-          blocked_notes?: string | null
-          blocked_reason?: string | null
-          cep?: string | null
-          city?: string | null
-          complemento?: string | null
-          cpf?: string | null
-          cpf_locked_at?: string | null
-          created_at?: string
-          display_name?: string | null
-          email?: string | null
-          full_name?: string | null
-          ibge_code?: string | null
-          id: string
-          inactive_at?: string | null
-          inactive_notes?: string | null
-          inactive_reason?: string | null
-          is_homologation?: boolean
-          last_seen_at?: string | null
-          login_provider?: string | null
-          logradouro?: string | null
-          numero?: string | null
-          phone?: string | null
-          plan?: Database["public"]["Enums"]["plan_tier"]
-          plan_since?: string
-          profile_completed_at?: string | null
-          status?: Database["public"]["Enums"]["user_status"]
-          uf?: string | null
-          updated_at?: string
-          whatsapp?: string | null
-          whatsapp_same_as_phone?: boolean
-        }
+          avatar_url?: string | null;
+          bairro?: string | null;
+          birth_date?: string | null;
+          blocked_at?: string | null;
+          blocked_notes?: string | null;
+          blocked_reason?: string | null;
+          cep?: string | null;
+          city?: string | null;
+          complemento?: string | null;
+          cpf?: string | null;
+          cpf_locked_at?: string | null;
+          created_at?: string;
+          display_name?: string | null;
+          email?: string | null;
+          full_name?: string | null;
+          home_shortcuts?: string[] | null;
+          ibge_code?: string | null;
+          id: string;
+          inactive_at?: string | null;
+          inactive_notes?: string | null;
+          inactive_reason?: string | null;
+          is_homologation?: boolean;
+          last_seen_at?: string | null;
+          login_provider?: string | null;
+          logradouro?: string | null;
+          numero?: string | null;
+          phone?: string | null;
+          plan?: Database["public"]["Enums"]["plan_tier"];
+          plan_since?: string;
+          profile_completed_at?: string | null;
+          status?: Database["public"]["Enums"]["user_status"];
+          uf?: string | null;
+          updated_at?: string;
+          whatsapp?: string | null;
+          whatsapp_same_as_phone?: boolean;
+        };
         Update: {
-          avatar_url?: string | null
-          bairro?: string | null
-          birth_date?: string | null
-          blocked_at?: string | null
-          blocked_notes?: string | null
-          blocked_reason?: string | null
-          cep?: string | null
-          city?: string | null
-          complemento?: string | null
-          cpf?: string | null
-          cpf_locked_at?: string | null
-          created_at?: string
-          display_name?: string | null
-          email?: string | null
-          full_name?: string | null
-          ibge_code?: string | null
-          id?: string
-          inactive_at?: string | null
-          inactive_notes?: string | null
-          inactive_reason?: string | null
-          is_homologation?: boolean
-          last_seen_at?: string | null
-          login_provider?: string | null
-          logradouro?: string | null
-          numero?: string | null
-          phone?: string | null
-          plan?: Database["public"]["Enums"]["plan_tier"]
-          plan_since?: string
-          profile_completed_at?: string | null
-          status?: Database["public"]["Enums"]["user_status"]
-          uf?: string | null
-          updated_at?: string
-          whatsapp?: string | null
-          whatsapp_same_as_phone?: boolean
-        }
-        Relationships: []
-      }
+          avatar_url?: string | null;
+          bairro?: string | null;
+          birth_date?: string | null;
+          blocked_at?: string | null;
+          blocked_notes?: string | null;
+          blocked_reason?: string | null;
+          cep?: string | null;
+          city?: string | null;
+          complemento?: string | null;
+          cpf?: string | null;
+          cpf_locked_at?: string | null;
+          created_at?: string;
+          display_name?: string | null;
+          email?: string | null;
+          full_name?: string | null;
+          home_shortcuts?: string[] | null;
+          ibge_code?: string | null;
+          id?: string;
+          inactive_at?: string | null;
+          inactive_notes?: string | null;
+          inactive_reason?: string | null;
+          is_homologation?: boolean;
+          last_seen_at?: string | null;
+          login_provider?: string | null;
+          logradouro?: string | null;
+          numero?: string | null;
+          phone?: string | null;
+          plan?: Database["public"]["Enums"]["plan_tier"];
+          plan_since?: string;
+          profile_completed_at?: string | null;
+          status?: Database["public"]["Enums"]["user_status"];
+          uf?: string | null;
+          updated_at?: string;
+          whatsapp?: string | null;
+          whatsapp_same_as_phone?: boolean;
+        };
+        Relationships: [];
+      };
       retired_trailbook_ids: {
         Row: {
-          moto_id: string | null
-          reason: string | null
-          retired_at: string
-          retired_by: string | null
-          snapshot: Json
-          trailbook_id: string
-        }
+          moto_id: string | null;
+          reason: string | null;
+          retired_at: string;
+          retired_by: string | null;
+          snapshot: Json;
+          trailbook_id: string;
+        };
         Insert: {
-          moto_id?: string | null
-          reason?: string | null
-          retired_at?: string
-          retired_by?: string | null
-          snapshot: Json
-          trailbook_id: string
-        }
+          moto_id?: string | null;
+          reason?: string | null;
+          retired_at?: string;
+          retired_by?: string | null;
+          snapshot: Json;
+          trailbook_id: string;
+        };
         Update: {
-          moto_id?: string | null
-          reason?: string | null
-          retired_at?: string
-          retired_by?: string | null
-          snapshot?: Json
-          trailbook_id?: string
-        }
-        Relationships: []
-      }
+          moto_id?: string | null;
+          reason?: string | null;
+          retired_at?: string;
+          retired_by?: string | null;
+          snapshot?: Json;
+          trailbook_id?: string;
+        };
+        Relationships: [];
+      };
       smart_receipts: {
         Row: {
-          bucket: string | null
-          buyer_accepted_at: string | null
-          buyer_id: string | null
-          buyer_snapshot: Json
-          cancel_reason: string | null
-          cancellation_notes: string | null
-          cancellation_origin: string | null
-          cancellation_reason_code: string | null
-          cancelled_at: string | null
-          cancelled_by: string | null
-          cancelled_by_role: string | null
-          cancelled_reason: string | null
-          closure_type:
-            | Database["public"]["Enums"]["receipt_closure_type"]
-            | null
-          code: string
-          completed_at: string | null
-          created_at: string
-          created_by: string
-          external_buyer: boolean
-          id: string
-          issued_at: string | null
-          motorcycle_id: string
-          motorcycle_snapshot: Json
-          negotiation: Json
-          original_pdf_path: string | null
-          pdf_path: string | null
-          previous_receipt_id: string | null
-          previous_status: string | null
-          qr_path: string | null
-          revoked_at: string | null
-          revoked_reason: string | null
-          seller_accepted_at: string | null
-          seller_id: string | null
-          seller_snapshot: Json
-          sha256: string | null
-          signed_at: string | null
-          signed_pdf_path: string | null
-          status: string
-          updated_at: string
-          version: number
-        }
+          bucket: string | null;
+          buyer_accepted_at: string | null;
+          buyer_id: string | null;
+          buyer_snapshot: Json;
+          cancel_reason: string | null;
+          cancellation_notes: string | null;
+          cancellation_origin: string | null;
+          cancellation_reason_code: string | null;
+          cancelled_at: string | null;
+          cancelled_by: string | null;
+          cancelled_by_role: string | null;
+          cancelled_reason: string | null;
+          closure_type: Database["public"]["Enums"]["receipt_closure_type"] | null;
+          code: string;
+          completed_at: string | null;
+          created_at: string;
+          created_by: string;
+          external_buyer: boolean;
+          id: string;
+          issued_at: string | null;
+          motorcycle_id: string;
+          motorcycle_snapshot: Json;
+          negotiation: Json;
+          original_pdf_path: string | null;
+          pdf_path: string | null;
+          previous_receipt_id: string | null;
+          previous_status: string | null;
+          qr_path: string | null;
+          revoked_at: string | null;
+          revoked_reason: string | null;
+          seller_accepted_at: string | null;
+          seller_id: string | null;
+          seller_snapshot: Json;
+          sha256: string | null;
+          signed_at: string | null;
+          signed_pdf_path: string | null;
+          status: string;
+          updated_at: string;
+          version: number;
+        };
         Insert: {
-          bucket?: string | null
-          buyer_accepted_at?: string | null
-          buyer_id?: string | null
-          buyer_snapshot?: Json
-          cancel_reason?: string | null
-          cancellation_notes?: string | null
-          cancellation_origin?: string | null
-          cancellation_reason_code?: string | null
-          cancelled_at?: string | null
-          cancelled_by?: string | null
-          cancelled_by_role?: string | null
-          cancelled_reason?: string | null
-          closure_type?:
-            | Database["public"]["Enums"]["receipt_closure_type"]
-            | null
-          code: string
-          completed_at?: string | null
-          created_at?: string
-          created_by?: string
-          external_buyer?: boolean
-          id?: string
-          issued_at?: string | null
-          motorcycle_id: string
-          motorcycle_snapshot?: Json
-          negotiation?: Json
-          original_pdf_path?: string | null
-          pdf_path?: string | null
-          previous_receipt_id?: string | null
-          previous_status?: string | null
-          qr_path?: string | null
-          revoked_at?: string | null
-          revoked_reason?: string | null
-          seller_accepted_at?: string | null
-          seller_id?: string | null
-          seller_snapshot?: Json
-          sha256?: string | null
-          signed_at?: string | null
-          signed_pdf_path?: string | null
-          status?: string
-          updated_at?: string
-          version?: number
-        }
+          bucket?: string | null;
+          buyer_accepted_at?: string | null;
+          buyer_id?: string | null;
+          buyer_snapshot?: Json;
+          cancel_reason?: string | null;
+          cancellation_notes?: string | null;
+          cancellation_origin?: string | null;
+          cancellation_reason_code?: string | null;
+          cancelled_at?: string | null;
+          cancelled_by?: string | null;
+          cancelled_by_role?: string | null;
+          cancelled_reason?: string | null;
+          closure_type?: Database["public"]["Enums"]["receipt_closure_type"] | null;
+          code: string;
+          completed_at?: string | null;
+          created_at?: string;
+          created_by?: string;
+          external_buyer?: boolean;
+          id?: string;
+          issued_at?: string | null;
+          motorcycle_id: string;
+          motorcycle_snapshot?: Json;
+          negotiation?: Json;
+          original_pdf_path?: string | null;
+          pdf_path?: string | null;
+          previous_receipt_id?: string | null;
+          previous_status?: string | null;
+          qr_path?: string | null;
+          revoked_at?: string | null;
+          revoked_reason?: string | null;
+          seller_accepted_at?: string | null;
+          seller_id?: string | null;
+          seller_snapshot?: Json;
+          sha256?: string | null;
+          signed_at?: string | null;
+          signed_pdf_path?: string | null;
+          status?: string;
+          updated_at?: string;
+          version?: number;
+        };
         Update: {
-          bucket?: string | null
-          buyer_accepted_at?: string | null
-          buyer_id?: string | null
-          buyer_snapshot?: Json
-          cancel_reason?: string | null
-          cancellation_notes?: string | null
-          cancellation_origin?: string | null
-          cancellation_reason_code?: string | null
-          cancelled_at?: string | null
-          cancelled_by?: string | null
-          cancelled_by_role?: string | null
-          cancelled_reason?: string | null
-          closure_type?:
-            | Database["public"]["Enums"]["receipt_closure_type"]
-            | null
-          code?: string
-          completed_at?: string | null
-          created_at?: string
-          created_by?: string
-          external_buyer?: boolean
-          id?: string
-          issued_at?: string | null
-          motorcycle_id?: string
-          motorcycle_snapshot?: Json
-          negotiation?: Json
-          original_pdf_path?: string | null
-          pdf_path?: string | null
-          previous_receipt_id?: string | null
-          previous_status?: string | null
-          qr_path?: string | null
-          revoked_at?: string | null
-          revoked_reason?: string | null
-          seller_accepted_at?: string | null
-          seller_id?: string | null
-          seller_snapshot?: Json
-          sha256?: string | null
-          signed_at?: string | null
-          signed_pdf_path?: string | null
-          status?: string
-          updated_at?: string
-          version?: number
-        }
+          bucket?: string | null;
+          buyer_accepted_at?: string | null;
+          buyer_id?: string | null;
+          buyer_snapshot?: Json;
+          cancel_reason?: string | null;
+          cancellation_notes?: string | null;
+          cancellation_origin?: string | null;
+          cancellation_reason_code?: string | null;
+          cancelled_at?: string | null;
+          cancelled_by?: string | null;
+          cancelled_by_role?: string | null;
+          cancelled_reason?: string | null;
+          closure_type?: Database["public"]["Enums"]["receipt_closure_type"] | null;
+          code?: string;
+          completed_at?: string | null;
+          created_at?: string;
+          created_by?: string;
+          external_buyer?: boolean;
+          id?: string;
+          issued_at?: string | null;
+          motorcycle_id?: string;
+          motorcycle_snapshot?: Json;
+          negotiation?: Json;
+          original_pdf_path?: string | null;
+          pdf_path?: string | null;
+          previous_receipt_id?: string | null;
+          previous_status?: string | null;
+          qr_path?: string | null;
+          revoked_at?: string | null;
+          revoked_reason?: string | null;
+          seller_accepted_at?: string | null;
+          seller_id?: string | null;
+          seller_snapshot?: Json;
+          sha256?: string | null;
+          signed_at?: string | null;
+          signed_pdf_path?: string | null;
+          status?: string;
+          updated_at?: string;
+          version?: number;
+        };
         Relationships: [
           {
-            foreignKeyName: "smart_receipts_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "document_pendencies_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "smart_receipts_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "document_pendencies_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "smart_receipts_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_origin_document_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "smart_receipts_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_origin_document_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "smart_receipts_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycles"
-            referencedColumns: ["id"]
+            foreignKeyName: "smart_receipts_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycles";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "smart_receipts_previous_receipt_id_fkey"
-            columns: ["previous_receipt_id"]
-            isOneToOne: false
-            referencedRelation: "smart_receipts"
-            referencedColumns: ["id"]
+            foreignKeyName: "smart_receipts_previous_receipt_id_fkey";
+            columns: ["previous_receipt_id"];
+            isOneToOne: false;
+            referencedRelation: "smart_receipts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       ticket_attachments: {
         Row: {
-          bucket: string
-          created_at: string
-          file_name: string | null
-          id: string
-          message_id: string | null
-          mime_type: string | null
-          size_bytes: number | null
-          storage_path: string
-          ticket_id: string
-          uploaded_by: string
-        }
+          bucket: string;
+          created_at: string;
+          file_name: string | null;
+          id: string;
+          message_id: string | null;
+          mime_type: string | null;
+          size_bytes: number | null;
+          storage_path: string;
+          ticket_id: string;
+          uploaded_by: string;
+        };
         Insert: {
-          bucket?: string
-          created_at?: string
-          file_name?: string | null
-          id?: string
-          message_id?: string | null
-          mime_type?: string | null
-          size_bytes?: number | null
-          storage_path: string
-          ticket_id: string
-          uploaded_by: string
-        }
+          bucket?: string;
+          created_at?: string;
+          file_name?: string | null;
+          id?: string;
+          message_id?: string | null;
+          mime_type?: string | null;
+          size_bytes?: number | null;
+          storage_path: string;
+          ticket_id: string;
+          uploaded_by: string;
+        };
         Update: {
-          bucket?: string
-          created_at?: string
-          file_name?: string | null
-          id?: string
-          message_id?: string | null
-          mime_type?: string | null
-          size_bytes?: number | null
-          storage_path?: string
-          ticket_id?: string
-          uploaded_by?: string
-        }
+          bucket?: string;
+          created_at?: string;
+          file_name?: string | null;
+          id?: string;
+          message_id?: string | null;
+          mime_type?: string | null;
+          size_bytes?: number | null;
+          storage_path?: string;
+          ticket_id?: string;
+          uploaded_by?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "ticket_attachments_message_id_fkey"
-            columns: ["message_id"]
-            isOneToOne: false
-            referencedRelation: "ticket_messages"
-            referencedColumns: ["id"]
+            foreignKeyName: "ticket_attachments_message_id_fkey";
+            columns: ["message_id"];
+            isOneToOne: false;
+            referencedRelation: "ticket_messages";
+            referencedColumns: ["id"];
           },
           {
-            foreignKeyName: "ticket_attachments_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
+            foreignKeyName: "ticket_attachments_ticket_id_fkey";
+            columns: ["ticket_id"];
+            isOneToOne: false;
+            referencedRelation: "tickets";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       ticket_messages: {
         Row: {
-          author_id: string
-          body: string
-          created_at: string
-          id: string
-          is_internal: boolean
-          ticket_id: string
-        }
+          author_id: string;
+          body: string;
+          created_at: string;
+          id: string;
+          is_internal: boolean;
+          ticket_id: string;
+        };
         Insert: {
-          author_id: string
-          body: string
-          created_at?: string
-          id?: string
-          is_internal?: boolean
-          ticket_id: string
-        }
+          author_id: string;
+          body: string;
+          created_at?: string;
+          id?: string;
+          is_internal?: boolean;
+          ticket_id: string;
+        };
         Update: {
-          author_id?: string
-          body?: string
-          created_at?: string
-          id?: string
-          is_internal?: boolean
-          ticket_id?: string
-        }
+          author_id?: string;
+          body?: string;
+          created_at?: string;
+          id?: string;
+          is_internal?: boolean;
+          ticket_id?: string;
+        };
         Relationships: [
           {
-            foreignKeyName: "ticket_messages_ticket_id_fkey"
-            columns: ["ticket_id"]
-            isOneToOne: false
-            referencedRelation: "tickets"
-            referencedColumns: ["id"]
+            foreignKeyName: "ticket_messages_ticket_id_fkey";
+            columns: ["ticket_id"];
+            isOneToOne: false;
+            referencedRelation: "tickets";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       tickets: {
         Row: {
-          admin_last_read_at: string | null
-          assigned_to: string | null
-          closed_at: string | null
-          code: string | null
-          created_at: string
-          description: string
-          id: string
-          last_activity_at: string
-          module: Database["public"]["Enums"]["ticket_module"]
-          motorcycle_id: string | null
-          priority: Database["public"]["Enums"]["ticket_priority"]
-          resolved_at: string | null
-          status: Database["public"]["Enums"]["ticket_status"]
-          title: string
-          type: Database["public"]["Enums"]["ticket_type"]
-          updated_at: string
-          user_id: string
-          user_last_read_at: string | null
-        }
+          admin_last_read_at: string | null;
+          assigned_to: string | null;
+          closed_at: string | null;
+          code: string | null;
+          created_at: string;
+          description: string;
+          id: string;
+          last_activity_at: string;
+          module: Database["public"]["Enums"]["ticket_module"];
+          motorcycle_id: string | null;
+          priority: Database["public"]["Enums"]["ticket_priority"];
+          resolved_at: string | null;
+          status: Database["public"]["Enums"]["ticket_status"];
+          title: string;
+          type: Database["public"]["Enums"]["ticket_type"];
+          updated_at: string;
+          user_id: string;
+          user_last_read_at: string | null;
+        };
         Insert: {
-          admin_last_read_at?: string | null
-          assigned_to?: string | null
-          closed_at?: string | null
-          code?: string | null
-          created_at?: string
-          description: string
-          id?: string
-          last_activity_at?: string
-          module?: Database["public"]["Enums"]["ticket_module"]
-          motorcycle_id?: string | null
-          priority?: Database["public"]["Enums"]["ticket_priority"]
-          resolved_at?: string | null
-          status?: Database["public"]["Enums"]["ticket_status"]
-          title: string
-          type?: Database["public"]["Enums"]["ticket_type"]
-          updated_at?: string
-          user_id: string
-          user_last_read_at?: string | null
-        }
+          admin_last_read_at?: string | null;
+          assigned_to?: string | null;
+          closed_at?: string | null;
+          code?: string | null;
+          created_at?: string;
+          description: string;
+          id?: string;
+          last_activity_at?: string;
+          module?: Database["public"]["Enums"]["ticket_module"];
+          motorcycle_id?: string | null;
+          priority?: Database["public"]["Enums"]["ticket_priority"];
+          resolved_at?: string | null;
+          status?: Database["public"]["Enums"]["ticket_status"];
+          title: string;
+          type?: Database["public"]["Enums"]["ticket_type"];
+          updated_at?: string;
+          user_id: string;
+          user_last_read_at?: string | null;
+        };
         Update: {
-          admin_last_read_at?: string | null
-          assigned_to?: string | null
-          closed_at?: string | null
-          code?: string | null
-          created_at?: string
-          description?: string
-          id?: string
-          last_activity_at?: string
-          module?: Database["public"]["Enums"]["ticket_module"]
-          motorcycle_id?: string | null
-          priority?: Database["public"]["Enums"]["ticket_priority"]
-          resolved_at?: string | null
-          status?: Database["public"]["Enums"]["ticket_status"]
-          title?: string
-          type?: Database["public"]["Enums"]["ticket_type"]
-          updated_at?: string
-          user_id?: string
-          user_last_read_at?: string | null
-        }
+          admin_last_read_at?: string | null;
+          assigned_to?: string | null;
+          closed_at?: string | null;
+          code?: string | null;
+          created_at?: string;
+          description?: string;
+          id?: string;
+          last_activity_at?: string;
+          module?: Database["public"]["Enums"]["ticket_module"];
+          motorcycle_id?: string | null;
+          priority?: Database["public"]["Enums"]["ticket_priority"];
+          resolved_at?: string | null;
+          status?: Database["public"]["Enums"]["ticket_status"];
+          title?: string;
+          type?: Database["public"]["Enums"]["ticket_type"];
+          updated_at?: string;
+          user_id?: string;
+          user_last_read_at?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "tickets_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "document_pendencies_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "tickets_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "document_pendencies_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "tickets_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_origin_document_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "tickets_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_origin_document_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "tickets_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycles"
-            referencedColumns: ["id"]
+            foreignKeyName: "tickets_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycles";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       user_roles: {
         Row: {
-          created_at: string
-          id: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
+          created_at: string;
+          id: string;
+          role: Database["public"]["Enums"]["app_role"];
+          user_id: string;
+        };
         Insert: {
-          created_at?: string
-          id?: string
-          role: Database["public"]["Enums"]["app_role"]
-          user_id: string
-        }
+          created_at?: string;
+          id?: string;
+          role: Database["public"]["Enums"]["app_role"];
+          user_id: string;
+        };
         Update: {
-          created_at?: string
-          id?: string
-          role?: Database["public"]["Enums"]["app_role"]
-          user_id?: string
-        }
-        Relationships: []
-      }
+          created_at?: string;
+          id?: string;
+          role?: Database["public"]["Enums"]["app_role"];
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       workshops: {
         Row: {
-          city: string | null
-          cnpj: string | null
-          created_at: string
-          id: string
-          name: string
-          owner_user_id: string | null
-          phone: string | null
-          state: string | null
-          updated_at: string
-          verified: boolean
-          verified_at: string | null
-          verified_label: string | null
-        }
+          city: string | null;
+          cnpj: string | null;
+          created_at: string;
+          id: string;
+          name: string;
+          owner_user_id: string | null;
+          phone: string | null;
+          state: string | null;
+          updated_at: string;
+          verified: boolean;
+          verified_at: string | null;
+          verified_label: string | null;
+        };
         Insert: {
-          city?: string | null
-          cnpj?: string | null
-          created_at?: string
-          id?: string
-          name: string
-          owner_user_id?: string | null
-          phone?: string | null
-          state?: string | null
-          updated_at?: string
-          verified?: boolean
-          verified_at?: string | null
-          verified_label?: string | null
-        }
+          city?: string | null;
+          cnpj?: string | null;
+          created_at?: string;
+          id?: string;
+          name: string;
+          owner_user_id?: string | null;
+          phone?: string | null;
+          state?: string | null;
+          updated_at?: string;
+          verified?: boolean;
+          verified_at?: string | null;
+          verified_label?: string | null;
+        };
         Update: {
-          city?: string | null
-          cnpj?: string | null
-          created_at?: string
-          id?: string
-          name?: string
-          owner_user_id?: string | null
-          phone?: string | null
-          state?: string | null
-          updated_at?: string
-          verified?: boolean
-          verified_at?: string | null
-          verified_label?: string | null
-        }
-        Relationships: []
-      }
-    }
+          city?: string | null;
+          cnpj?: string | null;
+          created_at?: string;
+          id?: string;
+          name?: string;
+          owner_user_id?: string | null;
+          phone?: string | null;
+          state?: string | null;
+          updated_at?: string;
+          verified?: boolean;
+          verified_at?: string | null;
+          verified_label?: string | null;
+        };
+        Relationships: [];
+      };
+    };
     Views: {
       document_pendencies_view: {
         Row: {
-          brand: string | null
-          expected_kind: string | null
-          has_origin_pendency: boolean | null
-          model: string | null
-          motorcycle_id: string | null
-          nickname: string | null
-          origin_type:
-            | Database["public"]["Enums"]["motorcycle_origin_type"]
-            | null
-          owner_id: string | null
-          year_model: number | null
-        }
+          brand: string | null;
+          expected_kind: string | null;
+          has_origin_pendency: boolean | null;
+          model: string | null;
+          motorcycle_id: string | null;
+          nickname: string | null;
+          origin_type: Database["public"]["Enums"]["motorcycle_origin_type"] | null;
+          owner_id: string | null;
+          year_model: number | null;
+        };
         Insert: {
-          brand?: string | null
-          expected_kind?: never
-          has_origin_pendency?: never
-          model?: string | null
-          motorcycle_id?: string | null
-          nickname?: string | null
-          origin_type?:
-            | Database["public"]["Enums"]["motorcycle_origin_type"]
-            | null
-          owner_id?: string | null
-          year_model?: number | null
-        }
+          brand?: string | null;
+          expected_kind?: never;
+          has_origin_pendency?: never;
+          model?: string | null;
+          motorcycle_id?: string | null;
+          nickname?: string | null;
+          origin_type?: Database["public"]["Enums"]["motorcycle_origin_type"] | null;
+          owner_id?: string | null;
+          year_model?: number | null;
+        };
         Update: {
-          brand?: string | null
-          expected_kind?: never
-          has_origin_pendency?: never
-          model?: string | null
-          motorcycle_id?: string | null
-          nickname?: string | null
-          origin_type?:
-            | Database["public"]["Enums"]["motorcycle_origin_type"]
-            | null
-          owner_id?: string | null
-          year_model?: number | null
-        }
-        Relationships: []
-      }
+          brand?: string | null;
+          expected_kind?: never;
+          has_origin_pendency?: never;
+          model?: string | null;
+          motorcycle_id?: string | null;
+          nickname?: string | null;
+          origin_type?: Database["public"]["Enums"]["motorcycle_origin_type"] | null;
+          owner_id?: string | null;
+          year_model?: number | null;
+        };
+        Relationships: [];
+      };
       motorcycle_origin_document_view: {
         Row: {
-          bucket: string | null
-          doc_date: string | null
-          doc_number: string | null
-          doc_type:
-            | Database["public"]["Enums"]["motorcycle_document_type"]
-            | null
-          document_id: string | null
-          file_name: string | null
-          motorcycle_id: string | null
-          receipt_code: string | null
-          source_kind: string | null
-          storage_path: string | null
-        }
-        Relationships: []
-      }
+          bucket: string | null;
+          doc_date: string | null;
+          doc_number: string | null;
+          doc_type: Database["public"]["Enums"]["motorcycle_document_type"] | null;
+          document_id: string | null;
+          file_name: string | null;
+          motorcycle_id: string | null;
+          receipt_code: string | null;
+          source_kind: string | null;
+          storage_path: string | null;
+        };
+        Relationships: [];
+      };
       my_ownership_transfers: {
         Row: {
-          created_at: string | null
-          from_user_id: string | null
-          id: string | null
-          message: string | null
-          motorcycle_id: string | null
-          requested_at: string | null
-          resolved_at: string | null
-          resolved_by: string | null
-          status: Database["public"]["Enums"]["transfer_status"] | null
-          to_email: string | null
-          to_user_id: string | null
-          updated_at: string | null
-        }
+          created_at: string | null;
+          from_user_id: string | null;
+          id: string | null;
+          message: string | null;
+          motorcycle_id: string | null;
+          requested_at: string | null;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          status: Database["public"]["Enums"]["transfer_status"] | null;
+          to_email: string | null;
+          to_user_id: string | null;
+          updated_at: string | null;
+        };
         Insert: {
-          created_at?: string | null
-          from_user_id?: string | null
-          id?: string | null
-          message?: string | null
-          motorcycle_id?: string | null
-          requested_at?: string | null
-          resolved_at?: string | null
-          resolved_by?: string | null
-          status?: Database["public"]["Enums"]["transfer_status"] | null
-          to_email?: never
-          to_user_id?: string | null
-          updated_at?: string | null
-        }
+          created_at?: string | null;
+          from_user_id?: string | null;
+          id?: string | null;
+          message?: string | null;
+          motorcycle_id?: string | null;
+          requested_at?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          status?: Database["public"]["Enums"]["transfer_status"] | null;
+          to_email?: never;
+          to_user_id?: string | null;
+          updated_at?: string | null;
+        };
         Update: {
-          created_at?: string | null
-          from_user_id?: string | null
-          id?: string | null
-          message?: string | null
-          motorcycle_id?: string | null
-          requested_at?: string | null
-          resolved_at?: string | null
-          resolved_by?: string | null
-          status?: Database["public"]["Enums"]["transfer_status"] | null
-          to_email?: never
-          to_user_id?: string | null
-          updated_at?: string | null
-        }
+          created_at?: string | null;
+          from_user_id?: string | null;
+          id?: string | null;
+          message?: string | null;
+          motorcycle_id?: string | null;
+          requested_at?: string | null;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          status?: Database["public"]["Enums"]["transfer_status"] | null;
+          to_email?: never;
+          to_user_id?: string | null;
+          updated_at?: string | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "ownership_transfers_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "document_pendencies_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "ownership_transfers_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "document_pendencies_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "ownership_transfers_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycle_origin_document_view"
-            referencedColumns: ["motorcycle_id"]
+            foreignKeyName: "ownership_transfers_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycle_origin_document_view";
+            referencedColumns: ["motorcycle_id"];
           },
           {
-            foreignKeyName: "ownership_transfers_motorcycle_id_fkey"
-            columns: ["motorcycle_id"]
-            isOneToOne: false
-            referencedRelation: "motorcycles"
-            referencedColumns: ["id"]
+            foreignKeyName: "ownership_transfers_motorcycle_id_fkey";
+            columns: ["motorcycle_id"];
+            isOneToOne: false;
+            referencedRelation: "motorcycles";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       public_receipt_validation: {
         Row: {
-          code: string | null
-          completed_at: string | null
-          external_buyer: boolean | null
-          has_signed_document: boolean | null
-          issued_at: string | null
-          moto_brand: string | null
-          moto_model: string | null
-          moto_year_model: string | null
-          previous_receipt_id: string | null
-          sha256: string | null
-          signed_at: string | null
-          status: string | null
-          version: number | null
-        }
+          code: string | null;
+          completed_at: string | null;
+          external_buyer: boolean | null;
+          has_signed_document: boolean | null;
+          issued_at: string | null;
+          moto_brand: string | null;
+          moto_model: string | null;
+          moto_year_model: string | null;
+          previous_receipt_id: string | null;
+          sha256: string | null;
+          signed_at: string | null;
+          status: string | null;
+          version: number | null;
+        };
         Insert: {
-          code?: string | null
-          completed_at?: string | null
-          external_buyer?: boolean | null
-          has_signed_document?: never
-          issued_at?: string | null
-          moto_brand?: never
-          moto_model?: never
-          moto_year_model?: never
-          previous_receipt_id?: string | null
-          sha256?: string | null
-          signed_at?: string | null
-          status?: string | null
-          version?: number | null
-        }
+          code?: string | null;
+          completed_at?: string | null;
+          external_buyer?: boolean | null;
+          has_signed_document?: never;
+          issued_at?: string | null;
+          moto_brand?: never;
+          moto_model?: never;
+          moto_year_model?: never;
+          previous_receipt_id?: string | null;
+          sha256?: string | null;
+          signed_at?: string | null;
+          status?: string | null;
+          version?: number | null;
+        };
         Update: {
-          code?: string | null
-          completed_at?: string | null
-          external_buyer?: boolean | null
-          has_signed_document?: never
-          issued_at?: string | null
-          moto_brand?: never
-          moto_model?: never
-          moto_year_model?: never
-          previous_receipt_id?: string | null
-          sha256?: string | null
-          signed_at?: string | null
-          status?: string | null
-          version?: number | null
-        }
+          code?: string | null;
+          completed_at?: string | null;
+          external_buyer?: boolean | null;
+          has_signed_document?: never;
+          issued_at?: string | null;
+          moto_brand?: never;
+          moto_model?: never;
+          moto_year_model?: never;
+          previous_receipt_id?: string | null;
+          sha256?: string | null;
+          signed_at?: string | null;
+          status?: string | null;
+          version?: number | null;
+        };
         Relationships: [
           {
-            foreignKeyName: "smart_receipts_previous_receipt_id_fkey"
-            columns: ["previous_receipt_id"]
-            isOneToOne: false
-            referencedRelation: "smart_receipts"
-            referencedColumns: ["id"]
+            foreignKeyName: "smart_receipts_previous_receipt_id_fkey";
+            columns: ["previous_receipt_id"];
+            isOneToOne: false;
+            referencedRelation: "smart_receipts";
+            referencedColumns: ["id"];
           },
-        ]
-      }
+        ];
+      };
       workshops_public: {
         Row: {
-          city: string | null
-          created_at: string | null
-          id: string | null
-          name: string | null
-          state: string | null
-          updated_at: string | null
-          verified: boolean | null
-          verified_at: string | null
-          verified_label: string | null
-        }
-        Relationships: []
-      }
-    }
+          city: string | null;
+          created_at: string | null;
+          id: string | null;
+          name: string | null;
+          state: string | null;
+          updated_at: string | null;
+          verified: boolean | null;
+          verified_at: string | null;
+          verified_label: string | null;
+        };
+        Relationships: [];
+      };
+    };
     Functions: {
-      _ot_visible_to_email: { Args: { _transfer_id: string }; Returns: string }
+      _ot_visible_to_email: { Args: { _transfer_id: string }; Returns: string };
       admin_approve_cpf_change: {
-        Args: { _id: string; _notes?: string }
-        Returns: undefined
-      }
-      admin_attention_tickets_count: { Args: never; Returns: number }
+        Args: { _id: string; _notes?: string };
+        Returns: undefined;
+      };
+      admin_attention_tickets_count: { Args: never; Returns: number };
       admin_block_user: {
-        Args: { _notes?: string; _reason: string; _user: string }
-        Returns: undefined
-      }
-      admin_cpf_request_detail: { Args: { _id: string }; Returns: Json }
-      admin_dashboard_stats: { Args: never; Returns: Json }
+        Args: { _notes?: string; _reason: string; _user: string };
+        Returns: undefined;
+      };
+      admin_cpf_request_detail: { Args: { _id: string }; Returns: Json };
+      admin_dashboard_stats: { Args: never; Returns: Json };
       admin_deactivate_user: {
-        Args: { _notes?: string; _reason: string; _user: string }
-        Returns: undefined
-      }
+        Args: { _notes?: string; _reason: string; _user: string };
+        Returns: undefined;
+      };
       admin_diagnose_baseline_consistency: {
-        Args: never
+        Args: never;
         Returns: {
-          brand: string
-          classification: string
-          event_count: number
-          hours_diff: number
-          hours_expected: number
-          hours_initial: number
-          hours_sum_deltas: number
-          hours_total: number
-          km_diff: number
-          km_expected: number
-          km_initial: number
-          km_sum_deltas: number
-          km_total: number
-          model: string
-          motorcycle_id: string
-          recommendation: string
-          trailbook_id: string
-        }[]
-      }
+          brand: string;
+          classification: string;
+          event_count: number;
+          hours_diff: number;
+          hours_expected: number;
+          hours_initial: number;
+          hours_sum_deltas: number;
+          hours_total: number;
+          km_diff: number;
+          km_expected: number;
+          km_initial: number;
+          km_sum_deltas: number;
+          km_total: number;
+          model: string;
+          motorcycle_id: string;
+          recommendation: string;
+          trailbook_id: string;
+        }[];
+      };
       admin_execute_homolog_moto_deletion: {
-        Args: { _moto: string; _reason: string; _storage_report?: Json }
-        Returns: Json
-      }
+        Args: { _moto: string; _reason: string; _storage_report?: Json };
+        Returns: Json;
+      };
       admin_get_comm_settings: {
-        Args: never
+        Args: never;
         Returns: {
-          email_enabled: boolean
-          email_from: string | null
-          email_provider: string | null
-          email_test_redirect: string | null
-          homologation_mode: boolean
-          id: number
-          internal_enabled: boolean
-          push_enabled: boolean
-          sms_enabled: boolean
-          updated_at: string
-          updated_by: string | null
-          whatsapp_enabled: boolean
-        }
+          email_enabled: boolean;
+          email_from: string | null;
+          email_provider: string | null;
+          email_test_redirect: string | null;
+          homologation_mode: boolean;
+          id: number;
+          internal_enabled: boolean;
+          push_enabled: boolean;
+          sms_enabled: boolean;
+          updated_at: string;
+          updated_by: string | null;
+          whatsapp_enabled: boolean;
+        };
         SetofOptions: {
-          from: "*"
-          to: "comm_settings"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+          from: "*";
+          to: "comm_settings";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       admin_list_cpf_requests: {
-        Args: { _limit?: number; _status?: string }
+        Args: { _limit?: number; _status?: string };
         Returns: {
-          created_at: string
-          current_cpf_masked: string
-          decided_at: string
-          id: string
-          new_cpf_masked: string
-          reason: string
-          status: Database["public"]["Enums"]["cpf_change_status"]
-          ticket_code: string
-          ticket_id: string
-          user_email: string
-          user_id: string
-          user_name: string
-        }[]
-      }
+          created_at: string;
+          current_cpf_masked: string;
+          decided_at: string;
+          id: string;
+          new_cpf_masked: string;
+          reason: string;
+          status: Database["public"]["Enums"]["cpf_change_status"];
+          ticket_code: string;
+          ticket_id: string;
+          user_email: string;
+          user_id: string;
+          user_name: string;
+        }[];
+      };
       admin_list_deliveries: {
-        Args: { _limit?: number; _only_simulated?: boolean }
+        Args: { _limit?: number; _only_simulated?: boolean };
         Returns: {
-          channel: Database["public"]["Enums"]["message_channel"]
-          code: string
-          created_at: string
-          id: string
-          message_id: string
-          payload: Json
-          simulated: boolean
-          status: Database["public"]["Enums"]["delivery_status"]
-          subject_text: string
-          user_email: string
-          user_id: string
-          user_name: string
-        }[]
-      }
+          channel: Database["public"]["Enums"]["message_channel"];
+          code: string;
+          created_at: string;
+          id: string;
+          message_id: string;
+          payload: Json;
+          simulated: boolean;
+          status: Database["public"]["Enums"]["delivery_status"];
+          subject_text: string;
+          user_email: string;
+          user_id: string;
+          user_name: string;
+        }[];
+      };
       admin_list_help_requests: {
-        Args: { _limit?: number; _search?: string; _status?: string }
+        Args: { _limit?: number; _search?: string; _status?: string };
         Returns: {
-          admin_notes: string | null
-          birth_date: string | null
-          code: string | null
-          cpf: string | null
-          created_at: string
-          description: string
-          email: string
-          full_name: string
-          id: string
-          ip: string | null
-          linked_user_id: string | null
-          phone: string
-          problem_other: string | null
-          problem_type: Database["public"]["Enums"]["help_request_type"]
-          resolved_at: string | null
-          status: Database["public"]["Enums"]["help_request_status"]
-          updated_at: string
-          user_agent: string | null
-        }[]
+          admin_notes: string | null;
+          birth_date: string | null;
+          code: string | null;
+          cpf: string | null;
+          created_at: string;
+          description: string;
+          email: string;
+          full_name: string;
+          id: string;
+          ip: string | null;
+          linked_user_id: string | null;
+          phone: string;
+          problem_other: string | null;
+          problem_type: Database["public"]["Enums"]["help_request_type"];
+          resolved_at: string | null;
+          status: Database["public"]["Enums"]["help_request_status"];
+          updated_at: string;
+          user_agent: string | null;
+        }[];
         SetofOptions: {
-          from: "*"
-          to: "help_requests"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
+          from: "*";
+          to: "help_requests";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       admin_list_messages: {
         Args: {
-          _automatic?: string
-          _from?: string
-          _limit?: number
-          _priority?: string
-          _search?: string
-          _to?: string
-          _type?: string
-        }
+          _automatic?: string;
+          _from?: string;
+          _limit?: number;
+          _priority?: string;
+          _search?: string;
+          _to?: string;
+          _type?: string;
+        };
         Returns: {
-          audience: Database["public"]["Enums"]["message_audience"]
-          body: string
-          code: string
-          created_at: string
-          id: string
-          is_automatic: boolean
-          priority: Database["public"]["Enums"]["message_priority"]
-          read_count: number
-          recipients_count: number
-          related_ticket_id: string
-          sender_id: string
-          sender_name: string
-          status: Database["public"]["Enums"]["message_status"]
-          subject_text: string
-          type: Database["public"]["Enums"]["message_type"]
-        }[]
-      }
+          audience: Database["public"]["Enums"]["message_audience"];
+          body: string;
+          code: string;
+          created_at: string;
+          id: string;
+          is_automatic: boolean;
+          priority: Database["public"]["Enums"]["message_priority"];
+          read_count: number;
+          recipients_count: number;
+          related_ticket_id: string;
+          sender_id: string;
+          sender_name: string;
+          status: Database["public"]["Enums"]["message_status"];
+          subject_text: string;
+          type: Database["public"]["Enums"]["message_type"];
+        }[];
+      };
       admin_list_users: {
         Args: {
-          _from?: string
-          _has_documents?: boolean
-          _has_moto?: boolean
-          _has_ticket?: boolean
-          _is_homologation?: boolean
-          _limit?: number
-          _login_provider?: string
-          _plan?: string
-          _role?: string
-          _search?: string
-          _status?: string
-          _to?: string
-        }
+          _from?: string;
+          _has_documents?: boolean;
+          _has_moto?: boolean;
+          _has_ticket?: boolean;
+          _is_homologation?: boolean;
+          _limit?: number;
+          _login_provider?: string;
+          _plan?: string;
+          _role?: string;
+          _search?: string;
+          _status?: string;
+          _to?: string;
+        };
         Returns: {
-          certificates_count: number
-          cpf: string
-          created_at: string
-          documents_count: number
-          email: string
-          full_name: string
-          id: string
-          is_admin: boolean
-          is_homologation: boolean
-          last_seen_at: string
-          login_provider: string
-          motorcycles_count: number
-          open_tickets: number
-          phone: string
-          plan: Database["public"]["Enums"]["plan_tier"]
-          status: Database["public"]["Enums"]["user_status"]
-          tickets_count: number
-        }[]
-      }
+          certificates_count: number;
+          cpf: string;
+          created_at: string;
+          documents_count: number;
+          email: string;
+          full_name: string;
+          id: string;
+          is_admin: boolean;
+          is_homologation: boolean;
+          last_seen_at: string;
+          login_provider: string;
+          motorcycles_count: number;
+          open_tickets: number;
+          phone: string;
+          plan: Database["public"]["Enums"]["plan_tier"];
+          status: Database["public"]["Enums"]["user_status"];
+          tickets_count: number;
+        }[];
+      };
       admin_log_event: {
         Args: {
-          _action: string
-          _field?: string
-          _metadata?: Json
-          _new?: Json
-          _notes?: string
-          _old?: Json
-          _reason?: string
-          _snapshot?: Json
-          _target: string
-        }
-        Returns: undefined
-      }
+          _action: string;
+          _field?: string;
+          _metadata?: Json;
+          _new?: Json;
+          _notes?: string;
+          _old?: Json;
+          _reason?: string;
+          _snapshot?: Json;
+          _target: string;
+        };
+        Returns: undefined;
+      };
       admin_log_view_as_user: {
-        Args: { _action: string; _metadata?: Json }
-        Returns: undefined
-      }
-      admin_message_thread: { Args: { _id: string }; Returns: Json }
-      admin_motorcycle_impact: { Args: { _moto: string }; Returns: Json }
+        Args: { _action: string; _metadata?: Json };
+        Returns: undefined;
+      };
+      admin_message_thread: { Args: { _id: string }; Returns: Json };
+      admin_motorcycle_impact: { Args: { _moto: string }; Returns: Json };
       admin_prepare_homolog_deletion: {
-        Args: { _confirmation: string; _reason: string; _user: string }
-        Returns: Json
-      }
+        Args: { _confirmation: string; _reason: string; _user: string };
+        Returns: Json;
+      };
       admin_prepare_homolog_moto_deletion: {
-        Args: { _confirmation: string; _moto: string; _reason: string }
-        Returns: Json
-      }
-      admin_profile_snapshot: { Args: { _user: string }; Returns: Json }
+        Args: { _confirmation: string; _moto: string; _reason: string };
+        Returns: Json;
+      };
+      admin_profile_snapshot: { Args: { _user: string }; Returns: Json };
       admin_reactivate_user: {
-        Args: { _notes?: string; _user: string }
-        Returns: undefined
-      }
+        Args: { _notes?: string; _user: string };
+        Returns: undefined;
+      };
       admin_reject_cpf_change: {
-        Args: { _id: string; _notes: string }
-        Returns: undefined
-      }
+        Args: { _id: string; _notes: string };
+        Returns: undefined;
+      };
       admin_reply_message: {
-        Args: { _body: string; _parent: string }
-        Returns: string
-      }
+        Args: { _body: string; _parent: string };
+        Returns: string;
+      };
       admin_request_more_info_cpf: {
-        Args: { _id: string; _notes: string }
-        Returns: undefined
-      }
+        Args: { _id: string; _notes: string };
+        Returns: undefined;
+      };
       admin_send_message: {
         Args: {
-          _allow_reply: boolean
-          _audience: Database["public"]["Enums"]["message_audience"]
-          _body: string
-          _channels: string[]
-          _filter: Json
-          _priority: Database["public"]["Enums"]["message_priority"]
-          _related_ticket_id: string
-          _subject_key: Database["public"]["Enums"]["message_subject_key"]
-          _subject_other: string
-          _type: Database["public"]["Enums"]["message_type"]
-        }
-        Returns: string
-      }
+          _allow_reply: boolean;
+          _audience: Database["public"]["Enums"]["message_audience"];
+          _body: string;
+          _channels: string[];
+          _filter: Json;
+          _priority: Database["public"]["Enums"]["message_priority"];
+          _related_ticket_id: string;
+          _subject_key: Database["public"]["Enums"]["message_subject_key"];
+          _subject_other: string;
+          _type: Database["public"]["Enums"]["message_type"];
+        };
+        Returns: string;
+      };
       admin_set_motorcycle_homologation: {
-        Args: { _flag: boolean; _moto: string; _reason?: string }
-        Returns: undefined
-      }
+        Args: { _flag: boolean; _moto: string; _reason?: string };
+        Returns: undefined;
+      };
       admin_set_user_plan: {
-        Args: { _plan: Database["public"]["Enums"]["plan_tier"]; _user: string }
-        Returns: undefined
-      }
+        Args: { _plan: Database["public"]["Enums"]["plan_tier"]; _user: string };
+        Returns: undefined;
+      };
       admin_set_user_role: {
-        Args: { _is_admin: boolean; _user: string }
-        Returns: undefined
-      }
+        Args: { _is_admin: boolean; _user: string };
+        Returns: undefined;
+      };
       admin_set_user_status: {
         Args: {
-          _status: Database["public"]["Enums"]["user_status"]
-          _user: string
-        }
-        Returns: undefined
-      }
+          _status: Database["public"]["Enums"]["user_status"];
+          _user: string;
+        };
+        Returns: undefined;
+      };
       admin_update_comm_settings: {
-        Args: { _json: Json }
+        Args: { _json: Json };
         Returns: {
-          email_enabled: boolean
-          email_from: string | null
-          email_provider: string | null
-          email_test_redirect: string | null
-          homologation_mode: boolean
-          id: number
-          internal_enabled: boolean
-          push_enabled: boolean
-          sms_enabled: boolean
-          updated_at: string
-          updated_by: string | null
-          whatsapp_enabled: boolean
-        }
+          email_enabled: boolean;
+          email_from: string | null;
+          email_provider: string | null;
+          email_test_redirect: string | null;
+          homologation_mode: boolean;
+          id: number;
+          internal_enabled: boolean;
+          push_enabled: boolean;
+          sms_enabled: boolean;
+          updated_at: string;
+          updated_by: string | null;
+          whatsapp_enabled: boolean;
+        };
         SetofOptions: {
-          from: "*"
-          to: "comm_settings"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+          from: "*";
+          to: "comm_settings";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       admin_update_help_request: {
-        Args: { _id: string; _notes?: string; _status: string }
-        Returns: undefined
-      }
+        Args: { _id: string; _notes?: string; _status: string };
+        Returns: undefined;
+      };
       admin_update_module: {
         Args: {
-          _hide_when_disabled?: boolean
-          _key: string
-          _maintenance_message?: string
-          _maintenance_reason?: string
-          _maintenance_until?: string
-          _status: Database["public"]["Enums"]["module_status"]
-        }
+          _hide_when_disabled?: boolean;
+          _key: string;
+          _maintenance_message?: string;
+          _maintenance_reason?: string;
+          _maintenance_until?: string;
+          _status: Database["public"]["Enums"]["module_status"];
+        };
         Returns: {
-          created_at: string
-          description: string | null
-          hide_when_disabled: boolean
-          id: string
-          key: string
-          label: string
-          maintenance_message: string | null
-          maintenance_reason: string | null
-          maintenance_until: string | null
-          sort_order: number
-          status: Database["public"]["Enums"]["module_status"]
-          updated_at: string
-          updated_by: string | null
-        }
+          created_at: string;
+          description: string | null;
+          hide_when_disabled: boolean;
+          id: string;
+          key: string;
+          label: string;
+          maintenance_message: string | null;
+          maintenance_reason: string | null;
+          maintenance_until: string | null;
+          sort_order: number;
+          status: Database["public"]["Enums"]["module_status"];
+          updated_at: string;
+          updated_by: string | null;
+        };
         SetofOptions: {
-          from: "*"
-          to: "platform_modules"
-          isOneToOne: true
-          isSetofReturn: false
-        }
-      }
+          from: "*";
+          to: "platform_modules";
+          isOneToOne: true;
+          isSetofReturn: false;
+        };
+      };
       admin_update_profile: {
-        Args: { _full_name: string; _phone: string; _user: string }
-        Returns: undefined
-      }
+        Args: { _full_name: string; _phone: string; _user: string };
+        Returns: undefined;
+      };
       admin_update_user: {
         Args: {
-          _birth_date?: string
-          _email?: string
-          _full_name?: string
-          _is_admin?: boolean
-          _is_homologation?: boolean
-          _phone?: string
-          _plan?: string
-          _reason?: string
-          _status?: string
-          _user: string
-        }
-        Returns: undefined
-      }
+          _birth_date?: string;
+          _email?: string;
+          _full_name?: string;
+          _is_admin?: boolean;
+          _is_homologation?: boolean;
+          _phone?: string;
+          _plan?: string;
+          _reason?: string;
+          _status?: string;
+          _user: string;
+        };
+        Returns: undefined;
+      };
       admin_user_audit: {
-        Args: { _limit?: number; _user: string }
+        Args: { _limit?: number; _user: string };
         Returns: {
-          action: string
-          actor_id: string | null
-          created_at: string
-          field: string | null
-          id: string
-          ip: string | null
-          metadata: Json
-          new_value: Json | null
-          notes: string | null
-          old_value: Json | null
-          reason: string | null
-          target_snapshot: Json | null
-          target_user_id: string | null
-          user_agent: string | null
-        }[]
+          action: string;
+          actor_id: string | null;
+          created_at: string;
+          field: string | null;
+          id: string;
+          ip: string | null;
+          metadata: Json;
+          new_value: Json | null;
+          notes: string | null;
+          old_value: Json | null;
+          reason: string | null;
+          target_snapshot: Json | null;
+          target_user_id: string | null;
+          user_agent: string | null;
+        }[];
         SetofOptions: {
-          from: "*"
-          to: "admin_user_events"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
-      admin_user_details: { Args: { _user: string }; Returns: Json }
-      align_smart_receipt_code_seq: { Args: never; Returns: number }
+          from: "*";
+          to: "admin_user_events";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      admin_user_details: { Args: { _user: string }; Returns: Json };
+      align_smart_receipt_code_seq: { Args: never; Returns: number };
       apply_recomposed_totals: {
-        Args: { _hours: number; _km: number; _moto: string }
-        Returns: undefined
-      }
+        Args: { _hours: number; _km: number; _moto: string };
+        Returns: undefined;
+      };
       archive_motorcycle: {
-        Args: { _moto_id: string; _reason?: string }
-        Returns: Json
-      }
+        Args: { _moto_id: string; _reason?: string };
+        Returns: Json;
+      };
       cancel_ownership_transfer: {
-        Args: { _transfer_id: string }
-        Returns: undefined
-      }
+        Args: { _transfer_id: string };
+        Returns: undefined;
+      };
       close_smart_receipt_process: {
         Args: {
-          _id: string
-          _notes: string
-          _origin: string
-          _reason_code: string
-        }
-        Returns: Json
-      }
+          _id: string;
+          _notes: string;
+          _origin: string;
+          _reason_code: string;
+        };
+        Returns: Json;
+      };
       comm_expand_audience: {
         Args: {
-          _audience: Database["public"]["Enums"]["message_audience"]
-          _filter: Json
-        }
+          _audience: Database["public"]["Enums"]["message_audience"];
+          _filter: Json;
+        };
         Returns: {
-          user_id: string
-        }[]
-      }
+          user_id: string;
+        }[];
+      };
       comm_subject_default: {
         Args: {
-          _key: Database["public"]["Enums"]["message_subject_key"]
-          _other: string
-        }
-        Returns: string
-      }
+          _key: Database["public"]["Enums"]["message_subject_key"];
+          _other: string;
+        };
+        Returns: string;
+      };
       commit_event_and_recompose: {
         Args: {
-          _cost: number
-          _description: string
-          _hours_delta: number
-          _km_delta: number
-          _location: string
-          _metadata?: Json
-          _moto: string
-          _occurred_at: string
-          _title: string
-          _type: string
-          _workshop_id?: string
-        }
+          _cost: number;
+          _description: string;
+          _hours_delta: number;
+          _km_delta: number;
+          _location: string;
+          _metadata?: Json;
+          _moto: string;
+          _occurred_at: string;
+          _title: string;
+          _type: string;
+          _workshop_id?: string;
+        };
         Returns: {
-          event_id: string
-          hours_total: number
-          km_total: number
-        }[]
-      }
+          event_id: string;
+          hours_total: number;
+          km_total: number;
+        }[];
+      };
       complete_signup_cpf: {
         Args: {
-          _birth_date: string
-          _cpf: string
-          _full_name?: string
-          _phone: string
-        }
-        Returns: undefined
-      }
-      count_active_admins: { Args: never; Returns: number }
+          _birth_date: string;
+          _cpf: string;
+          _full_name?: string;
+          _phone: string;
+        };
+        Returns: undefined;
+      };
+      count_active_admins: { Args: never; Returns: number };
       delete_event_and_recompose: {
-        Args: { _event_id: string }
+        Args: { _event_id: string };
         Returns: {
-          hours_total: number
-          km_total: number
-        }[]
-      }
+          hours_total: number;
+          km_total: number;
+        }[];
+      };
       emit_system_message: {
         Args: {
-          _body: string
-          _priority?: Database["public"]["Enums"]["message_priority"]
-          _related_ticket?: string
-          _subject_key: Database["public"]["Enums"]["message_subject_key"]
-          _subject_other: string
-          _type: Database["public"]["Enums"]["message_type"]
-          _user: string
-        }
-        Returns: string
-      }
+          _body: string;
+          _priority?: Database["public"]["Enums"]["message_priority"];
+          _related_ticket?: string;
+          _subject_key: Database["public"]["Enums"]["message_subject_key"];
+          _subject_other: string;
+          _type: Database["public"]["Enums"]["message_type"];
+          _user: string;
+        };
+        Returns: string;
+      };
       find_trailbook_buyer: {
-        Args: { _query: string }
+        Args: { _query: string };
         Returns: {
-          cpf_masked: string
-          email_masked: string
-          full_name: string
-          id: string
-        }[]
-      }
+          cpf_masked: string;
+          email_masked: string;
+          full_name: string;
+          id: string;
+        }[];
+      };
       get_active_negotiation: {
-        Args: { _moto_id: string }
+        Args: { _moto_id: string };
         Returns: {
-          amount: number
-          buyer_accepted: boolean
-          buyer_name: string
-          code: string
-          created_at: string
-          has_signed_document: boolean
-          id: string
-          seller_accepted: boolean
-          status: string
-          version: number
-        }[]
-      }
-      get_email_by_cpf: { Args: { _cpf: string }; Returns: string }
+          amount: number;
+          buyer_accepted: boolean;
+          buyer_name: string;
+          code: string;
+          created_at: string;
+          has_signed_document: boolean;
+          id: string;
+          seller_accepted: boolean;
+          status: string;
+          version: number;
+        }[];
+      };
+      get_email_by_cpf: { Args: { _cpf: string }; Returns: string };
       get_platform_modules: {
-        Args: never
+        Args: never;
         Returns: {
-          created_at: string
-          description: string | null
-          hide_when_disabled: boolean
-          id: string
-          key: string
-          label: string
-          maintenance_message: string | null
-          maintenance_reason: string | null
-          maintenance_until: string | null
-          sort_order: number
-          status: Database["public"]["Enums"]["module_status"]
-          updated_at: string
-          updated_by: string | null
-        }[]
+          created_at: string;
+          description: string | null;
+          hide_when_disabled: boolean;
+          id: string;
+          key: string;
+          label: string;
+          maintenance_message: string | null;
+          maintenance_reason: string | null;
+          maintenance_until: string | null;
+          sort_order: number;
+          status: Database["public"]["Enums"]["module_status"];
+          updated_at: string;
+          updated_by: string | null;
+        }[];
         SetofOptions: {
-          from: "*"
-          to: "platform_modules"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
-      get_public_certificate: { Args: { _token: string }; Returns: Json }
-      get_public_health_report: { Args: { _token: string }; Returns: Json }
+          from: "*";
+          to: "platform_modules";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
+      get_public_certificate: { Args: { _token: string }; Returns: Json };
+      get_public_health_report: { Args: { _token: string }; Returns: Json };
       get_public_receipt: {
-        Args: { _code: string }
+        Args: { _code: string };
         Returns: {
-          code: string | null
-          completed_at: string | null
-          external_buyer: boolean | null
-          has_signed_document: boolean | null
-          issued_at: string | null
-          moto_brand: string | null
-          moto_model: string | null
-          moto_year_model: string | null
-          previous_receipt_id: string | null
-          sha256: string | null
-          signed_at: string | null
-          status: string | null
-          version: number | null
-        }[]
+          code: string | null;
+          completed_at: string | null;
+          external_buyer: boolean | null;
+          has_signed_document: boolean | null;
+          issued_at: string | null;
+          moto_brand: string | null;
+          moto_model: string | null;
+          moto_year_model: string | null;
+          previous_receipt_id: string | null;
+          sha256: string | null;
+          signed_at: string | null;
+          status: string | null;
+          version: number | null;
+        }[];
         SetofOptions: {
-          from: "*"
-          to: "public_receipt_validation"
-          isOneToOne: false
-          isSetofReturn: true
-        }
-      }
+          from: "*";
+          to: "public_receipt_validation";
+          isOneToOne: false;
+          isSetofReturn: true;
+        };
+      };
       get_receipt_pdf_path: {
-        Args: { _code: string; _prefer_signed?: boolean }
-        Returns: string
-      }
+        Args: { _code: string; _prefer_signed?: boolean };
+        Returns: string;
+      };
       get_workshop_private: {
-        Args: { _id: string }
+        Args: { _id: string };
         Returns: {
-          city: string
-          cnpj: string
-          created_at: string
-          id: string
-          name: string
-          owner_user_id: string
-          phone: string
-          state: string
-          updated_at: string
-          verified: boolean
-          verified_at: string
-          verified_label: string
-        }[]
-      }
+          city: string;
+          cnpj: string;
+          created_at: string;
+          id: string;
+          name: string;
+          owner_user_id: string;
+          phone: string;
+          state: string;
+          updated_at: string;
+          verified: boolean;
+          verified_at: string;
+          verified_label: string;
+        }[];
+      };
       has_role: {
         Args: {
-          _role: Database["public"]["Enums"]["app_role"]
-          _user_id: string
-        }
-        Returns: boolean
-      }
-      hash_cpf: { Args: { _cpf: string }; Returns: string }
-      is_moto_owner: { Args: { _moto_id: string }; Returns: boolean }
+          _role: Database["public"]["Enums"]["app_role"];
+          _user_id: string;
+        };
+        Returns: boolean;
+      };
+      hash_cpf: { Args: { _cpf: string }; Returns: string };
+      is_moto_owner: { Args: { _moto_id: string }; Returns: boolean };
       is_public_certificate_motorcycle_photo: {
-        Args: { _object_name: string }
-        Returns: boolean
-      }
-      is_user_admin: { Args: { _user_id: string }; Returns: boolean }
+        Args: { _object_name: string };
+        Returns: boolean;
+      };
+      is_user_admin: { Args: { _user_id: string }; Returns: boolean };
       list_workshops_public: {
-        Args: never
+        Args: never;
         Returns: {
-          city: string
-          created_at: string
-          id: string
-          name: string
-          state: string
-          updated_at: string
-          verified: boolean
-          verified_at: string
-          verified_label: string
-        }[]
-      }
+          city: string;
+          created_at: string;
+          id: string;
+          name: string;
+          state: string;
+          updated_at: string;
+          verified: boolean;
+          verified_at: string;
+          verified_label: string;
+        }[];
+      };
       log_certificate_access: {
         Args: {
-          _country?: string
-          _ip?: string
-          _referer?: string
-          _token: string
-          _user_agent?: string
-        }
-        Returns: undefined
-      }
+          _country?: string;
+          _ip?: string;
+          _referer?: string;
+          _token: string;
+          _user_agent?: string;
+        };
+        Returns: undefined;
+      };
       log_health_report_access: {
         Args: {
-          _referer?: string
-          _result?: string
-          _token: string
-          _user_agent?: string
-        }
-        Returns: undefined
-      }
-      mask_cpf: { Args: { _cpf: string }; Returns: string }
-      mask_email: { Args: { _email: string }; Returns: string }
-      me_access_status: { Args: never; Returns: Json }
+          _referer?: string;
+          _result?: string;
+          _token: string;
+          _user_agent?: string;
+        };
+        Returns: undefined;
+      };
+      mask_cpf: { Args: { _cpf: string }; Returns: string };
+      mask_email: { Args: { _email: string }; Returns: string };
+      me_access_status: { Args: never; Returns: Json };
       my_workshop_private: {
-        Args: { _workshop: string }
+        Args: { _workshop: string };
         Returns: {
-          cnpj: string
-          id: string
-          phone: string
-        }[]
-      }
-      profile_completeness: { Args: { _user: string }; Returns: Json }
+          cnpj: string;
+          id: string;
+          phone: string;
+        }[];
+      };
+      profile_completeness: { Args: { _user: string }; Returns: Json };
       recompose_timeline_server: {
-        Args: { _moto: string }
+        Args: { _moto: string };
         Returns: {
-          hours_total: number
-          km_total: number
-        }[]
-      }
+          hours_total: number;
+          km_total: number;
+        }[];
+      };
       request_ownership_transfer: {
-        Args: { _message: string; _moto_id: string; _to_email: string }
-        Returns: string
-      }
+        Args: { _message: string; _moto_id: string; _to_email: string };
+        Returns: string;
+      };
       respond_ownership_transfer: {
-        Args: { _approve: boolean; _transfer_id: string }
-        Returns: undefined
-      }
+        Args: { _approve: boolean; _transfer_id: string };
+        Returns: undefined;
+      };
       submit_cpf_change_request: {
         Args: {
-          _document_path: string
-          _new_cpf: string
-          _reason: string
-          _ticket_id: string
-        }
-        Returns: string
-      }
+          _document_path: string;
+          _new_cpf: string;
+          _reason: string;
+          _ticket_id: string;
+        };
+        Returns: string;
+      };
       submit_help_request: {
         Args: {
-          _birth_date: string
-          _cpf: string
-          _description: string
-          _email: string
-          _full_name: string
-          _ip?: string
-          _phone: string
-          _problem_other?: string
-          _problem_type: string
-          _user_agent?: string
-        }
-        Returns: string
-      }
-      unarchive_motorcycle: { Args: { _moto_id: string }; Returns: Json }
+          _birth_date: string;
+          _cpf: string;
+          _description: string;
+          _email: string;
+          _full_name: string;
+          _ip?: string;
+          _phone: string;
+          _problem_other?: string;
+          _problem_type: string;
+          _user_agent?: string;
+        };
+        Returns: string;
+      };
+      unarchive_motorcycle: { Args: { _moto_id: string }; Returns: Json };
       update_event_and_recompose: {
         Args: {
-          _cost: number
-          _description: string
-          _event_id: string
-          _hours_delta: number
-          _km_delta: number
-          _occurred_at: string
-          _title: string
-        }
+          _cost: number;
+          _description: string;
+          _event_id: string;
+          _hours_delta: number;
+          _km_delta: number;
+          _occurred_at: string;
+          _title: string;
+        };
         Returns: {
-          hours_total: number
-          km_total: number
-        }[]
-      }
-      user_attention_tickets_count: { Args: never; Returns: number }
+          hours_total: number;
+          km_total: number;
+        }[];
+      };
+      user_attention_tickets_count: { Args: never; Returns: number };
       user_list_messages: {
-        Args: { _filter?: string }
+        Args: { _filter?: string };
         Returns: {
-          allow_reply: boolean
-          body: string
-          code: string
-          created_at: string
-          is_automatic: boolean
-          message_id: string
-          priority: Database["public"]["Enums"]["message_priority"]
-          read_at: string
-          related_ticket_id: string
-          sender_id: string
-          sender_name: string
-          status: Database["public"]["Enums"]["recipient_status"]
-          subject_text: string
-          type: Database["public"]["Enums"]["message_type"]
-        }[]
-      }
+          allow_reply: boolean;
+          body: string;
+          code: string;
+          created_at: string;
+          is_automatic: boolean;
+          message_id: string;
+          priority: Database["public"]["Enums"]["message_priority"];
+          read_at: string;
+          related_ticket_id: string;
+          sender_id: string;
+          sender_name: string;
+          status: Database["public"]["Enums"]["recipient_status"];
+          subject_text: string;
+          type: Database["public"]["Enums"]["message_type"];
+        }[];
+      };
       user_mark_message: {
-        Args: { _action: string; _id: string }
-        Returns: undefined
-      }
+        Args: { _action: string; _id: string };
+        Returns: undefined;
+      };
       user_open_ticket_from_message: {
         Args: {
-          _body: string
-          _id: string
-          _priority: string
-          _subject: string
-        }
-        Returns: string
-      }
+          _body: string;
+          _id: string;
+          _priority: string;
+          _subject: string;
+        };
+        Returns: string;
+      };
       user_reply_message: {
-        Args: { _body: string; _parent: string }
-        Returns: string
-      }
-      user_unread_count: { Args: never; Returns: number }
-      validate_cpf: { Args: { _cpf: string }; Returns: boolean }
-      validate_health_report: { Args: { _code: string }; Returns: Json }
-    }
+        Args: { _body: string; _parent: string };
+        Returns: string;
+      };
+      user_unread_count: { Args: never; Returns: number };
+      validate_cpf: { Args: { _cpf: string }; Returns: boolean };
+      validate_health_report: { Args: { _code: string }; Returns: Json };
+    };
     Enums: {
-      app_role: "owner" | "mechanic" | "admin" | "USER_ADMIN"
-      attachment_kind: "photo" | "video" | "document" | "invoice"
-      audit_action: "insert" | "update" | "delete" | "archive" | "unarchive"
-      control_type: "hours" | "km" | "both" | "not_informed"
+      app_role: "owner" | "mechanic" | "admin" | "USER_ADMIN";
+      attachment_kind: "photo" | "video" | "document" | "invoice";
+      audit_action: "insert" | "update" | "delete" | "archive" | "unarchive";
+      control_type: "hours" | "km" | "both" | "not_informed";
       cpf_change_status:
-        | "open"
-        | "in_review"
-        | "awaiting_info"
-        | "approved"
-        | "rejected"
-        | "cancelled"
-      delivery_status:
-        | "pending"
-        | "sent"
-        | "simulated"
-        | "skipped_disabled"
-        | "failed"
+        "open" | "in_review" | "awaiting_info" | "approved" | "rejected" | "cancelled";
+      delivery_status: "pending" | "sent" | "simulated" | "skipped_disabled" | "failed";
       event_type:
         | "usage"
         | "maintenance"
@@ -3918,13 +3879,8 @@ export type Database = {
         | "warranty"
         | "note"
         | "incident"
-        | "declaration"
-      health_report_status:
-        | "valid"
-        | "expiring"
-        | "outdated"
-        | "superseded"
-        | "revoked"
+        | "declaration";
+      health_report_status: "valid" | "expiring" | "outdated" | "superseded" | "revoked";
       health_run_status:
         | "started"
         | "collecting"
@@ -3933,15 +3889,10 @@ export type Database = {
         | "emitted"
         | "blocked"
         | "failed"
-        | "abandoned"
-      health_share_preset: "buyer" | "workshop" | "custom"
+        | "abandoned";
+      health_share_preset: "buyer" | "workshop" | "custom";
       help_request_status:
-        | "open"
-        | "in_analysis"
-        | "waiting_user"
-        | "resolved"
-        | "closed"
-        | "cancelled"
+        "open" | "in_analysis" | "waiting_user" | "resolved" | "closed" | "cancelled";
       help_request_type:
         | "forgot_access"
         | "cpf_exists"
@@ -3950,14 +3901,9 @@ export type Database = {
         | "changed_phone"
         | "google_login_issue"
         | "account_blocked"
-        | "other"
+        | "other";
       inspection_decision:
-        | "good"
-        | "attention"
-        | "replace_recommended"
-        | "replaced"
-        | "postpone"
-        | "ignore"
+        "good" | "attention" | "replace_recommended" | "replaced" | "postpone" | "ignore";
       maintenance_category:
         | "engine"
         | "suspension"
@@ -3966,8 +3912,8 @@ export type Database = {
         | "wheels"
         | "electrical"
         | "cooling"
-        | "other"
-      media_kind: "photo" | "video"
+        | "other";
+      media_kind: "photo" | "video";
       message_audience:
         | "single_user"
         | "by_status"
@@ -3976,16 +3922,10 @@ export type Database = {
         | "open_tickets"
         | "email_unconfirmed"
         | "blocked_users"
-        | "all_users"
-      message_channel: "internal" | "email" | "whatsapp" | "push" | "sms"
-      message_priority: "low" | "medium" | "high" | "critical"
-      message_status:
-        | "draft"
-        | "sent"
-        | "read"
-        | "replied"
-        | "archived"
-        | "cancelled"
+        | "all_users";
+      message_channel: "internal" | "email" | "whatsapp" | "push" | "sms";
+      message_priority: "low" | "medium" | "high" | "critical";
+      message_status: "draft" | "sent" | "read" | "replied" | "archived" | "cancelled";
       message_subject_key:
         | "signup_confirmation"
         | "password_recovery"
@@ -3998,7 +3938,7 @@ export type Database = {
         | "ticket"
         | "homologation"
         | "important_notice"
-        | "other"
+        | "other";
       message_type:
         | "system_notice"
         | "support"
@@ -4010,45 +3950,19 @@ export type Database = {
         | "homologation"
         | "security"
         | "system_update"
-        | "other"
-      module_status: "active" | "maintenance" | "disabled" | "beta"
+        | "other";
+      module_status: "active" | "maintenance" | "disabled" | "beta";
       motorcycle_document_type:
-        | "invoice"
-        | "manual"
-        | "warranty"
-        | "import"
-        | "contract"
-        | "other"
-        | "bill_of_sale"
-      motorcycle_origin_type:
-        | "zero_km"
-        | "private"
-        | "dealer"
-        | "trailbook_transfer"
-        | "other"
-      ownership_method: "creation" | "transfer" | "import"
-      plan_item_action:
-        | "inspect"
-        | "replace"
-        | "lubricate"
-        | "adjust"
-        | "clean"
-        | "check_level"
-      plan_severity: "low" | "medium" | "high" | "critical"
-      plan_tier: "free" | "premium" | "workshop"
-      receipt_closure_type:
-        | "seller_cancelled"
-        | "buyer_declined"
-        | "admin_cancelled"
-      recipient_status: "sent" | "read" | "replied" | "archived"
+        "invoice" | "manual" | "warranty" | "import" | "contract" | "other" | "bill_of_sale";
+      motorcycle_origin_type: "zero_km" | "private" | "dealer" | "trailbook_transfer" | "other";
+      ownership_method: "creation" | "transfer" | "import";
+      plan_item_action: "inspect" | "replace" | "lubricate" | "adjust" | "clean" | "check_level";
+      plan_severity: "low" | "medium" | "high" | "critical";
+      plan_tier: "free" | "premium" | "workshop";
+      receipt_closure_type: "seller_cancelled" | "buyer_declined" | "admin_cancelled";
+      recipient_status: "sent" | "read" | "replied" | "archived";
       schedule_status:
-        | "active"
-        | "snoozed"
-        | "ignored"
-        | "done"
-        | "no_info"
-        | "not_applicable"
-        | "custom"
+        "active" | "snoozed" | "ignored" | "done" | "no_info" | "not_applicable" | "custom";
       ticket_module:
         | "dashboard"
         | "motorcycle"
@@ -4060,8 +3974,8 @@ export type Database = {
         | "documentation"
         | "workshop"
         | "account"
-        | "other"
-      ticket_priority: "low" | "medium" | "high" | "critical"
+        | "other";
+      ticket_priority: "low" | "medium" | "high" | "critical";
       ticket_status:
         | "open"
         | "in_analysis"
@@ -4069,7 +3983,7 @@ export type Database = {
         | "in_progress"
         | "resolved"
         | "closed"
-        | "cancelled"
+        | "cancelled";
       ticket_type:
         | "bug"
         | "question"
@@ -4079,140 +3993,128 @@ export type Database = {
         | "suggestion"
         | "admin_request"
         | "other"
-        | "cpf_change"
-      transfer_status: "pending" | "approved" | "rejected" | "cancelled"
+        | "cpf_change";
+      transfer_status: "pending" | "approved" | "rejected" | "cancelled";
       use_profile:
-        | "light"
-        | "normal"
-        | "severe"
-        | "motocross"
-        | "competition"
-        | "sand_mud"
-        | "other"
-      user_status: "active" | "pending" | "blocked" | "inactive"
-    }
+        "light" | "normal" | "severe" | "motocross" | "competition" | "sand_mud" | "other";
+      user_status: "active" | "pending" | "blocked" | "inactive";
+    };
     CompositeTypes: {
-      [_ in never]: never
-    }
-  }
-}
+      [_ in never]: never;
+    };
+  };
+};
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">;
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">];
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
         DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
       DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
+      Row: infer R;
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] & DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R;
       }
       ? R
       : never
-    : never
+    : never;
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
+      Insert: infer I;
     }
     ? I
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
+        Insert: infer I;
       }
       ? I
       : never
-    : never
+    : never;
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    keyof DefaultSchema["Tables"] | { schema: keyof DatabaseWithoutInternals },
+  TableName extends (DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
+      Update: infer U;
     }
     ? U
     : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
+        Update: infer U;
       }
       ? U
       : never
-    : never
+    : never;
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    keyof DefaultSchema["Enums"] | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends (DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+    : never;
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
+    keyof DefaultSchema["CompositeTypes"] | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals;
   }
     ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
+  schema: keyof DatabaseWithoutInternals;
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+    : never;
 
 export const Constants = {
   public: {
@@ -4229,13 +4131,7 @@ export const Constants = {
         "rejected",
         "cancelled",
       ],
-      delivery_status: [
-        "pending",
-        "sent",
-        "simulated",
-        "skipped_disabled",
-        "failed",
-      ],
+      delivery_status: ["pending", "sent", "simulated", "skipped_disabled", "failed"],
       event_type: [
         "usage",
         "maintenance",
@@ -4253,13 +4149,7 @@ export const Constants = {
         "incident",
         "declaration",
       ],
-      health_report_status: [
-        "valid",
-        "expiring",
-        "outdated",
-        "superseded",
-        "revoked",
-      ],
+      health_report_status: ["valid", "expiring", "outdated", "superseded", "revoked"],
       health_run_status: [
         "started",
         "collecting",
@@ -4320,14 +4210,7 @@ export const Constants = {
       ],
       message_channel: ["internal", "email", "whatsapp", "push", "sms"],
       message_priority: ["low", "medium", "high", "critical"],
-      message_status: [
-        "draft",
-        "sent",
-        "read",
-        "replied",
-        "archived",
-        "cancelled",
-      ],
+      message_status: ["draft", "sent", "read", "replied", "archived", "cancelled"],
       message_subject_key: [
         "signup_confirmation",
         "password_recovery",
@@ -4365,29 +4248,12 @@ export const Constants = {
         "other",
         "bill_of_sale",
       ],
-      motorcycle_origin_type: [
-        "zero_km",
-        "private",
-        "dealer",
-        "trailbook_transfer",
-        "other",
-      ],
+      motorcycle_origin_type: ["zero_km", "private", "dealer", "trailbook_transfer", "other"],
       ownership_method: ["creation", "transfer", "import"],
-      plan_item_action: [
-        "inspect",
-        "replace",
-        "lubricate",
-        "adjust",
-        "clean",
-        "check_level",
-      ],
+      plan_item_action: ["inspect", "replace", "lubricate", "adjust", "clean", "check_level"],
       plan_severity: ["low", "medium", "high", "critical"],
       plan_tier: ["free", "premium", "workshop"],
-      receipt_closure_type: [
-        "seller_cancelled",
-        "buyer_declined",
-        "admin_cancelled",
-      ],
+      receipt_closure_type: ["seller_cancelled", "buyer_declined", "admin_cancelled"],
       recipient_status: ["sent", "read", "replied", "archived"],
       schedule_status: [
         "active",
@@ -4433,16 +4299,8 @@ export const Constants = {
         "cpf_change",
       ],
       transfer_status: ["pending", "approved", "rejected", "cancelled"],
-      use_profile: [
-        "light",
-        "normal",
-        "severe",
-        "motocross",
-        "competition",
-        "sand_mud",
-        "other",
-      ],
+      use_profile: ["light", "normal", "severe", "motocross", "competition", "sand_mud", "other"],
       user_status: ["active", "pending", "blocked", "inactive"],
     },
   },
-} as const
+} as const;
