@@ -17,6 +17,16 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
   },
+  plugins: {
+    StatusBar: {
+      // Reserva o espaço da barra de status (hora, wifi, bateria) em vez de
+      // deixar o app renderizar por baixo dela — era isso que causava a
+      // sobreposição na tela inicial.
+      overlaysWebView: false,
+      style: "DARK",
+      backgroundColor: "#1a1815",
+    },
+  },
 };
 
 export default config;
