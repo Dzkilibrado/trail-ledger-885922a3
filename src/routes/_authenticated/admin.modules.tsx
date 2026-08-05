@@ -100,9 +100,9 @@ function ModuleRow({ mod }: { mod: PlatformModule }) {
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <h3 className="font-display font-semibold">{mod.label}</h3>
             <Badge variant="outline" className={meta.tone}>
               {meta.emoji} {meta.label}
@@ -131,6 +131,7 @@ function ModuleRow({ mod }: { mod: PlatformModule }) {
           size="sm"
           variant={open ? "secondary" : "outline"}
           onClick={() => setOpen((v) => !v)}
+          className="w-full shrink-0 sm:w-auto"
         >
           {open ? "Fechar" : "Configurar"}
         </Button>
