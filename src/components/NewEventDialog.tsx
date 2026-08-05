@@ -501,7 +501,7 @@ export function NewEventDialog({
           <DialogDescription>
             {preset
               ? `Preencha os dados do serviço executado em "${preset.name}". Isso atualiza o plano de manutenção, a linha do tempo e o índice de conservação.`
-              : "O formulário se adapta ao tipo escolhido. (build v2) Manutenções atualizam plano, financeiro e alertas automaticamente."}
+              : "O formulário se adapta ao tipo escolhido. Manutenções atualizam plano, financeiro e alertas automaticamente."}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={onSubmit} className="min-w-0 space-y-4">

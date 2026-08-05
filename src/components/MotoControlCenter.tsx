@@ -23,7 +23,9 @@ import {
   BadgeCheck,
   Archive,
   RotateCcw,
+  ChevronDown,
 } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { ClipboardCheck, Wand2 } from "lucide-react";
 import {
   AlertDialog,
@@ -91,6 +93,7 @@ export function MotoControlCenter({
   const [archiveReason, setArchiveReason] = useState<string>("");
   const [archiveReasonOther, setArchiveReasonOther] = useState<string>("");
   const [unarchiveOpen, setUnarchiveOpen] = useState(false);
+  const [moreActionsOpen, setMoreActionsOpen] = useState(false);
   const [inspectTarget, setInspectTarget] = useState<null | {
     id: string;
     name: string;
@@ -417,183 +420,18 @@ export function MotoControlCenter({
                   <BadgeCheck className="h-4 w-4" /> Passaporte Digital
                 </Link>
               </Button>
-              {isOwner && (
-                <Button variant="outline" asChild>
-                  <Link to="/motorcycles/$id/components" params={{ id: m.id }}>
-                    <Wand2 className="h-4 w-4" /> Componentes
-                  </Link>
-                </Button>
-              )}
-              {isOwner && (
-                <PlanCatalogSyncDialog
-                  moto={m}
-                  trigger={
-                    <Button variant="outline">
-                      <Wand2 className="h-4 w-4" /> Atualizar plano com catálogo
-                    </Button>
-                  }
-                />
-              )}
-              {isOwner && (
-                <Button variant="outline" asChild>
-                  <Link to="/motorcycles/$id/certificate" params={{ id: m.id }}>
-                    <QrCode className="h-4 w-4" /> Certificado Digital
-                  </Link>
-                </Button>
-              )}
-              {isOwner &&
-                (pendingTransfer.data ? (
-                  <Button variant="outline" disabled className="text-amber-400">
-                    <ArrowRightLeft className="h-4 w-4" /> Transferência pendente
-                  </Button>
-                ) : (
-                  <TransferOwnershipDialog
-                    motorcycleId={m.id}
-                    trigger={
-                      <Button variant="outline">
-                        <ArrowRightLeft className="h-4 w-4" /> Transferir
-                      </Button>
-                    }
-                  />
-                ))}
-              {isOwner && !isArchived && (
-                <EmitReceiptDialog
-                  motorcycleId={m.id}
-                  onIssued={() => {
-                    qc.invalidateQueries({ queryKey: ["events", m.id] });
-                    qc.invalidateQueries({ queryKey: ["ownership", m.id] });
-                    qc.invalidateQueries({ queryKey: ["motorcycle_documents", m.id] });
-                    qc.invalidateQueries({ queryKey: ["document-pendencies"] });
-                    qc.invalidateQueries({ queryKey: ["active-negotiation", m.id] });
-                    qc.invalidateQueries({ queryKey: ["smart-receipts", m.id] });
-                  }}
-                  trigger={
-                    <Button variant="outline" className="btn-glow">
-                      <FileSignature className="h-4 w-4" /> Vender / Emitir Recibo
-                    </Button>
-                  }
-                />
-              )}
-              {isOwner && !isArchived && (
-                <AlertDialog
-                  onOpenChange={(o) => {
-                    if (!o) {
-                      setArchiveReason("");
-                      setArchiveReasonOther("");
-                    }
-                  }}
+              {!isArchived && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setMoreActionsOpen((v) => !v)}
                 >
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost">
-                      <Archive className="h-4 w-4" /> Arquivar moto
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle className="flex items-center gap-2">
-                        <Archive className="h-5 w-5" /> Arquivar esta motocicleta?
-                      </AlertDialogTitle>
-                      <AlertDialogDescription className="space-y-2">
-                        <span className="block">
-                          Arquivar <strong>{m.nickname || m.model}</strong> remove-a da sua garagem
-                          ativa, mas mantém o{" "}
-                          <strong>
-                            histórico, documentos, atividades, certificados e registros preservados
-                          </strong>
-                          .
-                        </span>
-                        <span className="block">
-                          Você poderá consultar ou restaurar esta moto futuramente. Se está{" "}
-                          <strong>vendendo</strong>, prefira <strong>Transferir Propriedade</strong>
-                          .
-                        </span>
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <div className="space-y-2">
-                      <label className="text-xs font-medium text-muted-foreground">
-                        Motivo do arquivamento
-                      </label>
-                      <Select value={archiveReason} onValueChange={setArchiveReason}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Selecione um motivo" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {[
-                            "Venda da moto",
-                            "Moto parada",
-                            "Projeto em pausa",
-                            "Cadastro duplicado",
-                            "Troca de moto",
-                            "Não utilizo mais",
-                            "Organização da garagem",
-                            "Outros motivos",
-                          ].map((r) => (
-                            <SelectItem key={r} value={r}>
-                              {r}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      {archiveReason === "Outros motivos" && (
-                        <Textarea
-                          value={archiveReasonOther}
-                          onChange={(e) => setArchiveReasonOther(e.target.value)}
-                          placeholder="Descreva o motivo"
-                          rows={3}
-                        />
-                      )}
-                    </div>
-                    {archiveReason &&
-                      (archiveReason !== "Outros motivos" ||
-                        archiveReasonOther.trim().length >= 3) && (
-                        <div className="rounded-xl border border-border bg-muted/40 p-3 text-xs">
-                          <div className="mb-1.5 font-semibold text-foreground">
-                            Esta motocicleta será:
-                          </div>
-                          <ul className="space-y-1 text-muted-foreground">
-                            <li className="flex items-center gap-2">
-                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> removida da
-                              garagem ativa
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> preservada
-                              no histórico
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> documentos
-                              mantidos
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> atividades
-                              mantidas
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> certificados
-                              preservados
-                            </li>
-                            <li className="flex items-center gap-2">
-                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> poderá ser
-                              restaurada futuramente
-                            </li>
-                          </ul>
-                        </div>
-                      )}
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                      <AlertDialogAction
-                        disabled={
-                          !archiveReason ||
-                          (archiveReason === "Outros motivos" &&
-                            archiveReasonOther.trim().length < 3)
-                        }
-                        onClick={archiveMoto}
-                        className="disabled:opacity-40"
-                      >
-                        Arquivar moto
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform ${moreActionsOpen ? "rotate-180" : ""}`}
+                  />
+                  {moreActionsOpen ? "Menos opções" : "Mais opções"}
+                </Button>
               )}
               {!isOwner && currentUserId && (
                 <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
@@ -602,6 +440,189 @@ export function MotoControlCenter({
                 </span>
               )}
             </div>
+            {moreActionsOpen && (
+              <div className="flex flex-wrap gap-2 rounded-xl border border-border bg-muted/20 p-3">
+                {isOwner && (
+                  <Button variant="outline" asChild>
+                    <Link to="/motorcycles/$id/components" params={{ id: m.id }}>
+                      <Wand2 className="h-4 w-4" /> Componentes
+                    </Link>
+                  </Button>
+                )}
+                {isOwner && (
+                  <PlanCatalogSyncDialog
+                    moto={m}
+                    trigger={
+                      <Button variant="outline">
+                        <Wand2 className="h-4 w-4" /> Atualizar plano com catálogo
+                      </Button>
+                    }
+                  />
+                )}
+                {isOwner && (
+                  <Button variant="outline" asChild>
+                    <Link to="/motorcycles/$id/certificate" params={{ id: m.id }}>
+                      <QrCode className="h-4 w-4" /> Certificado Digital
+                    </Link>
+                  </Button>
+                )}
+                {isOwner &&
+                  (pendingTransfer.data ? (
+                    <Button variant="outline" disabled className="text-amber-400">
+                      <ArrowRightLeft className="h-4 w-4" /> Transferência pendente
+                    </Button>
+                  ) : (
+                    <TransferOwnershipDialog
+                      motorcycleId={m.id}
+                      trigger={
+                        <Button variant="outline">
+                          <ArrowRightLeft className="h-4 w-4" /> Transferir
+                        </Button>
+                      }
+                    />
+                  ))}
+                {isOwner && !isArchived && (
+                  <EmitReceiptDialog
+                    motorcycleId={m.id}
+                    onIssued={() => {
+                      qc.invalidateQueries({ queryKey: ["events", m.id] });
+                      qc.invalidateQueries({ queryKey: ["ownership", m.id] });
+                      qc.invalidateQueries({ queryKey: ["motorcycle_documents", m.id] });
+                      qc.invalidateQueries({ queryKey: ["document-pendencies"] });
+                      qc.invalidateQueries({ queryKey: ["active-negotiation", m.id] });
+                      qc.invalidateQueries({ queryKey: ["smart-receipts", m.id] });
+                    }}
+                    trigger={
+                      <Button variant="outline" className="btn-glow">
+                        <FileSignature className="h-4 w-4" /> Vender / Emitir Recibo
+                      </Button>
+                    }
+                  />
+                )}
+                {isOwner && !isArchived && (
+                  <AlertDialog
+                    onOpenChange={(o) => {
+                      if (!o) {
+                        setArchiveReason("");
+                        setArchiveReasonOther("");
+                      }
+                    }}
+                  >
+                    <AlertDialogTrigger asChild>
+                      <Button variant="ghost">
+                        <Archive className="h-4 w-4" /> Arquivar moto
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2">
+                          <Archive className="h-5 w-5" /> Arquivar esta motocicleta?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription className="space-y-2">
+                          <span className="block">
+                            Arquivar <strong>{m.nickname || m.model}</strong> remove-a da sua
+                            garagem ativa, mas mantém o{" "}
+                            <strong>
+                              histórico, documentos, atividades, certificados e registros
+                              preservados
+                            </strong>
+                            .
+                          </span>
+                          <span className="block">
+                            Você poderá consultar ou restaurar esta moto futuramente. Se está{" "}
+                            <strong>vendendo</strong>, prefira{" "}
+                            <strong>Transferir Propriedade</strong>.
+                          </span>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <div className="space-y-2">
+                        <label className="text-xs font-medium text-muted-foreground">
+                          Motivo do arquivamento
+                        </label>
+                        <Select value={archiveReason} onValueChange={setArchiveReason}>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Selecione um motivo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {[
+                              "Venda da moto",
+                              "Moto parada",
+                              "Projeto em pausa",
+                              "Cadastro duplicado",
+                              "Troca de moto",
+                              "Não utilizo mais",
+                              "Organização da garagem",
+                              "Outros motivos",
+                            ].map((r) => (
+                              <SelectItem key={r} value={r}>
+                                {r}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        {archiveReason === "Outros motivos" && (
+                          <Textarea
+                            value={archiveReasonOther}
+                            onChange={(e) => setArchiveReasonOther(e.target.value)}
+                            placeholder="Descreva o motivo"
+                            rows={3}
+                          />
+                        )}
+                      </div>
+                      {archiveReason &&
+                        (archiveReason !== "Outros motivos" ||
+                          archiveReasonOther.trim().length >= 3) && (
+                          <div className="rounded-xl border border-border bg-muted/40 p-3 text-xs">
+                            <div className="mb-1.5 font-semibold text-foreground">
+                              Esta motocicleta será:
+                            </div>
+                            <ul className="space-y-1 text-muted-foreground">
+                              <li className="flex items-center gap-2">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> removida
+                                da garagem ativa
+                              </li>
+                              <li className="flex items-center gap-2">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> preservada
+                                no histórico
+                              </li>
+                              <li className="flex items-center gap-2">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> documentos
+                                mantidos
+                              </li>
+                              <li className="flex items-center gap-2">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> atividades
+                                mantidas
+                              </li>
+                              <li className="flex items-center gap-2">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />{" "}
+                                certificados preservados
+                              </li>
+                              <li className="flex items-center gap-2">
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" /> poderá ser
+                                restaurada futuramente
+                              </li>
+                            </ul>
+                          </div>
+                        )}
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction
+                          disabled={
+                            !archiveReason ||
+                            (archiveReason === "Outros motivos" &&
+                              archiveReasonOther.trim().length < 3)
+                          }
+                          onClick={archiveMoto}
+                          className="disabled:opacity-40"
+                        >
+                          Arquivar moto
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -610,237 +631,273 @@ export function MotoControlCenter({
         <ActiveNegotiationCard motoId={m.id} negotiation={activeNegotiation.data} />
       )}
 
-      <section className="space-y-3">
-        <h2 className="font-display text-lg font-bold">Histórico de proprietários</h2>
-        <OwnershipTimeline entries={ownership.data ?? []} />
-      </section>
-
-      <MotorcyclePhotos motorcycleId={m.id} />
-
-      <MotorcycleDocuments motorcycleId={m.id} />
-
-      <section className="space-y-3">
-        <h2 className="font-display text-lg font-bold">Recibos & Transferências</h2>
-        <ReceiptsSummaryRow
-          motoId={m.id}
-          isOwner={isOwner && !isArchived}
-          count={(receiptsForMoto.data ?? []).length}
-        />
-      </section>
-
-      <section className="space-y-3">
-        <div className="flex items-baseline justify-between">
-          <h2 className="font-display text-lg font-bold">Saúde da moto</h2>
-          <Link
-            to="/motorcycles/$id/health"
-            params={{ id: m.id }}
-            className="text-xs text-primary hover:underline"
-          >
-            Abrir check-up completo
-          </Link>
-        </div>
-        <HealthOverview moto={m as any} isOwner={isOwner} />
-      </section>
-
-      {isOwner && (
-        <section className="space-y-3">
-          <div className="flex items-baseline justify-between">
-            <h2 className="font-display text-lg font-bold">Componentes</h2>
-            <Link
-              to="/motorcycles/$id/components"
-              params={{ id: m.id }}
-              className="text-xs text-primary hover:underline"
+      <Tabs defaultValue="geral" className="w-full">
+        <TabsList className="h-auto w-full flex-wrap justify-start gap-1 bg-transparent p-0">
+          <TabsTrigger value="geral" className="surface-elevated data-[state=active]:btn-glow">
+            Visão Geral
+          </TabsTrigger>
+          {isOwner && (
+            <TabsTrigger
+              value="componentes"
+              className="surface-elevated data-[state=active]:btn-glow"
             >
-              Ver todos
-            </Link>
-          </div>
-          <ComponentsList moto={m as any} isOwner={isOwner} limitPerCategory={3} />
-        </section>
-      )}
+              Componentes
+            </TabsTrigger>
+          )}
+          <TabsTrigger value="atividade" className="surface-elevated data-[state=active]:btn-glow">
+            Linha do tempo
+          </TabsTrigger>
+          <TabsTrigger value="documentos" className="surface-elevated data-[state=active]:btn-glow">
+            Documentos
+          </TabsTrigger>
+          <TabsTrigger value="historico" className="surface-elevated data-[state=active]:btn-glow">
+            Histórico
+          </TabsTrigger>
+        </TabsList>
 
-      <section className="grid gap-6 lg:grid-cols-[1fr_1fr]">
-        <div className="space-y-3">
-          <h2 className="font-display text-lg font-bold">Próximas manutenções</h2>
-          {statuses.length === 0 ? (
-            <div className="surface-elevated rounded-2xl p-6 text-sm text-muted-foreground">
-              Nenhuma programação ainda. Use <strong>Programações</strong> para aplicar o catálogo
-              recomendado.
+        <TabsContent value="geral" className="space-y-8">
+          <section className="space-y-3">
+            <div className="flex items-baseline justify-between">
+              <h2 className="font-display text-lg font-bold">Saúde da moto</h2>
+              <Link
+                to="/motorcycles/$id/health"
+                params={{ id: m.id }}
+                className="text-xs text-primary hover:underline"
+              >
+                Abrir check-up completo
+              </Link>
             </div>
-          ) : (
-            <ul className="space-y-2">
-              {statuses.slice(0, 6).map((s) => {
-                const Icon =
-                  s.status === "overdue"
-                    ? AlertTriangle
-                    : s.status === "due"
-                      ? AlertTriangle
-                      : s.status === "soon"
-                        ? Clock
-                        : CheckCircle2;
-                const color =
-                  s.status === "overdue"
-                    ? "text-destructive"
-                    : s.status === "due"
-                      ? "text-amber-400"
-                      : s.status === "soon"
-                        ? "text-amber-300"
-                        : "text-emerald-400";
-                return (
-                  <li key={s.schedule.id} className="surface-elevated rounded-2xl p-3">
-                    <div className="flex items-start gap-3">
-                      <Icon className={`mt-0.5 h-4 w-4 ${color}`} />
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-baseline justify-between gap-2">
-                          <div className="font-medium">{s.label}</div>
-                          <div className={`text-xs ${color}`}>
-                            {s.status === "overdue"
-                              ? "Vencida"
-                              : s.status === "due"
-                                ? "Vence agora"
-                                : s.status === "soon"
-                                  ? "Em breve"
-                                  : "Em dia"}
+            <HealthOverview moto={m as any} isOwner={isOwner} />
+          </section>
+
+          <section className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+            <div className="space-y-3">
+              <h2 className="font-display text-lg font-bold">Próximas manutenções</h2>
+              {statuses.length === 0 ? (
+                <div className="surface-elevated rounded-2xl p-6 text-sm text-muted-foreground">
+                  Nenhuma programação ainda. Use <strong>Programações</strong> para aplicar o
+                  catálogo recomendado.
+                </div>
+              ) : (
+                <ul className="space-y-2">
+                  {statuses.slice(0, 6).map((s) => {
+                    const Icon =
+                      s.status === "overdue"
+                        ? AlertTriangle
+                        : s.status === "due"
+                          ? AlertTriangle
+                          : s.status === "soon"
+                            ? Clock
+                            : CheckCircle2;
+                    const color =
+                      s.status === "overdue"
+                        ? "text-destructive"
+                        : s.status === "due"
+                          ? "text-amber-400"
+                          : s.status === "soon"
+                            ? "text-amber-300"
+                            : "text-emerald-400";
+                    return (
+                      <li key={s.schedule.id} className="surface-elevated rounded-2xl p-3">
+                        <div className="flex items-start gap-3">
+                          <Icon className={`mt-0.5 h-4 w-4 ${color}`} />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-baseline justify-between gap-2">
+                              <div className="font-medium">{s.label}</div>
+                              <div className={`text-xs ${color}`}>
+                                {s.status === "overdue"
+                                  ? "Vencida"
+                                  : s.status === "due"
+                                    ? "Vence agora"
+                                    : s.status === "soon"
+                                      ? "Em breve"
+                                      : "Em dia"}
+                              </div>
+                            </div>
+                            <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
+                              {s.remaining.hours != null && (
+                                <span>{s.remaining.hours.toFixed(1)} h restantes</span>
+                              )}
+                              {s.remaining.km != null && (
+                                <span>{s.remaining.km.toFixed(0)} km restantes</span>
+                              )}
+                              {s.remaining.days != null && (
+                                <span>{Math.round(s.remaining.days)} dias restantes</span>
+                              )}
+                              {s.estimatedDueDate && (
+                                <span>
+                                  · estimado {s.estimatedDueDate.toLocaleDateString("pt-BR")}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                              <div
+                                className={`h-full ${s.status === "overdue" || s.status === "due" ? "bg-destructive" : s.status === "soon" ? "bg-amber-400" : "bg-emerald-400"}`}
+                                style={{ width: `${Math.min(100, s.progress * 100)}%` }}
+                              />
+                            </div>
+                            <div className="mt-2 flex justify-end">
+                              {isOwner && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() =>
+                                    setInspectTarget({
+                                      id: s.schedule.id,
+                                      name: s.label,
+                                      category: s.schedule.category,
+                                    })
+                                  }
+                                >
+                                  <ClipboardCheck className="h-3.5 w-3.5" /> Inspecionar
+                                </Button>
+                              )}
+                            </div>
                           </div>
                         </div>
-                        <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
-                          {s.remaining.hours != null && (
-                            <span>{s.remaining.hours.toFixed(1)} h restantes</span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+            {isAdmin && (
+              <div className="space-y-2">
+                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                  Modo técnico · visível apenas para administradores
+                </p>
+                <ConservationCard result={conservation} />
+              </div>
+            )}
+          </section>
+        </TabsContent>
+
+        {isOwner && (
+          <TabsContent value="componentes" className="space-y-8">
+            <section className="space-y-3">
+              <div className="flex items-baseline justify-between">
+                <h2 className="font-display text-lg font-bold">Componentes</h2>
+                <Link
+                  to="/motorcycles/$id/components"
+                  params={{ id: m.id }}
+                  className="text-xs text-primary hover:underline"
+                >
+                  Ver todos
+                </Link>
+              </div>
+              <ComponentsList moto={m as any} isOwner={isOwner} limitPerCategory={3} />
+            </section>
+          </TabsContent>
+        )}
+
+        <TabsContent value="atividade" className="space-y-8">
+          <section>
+            {events.isLoading ? (
+              <ol className="relative space-y-4 border-l border-border pl-6" aria-hidden="true">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <li key={i} className="relative">
+                    <span className="absolute -left-[34px] top-2 h-3 w-3 rounded-full bg-primary/40 ring-4 ring-background" />
+                    <div className="surface-elevated rounded-2xl p-4">
+                      <div className="h-4 w-1/3 animate-pulse rounded bg-primary/10" />
+                      <div className="mt-2 h-3 w-1/4 animate-pulse rounded bg-primary/10" />
+                      <div className="mt-3 h-3 w-2/3 animate-pulse rounded bg-primary/10" />
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            ) : events.data && events.data.length > 0 ? (
+              <ol className="relative space-y-4 border-l border-border pl-6">
+                {events.data.map((e) => (
+                  <li key={e.id} className="relative">
+                    <span className="absolute -left-[34px] top-2 h-3 w-3 rounded-full bg-primary ring-4 ring-background" />
+                    <div className="surface-elevated rounded-2xl p-4">
+                      <div className="flex items-start gap-3">
+                        <EventTypeIcon type={e.type} />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-baseline justify-between gap-2">
+                            <div className="font-semibold">{e.title}</div>
+                            <div className="flex items-center gap-1">
+                              <div className="text-xs text-muted-foreground">
+                                {formatDate(e.occurred_at)}
+                              </div>
+                              {isOwner && !isArchived && <EventActionsMenu event={e as any} />}
+                            </div>
+                          </div>
+                          <div className="text-xs uppercase tracking-widest text-muted-foreground">
+                            {EVENT_TYPE_LABEL[e.type]}
+                          </div>
+                          {e.description && (
+                            <p className="mt-2 text-sm text-muted-foreground">{e.description}</p>
                           )}
-                          {s.remaining.km != null && (
-                            <span>{s.remaining.km.toFixed(0)} km restantes</span>
-                          )}
-                          {s.remaining.days != null && (
-                            <span>{Math.round(s.remaining.days)} dias restantes</span>
-                          )}
-                          {s.estimatedDueDate && (
-                            <span>· estimado {s.estimatedDueDate.toLocaleDateString("pt-BR")}</span>
-                          )}
-                        </div>
-                        <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-                          <div
-                            className={`h-full ${s.status === "overdue" || s.status === "due" ? "bg-destructive" : s.status === "soon" ? "bg-amber-400" : "bg-emerald-400"}`}
-                            style={{ width: `${Math.min(100, s.progress * 100)}%` }}
-                          />
-                        </div>
-                        <div className="mt-2 flex justify-end">
-                          {isOwner && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() =>
-                                setInspectTarget({
-                                  id: s.schedule.id,
-                                  name: s.label,
-                                  category: s.schedule.category,
-                                })
-                              }
-                            >
-                              <ClipboardCheck className="h-3.5 w-3.5" /> Inspecionar
-                            </Button>
-                          )}
+                          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                            {e.hours_at_event != null && (
+                              <span>{Number(e.hours_at_event).toFixed(1)} h</span>
+                            )}
+                            {e.km_at_event != null && (
+                              <span>{Number(e.km_at_event).toFixed(0)} km</span>
+                            )}
+                            {e.location && <span>{e.location}</span>}
+                            {e.cost != null && (
+                              <span className="font-semibold text-primary">
+                                {brl(Number(e.cost))}
+                              </span>
+                            )}
+                          </div>
+                          {(() => {
+                            const meta = (e.metadata ?? {}) as Record<string, unknown>;
+                            const code =
+                              typeof meta.receipt_code === "string" ? meta.receipt_code : null;
+                            if (e.type !== "ownership_transfer" || !code) return null;
+                            return (
+                              <div className="mt-3 flex flex-wrap gap-1.5">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => openReceiptPdf(code, "signed")}
+                                >
+                                  <Eye className="h-3.5 w-3.5" /> Visualizar recibo
+                                </Button>
+                              </div>
+                            );
+                          })()}
                         </div>
                       </div>
                     </div>
                   </li>
-                );
-              })}
-            </ul>
-          )}
-        </div>
-        {isAdmin && (
-          <div className="space-y-2">
-            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-              Modo técnico · visível apenas para administradores
-            </p>
-            <ConservationCard result={conservation} />
-          </div>
-        )}
-      </section>
+                ))}
+              </ol>
+            ) : (
+              <div className="surface-elevated rounded-2xl p-10 text-center text-sm text-muted-foreground">
+                Nenhum evento registrado ainda. Clique em <strong>Registrar atividade</strong> para
+                começar.
+              </div>
+            )}
+          </section>
+        </TabsContent>
 
-      <section>
-        <h2 className="mb-4 font-display text-lg font-bold">Linha do tempo</h2>
-        {events.isLoading ? (
-          <ol className="relative space-y-4 border-l border-border pl-6" aria-hidden="true">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <li key={i} className="relative">
-                <span className="absolute -left-[34px] top-2 h-3 w-3 rounded-full bg-primary/40 ring-4 ring-background" />
-                <div className="surface-elevated rounded-2xl p-4">
-                  <div className="h-4 w-1/3 animate-pulse rounded bg-primary/10" />
-                  <div className="mt-2 h-3 w-1/4 animate-pulse rounded bg-primary/10" />
-                  <div className="mt-3 h-3 w-2/3 animate-pulse rounded bg-primary/10" />
-                </div>
-              </li>
-            ))}
-          </ol>
-        ) : events.data && events.data.length > 0 ? (
-          <ol className="relative space-y-4 border-l border-border pl-6">
-            {events.data.map((e) => (
-              <li key={e.id} className="relative">
-                <span className="absolute -left-[34px] top-2 h-3 w-3 rounded-full bg-primary ring-4 ring-background" />
-                <div className="surface-elevated rounded-2xl p-4">
-                  <div className="flex items-start gap-3">
-                    <EventTypeIcon type={e.type} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex flex-wrap items-baseline justify-between gap-2">
-                        <div className="font-semibold">{e.title}</div>
-                        <div className="flex items-center gap-1">
-                          <div className="text-xs text-muted-foreground">
-                            {formatDate(e.occurred_at)}
-                          </div>
-                          {isOwner && !isArchived && <EventActionsMenu event={e as any} />}
-                        </div>
-                      </div>
-                      <div className="text-xs uppercase tracking-widest text-muted-foreground">
-                        {EVENT_TYPE_LABEL[e.type]}
-                      </div>
-                      {e.description && (
-                        <p className="mt-2 text-sm text-muted-foreground">{e.description}</p>
-                      )}
-                      <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                        {e.hours_at_event != null && (
-                          <span>{Number(e.hours_at_event).toFixed(1)} h</span>
-                        )}
-                        {e.km_at_event != null && (
-                          <span>{Number(e.km_at_event).toFixed(0)} km</span>
-                        )}
-                        {e.location && <span>{e.location}</span>}
-                        {e.cost != null && (
-                          <span className="font-semibold text-primary">{brl(Number(e.cost))}</span>
-                        )}
-                      </div>
-                      {(() => {
-                        const meta = (e.metadata ?? {}) as Record<string, unknown>;
-                        const code =
-                          typeof meta.receipt_code === "string" ? meta.receipt_code : null;
-                        if (e.type !== "ownership_transfer" || !code) return null;
-                        return (
-                          <div className="mt-3 flex flex-wrap gap-1.5">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => openReceiptPdf(code, "signed")}
-                            >
-                              <Eye className="h-3.5 w-3.5" /> Visualizar recibo
-                            </Button>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                </div>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <div className="surface-elevated rounded-2xl p-10 text-center text-sm text-muted-foreground">
-            Nenhum evento registrado ainda. Clique em <strong>Novo evento</strong> para começar.
-          </div>
-        )}
-      </section>
+        <TabsContent value="documentos" className="space-y-8">
+          <MotorcyclePhotos motorcycleId={m.id} />
+          <MotorcycleDocuments motorcycleId={m.id} />
+          <section className="space-y-3">
+            <h2 className="font-display text-lg font-bold">Recibos & Transferências</h2>
+            <ReceiptsSummaryRow
+              motoId={m.id}
+              isOwner={isOwner && !isArchived}
+              count={(receiptsForMoto.data ?? []).length}
+            />
+          </section>
+        </TabsContent>
 
-      <section className="space-y-3">
-        <AuditSummary rows={(audit.data ?? []) as any} />
-      </section>
+        <TabsContent value="historico" className="space-y-8">
+          <section className="space-y-3">
+            <h2 className="font-display text-lg font-bold">Histórico de proprietários</h2>
+            <OwnershipTimeline entries={ownership.data ?? []} />
+          </section>
+          <section className="space-y-3">
+            <AuditSummary rows={(audit.data ?? []) as any} />
+          </section>
+        </TabsContent>
+      </Tabs>
 
       {isAdmin && (
         <AdminMotoDangerZone
