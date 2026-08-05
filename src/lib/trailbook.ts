@@ -9,7 +9,7 @@ export type MaintenanceCategory = Database["public"]["Enums"]["maintenance_categ
 export const EVENT_TYPE_LABEL: Record<EventType, string> = {
   usage: "Uso",
   maintenance: "Manutenção",
-  revision: "Revisão",
+  revision: "Revisão Geral",
   accessory: "Acessório",
   photo: "Foto",
   video: "Vídeo",
@@ -53,8 +53,16 @@ export const MAINT_CATEGORY_LABEL: Record<MaintenanceCategory, string> = {
 };
 
 export const BRANDS = [
-  "Honda", "Yamaha", "KTM", "GasGas", "Husqvarna",
-  "Beta", "Sherco", "Kawasaki", "Suzuki", "Outra",
+  "Honda",
+  "Yamaha",
+  "KTM",
+  "GasGas",
+  "Husqvarna",
+  "Beta",
+  "Sherco",
+  "Kawasaki",
+  "Suzuki",
+  "Outra",
 ];
 
 // Cache leve em memória para URLs assinadas.
@@ -109,7 +117,11 @@ export function brl(n: number | null | undefined) {
 }
 
 export function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" });
+  return new Date(iso).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
 }
 
 export async function uploadFile(bucket: string, file: File, userId: string) {

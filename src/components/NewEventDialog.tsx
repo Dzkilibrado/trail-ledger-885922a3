@@ -28,7 +28,7 @@ import {
   type Motorcycle,
   ACTIVITY_EVENT_TYPES,
 } from "@/lib/trailbook";
-import { Plus, Upload, AlertTriangle, FileText } from "lucide-react";
+import { Plus, Upload, AlertTriangle, FileText, Wrench, CheckCheck } from "lucide-react";
 import { INCIDENT_TYPES } from "@/lib/motorcycle-catalog";
 import { fetchMaintenanceCatalog, type CatalogEntry } from "@/lib/maintenance-catalog";
 import { toDecimalHours, recomposeTimeline } from "@/lib/activity-recalc";
@@ -139,7 +139,10 @@ export function NewEventDialog({
     // Reset campos quando trocar tipo — evita vazamento entre formulários.
     if (!preset) {
       setSelectedCatalogId("");
-      setCategory("engine");
+      // Revisão geral não fica presa a uma categoria — o campo some da UI
+      // e gravamos "other" (Geral) no histórico. Manutenção parcial volta
+      // ao padrão "engine" para o usuário escolher.
+      setCategory(type === "revision" ? "other" : "engine");
       setService("");
       setAffectedScheduleIds([]);
     }
@@ -355,6 +358,16 @@ export function NewEventDialog({
           ? [preset.scheduleId]
           : Array.from(new Set(affectedScheduleIds));
 
+        // Cada schedule mantém a PRÓPRIA categoria (motor, suspensão, freios…)
+        // — importante numa revisão geral, onde os itens marcados pertencem
+        // a categorias diferentes. Usar uma única categoria global para
+        // todos gravaria histórico errado (ex: item de transmissão marcado
+        // como "Suspensão" só porque era o valor selecionado no formulário).
+        const categoryFor = (scheduleId: string) => {
+          const s = (motoSchedules.data ?? []).find((x: any) => x.id === scheduleId);
+          return (s?.category as string) ?? cat;
+        };
+
         // Cria um maintenance_item por schedule afetado — histórico
         // individual por item (regra #12). Se nenhum foi vinculado,
         // ainda registra o item genérico sem schedule_id (visível no
@@ -363,7 +376,7 @@ export function NewEventDialog({
           await supabase.from("maintenance_items").insert(
             targetIds.map((sid) => ({
               event_id: ev.id,
-              category: cat as any,
+              category: categoryFor(sid) as any,
               service: svc,
               product,
               brand,
@@ -540,20 +553,32 @@ export function NewEventDialog({
                   </p>
                 </F>
               )}
-              <F label="Categoria">
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(MAINT_CATEGORY_LABEL).map(([v, l]) => (
-                      <SelectItem key={v} value={v}>
-                        {l}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </F>
+              {type === "maintenance" ? (
+                <F label="Categoria">
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(MAINT_CATEGORY_LABEL).map(([v, l]) => (
+                        <SelectItem key={v} value={v}>
+                          {l}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[11px] text-muted-foreground">
+                    A lista de componentes abaixo mostra só os itens desta categoria.
+                  </p>
+                </F>
+              ) : (
+                !preset && (
+                  <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 text-xs text-primary">
+                    Revisão geral — não fica presa a uma categoria só. Todos os componentes ativos
+                    da moto entram nesta manutenção.
+                  </div>
+                )
+              )}
               <div className="grid grid-cols-2 gap-3">
                 <F label="Serviço">
                   <Input
@@ -571,66 +596,100 @@ export function NewEventDialog({
                 <Input name="brand_used" placeholder="Motul" />
               </F>
 
-              {!preset && (
-                <div className="space-y-2 rounded-2xl border border-primary/30 bg-primary/5 p-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="text-xs font-semibold uppercase tracking-widest text-primary">
-                      Componentes afetados por esta manutenção
-                    </div>
-                    <span className="text-[10px] text-muted-foreground">
-                      {affectedScheduleIds.length} selecionado(s)
-                    </span>
-                  </div>
-                  {(motoSchedules.data ?? []).length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        toggleAllAffected((motoSchedules.data ?? []).map((s: any) => s.id))
-                      }
-                      className="text-[11px] font-medium text-primary underline-offset-2 hover:underline"
-                    >
-                      {affectedScheduleIds.length === (motoSchedules.data ?? []).length
-                        ? "Desmarcar todos"
-                        : "🔧 Foi uma revisão geral? Marcar todos os componentes"}
-                    </button>
-                  )}
-                  <p className="text-[11px] text-muted-foreground">
-                    Marque exatamente os componentes que esta manutenção atualiza. Nenhum outro
-                    componente será tocado.
-                  </p>
-                  <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg bg-background/50 p-2">
-                    {(motoSchedules.data ?? []).length === 0 ? (
-                      <p className="px-1 py-2 text-[11px] text-muted-foreground">
-                        Nenhuma programação ativa. A atividade será registrada sem vínculo.
-                      </p>
-                    ) : (
-                      (motoSchedules.data ?? []).map((s: any) => (
-                        <label
-                          key={s.id}
-                          className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/50"
+              {!preset &&
+                (() => {
+                  const allSchedules = motoSchedules.data ?? [];
+                  const visibleSchedules =
+                    type === "revision"
+                      ? allSchedules
+                      : allSchedules.filter((s: any) => s.category === category);
+                  const visibleIds = visibleSchedules.map((s: any) => s.id);
+                  const allVisibleSelected =
+                    visibleIds.length > 0 &&
+                    visibleIds.every((id: string) => affectedScheduleIds.includes(id));
+
+                  return (
+                    <div className="space-y-2 rounded-2xl border border-primary/30 bg-primary/5 p-3">
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-xs font-semibold uppercase tracking-widest text-primary">
+                          Componentes afetados por esta manutenção
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">
+                          {affectedScheduleIds.length} selecionado(s)
+                        </span>
+                      </div>
+
+                      {type === "revision" && affectedScheduleIds.length > 0 && (
+                        <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-400">
+                          <CheckCheck className="h-4 w-4 shrink-0" />
+                          Revisão geral: {affectedScheduleIds.length} componente(s) serão
+                          atualizados nesta data. Pode desmarcar algum abaixo se não se aplicar.
+                        </div>
+                      )}
+
+                      {visibleIds.length > 0 && (
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant={allVisibleSelected ? "secondary" : "default"}
+                          className="w-full gap-2"
+                          onClick={() => toggleAllAffected(visibleIds)}
                         >
-                          <input
-                            type="checkbox"
-                            checked={affectedScheduleIds.includes(s.id)}
-                            onChange={() => toggleAffected(s.id)}
-                            className="h-4 w-4"
-                          />
-                          <span className="flex-1 truncate">{s.name}</span>
-                          <span className="text-[10px] uppercase text-muted-foreground">
-                            {MAINT_CATEGORY_LABEL[s.category as keyof typeof MAINT_CATEGORY_LABEL]}
-                          </span>
-                        </label>
-                      ))
-                    )}
-                  </div>
-                  {affectedScheduleIds.length === 0 && (motoSchedules.data ?? []).length > 0 && (
-                    <p className="text-[11px] text-amber-500">
-                      Nenhum item marcado — a manutenção ficará no histórico mas não atualizará
-                      nenhum item do plano.
-                    </p>
-                  )}
-                </div>
-              )}
+                          <Wrench className="h-4 w-4" />
+                          {allVisibleSelected
+                            ? "Desmarcar todos"
+                            : type === "revision"
+                              ? `Marcar todos os ${visibleIds.length} componentes`
+                              : `Marcar todos os itens de ${MAINT_CATEGORY_LABEL[category as keyof typeof MAINT_CATEGORY_LABEL] ?? "categoria"}`}
+                        </Button>
+                      )}
+
+                      <p className="text-[11px] text-muted-foreground">
+                        Marque exatamente os componentes que esta manutenção atualiza. Nenhum outro
+                        componente será tocado.
+                      </p>
+                      <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg bg-background/50 p-2">
+                        {visibleSchedules.length === 0 ? (
+                          <p className="px-1 py-2 text-[11px] text-muted-foreground">
+                            {allSchedules.length === 0
+                              ? "Nenhuma programação ativa. A atividade será registrada sem vínculo."
+                              : "Nenhum componente ativo nesta categoria."}
+                          </p>
+                        ) : (
+                          visibleSchedules.map((s: any) => (
+                            <label
+                              key={s.id}
+                              className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-muted/50"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={affectedScheduleIds.includes(s.id)}
+                                onChange={() => toggleAffected(s.id)}
+                                className="h-4 w-4"
+                              />
+                              <span className="flex-1 truncate">{s.name}</span>
+                              {type === "revision" && (
+                                <span className="text-[10px] uppercase text-muted-foreground">
+                                  {
+                                    MAINT_CATEGORY_LABEL[
+                                      s.category as keyof typeof MAINT_CATEGORY_LABEL
+                                    ]
+                                  }
+                                </span>
+                              )}
+                            </label>
+                          ))
+                        )}
+                      </div>
+                      {affectedScheduleIds.length === 0 && allSchedules.length > 0 && (
+                        <p className="text-[11px] text-amber-500">
+                          Nenhum item marcado — a manutenção ficará no histórico mas não atualizará
+                          nenhum item do plano.
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
             </>
           )}
 
