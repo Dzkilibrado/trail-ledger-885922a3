@@ -7,7 +7,15 @@ import type { CockpitSnapshot } from "@/lib/til";
 import type { Motorcycle } from "@/lib/trailbook";
 import { ComponentCard } from "@/components/components/ComponentCard";
 import { ComponentSheet } from "@/components/components/ComponentSheet";
-import { CheckCircle2, AlertTriangle, Clock, HelpCircle, Heart, ChevronRight, Search } from "lucide-react";
+import {
+  CheckCircle2,
+  AlertTriangle,
+  Clock,
+  HelpCircle,
+  Heart,
+  ChevronRight,
+  Search,
+} from "lucide-react";
 import { TBBottomSheet } from "@/design-system/overlays/TBBottomSheet";
 import { Input } from "@/components/ui/input";
 import type { ComponentView } from "@/lib/til/components";
@@ -18,12 +26,35 @@ import { ActionPlanCard } from "./ActionPlanCard";
 import { EvaluationCard } from "./EvaluationCard";
 import { AdminDiagnosisPanel } from "./AdminDiagnosisPanel";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
 
 /**
  * Saúde da Moto — check-up visual do estado atual, alimentado 100% pela TIL.
  * Nada é calculado aqui: leitura direta de `snapshot.health.buckets`.
+ *
+ * @param collapsible Envolve Avaliação / Plano de ação / Situação geral em
+ *   blocos que o usuário pode recolher — usado na aba "Visão Geral" da
+ *   Central da Moto para reduzir a rolagem. A página dedicada de Saúde
+ *   continua mostrando tudo expandido (collapsible=false, padrão).
+ * @param showLastReport Mostra o card "Check-up e Laudo" embutido. Na
+ *   Central da Moto isso vira sua própria aba, então fica desligado ali.
  */
-export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: boolean }) {
+export function HealthOverview({
+  moto,
+  isOwner,
+  collapsible = false,
+  showLastReport = true,
+}: {
+  moto: Motorcycle;
+  isOwner: boolean;
+  collapsible?: boolean;
+  showLastReport?: boolean;
+}) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [openBucket, setOpenBucket] = useState<BucketKey | null>(null);
   const [query, setQuery] = useState("");
@@ -31,18 +62,30 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
 
   const events = useQuery({
     queryKey: ["events", moto.id],
-    queryFn: async () => (await supabase.from("events").select("*").eq("motorcycle_id", moto.id).order("occurred_at", { ascending: false })).data ?? [],
+    queryFn: async () =>
+      (
+        await supabase
+          .from("events")
+          .select("*")
+          .eq("motorcycle_id", moto.id)
+          .order("occurred_at", { ascending: false })
+      ).data ?? [],
   });
   const schedules = useQuery({
     queryKey: ["schedules", moto.id],
-    queryFn: async () => (await supabase.from("maintenance_schedules").select("*").eq("motorcycle_id", moto.id)).data ?? [],
+    queryFn: async () =>
+      (await supabase.from("maintenance_schedules").select("*").eq("motorcycle_id", moto.id))
+        .data ?? [],
   });
   const items = useQuery({
     queryKey: ["maintenance-items", moto.id],
     queryFn: async () => {
       const ids = (events.data ?? []).map((e) => e.id);
       if (ids.length === 0) return [];
-      const { data } = await supabase.from("maintenance_items").select("event_id, schedule_id, created_at").in("event_id", ids);
+      const { data } = await supabase
+        .from("maintenance_items")
+        .select("event_id, schedule_id, created_at")
+        .in("event_id", ids);
       return data ?? [];
     },
     enabled: !!events.data,
@@ -61,10 +104,12 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
   const inspections = useQuery({
     queryKey: ["maintenance-inspections", moto.id],
     queryFn: async () =>
-      (await supabase
-        .from("maintenance_inspections")
-        .select("schedule_id, created_at, decision, notes")
-        .eq("motorcycle_id", moto.id)).data ?? [],
+      (
+        await supabase
+          .from("maintenance_inspections")
+          .select("schedule_id, created_at, decision, notes")
+          .eq("motorcycle_id", moto.id)
+      ).data ?? [],
   });
 
   const snapshot: CockpitSnapshot | null = useMemo(() => {
@@ -101,16 +146,70 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
     items: ComponentView[];
     emptyLabel: string;
   }> = [
-    { key: "overdue",   title: "Necessitam ação",     subtitle: "Resolva antes de rodar",         tone: "critical",  icon: AlertTriangle, items: health.buckets.overdue,   emptyLabel: "Nenhum componente nesta situação" },
-    { key: "attention", title: "Merecem atenção",     subtitle: "Planeje a próxima manutenção",   tone: "attention", icon: Clock,         items: health.buckets.attention, emptyLabel: "Nada pendente por enquanto" },
-    { key: "noInfo",    title: "Dados insuficientes", subtitle: "Informe a última manutenção",    tone: "no_info",   icon: HelpCircle,    items: health.buckets.noInfo,    emptyLabel: "Todos já têm histórico" },
-    { key: "ok",        title: "OK",                  subtitle: "Dentro do intervalo previsto",   tone: "ok",        icon: CheckCircle2,  items: health.buckets.ok,        emptyLabel: "—" },
+    {
+      key: "overdue",
+      title: "Necessitam ação",
+      subtitle: "Resolva antes de rodar",
+      tone: "critical",
+      icon: AlertTriangle,
+      items: health.buckets.overdue,
+      emptyLabel: "Nenhum componente nesta situação",
+    },
+    {
+      key: "attention",
+      title: "Merecem atenção",
+      subtitle: "Planeje a próxima manutenção",
+      tone: "attention",
+      icon: Clock,
+      items: health.buckets.attention,
+      emptyLabel: "Nada pendente por enquanto",
+    },
+    {
+      key: "noInfo",
+      title: "Dados insuficientes",
+      subtitle: "Informe a última manutenção",
+      tone: "no_info",
+      icon: HelpCircle,
+      items: health.buckets.noInfo,
+      emptyLabel: "Todos já têm histórico",
+    },
+    {
+      key: "ok",
+      title: "OK",
+      subtitle: "Dentro do intervalo previsto",
+      tone: "ok",
+      icon: CheckCircle2,
+      items: health.buckets.ok,
+      emptyLabel: "—",
+    },
   ];
 
   const active = buckets.find((b) => b.key === openBucket) ?? null;
   const filtered = active
-    ? active.items.filter((c) => !query.trim() || c.name.toLowerCase().includes(query.trim().toLowerCase()))
+    ? active.items.filter(
+        (c) => !query.trim() || c.name.toLowerCase().includes(query.trim().toLowerCase()),
+      )
     : [];
+
+  const bucketCards = (
+    <div className="space-y-2">
+      {buckets.map((b) => (
+        <BucketCard
+          key={b.key}
+          title={b.title}
+          subtitle={b.subtitle}
+          tone={b.tone}
+          icon={b.icon}
+          count={b.items.length}
+          onOpen={() => {
+            if (b.items.length === 0) return;
+            setQuery("");
+            setOpenBucket(b.key);
+          }}
+        />
+      ))}
+    </div>
+  );
 
   return (
     <div className="space-y-5">
@@ -119,35 +218,62 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
         <SingleBadgeChip motorcycleId={moto.id} badgeId="origin_proven" />
       </div>
 
-      {/* Avaliação oficial: diagnóstico → achados → recomendação → posso rodar hoje */}
-      <EvaluationCard answer={snapshot.rideAnswer} />
+      {collapsible ? (
+        <Accordion
+          type="multiple"
+          defaultValue={["avaliacao", "plano", "situacao"]}
+          className="space-y-3"
+        >
+          <AccordionItem
+            value="avaliacao"
+            className="rounded-2xl border border-border bg-card px-4"
+          >
+            <AccordionTrigger className="hover:no-underline">
+              <span className="font-display text-sm font-bold">Avaliação da motocicleta</span>
+            </AccordionTrigger>
+            <AccordionContent className="space-y-3">
+              <EvaluationCard answer={snapshot.rideAnswer} />
+              {reviewState.isPending && reviewState.state !== "unknown" && (
+                <ReviewStateNotice snapshot={reviewState} compact />
+              )}
+            </AccordionContent>
+          </AccordionItem>
 
-      {reviewState.isPending && reviewState.state !== "unknown" && (
-        <ReviewStateNotice snapshot={reviewState} compact />
+          <AccordionItem value="plano" className="rounded-2xl border border-border bg-card px-4">
+            <AccordionTrigger className="hover:no-underline">
+              <span className="font-display text-sm font-bold">Plano de ação</span>
+            </AccordionTrigger>
+            <AccordionContent>
+              <ActionPlanCard plan={snapshot.actionPlan} onOpen={setSelectedId} />
+            </AccordionContent>
+          </AccordionItem>
+
+          <AccordionItem value="situacao" className="rounded-2xl border border-border bg-card px-4">
+            <AccordionTrigger className="hover:no-underline">
+              <span className="font-display text-sm font-bold">Situação geral</span>
+            </AccordionTrigger>
+            <AccordionContent>{bucketCards}</AccordionContent>
+          </AccordionItem>
+        </Accordion>
+      ) : (
+        <>
+          {/* Avaliação oficial: diagnóstico → achados → recomendação → posso rodar hoje */}
+          <EvaluationCard answer={snapshot.rideAnswer} />
+
+          {reviewState.isPending && reviewState.state !== "unknown" && (
+            <ReviewStateNotice snapshot={reviewState} compact />
+          )}
+
+          <ActionPlanCard plan={snapshot.actionPlan} onOpen={setSelectedId} />
+
+          {showLastReport && <LastReportCard motoId={moto.id} />}
+
+          {/* Cards executáveis — abrem bottom sheet com a categoria */}
+          {bucketCards}
+        </>
       )}
 
-      <ActionPlanCard plan={snapshot.actionPlan} onOpen={setSelectedId} />
-
-      <LastReportCard motoId={moto.id} />
-
-      {/* Cards executáveis — abrem bottom sheet com a categoria */}
-      <div className="space-y-2">
-        {buckets.map((b) => (
-          <BucketCard
-            key={b.key}
-            title={b.title}
-            subtitle={b.subtitle}
-            tone={b.tone}
-            icon={b.icon}
-            count={b.items.length}
-            onOpen={() => {
-              if (b.items.length === 0) return;
-              setQuery("");
-              setOpenBucket(b.key);
-            }}
-          />
-        ))}
-      </div>
+      {collapsible && showLastReport && <LastReportCard motoId={moto.id} />}
 
       {/* Bottom sheet da categoria selecionada */}
       <TBBottomSheet
@@ -200,14 +326,19 @@ export function HealthOverview({ moto, isOwner }: { moto: Motorcycle; isOwner: b
 type BucketKey = "overdue" | "attention" | "noInfo" | "ok";
 
 const TONE_ACCENT = {
-  critical:  { badge: "bg-destructive/10 text-destructive",  ring: "ring-destructive/20" },
-  attention: { badge: "bg-amber-500/10 text-amber-400",      ring: "ring-amber-400/20" },
-  no_info:   { badge: "bg-muted text-muted-foreground",      ring: "ring-border" },
-  ok:        { badge: "bg-emerald-500/10 text-emerald-400",  ring: "ring-emerald-500/20" },
+  critical: { badge: "bg-destructive/10 text-destructive", ring: "ring-destructive/20" },
+  attention: { badge: "bg-amber-500/10 text-amber-400", ring: "ring-amber-400/20" },
+  no_info: { badge: "bg-muted text-muted-foreground", ring: "ring-border" },
+  ok: { badge: "bg-emerald-500/10 text-emerald-400", ring: "ring-emerald-500/20" },
 } as const;
 
 function BucketCard({
-  title, subtitle, tone, icon: Icon, count, onOpen,
+  title,
+  subtitle,
+  tone,
+  icon: Icon,
+  count,
+  onOpen,
 }: {
   title: string;
   subtitle: string;
@@ -226,7 +357,9 @@ function BucketCard({
       aria-label={`${title}: ${count}`}
       className={`grid w-full grid-cols-[auto_minmax(0,1fr)_auto_auto] items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition ${empty ? "opacity-60" : "hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md active:translate-y-0"}`}
     >
-      <span className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ring-1 ${t.ring} ${t.badge}`}>
+      <span
+        className={`grid h-11 w-11 shrink-0 place-items-center rounded-xl ring-1 ${t.ring} ${t.badge}`}
+      >
         <Icon className="h-5 w-5" />
       </span>
       <div className="min-w-0">
@@ -235,8 +368,12 @@ function BucketCard({
           {empty ? "Nada aqui ✓" : subtitle}
         </div>
       </div>
-      <span className={`shrink-0 rounded-full px-2.5 py-1 text-sm font-bold ${t.badge}`}>{count}</span>
-      <ChevronRight className={`h-5 w-5 shrink-0 ${empty ? "text-transparent" : "text-muted-foreground"}`} />
+      <span className={`shrink-0 rounded-full px-2.5 py-1 text-sm font-bold ${t.badge}`}>
+        {count}
+      </span>
+      <ChevronRight
+        className={`h-5 w-5 shrink-0 ${empty ? "text-transparent" : "text-muted-foreground"}`}
+      />
     </button>
   );
 }

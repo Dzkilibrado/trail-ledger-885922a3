@@ -26,6 +26,13 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import {
+  Accordion,
+  AccordionItem,
+  AccordionTrigger,
+  AccordionContent,
+} from "@/components/ui/accordion";
+import { LastReportCard } from "@/components/health/reports/LastReportCard";
 import { ClipboardCheck, Wand2 } from "lucide-react";
 import {
   AlertDialog,
@@ -509,7 +516,10 @@ export function MotoControlCenter({
                     }}
                   >
                     <AlertDialogTrigger asChild>
-                      <Button variant="ghost">
+                      <Button
+                        variant="outline"
+                        className="border-amber-500/30 text-amber-400 hover:bg-amber-500/10"
+                      >
                         <Archive className="h-4 w-4" /> Arquivar moto
                       </Button>
                     </AlertDialogTrigger>
@@ -636,6 +646,9 @@ export function MotoControlCenter({
           <TabsTrigger value="geral" className="surface-elevated data-[state=active]:btn-glow">
             Visão Geral
           </TabsTrigger>
+          <TabsTrigger value="checkup" className="surface-elevated data-[state=active]:btn-glow">
+            Check-up
+          </TabsTrigger>
           {isOwner && (
             <TabsTrigger
               value="componentes"
@@ -667,108 +680,135 @@ export function MotoControlCenter({
                 Abrir check-up completo
               </Link>
             </div>
-            <HealthOverview moto={m as any} isOwner={isOwner} />
+            <HealthOverview moto={m as any} isOwner={isOwner} collapsible showLastReport={false} />
           </section>
 
-          <section className="grid gap-6 lg:grid-cols-[1fr_1fr]">
-            <div className="space-y-3">
-              <h2 className="font-display text-lg font-bold">Próximas manutenções</h2>
-              {statuses.length === 0 ? (
-                <div className="surface-elevated rounded-2xl p-6 text-sm text-muted-foreground">
-                  Nenhuma programação ainda. Use <strong>Programações</strong> para aplicar o
-                  catálogo recomendado.
-                </div>
-              ) : (
-                <ul className="space-y-2">
-                  {statuses.slice(0, 6).map((s) => {
-                    const Icon =
-                      s.status === "overdue"
-                        ? AlertTriangle
-                        : s.status === "due"
-                          ? AlertTriangle
-                          : s.status === "soon"
-                            ? Clock
-                            : CheckCircle2;
-                    const color =
-                      s.status === "overdue"
-                        ? "text-destructive"
-                        : s.status === "due"
-                          ? "text-amber-400"
-                          : s.status === "soon"
-                            ? "text-amber-300"
-                            : "text-emerald-400";
-                    return (
-                      <li key={s.schedule.id} className="surface-elevated rounded-2xl p-3">
-                        <div className="flex items-start gap-3">
-                          <Icon className={`mt-0.5 h-4 w-4 ${color}`} />
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-baseline justify-between gap-2">
-                              <div className="font-medium">{s.label}</div>
-                              <div className={`text-xs ${color}`}>
-                                {s.status === "overdue"
-                                  ? "Vencida"
-                                  : s.status === "due"
-                                    ? "Vence agora"
-                                    : s.status === "soon"
-                                      ? "Em breve"
-                                      : "Em dia"}
+          <Accordion type="single" collapsible defaultValue="proximas" className="space-y-3">
+            <AccordionItem
+              value="proximas"
+              className="rounded-2xl border border-border bg-card px-4"
+            >
+              <AccordionTrigger className="hover:no-underline">
+                <span className="font-display text-lg font-bold">Próximas manutenções</span>
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+                  <div className="space-y-3">
+                    {statuses.length === 0 ? (
+                      <div className="surface-elevated rounded-2xl p-6 text-sm text-muted-foreground">
+                        Nenhuma programação ainda. Use <strong>Programações</strong> para aplicar o
+                        catálogo recomendado.
+                      </div>
+                    ) : (
+                      <ul className="space-y-2">
+                        {statuses.slice(0, 6).map((s) => {
+                          const Icon =
+                            s.status === "overdue"
+                              ? AlertTriangle
+                              : s.status === "due"
+                                ? AlertTriangle
+                                : s.status === "soon"
+                                  ? Clock
+                                  : CheckCircle2;
+                          const color =
+                            s.status === "overdue"
+                              ? "text-destructive"
+                              : s.status === "due"
+                                ? "text-amber-400"
+                                : s.status === "soon"
+                                  ? "text-amber-300"
+                                  : "text-emerald-400";
+                          return (
+                            <li key={s.schedule.id} className="surface-elevated rounded-2xl p-3">
+                              <div className="flex items-start gap-3">
+                                <Icon className={`mt-0.5 h-4 w-4 ${color}`} />
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-baseline justify-between gap-2">
+                                    <div className="font-medium">{s.label}</div>
+                                    <div className={`text-xs ${color}`}>
+                                      {s.status === "overdue"
+                                        ? "Vencida"
+                                        : s.status === "due"
+                                          ? "Vence agora"
+                                          : s.status === "soon"
+                                            ? "Em breve"
+                                            : "Em dia"}
+                                    </div>
+                                  </div>
+                                  <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
+                                    {s.remaining.hours != null && (
+                                      <span>{s.remaining.hours.toFixed(1)} h restantes</span>
+                                    )}
+                                    {s.remaining.km != null && (
+                                      <span>{s.remaining.km.toFixed(0)} km restantes</span>
+                                    )}
+                                    {s.remaining.days != null && (
+                                      <span>{Math.round(s.remaining.days)} dias restantes</span>
+                                    )}
+                                    {s.estimatedDueDate && (
+                                      <span>
+                                        · estimado {s.estimatedDueDate.toLocaleDateString("pt-BR")}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
+                                    <div
+                                      className={`h-full ${s.status === "overdue" || s.status === "due" ? "bg-destructive" : s.status === "soon" ? "bg-amber-400" : "bg-emerald-400"}`}
+                                      style={{ width: `${Math.min(100, s.progress * 100)}%` }}
+                                    />
+                                  </div>
+                                  <div className="mt-2 flex justify-end">
+                                    {isOwner && (
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() =>
+                                          setInspectTarget({
+                                            id: s.schedule.id,
+                                            name: s.label,
+                                            category: s.schedule.category,
+                                          })
+                                        }
+                                      >
+                                        <ClipboardCheck className="h-3.5 w-3.5" /> Inspecionar
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                            <div className="mt-1 flex flex-wrap gap-x-3 text-xs text-muted-foreground">
-                              {s.remaining.hours != null && (
-                                <span>{s.remaining.hours.toFixed(1)} h restantes</span>
-                              )}
-                              {s.remaining.km != null && (
-                                <span>{s.remaining.km.toFixed(0)} km restantes</span>
-                              )}
-                              {s.remaining.days != null && (
-                                <span>{Math.round(s.remaining.days)} dias restantes</span>
-                              )}
-                              {s.estimatedDueDate && (
-                                <span>
-                                  · estimado {s.estimatedDueDate.toLocaleDateString("pt-BR")}
-                                </span>
-                              )}
-                            </div>
-                            <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-muted">
-                              <div
-                                className={`h-full ${s.status === "overdue" || s.status === "due" ? "bg-destructive" : s.status === "soon" ? "bg-amber-400" : "bg-emerald-400"}`}
-                                style={{ width: `${Math.min(100, s.progress * 100)}%` }}
-                              />
-                            </div>
-                            <div className="mt-2 flex justify-end">
-                              {isOwner && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() =>
-                                    setInspectTarget({
-                                      id: s.schedule.id,
-                                      name: s.label,
-                                      category: s.schedule.category,
-                                    })
-                                  }
-                                >
-                                  <ClipboardCheck className="h-3.5 w-3.5" /> Inspecionar
-                                </Button>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                  {isAdmin && (
+                    <div className="space-y-2">
+                      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                        Modo técnico · visível apenas para administradores
+                      </p>
+                      <ConservationCard result={conservation} />
+                    </div>
+                  )}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
+          </Accordion>
+        </TabsContent>
+
+        <TabsContent value="checkup" className="space-y-8">
+          <section className="space-y-3">
+            <div className="flex items-baseline justify-between">
+              <h2 className="font-display text-lg font-bold">Check-up e Laudo</h2>
+              <Link
+                to="/motorcycles/$id/checkups"
+                params={{ id: m.id }}
+                className="text-xs text-primary hover:underline"
+              >
+                Ver histórico completo
+              </Link>
             </div>
-            {isAdmin && (
-              <div className="space-y-2">
-                <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                  Modo técnico · visível apenas para administradores
-                </p>
-                <ConservationCard result={conservation} />
-              </div>
-            )}
+            <LastReportCard motoId={m.id} />
           </section>
         </TabsContent>
 
