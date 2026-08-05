@@ -504,7 +504,7 @@ export function NewEventDialog({
               : "O formulário se adapta ao tipo escolhido. (build v2) Manutenções atualizam plano, financeiro e alertas automaticamente."}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={onSubmit} className="space-y-4">
+        <form onSubmit={onSubmit} className="min-w-0 space-y-4">
           <F label="Tipo">
             <Select value={type} onValueChange={(v) => setType(v as EventType)} disabled={!!preset}>
               <SelectTrigger>
