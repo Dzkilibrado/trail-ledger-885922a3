@@ -1,13 +1,33 @@
 import { useEffect, useState } from "react";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { EVENT_TYPE_LABEL, MAINT_CATEGORY_LABEL, uploadFile, type EventType, type Motorcycle, ACTIVITY_EVENT_TYPES } from "@/lib/trailbook";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  EVENT_TYPE_LABEL,
+  MAINT_CATEGORY_LABEL,
+  uploadFile,
+  type EventType,
+  type Motorcycle,
+  ACTIVITY_EVENT_TYPES,
+} from "@/lib/trailbook";
 import { Plus, Upload, AlertTriangle, FileText } from "lucide-react";
 import { INCIDENT_TYPES } from "@/lib/motorcycle-catalog";
 import { fetchMaintenanceCatalog, type CatalogEntry } from "@/lib/maintenance-catalog";
@@ -39,10 +59,10 @@ const INCIDENT_SEVERITY = [
 ];
 
 const ACCESSORY_ACTIONS = [
-  { value: "buy",     label: "Compra de peça / acessório" },
-  { value: "sell",    label: "Venda de peça / acessório" },
+  { value: "buy", label: "Compra de peça / acessório" },
+  { value: "sell", label: "Venda de peça / acessório" },
   { value: "install", label: "Instalação" },
-  { value: "remove",  label: "Remoção" },
+  { value: "remove", label: "Remoção" },
   { value: "replace", label: "Substituição" },
 ];
 
@@ -62,7 +82,9 @@ export function NewEventDialog({
   const qc = useQueryClient();
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
-  const setOpen = (v: boolean) => { onOpenChange ? onOpenChange(v) : setInternalOpen(v); };
+  const setOpen = (v: boolean) => {
+    onOpenChange ? onOpenChange(v) : setInternalOpen(v);
+  };
   const [type, setType] = useState<EventType>(preset ? "maintenance" : "usage");
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState<FileList | null>(null);
@@ -123,6 +145,15 @@ export function NewEventDialog({
     }
   }, [type, preset]);
 
+  useEffect(() => {
+    // "Revisão" = revisão geral por natureza: marca todos os componentes
+    // ativos automaticamente, evitando o usuário ter que marcar item a
+    // item. Ele ainda pode desmarcar algum manualmente se quiser.
+    if (type === "revision" && !preset && motoSchedules.data && motoSchedules.data.length > 0) {
+      setAffectedScheduleIds(motoSchedules.data.map((s: any) => s.id));
+    }
+  }, [type, preset, motoSchedules.data]);
+
   function pickCatalog(id: string) {
     setSelectedCatalogId(id);
     const item = catalog.data?.find((c) => c.id === id);
@@ -131,9 +162,7 @@ export function NewEventDialog({
       setService(item.item_name);
       // Sugere automaticamente o schedule vinculado por template_item_id,
       // se existir na moto. Regra estrita: sem fallback por nome.
-      const linked = (motoSchedules.data ?? []).filter(
-        (s: any) => s.template_item_id === item.id,
-      );
+      const linked = (motoSchedules.data ?? []).filter((s: any) => s.template_item_id === item.id);
       if (linked.length > 0) {
         setAffectedScheduleIds((prev) => {
           const set = new Set(prev);
@@ -148,6 +177,10 @@ export function NewEventDialog({
     setAffectedScheduleIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
+  }
+
+  function toggleAllAffected(ids: string[]) {
+    setAffectedScheduleIds((prev) => (prev.length === ids.length ? [] : ids));
   }
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -185,22 +218,32 @@ export function NewEventDialog({
           : null;
         const curK = hasKmInput ? Number(currentKm) : null;
         if (curH != null) {
-          if (!Number.isFinite(curH)) { setLoading(false); return toast.error("Horímetro atual inválido."); }
+          if (!Number.isFinite(curH)) {
+            setLoading(false);
+            return toast.error("Horímetro atual inválido.");
+          }
           const currentTotal = Number((fresh as any).hours_total);
           const d = curH - currentTotal;
           if (d < 0) {
             setLoading(false);
-            return toast.error(`Horímetro atual (${curH}h) menor que o último registrado (${currentTotal}h). Atualize a tela e tente novamente.`);
+            return toast.error(
+              `Horímetro atual (${curH}h) menor que o último registrado (${currentTotal}h). Atualize a tela e tente novamente.`,
+            );
           }
           hours_delta = d;
         }
         if (curK != null) {
-          if (!Number.isFinite(curK)) { setLoading(false); return toast.error("KM atual inválido."); }
+          if (!Number.isFinite(curK)) {
+            setLoading(false);
+            return toast.error("KM atual inválido.");
+          }
           const currentTotal = Number((fresh as any).km_total);
           const d = curK - currentTotal;
           if (d < 0) {
             setLoading(false);
-            return toast.error(`KM atual (${curK} km) menor que o último registrado (${currentTotal} km). Atualize a tela e tente novamente.`);
+            return toast.error(
+              `KM atual (${curK} km) menor que o último registrado (${currentTotal} km). Atualize a tela e tente novamente.`,
+            );
           }
           km_delta = d;
         }
@@ -209,31 +252,45 @@ export function NewEventDialog({
         const hasKmInput = deltaKm !== "";
         if (hasHoursInput) {
           const v = toDecimalHours(Number(deltaHours || 0), Number(deltaMinutes || 0));
-          if (!Number.isFinite(v) || v < 0) { setLoading(false); return toast.error("Duração inválida."); }
+          if (!Number.isFinite(v) || v < 0) {
+            setLoading(false);
+            return toast.error("Duração inválida.");
+          }
           hours_delta = v;
         }
         if (hasKmInput) {
           const v = Number(deltaKm);
-          if (!Number.isFinite(v) || v < 0) { setLoading(false); return toast.error("Distância inválida."); }
+          if (!Number.isFinite(v) || v < 0) {
+            setLoading(false);
+            return toast.error("Distância inválida.");
+          }
           km_delta = v;
         }
       }
       const rawCost = fd.get("cost");
       const cost = rawCost != null && String(rawCost) !== "" ? Number(rawCost) : null;
-      if (cost != null && !Number.isFinite(cost)) { setLoading(false); return toast.error("Custo inválido."); }
-      const occurred_at = fd.get("occurred_at") ? new Date(String(fd.get("occurred_at"))).toISOString() : new Date().toISOString();
+      if (cost != null && !Number.isFinite(cost)) {
+        setLoading(false);
+        return toast.error("Custo inválido.");
+      }
+      const occurred_at = fd.get("occurred_at")
+        ? new Date(String(fd.get("occurred_at"))).toISOString()
+        : new Date().toISOString();
 
       // Enriquecimento de metadados por tipo — armazenado em description
       // para não exigir novas colunas no banco. Prefixado com tag legível.
       const meta: string[] = [];
       if (type === "accessory") {
-        meta.push(`Ação: ${ACCESSORY_ACTIONS.find((a) => a.value === accessoryAction)?.label ?? accessoryAction}`);
+        meta.push(
+          `Ação: ${ACCESSORY_ACTIONS.find((a) => a.value === accessoryAction)?.label ?? accessoryAction}`,
+        );
       }
       if (type === "usage") {
         const kind = String(fd.get("usage_kind") || "");
         const riders = String(fd.get("riders") || "");
         const conditions = String(fd.get("conditions") || "");
-        if (kind) meta.push(`Tipo de uso: ${USAGE_KINDS.find((k) => k.value === kind)?.label ?? kind}`);
+        if (kind)
+          meta.push(`Tipo de uso: ${USAGE_KINDS.find((k) => k.value === kind)?.label ?? kind}`);
         if (riders) meta.push(`Participantes: ${riders}`);
         if (conditions) meta.push(`Condições: ${conditions}`);
       }
@@ -245,8 +302,10 @@ export function NewEventDialog({
           setLoading(false);
           return toast.error("É necessário confirmar a ciência de LGPD para registrar sinistro.");
         }
-        if (inc) meta.push(`Ocorrência: ${INCIDENT_TYPES.find((i) => i.value === inc)?.label ?? inc}`);
-        if (sev) meta.push(`Gravidade: ${INCIDENT_SEVERITY.find((s) => s.value === sev)?.label ?? sev}`);
+        if (inc)
+          meta.push(`Ocorrência: ${INCIDENT_TYPES.find((i) => i.value === inc)?.label ?? inc}`);
+        if (sev)
+          meta.push(`Gravidade: ${INCIDENT_SEVERITY.find((s) => s.value === sev)?.label ?? sev}`);
       }
       if (meta.length) {
         description = meta.join(" · ") + (description ? `\n\n${description}` : "");
@@ -341,7 +400,11 @@ export function NewEventDialog({
         for (const f of Array.from(files)) {
           try {
             const up = await uploadFile("event-media", f, uid);
-            const kind = f.type.startsWith("video/") ? "video" : f.type.startsWith("image/") ? "photo" : "document";
+            const kind = f.type.startsWith("video/")
+              ? "video"
+              : f.type.startsWith("image/")
+                ? "photo"
+                : "document";
             uploads.push({ event_id: ev.id, storage_path: up.path, bucket: up.bucket, kind });
           } catch (e: any) {
             toast.error(`Falha ao enviar mídia ${f.name}`, { description: e?.message });
@@ -365,7 +428,9 @@ export function NewEventDialog({
           const reused = results.filter((r) => r.reused).length;
           const failed = results.filter((r) => !r.ok);
           if (reused) {
-            toast.info(`${reused} documento(s) já estavam armazenados e foram apenas vinculados à atividade.`);
+            toast.info(
+              `${reused} documento(s) já estavam armazenados e foram apenas vinculados à atividade.`,
+            );
           }
           if (okCount > reused && okCount - reused > 0) {
             toast.success(`${okCount - reused} documento(s) novo(s) adicionado(s) à Central.`);
@@ -401,19 +466,25 @@ export function NewEventDialog({
       qc.invalidateQueries();
     } catch (err: any) {
       toast.error(err.message ?? "Erro ao registrar atividade");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       {controlledOpen === undefined && (
         <DialogTrigger asChild>
-          <Button className="btn-glow"><Plus className="h-4 w-4" /> {triggerLabel ?? "Registrar atividade"}</Button>
+          <Button className="btn-glow">
+            <Plus className="h-4 w-4" /> {triggerLabel ?? "Registrar atividade"}
+          </Button>
         </DialogTrigger>
       )}
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{preset ? `Registrar manutenção concluída` : "Registrar atividade"}</DialogTitle>
+          <DialogTitle>
+            {preset ? `Registrar manutenção concluída` : "Registrar atividade"}
+          </DialogTitle>
           <DialogDescription>
             {preset
               ? `Preencha os dados do serviço executado em "${preset.name}". Isso atualiza o plano de manutenção, a linha do tempo e o índice de conservação.`
@@ -423,13 +494,25 @@ export function NewEventDialog({
         <form onSubmit={onSubmit} className="space-y-4">
           <F label="Tipo">
             <Select value={type} onValueChange={(v) => setType(v as EventType)} disabled={!!preset}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
-                {ACTIVITY_EVENT_TYPES.map((v) => <SelectItem key={v} value={v}>{EVENT_TYPE_LABEL[v]}</SelectItem>)}
+                {ACTIVITY_EVENT_TYPES.map((v) => (
+                  <SelectItem key={v} value={v}>
+                    {EVENT_TYPE_LABEL[v]}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </F>
-          <F label="Data"><Input name="occurred_at" type="datetime-local" defaultValue={new Date().toISOString().slice(0, 16)} /></F>
+          <F label="Data">
+            <Input
+              name="occurred_at"
+              type="datetime-local"
+              defaultValue={new Date().toISOString().slice(0, 16)}
+            />
+          </F>
 
           {(type === "maintenance" || type === "revision") && (
             <>
@@ -437,24 +520,37 @@ export function NewEventDialog({
                 <F label="Serviço do catálogo (opcional)">
                   <Select value={selectedCatalogId} onValueChange={pickCatalog}>
                     <SelectTrigger>
-                      <SelectValue placeholder={catalog.isLoading ? "Carregando…" : "Escolher do catálogo padrão"} />
+                      <SelectValue
+                        placeholder={
+                          catalog.isLoading ? "Carregando…" : "Escolher do catálogo padrão"
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {(catalog.data ?? []).map((c) => (
-                        <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+                        <SelectItem key={c.id} value={c.id}>
+                          {c.label}
+                        </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                   <p className="text-[11px] text-muted-foreground">
-                    Selecione um item para preencher categoria e serviço automaticamente e vincular ao plano.
+                    Selecione um item para preencher categoria e serviço automaticamente e vincular
+                    ao plano.
                   </p>
                 </F>
               )}
               <F label="Categoria">
                 <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(MAINT_CATEGORY_LABEL).map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}
+                    {Object.entries(MAINT_CATEGORY_LABEL).map(([v, l]) => (
+                      <SelectItem key={v} value={v}>
+                        {l}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </F>
@@ -467,9 +563,13 @@ export function NewEventDialog({
                     onChange={(e) => setService(e.target.value)}
                   />
                 </F>
-                <F label="Produto"><Input name="product" placeholder="10W40" /></F>
+                <F label="Produto">
+                  <Input name="product" placeholder="10W40" />
+                </F>
               </div>
-              <F label="Marca do produto"><Input name="brand_used" placeholder="Motul" /></F>
+              <F label="Marca do produto">
+                <Input name="brand_used" placeholder="Motul" />
+              </F>
 
               {!preset && (
                 <div className="space-y-2 rounded-2xl border border-primary/30 bg-primary/5 p-3">
@@ -481,9 +581,22 @@ export function NewEventDialog({
                       {affectedScheduleIds.length} selecionado(s)
                     </span>
                   </div>
+                  {(motoSchedules.data ?? []).length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        toggleAllAffected((motoSchedules.data ?? []).map((s: any) => s.id))
+                      }
+                      className="text-[11px] font-medium text-primary underline-offset-2 hover:underline"
+                    >
+                      {affectedScheduleIds.length === (motoSchedules.data ?? []).length
+                        ? "Desmarcar todos"
+                        : "🔧 Foi uma revisão geral? Marcar todos os componentes"}
+                    </button>
+                  )}
                   <p className="text-[11px] text-muted-foreground">
-                    Marque exatamente os componentes que esta manutenção atualiza.
-                    Nenhum outro componente será tocado.
+                    Marque exatamente os componentes que esta manutenção atualiza. Nenhum outro
+                    componente será tocado.
                   </p>
                   <div className="max-h-40 space-y-1 overflow-y-auto rounded-lg bg-background/50 p-2">
                     {(motoSchedules.data ?? []).length === 0 ? (
@@ -526,16 +639,28 @@ export function NewEventDialog({
               <div className="grid grid-cols-2 gap-3">
                 <F label="Tipo de uso">
                   <Select name="usage_kind" defaultValue="trilha">
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
-                      {USAGE_KINDS.map((k) => <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>)}
+                      {USAGE_KINDS.map((k) => (
+                        <SelectItem key={k.value} value={k.value}>
+                          {k.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </F>
-                <F label="Participantes"><Input name="riders" type="number" min="1" placeholder="1" /></F>
+                <F label="Participantes">
+                  <Input name="riders" type="number" min="1" placeholder="1" />
+                </F>
               </div>
-              <F label="Local"><Input name="location" placeholder="Serra da Cantareira" /></F>
-              <F label="Condições"><Input name="conditions" placeholder="ex: chuva, lama, seco" /></F>
+              <F label="Local">
+                <Input name="location" placeholder="Serra da Cantareira" />
+              </F>
+              <F label="Condições">
+                <Input name="conditions" placeholder="ex: chuva, lama, seco" />
+              </F>
             </>
           )}
 
@@ -544,28 +669,43 @@ export function NewEventDialog({
               <div className="grid grid-cols-2 gap-3">
                 <F label="Ocorrência">
                   <Select name="incident_type" defaultValue="minor_fall">
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
-                      {INCIDENT_TYPES.map((i) => <SelectItem key={i.value} value={i.value}>{i.label}</SelectItem>)}
+                      {INCIDENT_TYPES.map((i) => (
+                        <SelectItem key={i.value} value={i.value}>
+                          {i.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </F>
                 <F label="Gravidade">
                   <Select name="incident_severity" defaultValue="low">
-                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
                     <SelectContent>
-                      {INCIDENT_SEVERITY.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                      {INCIDENT_SEVERITY.map((s) => (
+                        <SelectItem key={s.value} value={s.value}>
+                          {s.label}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </F>
               </div>
-              <F label="Local"><Input name="location" placeholder="ex: Trilha do Pico" /></F>
+              <F label="Local">
+                <Input name="location" placeholder="ex: Trilha do Pico" />
+              </F>
               <div className="flex items-start gap-2 rounded-xl border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-700 dark:text-amber-300">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <label className="flex-1 cursor-pointer space-y-1">
                   <span className="block font-medium">Confirmação necessária</span>
                   <span className="block text-[11px] opacity-80">
-                    Este registro fica no histórico da moto e pode aparecer no certificado que você compartilhar. Não inclua dados pessoais de terceiros (nome, CPF, telefone).
+                    Este registro fica no histórico da moto e pode aparecer no certificado que você
+                    compartilhar. Não inclua dados pessoais de terceiros (nome, CPF, telefone).
                   </span>
                   <span className="flex items-center gap-2 pt-1">
                     <input type="checkbox" name="lgpd_consent" className="h-3.5 w-3.5" />
@@ -579,17 +719,24 @@ export function NewEventDialog({
           {type === "accessory" && (
             <F label="Ação do acessório">
               <Select value={accessoryAction} onValueChange={setAccessoryAction}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
                   {ACCESSORY_ACTIONS.map((a) => (
-                    <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>
+                    <SelectItem key={a.value} value={a.value}>
+                      {a.label}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </F>
           )}
 
-          {(type === "accessory" || type === "warranty" || type === "recall" || type === "note") && (
+          {(type === "accessory" ||
+            type === "warranty" ||
+            type === "recall" ||
+            type === "note") && (
             <F label={type === "note" ? "Título" : "Descrição breve"}>
               <Input name="title" placeholder={EVENT_TYPE_LABEL[type]} />
             </F>
@@ -623,21 +770,41 @@ export function NewEventDialog({
                   Informe o horímetro e/ou KM atual da moto. O TrailBook calcula automaticamente
                   quanto rodou desde o último registro
                   <span className="ml-1 opacity-70">
-                    (atual: {Number(moto.hours_total).toFixed(1)}h · {Number(moto.km_total).toFixed(0)}km).
+                    (atual: {Number(moto.hours_total).toFixed(1)}h ·{" "}
+                    {Number(moto.km_total).toFixed(0)}km).
                   </span>
                 </p>
                 <div className="grid grid-cols-2 items-end gap-x-3 gap-y-3 sm:grid-cols-4">
                   <F label="Horímetro (h)">
-                    <Input type="number" step="1" min="0" placeholder="0"
-                      value={currentHours} onChange={(e) => setCurrentHours(e.target.value)} />
+                    <Input
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="0"
+                      value={currentHours}
+                      onChange={(e) => setCurrentHours(e.target.value)}
+                    />
                   </F>
                   <F label="Minutos">
-                    <Input type="number" step="1" min="0" max="59" placeholder="0"
-                      value={currentMinutes} onChange={(e) => setCurrentMinutes(e.target.value)} />
+                    <Input
+                      type="number"
+                      step="1"
+                      min="0"
+                      max="59"
+                      placeholder="0"
+                      value={currentMinutes}
+                      onChange={(e) => setCurrentMinutes(e.target.value)}
+                    />
                   </F>
                   <F label="KM atual">
-                    <Input type="number" step="1" min="0" placeholder="0"
-                      value={currentKm} onChange={(e) => setCurrentKm(e.target.value)} />
+                    <Input
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="0"
+                      value={currentKm}
+                      onChange={(e) => setCurrentKm(e.target.value)}
+                    />
                   </F>
                   <F label="Custo R$">
                     <Input name="cost" type="number" step="0.01" placeholder="0,00" />
@@ -651,16 +818,35 @@ export function NewEventDialog({
                 </p>
                 <div className="grid grid-cols-2 items-end gap-x-3 gap-y-3 sm:grid-cols-4">
                   <F label="+ Horas">
-                    <Input type="number" step="1" min="0" placeholder="0"
-                      value={deltaHours} onChange={(e) => setDeltaHours(e.target.value)} />
+                    <Input
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="0"
+                      value={deltaHours}
+                      onChange={(e) => setDeltaHours(e.target.value)}
+                    />
                   </F>
                   <F label="Minutos">
-                    <Input type="number" step="1" min="0" max="59" placeholder="0"
-                      value={deltaMinutes} onChange={(e) => setDeltaMinutes(e.target.value)} />
+                    <Input
+                      type="number"
+                      step="1"
+                      min="0"
+                      max="59"
+                      placeholder="0"
+                      value={deltaMinutes}
+                      onChange={(e) => setDeltaMinutes(e.target.value)}
+                    />
                   </F>
                   <F label="+ KM">
-                    <Input type="number" step="1" min="0" placeholder="0"
-                      value={deltaKm} onChange={(e) => setDeltaKm(e.target.value)} />
+                    <Input
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="0"
+                      value={deltaKm}
+                      onChange={(e) => setDeltaKm(e.target.value)}
+                    />
                   </F>
                   <F label="Custo R$">
                     <Input name="cost" type="number" step="0.01" placeholder="0,00" />
@@ -669,18 +855,28 @@ export function NewEventDialog({
               </>
             )}
           </div>
-          <F label="Observações"><Textarea name="description" rows={3} /></F>
+          <F label="Observações">
+            <Textarea name="description" rows={3} />
+          </F>
           <F label="Fotos e vídeos do serviço (opcional)">
             <label className="flex cursor-pointer items-center gap-3 rounded-xl border border-dashed border-border bg-card p-3 transition hover:border-primary/50">
               <div className="grid h-10 w-10 place-items-center rounded-lg bg-primary/10 text-primary">
                 <Upload className="h-4 w-4" />
               </div>
               <div className="min-w-0 flex-1 text-sm">
-                {files && files.length > 0
-                  ? <span className="font-medium">{files.length} arquivo(s) selecionado(s)</span>
-                  : <span className="text-muted-foreground">Selecionar imagens ou vídeos</span>}
+                {files && files.length > 0 ? (
+                  <span className="font-medium">{files.length} arquivo(s) selecionado(s)</span>
+                ) : (
+                  <span className="text-muted-foreground">Selecionar imagens ou vídeos</span>
+                )}
               </div>
-              <input type="file" multiple accept="image/*,video/*" className="sr-only" onChange={(e) => setFiles(e.target.files)} />
+              <input
+                type="file"
+                multiple
+                accept="image/*,video/*"
+                className="sr-only"
+                onChange={(e) => setFiles(e.target.files)}
+              />
             </label>
           </F>
           <div className="space-y-2 rounded-2xl border border-border/60 bg-background/30 p-3">
@@ -688,15 +884,21 @@ export function NewEventDialog({
               <div className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
                 Documentos vinculados (opcional)
               </div>
-              <span className="text-[10px] text-muted-foreground">Notas, orçamentos, garantias, laudos…</span>
+              <span className="text-[10px] text-muted-foreground">
+                Notas, orçamentos, garantias, laudos…
+              </span>
             </div>
             <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
               <F label="Classificação">
                 <Select value={docType} onValueChange={(v) => setDocType(v as DocType)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
                   <SelectContent>
                     {DOC_TYPES.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>{t.icon} {t.label}</SelectItem>
+                      <SelectItem key={t.value} value={t.value}>
+                        {t.icon} {t.label}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -707,9 +909,13 @@ export function NewEventDialog({
                 <FileText className="h-4 w-4" />
               </div>
               <div className="min-w-0 flex-1 text-sm">
-                {docFiles && docFiles.length > 0
-                  ? <span className="font-medium">{docFiles.length} documento(s) selecionado(s)</span>
-                  : <span className="text-muted-foreground">Selecionar PDF, Word, planilha, TXT/CSV…</span>}
+                {docFiles && docFiles.length > 0 ? (
+                  <span className="font-medium">{docFiles.length} documento(s) selecionado(s)</span>
+                ) : (
+                  <span className="text-muted-foreground">
+                    Selecionar PDF, Word, planilha, TXT/CSV…
+                  </span>
+                )}
               </div>
               <input
                 type="file"
@@ -720,13 +926,17 @@ export function NewEventDialog({
               />
             </label>
             <p className="text-[11px] text-muted-foreground">
-              O documento vai para a Central de Documentos e fica vinculado a esta atividade.
-              Se já estiver armazenado (mesmo arquivo), reaproveitamos sem novo envio.
+              O documento vai para a Central de Documentos e fica vinculado a esta atividade. Se já
+              estiver armazenado (mesmo arquivo), reaproveitamos sem novo envio.
             </p>
           </div>
           <div className="flex gap-2">
-            <Button type="button" variant="ghost" className="flex-1" onClick={() => setOpen(false)}>Cancelar</Button>
-            <Button type="submit" className="flex-1 btn-glow" disabled={loading}>{loading ? "Salvando…" : "Registrar"}</Button>
+            <Button type="button" variant="ghost" className="flex-1" onClick={() => setOpen(false)}>
+              Cancelar
+            </Button>
+            <Button type="submit" className="flex-1 btn-glow" disabled={loading}>
+              {loading ? "Salvando…" : "Registrar"}
+            </Button>
           </div>
         </form>
       </DialogContent>
