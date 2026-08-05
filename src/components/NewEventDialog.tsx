@@ -620,10 +620,12 @@ export function NewEventDialog({
                       </div>
 
                       {type === "revision" && affectedScheduleIds.length > 0 && (
-                        <div className="flex items-center gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-400">
-                          <CheckCheck className="h-4 w-4 shrink-0" />
-                          Revisão geral: {affectedScheduleIds.length} componente(s) serão
-                          atualizados nesta data. Pode desmarcar algum abaixo se não se aplicar.
+                        <div className="flex items-start gap-2 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs text-emerald-400">
+                          <CheckCheck className="mt-0.5 h-4 w-4 shrink-0" />
+                          <span className="min-w-0 flex-1">
+                            Revisão geral: {affectedScheduleIds.length} componente(s) serão
+                            atualizados nesta data. Pode desmarcar algum abaixo se não se aplicar.
+                          </span>
                         </div>
                       )}
 
