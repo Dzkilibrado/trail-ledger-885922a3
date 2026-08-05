@@ -1,11 +1,47 @@
-import { createFileRoute, Outlet, redirect, Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import {
+  createFileRoute,
+  Outlet,
+  redirect,
+  Link,
+  useRouterState,
+  useNavigate,
+} from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Bike, LayoutDashboard, LogOut, Plus, Menu, X, Shield, Bell, FolderOpen, Blocks, Wrench, Lock, Mail, MessageSquare, User, Compass, DoorOpen, Eye, ShieldCheck, Home, MessageCircle, LifeBuoy } from "lucide-react";
+import {
+  Bike,
+  LayoutDashboard,
+  LogOut,
+  Plus,
+  Menu,
+  X,
+  Shield,
+  Bell,
+  FolderOpen,
+  Blocks,
+  Wrench,
+  Lock,
+  Mail,
+  MessageSquare,
+  User,
+  Compass,
+  DoorOpen,
+  Eye,
+  ShieldCheck,
+  Home,
+  MessageCircle,
+  LifeBuoy,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
@@ -13,7 +49,7 @@ import { usePlan } from "@/hooks/usePlan";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useViewAsUser } from "@/hooks/useViewAsUser";
 import { useModules } from "@/hooks/useModules";
-import { ROUTE_TO_MODULE } from "@/lib/modules";
+import { ROUTE_TO_MODULE, HUB_ROUTES, resolveRouteModule } from "@/lib/modules";
 import { ModuleGate } from "@/components/ModuleGate";
 import { WelcomeTour } from "@/components/onboarding/WelcomeTour";
 import { TBBottomSheet } from "@/design-system/overlays/TBBottomSheet";
@@ -53,7 +89,9 @@ export const Route = createFileRoute("/_authenticated")({
       try {
         const { data: p, error: pErr } = await supabase
           .from("profiles")
-          .select("cpf,status,blocked_reason,inactive_reason,profile_completed_at,full_name,birth_date,email,phone,whatsapp,whatsapp_same_as_phone,uf,city")
+          .select(
+            "cpf,status,blocked_reason,inactive_reason,profile_completed_at,full_name,birth_date,email,phone,whatsapp,whatsapp_same_as_phone,uf,city",
+          )
           .eq("id", user.id)
           .maybeSingle();
         if (pErr) {
@@ -82,9 +120,13 @@ export const Route = createFileRoute("/_authenticated")({
         // esconda um perfil incompleto.
         if (p && p.cpf) {
           const essentialsOk = !!(
-            p.full_name && p.birth_date && p.email && p.phone &&
+            p.full_name &&
+            p.birth_date &&
+            p.email &&
+            p.phone &&
             (p.whatsapp || p.whatsapp_same_as_phone) &&
-            p.uf && p.city
+            p.uf &&
+            p.city
           );
           if (!p.profile_completed_at || !essentialsOk) {
             const { data: comp } = await supabase.rpc("profile_completeness", { _user: user.id });
@@ -153,7 +195,14 @@ function AuthedLayout() {
       {viewingAsUser && <HomologChip onExit={() => viewAs.exit()} />}
       {/* Sidebar desktop */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-border bg-sidebar md:flex">
-        <SidebarBody pathname={pathname} onSignOut={askSignOut} isAdmin={isAdmin} realIsAdmin={realIsAdmin} viewingAsUser={viewingAsUser} viewAs={viewAs} />
+        <SidebarBody
+          pathname={pathname}
+          onSignOut={askSignOut}
+          isAdmin={isAdmin}
+          realIsAdmin={realIsAdmin}
+          viewingAsUser={viewingAsUser}
+          viewAs={viewAs}
+        />
       </aside>
 
       {/* Sidebar mobile */}
@@ -161,7 +210,15 @@ function AuthedLayout() {
         <div className="fixed inset-0 z-40 md:hidden">
           <div className="absolute inset-0 bg-black/60" onClick={() => setMobileOpen(false)} />
           <aside className="absolute left-0 top-0 flex h-full w-[86%] max-w-sm flex-col border-r border-border bg-sidebar">
-            <SidebarBody pathname={pathname} onSignOut={askSignOut} onClose={() => setMobileOpen(false)} isAdmin={isAdmin} realIsAdmin={realIsAdmin} viewingAsUser={viewingAsUser} viewAs={viewAs} />
+            <SidebarBody
+              pathname={pathname}
+              onSignOut={askSignOut}
+              onClose={() => setMobileOpen(false)}
+              isAdmin={isAdmin}
+              realIsAdmin={realIsAdmin}
+              viewingAsUser={viewingAsUser}
+              viewAs={viewAs}
+            />
           </aside>
         </div>
       )}
@@ -178,7 +235,9 @@ function AuthedLayout() {
             <NotificationsBell />
             <MessagesBell />
             <Button asChild size="sm" className="btn-glow">
-              <Link to="/motorcycles/new"><Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nova</span> moto</Link>
+              <Link to="/motorcycles/new">
+                <Plus className="h-4 w-4" /> <span className="hidden sm:inline">Nova</span> moto
+              </Link>
             </Button>
           </div>
         </header>
@@ -194,9 +253,7 @@ function AuthedLayout() {
             <AlertDialogTitle className="flex items-center gap-2">
               <DoorOpen className="h-5 w-5" /> Encerrar sessão
             </AlertDialogTitle>
-            <AlertDialogDescription>
-              Deseja realmente sair do TrailBook?
-            </AlertDialogDescription>
+            <AlertDialogDescription>Deseja realmente sair do TrailBook?</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -210,9 +267,10 @@ function AuthedLayout() {
 }
 
 function RoutedModuleGate({ pathname, children }: { pathname: string; children: React.ReactNode }) {
-  const entry = Object.entries(ROUTE_TO_MODULE).find(([path]) => pathname === path || pathname.startsWith(path + "/"));
-  if (!entry) return <>{children}</>;
-  return <ModuleGate moduleKey={entry[1]}>{children}</ModuleGate>;
+  if (HUB_ROUTES.has(pathname)) return <>{children}</>;
+  const moduleKey = resolveRouteModule(pathname);
+  if (!moduleKey) return <>{children}</>;
+  return <ModuleGate moduleKey={moduleKey}>{children}</ModuleGate>;
 }
 
 function SidebarBody({
@@ -255,18 +313,33 @@ function SidebarBody({
   const { activeMoto } = useActiveMotorcycle();
 
   const fullName = meQ.data?.full_name || meQ.data?.email || "Usuário";
-  const initials = fullName
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((s: string) => s[0]?.toUpperCase() ?? "")
-    .join("") || "?";
+  const initials =
+    fullName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((s: string) => s[0]?.toUpperCase() ?? "")
+      .join("") || "?";
   const roleLabel = isAdmin ? "Administrador" : "Usuário";
   const moto = activeMoto;
-  const motoLabel = moto ? (moto.nickname || `${moto.brand ?? ""} ${moto.model ?? ""}`.trim() || "Moto ativa") : null;
+  const motoLabel = moto
+    ? moto.nickname || `${moto.brand ?? ""} ${moto.model ?? ""}`.trim() || "Moto ativa"
+    : null;
 
-  function NavLink({ to, label, icon: Icon, activeStrict }: { to: string; label: string; icon: any; activeStrict?: boolean }) {
-    const active = activeStrict ? pathname === to : (pathname === to || pathname.startsWith(to + "/"));
+  function NavLink({
+    to,
+    label,
+    icon: Icon,
+    activeStrict,
+  }: {
+    to: string;
+    label: string;
+    icon: any;
+    activeStrict?: boolean;
+  }) {
+    const active = activeStrict
+      ? pathname === to
+      : pathname === to || pathname.startsWith(to + "/");
     return (
       <Link
         to={to}
@@ -295,7 +368,9 @@ function SidebarBody({
           <span className="font-display text-lg font-bold">TrailBook</span>
         </Link>
         {onClose && (
-          <button onClick={onClose} aria-label="Fechar menu"><X className="h-5 w-5" /></button>
+          <button onClick={onClose} aria-label="Fechar menu">
+            <X className="h-5 w-5" />
+          </button>
         )}
       </div>
 
@@ -307,7 +382,11 @@ function SidebarBody({
       >
         <div className="flex items-center gap-3">
           {meQ.data?.avatar_url ? (
-            <img src={meQ.data.avatar_url} alt="" className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-primary/30" />
+            <img
+              src={meQ.data.avatar_url}
+              alt=""
+              className="h-11 w-11 shrink-0 rounded-full object-cover ring-2 ring-primary/30"
+            />
           ) : (
             <div className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-primary/15 text-sm font-bold text-primary ring-2 ring-primary/30">
               {initials}
@@ -316,10 +395,16 @@ function SidebarBody({
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold text-foreground">{fullName}</div>
             <div className="mt-0.5 flex flex-wrap items-center gap-1">
-              <span className={cn(
-                "rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest",
-                isAdmin ? "bg-emerald-500/15 text-emerald-400" : "bg-foreground/10 text-foreground/70",
-              )}>{roleLabel}</span>
+              <span
+                className={cn(
+                  "rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest",
+                  isAdmin
+                    ? "bg-emerald-500/15 text-emerald-400"
+                    : "bg-foreground/10 text-foreground/70",
+                )}
+              >
+                {roleLabel}
+              </span>
               <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-widest text-primary">
                 {plan.label}
               </span>
@@ -330,7 +415,9 @@ function SidebarBody({
           <div className="mt-3 flex items-center gap-2 rounded-lg bg-background/40 px-2.5 py-1.5 text-xs">
             <Bike className="h-3.5 w-3.5 shrink-0 text-primary" />
             <div className="min-w-0">
-              <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">Moto ativa</div>
+              <div className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                Moto ativa
+              </div>
               <div className="truncate font-semibold text-foreground">{motoLabel}</div>
             </div>
           </div>
@@ -376,8 +463,13 @@ function SidebarBody({
             const inMaint = !isAdmin && mod?.status === "maintenance";
             if (disabled) {
               return (
-                <div key={item.to} className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground/60" title="Módulo indisponível">
-                  <Lock className="h-4 w-4 shrink-0" /> <span className="truncate">{item.label}</span>
+                <div
+                  key={item.to}
+                  className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground/60"
+                  title="Módulo indisponível"
+                >
+                  <Lock className="h-4 w-4 shrink-0" />{" "}
+                  <span className="truncate">{item.label}</span>
                 </div>
               );
             }
@@ -408,11 +500,16 @@ function SidebarBody({
               <Shield className="h-3 w-3" /> Administração
             </div>
             {ADMIN_NAV.map((item) => (
-              <NavLink key={item.to} to={item.to} label={item.label} icon={item.icon} activeStrict={item.to === "/admin"} />
+              <NavLink
+                key={item.to}
+                to={item.to}
+                label={item.label}
+                icon={item.icon}
+                activeStrict={item.to === "/admin"}
+              />
             ))}
           </div>
         )}
-
       </div>
 
       {/* Sessão — fixed bottom */}
@@ -440,7 +537,9 @@ function SidebarBody({
                 Você continuará autenticado como Administrador na sua própria conta.
               </span>
               <span className="block">
-                O TrailBook ocultará as funcionalidades administrativas e exibirá a mesma experiência de um usuário comum, usando apenas os dados da sua própria conta — nenhum dado de outros usuários será acessado.
+                O TrailBook ocultará as funcionalidades administrativas e exibirá a mesma
+                experiência de um usuário comum, usando apenas os dados da sua própria conta —
+                nenhum dado de outros usuários será acessado.
               </span>
               <span className="block font-medium">
                 Nenhuma permissão real é alterada. A entrada e a saída são registradas na auditoria.
@@ -479,7 +578,11 @@ function NotificationsBell() {
   });
   const count = data ?? 0;
   return (
-    <Link to="/notifications" aria-label="Notificações" className="relative rounded-md p-2 hover:bg-muted">
+    <Link
+      to="/notifications"
+      aria-label="Notificações"
+      className="relative rounded-md p-2 hover:bg-muted"
+    >
       <Bell className="h-4 w-4" />
       {count > 0 && (
         <span className="absolute -right-0.5 -top-0.5 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
@@ -534,10 +637,15 @@ function HomologChip({ onExit }: { onExit: () => void }) {
         description="Você está visualizando o sistema como um usuário comum."
         footer={
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Button variant="outline" onClick={() => setOpen(false)}>Continuar homologando</Button>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Continuar homologando
+            </Button>
             <Button
               className="btn-glow"
-              onClick={async () => { setOpen(false); await onExit(); }}
+              onClick={async () => {
+                setOpen(false);
+                await onExit();
+              }}
             >
               <ShieldCheck className="h-4 w-4" /> Voltar para Administração
             </Button>
@@ -545,8 +653,13 @@ function HomologChip({ onExit }: { onExit: () => void }) {
         }
       >
         <div className="space-y-2 text-sm text-muted-foreground">
-          <p>Todos os testes utilizam apenas os dados da sua própria conta — nenhum dado de outros usuários é acessado.</p>
-          <p>Nenhuma permissão real é alterada. A entrada e a saída ficam registradas na auditoria.</p>
+          <p>
+            Todos os testes utilizam apenas os dados da sua própria conta — nenhum dado de outros
+            usuários é acessado.
+          </p>
+          <p>
+            Nenhuma permissão real é alterada. A entrada e a saída ficam registradas na auditoria.
+          </p>
         </div>
       </TBBottomSheet>
     </>

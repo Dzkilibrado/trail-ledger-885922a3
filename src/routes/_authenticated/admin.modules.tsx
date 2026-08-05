@@ -14,9 +14,20 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { STATUS_META, type ModuleStatus, type PlatformModule } from "@/lib/modules";
-import { Save } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  STATUS_META,
+  LINKED_MODULE_KEYS,
+  type ModuleStatus,
+  type PlatformModule,
+} from "@/lib/modules";
+import { Save, AlertTriangle } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/admin/modules")({
   head: () => ({ meta: [{ title: "Módulos do Sistema — TrailBook" }] }),
@@ -50,7 +61,9 @@ function ModuleRow({ mod }: { mod: PlatformModule }) {
   const [status, setStatus] = useState<ModuleStatus>(mod.status);
   const [msg, setMsg] = useState(mod.maintenance_message ?? "");
   const [reason, setReason] = useState(mod.maintenance_reason ?? "");
-  const [until, setUntil] = useState(mod.maintenance_until ? mod.maintenance_until.slice(0, 10) : "");
+  const [until, setUntil] = useState(
+    mod.maintenance_until ? mod.maintenance_until.slice(0, 10) : "",
+  );
   const [hide, setHide] = useState(mod.hide_when_disabled);
   const [open, setOpen] = useState(false);
 
@@ -83,6 +96,7 @@ function ModuleRow({ mod }: { mod: PlatformModule }) {
   });
 
   const meta = STATUS_META[mod.status];
+  const linked = LINKED_MODULE_KEYS.has(mod.key);
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
@@ -90,12 +104,34 @@ function ModuleRow({ mod }: { mod: PlatformModule }) {
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             <h3 className="font-display font-semibold">{mod.label}</h3>
-            <Badge variant="outline" className={meta.tone}>{meta.emoji} {meta.label}</Badge>
+            <Badge variant="outline" className={meta.tone}>
+              {meta.emoji} {meta.label}
+            </Badge>
+            {!linked && (
+              <Badge
+                variant="outline"
+                className="border-amber-500/30 bg-amber-500/10 text-amber-400"
+              >
+                <AlertTriangle className="mr-1 h-3 w-3" /> Não vinculado a nenhuma rota
+              </Badge>
+            )}
           </div>
-          {mod.description && <p className="mt-0.5 text-xs text-muted-foreground">{mod.description}</p>}
+          {mod.description && (
+            <p className="mt-0.5 text-xs text-muted-foreground">{mod.description}</p>
+          )}
+          {!linked && (
+            <p className="mt-0.5 text-xs text-amber-400/80">
+              Alterar o status deste módulo não afeta nenhuma tela do sistema hoje — não há rota
+              associada a ele.
+            </p>
+          )}
           <p className="mt-1 font-mono text-[10px] text-muted-foreground">{mod.key}</p>
         </div>
-        <Button size="sm" variant={open ? "secondary" : "outline"} onClick={() => setOpen((v) => !v)}>
+        <Button
+          size="sm"
+          variant={open ? "secondary" : "outline"}
+          onClick={() => setOpen((v) => !v)}
+        >
           {open ? "Fechar" : "Configurar"}
         </Button>
       </div>
@@ -105,10 +141,14 @@ function ModuleRow({ mod }: { mod: PlatformModule }) {
           <div>
             <Label>Status</Label>
             <Select value={status} onValueChange={(v) => setStatus(v as ModuleStatus)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {(Object.keys(STATUS_META) as ModuleStatus[]).map((s) => (
-                  <SelectItem key={s} value={s}>{STATUS_META[s].emoji} {STATUS_META[s].label}</SelectItem>
+                  <SelectItem key={s} value={s}>
+                    {STATUS_META[s].emoji} {STATUS_META[s].label}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
