@@ -53,6 +53,7 @@ import { ROUTE_TO_MODULE, HUB_ROUTES, resolveRouteModule } from "@/lib/modules";
 import { ModuleGate } from "@/components/ModuleGate";
 import { WelcomeTour } from "@/components/onboarding/WelcomeTour";
 import { TBBottomSheet } from "@/design-system/overlays/TBBottomSheet";
+import { PullToRefresh } from "@/components/PullToRefresh";
 import { useActiveMotorcycle } from "@/hooks/useActiveMotorcycle";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -241,12 +242,15 @@ function AuthedLayout() {
             </Button>
           </div>
         </header>
-        <main className="flex-1 px-4 py-6 md:px-8 md:py-8">
-          <RoutedModuleGate pathname={pathname}>
-            <Outlet />
-          </RoutedModuleGate>
+        <main className="flex-1 px-4 py-6 pb-24 md:px-8 md:py-8 md:pb-8">
+          <PullToRefresh>
+            <RoutedModuleGate pathname={pathname}>
+              <Outlet />
+            </RoutedModuleGate>
+          </PullToRefresh>
         </main>
       </div>
+      <BottomNav pathname={pathname} />
       <AlertDialog open={signOutOpen} onOpenChange={setSignOutOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -271,6 +275,36 @@ function RoutedModuleGate({ pathname, children }: { pathname: string; children: 
   const moduleKey = resolveRouteModule(pathname);
   if (!moduleKey) return <>{children}</>;
   return <ModuleGate moduleKey={moduleKey}>{children}</ModuleGate>;
+}
+
+/** Barra de navegação fixa no rodapé — só no mobile. O menu ☰ continua
+ * disponível para acesso secundário (config, admin, sair). */
+function BottomNav({ pathname }: { pathname: string }) {
+  return (
+    <nav
+      className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-background/95 backdrop-blur md:hidden"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+      aria-label="Navegação principal"
+    >
+      {NAV.map((n) => {
+        const active = pathname === n.to || pathname.startsWith(n.to + "/");
+        const Icon = n.icon;
+        return (
+          <Link
+            key={n.to}
+            to={n.to}
+            className={cn(
+              "flex min-w-0 flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium",
+              active ? "text-primary" : "text-muted-foreground",
+            )}
+          >
+            <Icon className="h-5 w-5" />
+            <span className="max-w-full truncate px-1">{n.label}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
 }
 
 function SidebarBody({

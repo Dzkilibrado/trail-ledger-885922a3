@@ -202,11 +202,12 @@ function AccountCenter() {
             <RowLink key={r.label} {...r} />
           ))}
         </div>
-        <div className="mt-3 flex items-center justify-between rounded-xl border border-dashed border-border/60 bg-card/30 px-4 py-2 text-[11px] text-muted-foreground">
-          <span className="flex items-center gap-1.5">
-            <FileText className="h-3.5 w-3.5" /> Política de Privacidade · Termos de Uso
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-xl border border-dashed border-border/60 bg-card/30 px-4 py-2 text-[11px] text-muted-foreground">
+          <span className="flex min-w-0 items-center gap-1.5">
+            <FileText className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">Política de Privacidade · Termos de Uso</span>
           </span>
-          <span className="font-mono">v{APP_VERSION}</span>
+          <span className="shrink-0 font-mono">v{APP_VERSION}</span>
         </div>
       </section>
 
