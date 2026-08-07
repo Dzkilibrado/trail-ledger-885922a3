@@ -45,6 +45,7 @@ import { Route as ApiPublicAppVersionRouteImport } from './routes/api/public/app
 import { Route as AuthenticatedTicketsNewRouteImport } from './routes/_authenticated/tickets.new'
 import { Route as AuthenticatedTicketsCpfChangeRouteImport } from './routes/_authenticated/tickets.cpf-change'
 import { Route as AuthenticatedTicketsIdRouteImport } from './routes/_authenticated/tickets.$id'
+import { Route as AuthenticatedPerfilMenuInferiorRouteImport } from './routes/_authenticated/perfil.menu-inferior'
 import { Route as AuthenticatedPerfilAtalhosRouteImport } from './routes/_authenticated/perfil.atalhos'
 import { Route as AuthenticatedMotorcyclesNewRouteImport } from './routes/_authenticated/motorcycles.new'
 import { Route as AuthenticatedMotorcyclesIdRouteImport } from './routes/_authenticated/motorcycles.$id'
@@ -257,6 +258,12 @@ const AuthenticatedTicketsIdRoute = AuthenticatedTicketsIdRouteImport.update({
   path: '/$id',
   getParentRoute: () => AuthenticatedTicketsRoute,
 } as any)
+const AuthenticatedPerfilMenuInferiorRoute =
+  AuthenticatedPerfilMenuInferiorRouteImport.update({
+    id: '/perfil/menu-inferior',
+    path: '/perfil/menu-inferior',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPerfilAtalhosRoute =
   AuthenticatedPerfilAtalhosRouteImport.update({
     id: '/perfil/atalhos',
@@ -426,6 +433,7 @@ export interface FileRoutesByFullPath {
   '/motorcycles/$id': typeof AuthenticatedMotorcyclesIdRouteWithChildren
   '/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
   '/perfil/atalhos': typeof AuthenticatedPerfilAtalhosRoute
+  '/perfil/menu-inferior': typeof AuthenticatedPerfilMenuInferiorRoute
   '/tickets/$id': typeof AuthenticatedTicketsIdRoute
   '/tickets/cpf-change': typeof AuthenticatedTicketsCpfChangeRoute
   '/tickets/new': typeof AuthenticatedTicketsNewRoute
@@ -482,6 +490,7 @@ export interface FileRoutesByTo {
   '/documents/$id': typeof AuthenticatedDocumentsIdRoute
   '/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
   '/perfil/atalhos': typeof AuthenticatedPerfilAtalhosRoute
+  '/perfil/menu-inferior': typeof AuthenticatedPerfilMenuInferiorRoute
   '/tickets/$id': typeof AuthenticatedTicketsIdRoute
   '/tickets/cpf-change': typeof AuthenticatedTicketsCpfChangeRoute
   '/tickets/new': typeof AuthenticatedTicketsNewRoute
@@ -543,6 +552,7 @@ export interface FileRoutesById {
   '/_authenticated/motorcycles/$id': typeof AuthenticatedMotorcyclesIdRouteWithChildren
   '/_authenticated/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
   '/_authenticated/perfil/atalhos': typeof AuthenticatedPerfilAtalhosRoute
+  '/_authenticated/perfil/menu-inferior': typeof AuthenticatedPerfilMenuInferiorRoute
   '/_authenticated/tickets/$id': typeof AuthenticatedTicketsIdRoute
   '/_authenticated/tickets/cpf-change': typeof AuthenticatedTicketsCpfChangeRoute
   '/_authenticated/tickets/new': typeof AuthenticatedTicketsNewRoute
@@ -604,6 +614,7 @@ export interface FileRouteTypes {
     | '/motorcycles/$id'
     | '/motorcycles/new'
     | '/perfil/atalhos'
+    | '/perfil/menu-inferior'
     | '/tickets/$id'
     | '/tickets/cpf-change'
     | '/tickets/new'
@@ -660,6 +671,7 @@ export interface FileRouteTypes {
     | '/documents/$id'
     | '/motorcycles/new'
     | '/perfil/atalhos'
+    | '/perfil/menu-inferior'
     | '/tickets/$id'
     | '/tickets/cpf-change'
     | '/tickets/new'
@@ -720,6 +732,7 @@ export interface FileRouteTypes {
     | '/_authenticated/motorcycles/$id'
     | '/_authenticated/motorcycles/new'
     | '/_authenticated/perfil/atalhos'
+    | '/_authenticated/perfil/menu-inferior'
     | '/_authenticated/tickets/$id'
     | '/_authenticated/tickets/cpf-change'
     | '/_authenticated/tickets/new'
@@ -1010,6 +1023,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTicketsIdRouteImport
       parentRoute: typeof AuthenticatedTicketsRoute
     }
+    '/_authenticated/perfil/menu-inferior': {
+      id: '/_authenticated/perfil/menu-inferior'
+      path: '/perfil/menu-inferior'
+      fullPath: '/perfil/menu-inferior'
+      preLoaderRoute: typeof AuthenticatedPerfilMenuInferiorRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/perfil/atalhos': {
       id: '/_authenticated/perfil/atalhos'
       path: '/perfil/atalhos'
@@ -1273,6 +1293,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMotorcyclesIdRoute: typeof AuthenticatedMotorcyclesIdRouteWithChildren
   AuthenticatedMotorcyclesNewRoute: typeof AuthenticatedMotorcyclesNewRoute
   AuthenticatedPerfilAtalhosRoute: typeof AuthenticatedPerfilAtalhosRoute
+  AuthenticatedPerfilMenuInferiorRoute: typeof AuthenticatedPerfilMenuInferiorRoute
   AuthenticatedDocumentsIndexRoute: typeof AuthenticatedDocumentsIndexRoute
   AuthenticatedMotorcyclesIndexRoute: typeof AuthenticatedMotorcyclesIndexRoute
   AuthenticatedPerfilIndexRoute: typeof AuthenticatedPerfilIndexRoute
@@ -1302,6 +1323,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMotorcyclesIdRoute: AuthenticatedMotorcyclesIdRouteWithChildren,
   AuthenticatedMotorcyclesNewRoute: AuthenticatedMotorcyclesNewRoute,
   AuthenticatedPerfilAtalhosRoute: AuthenticatedPerfilAtalhosRoute,
+  AuthenticatedPerfilMenuInferiorRoute: AuthenticatedPerfilMenuInferiorRoute,
   AuthenticatedDocumentsIndexRoute: AuthenticatedDocumentsIndexRoute,
   AuthenticatedMotorcyclesIndexRoute: AuthenticatedMotorcyclesIndexRoute,
   AuthenticatedPerfilIndexRoute: AuthenticatedPerfilIndexRoute,

@@ -54,6 +54,7 @@ import { ModuleGate } from "@/components/ModuleGate";
 import { WelcomeTour } from "@/components/onboarding/WelcomeTour";
 import { TBBottomSheet } from "@/design-system/overlays/TBBottomSheet";
 import { PullToRefresh } from "@/components/PullToRefresh";
+import { useBottomNav } from "@/hooks/useBottomNav";
 import { useActiveMotorcycle } from "@/hooks/useActiveMotorcycle";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -280,13 +281,14 @@ function RoutedModuleGate({ pathname, children }: { pathname: string; children: 
 /** Barra de navegação fixa no rodapé — só no mobile. O menu ☰ continua
  * disponível para acesso secundário (config, admin, sair). */
 function BottomNav({ pathname }: { pathname: string }) {
+  const { items } = useBottomNav();
   return (
     <nav
       className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-background/95 backdrop-blur md:hidden"
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       aria-label="Navegação principal"
     >
-      {NAV.map((n) => {
+      {items.map((n) => {
         const active = pathname === n.to || pathname.startsWith(n.to + "/");
         const Icon = n.icon;
         return (

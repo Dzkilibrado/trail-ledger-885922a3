@@ -2434,6 +2434,7 @@ export type Database = {
           display_name: string | null;
           email: string | null;
           full_name: string | null;
+          bottom_nav_items: string[] | null;
           home_shortcuts: string[] | null;
           ibge_code: string | null;
           id: string;
@@ -2471,6 +2472,7 @@ export type Database = {
           display_name?: string | null;
           email?: string | null;
           full_name?: string | null;
+          bottom_nav_items?: string[] | null;
           home_shortcuts?: string[] | null;
           ibge_code?: string | null;
           id: string;
@@ -2508,6 +2510,7 @@ export type Database = {
           display_name?: string | null;
           email?: string | null;
           full_name?: string | null;
+          bottom_nav_items?: string[] | null;
           home_shortcuts?: string[] | null;
           ibge_code?: string | null;
           id?: string;

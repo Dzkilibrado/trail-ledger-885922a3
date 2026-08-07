@@ -45,6 +45,12 @@ const PREFERENCES: Row[] = [
     icon: LayoutGrid,
     hint: "Escolha o que aparece na tela inicial",
   },
+  {
+    to: "/perfil/menu-inferior",
+    label: "Personalizar menu inferior",
+    icon: LayoutGrid,
+    hint: "Escolha os itens da barra de navegação do celular",
+  },
   { to: "/settings", label: "Configurações", icon: Settings, hint: "Tema e preferências gerais" },
   { to: "/plans", label: "Plano atual", icon: Crown, hint: "Seu plano e benefícios" },
 ];

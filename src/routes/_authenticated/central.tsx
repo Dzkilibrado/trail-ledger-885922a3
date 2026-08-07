@@ -1,5 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Bell, Mail, ArrowRightLeft, LifeBuoy, Clock, ChevronRight } from "lucide-react";
+import {
+  Bell,
+  Mail,
+  ArrowRightLeft,
+  LifeBuoy,
+  Clock,
+  ChevronRight,
+  Wallet,
+  CalendarDays,
+  Wrench,
+  QrCode,
+} from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,17 +67,71 @@ function CentralHub() {
   });
 
   const items = [
-    { to: "/notifications", label: "Notificações", desc: "Alertas e avisos do sistema", icon: Bell, badge: unreadNotifs.data ?? 0 },
-    { to: "/messages", label: "Mensagens", desc: "Conversas com suporte e oficinas", icon: Mail, badge: unreadMsgs.data ?? 0 },
-    { to: "/transfers", label: "Transferências", desc: "Compra, venda e transferência de moto", icon: ArrowRightLeft, badge: awaitingTransfers.data ?? 0 },
-    { to: "/tickets", label: "Chamados", desc: "Solicitações de suporte", icon: LifeBuoy, badge: openTickets.data ?? 0 },
+    {
+      to: "/notifications",
+      label: "Notificações",
+      desc: "Alertas e avisos do sistema",
+      icon: Bell,
+      badge: unreadNotifs.data ?? 0,
+    },
+    {
+      to: "/messages",
+      label: "Mensagens",
+      desc: "Conversas com suporte e oficinas",
+      icon: Mail,
+      badge: unreadMsgs.data ?? 0,
+    },
+    {
+      to: "/transfers",
+      label: "Transferências",
+      desc: "Compra, venda e transferência de moto",
+      icon: ArrowRightLeft,
+      badge: awaitingTransfers.data ?? 0,
+    },
+    {
+      to: "/tickets",
+      label: "Chamados",
+      desc: "Solicitações de suporte",
+      icon: LifeBuoy,
+      badge: openTickets.data ?? 0,
+    },
+    {
+      to: "/financial",
+      label: "Financeiro",
+      desc: "Custos e gastos de todas as motos",
+      icon: Wallet,
+      badge: 0,
+    },
+    {
+      to: "/agenda",
+      label: "Agenda",
+      desc: "Compromissos e lembretes",
+      icon: CalendarDays,
+      badge: 0,
+    },
+    {
+      to: "/workshops",
+      label: "Oficinas",
+      desc: "Oficinas parceiras e de confiança",
+      icon: Wrench,
+      badge: 0,
+    },
+    {
+      to: "/certificates",
+      label: "Certificados",
+      desc: "Certificados digitais emitidos",
+      icon: QrCode,
+      badge: 0,
+    },
   ] as const;
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6">
       <header>
         <h1 className="font-display text-2xl font-bold">Central</h1>
-        <p className="text-sm text-muted-foreground">Seu hub operacional: notificações, mensagens, transferências e chamados.</p>
+        <p className="text-sm text-muted-foreground">
+          Seu hub operacional: notificações, mensagens, financeiro, agenda e mais.
+        </p>
       </header>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         {items.map((it) => (
@@ -100,7 +165,9 @@ function CentralHub() {
           </div>
           <div className="min-w-0 flex-1">
             <div className="truncate font-semibold text-foreground">Linha do Tempo</div>
-            <div className="truncate text-xs text-muted-foreground">Em breve · histórico unificado</div>
+            <div className="truncate text-xs text-muted-foreground">
+              Em breve · histórico unificado
+            </div>
           </div>
         </div>
       </div>
