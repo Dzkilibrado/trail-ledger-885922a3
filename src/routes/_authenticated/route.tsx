@@ -99,7 +99,7 @@ export const Route = createFileRoute("/_authenticated")({
           .eq("id", user.id)
           .maybeSingle();
         const timeout = new Promise<{ data: null; error: { message: string } }>((resolve) =>
-          setTimeout(() => resolve({ data: null, error: { message: "timeout" } }), 8000),
+          setTimeout(() => resolve({ data: null, error: { message: "timeout" } }), 3000),
         );
         const { data: p, error: pErr } = await Promise.race([profilePromise, timeout]);
         if (pErr) {
