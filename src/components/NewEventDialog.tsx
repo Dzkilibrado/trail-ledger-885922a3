@@ -191,8 +191,8 @@ export function NewEventDialog({
     const fd = new FormData(e.currentTarget);
     setLoading(true);
     try {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user!.id;
+      const { data: s } = await supabase.auth.getSession();
+      const uid = s.session!.user.id;
       const rawTitle = String(fd.get("title") || "").trim();
       const title = rawTitle || service || EVENT_TYPE_LABEL[type];
       let description = String(fd.get("description") || "").trim();
@@ -373,7 +373,7 @@ export function NewEventDialog({
         // ainda registra o item genérico sem schedule_id (visível no
         // histórico do evento, mas não em nenhum item do plano).
         if (targetIds.length > 0) {
-          await supabase.from("maintenance_items").insert(
+          const { error: itemsErr } = await supabase.from("maintenance_items").insert(
             targetIds.map((sid) => ({
               event_id: ev.id,
               category: categoryFor(sid) as any,
@@ -384,8 +384,9 @@ export function NewEventDialog({
               schedule_id: sid,
             })) as never,
           );
+          if (itemsErr) throw new Error(itemsErr.message);
         } else {
-          await supabase.from("maintenance_items").insert({
+          const { error: itemErr } = await supabase.from("maintenance_items").insert({
             event_id: ev.id,
             category: cat as any,
             service: svc,
@@ -394,16 +395,18 @@ export function NewEventDialog({
             template_item_id: templateItemId,
             schedule_id: null,
           } as never);
+          if (itemErr) throw new Error(itemErr.message);
         }
 
         // v1.7: schedule last_done_* é atualizado pela recomposição final
         // abaixo, que lê o snapshot cronológico correto do evento no banco.
         // Aqui só normalizamos flags de estado dos schedules afetados.
         if (targetIds.length > 0) {
-          await supabase
+          const { error: schedErr } = await supabase
             .from("maintenance_schedules")
             .update({ status: "active", snoozed_until: null } as never)
             .in("id", targetIds);
+          if (schedErr) throw new Error(schedErr.message);
         }
       }
 

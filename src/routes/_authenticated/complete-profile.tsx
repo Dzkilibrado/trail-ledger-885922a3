@@ -182,8 +182,8 @@ function CompleteProfilePage() {
   }
 
   async function persistPartial() {
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) return { ok: false, error: "not signed in" };
+    const { data: s } = await supabase.auth.getSession();
+    if (!s.session?.user) return { ok: false, error: "not signed in" };
     const parsedLoc = parseLocation(draft.location);
     const patch = {
       full_name: draft.full_name.trim() || null,
@@ -222,9 +222,12 @@ function CompleteProfilePage() {
       }
       setCpfLocked(true);
     }
-    const { error: eUpd } = await supabase.from("profiles").update(patch).eq("id", u.user.id);
+    const { error: eUpd } = await supabase
+      .from("profiles")
+      .update(patch)
+      .eq("id", s.session!.user.id);
     if (eUpd) return { ok: false, error: eUpd.message };
-    await refreshCompleteness(u.user.id);
+    await refreshCompleteness(s.session!.user.id);
     return { ok: true };
   }
 
@@ -279,14 +282,16 @@ function CompleteProfilePage() {
       if (r.error !== "conflict") toast.error(r.error ?? "Falha ao salvar");
       return;
     }
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) {
+    const { data: s } = await supabase.auth.getSession();
+    if (!s.session?.user) {
       setSaving(false);
       return;
     }
     // Revalida completude no servidor — só marca `profile_completed_at`
     // quando `missing` estiver vazio (fonte da verdade é o RPC).
-    const { data: comp } = await supabase.rpc("profile_completeness", { _user: u.user.id });
+    const { data: comp } = await supabase.rpc("profile_completeness", {
+      _user: s.session!.user.id,
+    });
     const remaining = (((comp ?? {}) as any).missing as string[] | undefined) ?? [];
     if (remaining.length > 0) {
       setSaving(false);
@@ -296,11 +301,17 @@ function CompleteProfilePage() {
       toast.error(`Ainda faltam: ${labels}`);
       return;
     }
-    await supabase
+    const { error: completeErr } = await supabase
       .from("profiles")
       .update({ profile_completed_at: new Date().toISOString() })
-      .eq("id", u.user.id);
+      .eq("id", s.session!.user.id);
     setSaving(false);
+    if (completeErr) {
+      toast.error("Não foi possível concluir o cadastro", {
+        description: completeErr.message || "Tente novamente em instantes.",
+      });
+      return;
+    }
     // Notifica módulos que consomem o snapshot (Smart Receipt etc.)
     invalidateProfile();
     toast.success("Cadastro concluído!");

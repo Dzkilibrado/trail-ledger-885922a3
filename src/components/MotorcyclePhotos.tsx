@@ -4,10 +4,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { uploadFile, signedUrl } from "@/lib/trailbook";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { Camera, ImagePlus, Star, StarOff, Trash2, ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  Camera,
+  ImagePlus,
+  Star,
+  StarOff,
+  Trash2,
+  ArrowLeft,
+  ArrowRight,
+  Loader2,
+} from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { useEffect } from "react";
 
@@ -52,13 +67,19 @@ export function MotorcyclePhotos({ motorcycleId }: { motorcycleId: string }) {
     if (!files || files.length === 0) return;
     setUploading(true);
     try {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user!.id;
+      const { data: s } = await supabase.auth.getSession();
+      const uid = s.session!.user.id;
       let base = photos.length;
       const willBePrimary = !hasPrimary && photos.length === 0;
       for (const file of Array.from(files)) {
-        if (!file.type.startsWith("image/")) { toast.error(`${file.name}: apenas imagens`); continue; }
-        if (file.size > MAX_MB * 1024 * 1024) { toast.error(`${file.name}: máx ${MAX_MB} MB`); continue; }
+        if (!file.type.startsWith("image/")) {
+          toast.error(`${file.name}: apenas imagens`);
+          continue;
+        }
+        if (file.size > MAX_MB * 1024 * 1024) {
+          toast.error(`${file.name}: máx ${MAX_MB} MB`);
+          continue;
+        }
         const up = await uploadFile("motorcycle-photos", file, uid);
         const { error } = await supabase.from("motorcycle_photos").insert({
           motorcycle_id: motorcycleId,
@@ -102,8 +123,14 @@ export function MotorcyclePhotos({ motorcycleId }: { motorcycleId: string }) {
       const idx = photos.findIndex((p) => p.id === photo.id);
       const swap = photos[idx + dir];
       if (!swap) return;
-      const a = supabase.from("motorcycle_photos").update({ position: swap.position } as never).eq("id", photo.id);
-      const b = supabase.from("motorcycle_photos").update({ position: photo.position } as never).eq("id", swap.id);
+      const a = supabase
+        .from("motorcycle_photos")
+        .update({ position: swap.position } as never)
+        .eq("id", photo.id);
+      const b = supabase
+        .from("motorcycle_photos")
+        .update({ position: photo.position } as never)
+        .eq("id", swap.id);
       const [r1, r2] = await Promise.all([a, b]);
       if (r1.error) throw r1.error;
       if (r2.error) throw r2.error;
@@ -114,16 +141,25 @@ export function MotorcyclePhotos({ motorcycleId }: { motorcycleId: string }) {
 
   async function remove(photo: Photo) {
     try {
-      await supabase.storage.from(photo.bucket).remove([photo.storage_path]).catch(() => null);
+      await supabase.storage
+        .from(photo.bucket)
+        .remove([photo.storage_path])
+        .catch(() => null);
       const { error } = await supabase.from("motorcycle_photos").delete().eq("id", photo.id);
       if (error) throw error;
       // Se removeu a principal, promove a próxima
       if (photo.is_primary) {
         const remaining = photos.filter((p) => p.id !== photo.id);
         if (remaining[0]) {
-          await supabase.from("motorcycle_photos").update({ is_primary: true } as never).eq("id", remaining[0].id);
+          await supabase
+            .from("motorcycle_photos")
+            .update({ is_primary: true } as never)
+            .eq("id", remaining[0].id);
         } else {
-          await supabase.from("motorcycles").update({ main_photo_url: null } as never).eq("id", motorcycleId);
+          await supabase
+            .from("motorcycles")
+            .update({ main_photo_url: null } as never)
+            .eq("id", motorcycleId);
         }
       }
       toast.success("Foto removida");
@@ -144,7 +180,9 @@ export function MotorcyclePhotos({ motorcycleId }: { motorcycleId: string }) {
             <Camera className="h-4 w-4 text-primary" /> Fotos da moto
           </h2>
           <p className="text-xs text-muted-foreground">
-            {photos.length === 0 ? "Nenhuma foto ainda." : `${photos.length} foto(s). A principal aparece no card e no certificado.`}
+            {photos.length === 0
+              ? "Nenhuma foto ainda."
+              : `${photos.length} foto(s). A principal aparece no card e no certificado.`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -156,8 +194,17 @@ export function MotorcyclePhotos({ motorcycleId }: { motorcycleId: string }) {
             className="sr-only"
             onChange={(e) => onFiles(e.target.files)}
           />
-          <Button size="sm" className="btn-glow" onClick={() => inputRef.current?.click()} disabled={uploading}>
-            {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ImagePlus className="h-4 w-4" />}
+          <Button
+            size="sm"
+            className="btn-glow"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+          >
+            {uploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <ImagePlus className="h-4 w-4" />
+            )}
             {uploading ? "Enviando…" : "Adicionar fotos"}
           </Button>
         </div>
@@ -194,7 +241,8 @@ export function MotorcyclePhotos({ motorcycleId }: { motorcycleId: string }) {
           <AlertDialogHeader>
             <AlertDialogTitle>Remover esta foto?</AlertDialogTitle>
             <AlertDialogDescription>
-              A imagem será excluída permanentemente do armazenamento. Esta ação não pode ser desfeita.
+              A imagem será excluída permanentemente do armazenamento. Esta ação não pode ser
+              desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -213,10 +261,21 @@ export function MotorcyclePhotos({ motorcycleId }: { motorcycleId: string }) {
 }
 
 function PhotoTile({
-  photo, first, last, onSetPrimary, onMoveLeft, onMoveRight, onDelete,
+  photo,
+  first,
+  last,
+  onSetPrimary,
+  onMoveLeft,
+  onMoveRight,
+  onDelete,
 }: {
-  photo: Photo; first: boolean; last: boolean;
-  onSetPrimary: () => void; onMoveLeft: () => void; onMoveRight: () => void; onDelete: () => void;
+  photo: Photo;
+  first: boolean;
+  last: boolean;
+  onSetPrimary: () => void;
+  onMoveLeft: () => void;
+  onMoveRight: () => void;
+  onDelete: () => void;
 }) {
   const [url, setUrl] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
@@ -224,18 +283,34 @@ function PhotoTile({
     let active = true;
     setFailed(false);
     setUrl(null);
-    signedUrl(photo.bucket, photo.storage_path).then((u) => { if (active) setUrl(u); });
-    return () => { active = false; };
+    signedUrl(photo.bucket, photo.storage_path).then((u) => {
+      if (active) setUrl(u);
+    });
+    return () => {
+      active = false;
+    };
   }, [photo.bucket, photo.storage_path]);
 
   return (
-    <li className={`group relative overflow-hidden rounded-xl border ${photo.is_primary ? "border-primary" : "border-border"} bg-elevated`}>
+    <li
+      className={`group relative overflow-hidden rounded-xl border ${photo.is_primary ? "border-primary" : "border-border"} bg-elevated`}
+    >
       <div className="aspect-square w-full bg-muted">
         {url && !failed ? (
-          <img src={url} alt={photo.caption ?? ""} className="h-full w-full object-cover" loading="lazy" onError={() => setFailed(true)} />
+          <img
+            src={url}
+            alt={photo.caption ?? ""}
+            className="h-full w-full object-cover"
+            loading="lazy"
+            onError={() => setFailed(true)}
+          />
         ) : (
           <div className="grid h-full place-items-center text-muted-foreground">
-            {failed ? <Camera className="h-5 w-5 opacity-40" /> : <Loader2 className="h-5 w-5 animate-spin" />}
+            {failed ? (
+              <Camera className="h-5 w-5 opacity-40" />
+            ) : (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            )}
           </div>
         )}
       </div>
@@ -272,8 +347,18 @@ function PhotoTile({
   );
 }
 
-function IconBtn({ children, label, onClick, disabled, destructive }: {
-  children: React.ReactNode; label: string; onClick?: () => void; disabled?: boolean; destructive?: boolean;
+function IconBtn({
+  children,
+  label,
+  onClick,
+  disabled,
+  destructive,
+}: {
+  children: React.ReactNode;
+  label: string;
+  onClick?: () => void;
+  disabled?: boolean;
+  destructive?: boolean;
 }) {
   return (
     <button

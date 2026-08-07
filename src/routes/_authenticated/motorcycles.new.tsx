@@ -5,13 +5,28 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { BRANDS, uploadFile } from "@/lib/trailbook";
 import {
-  MODELS_BY_BRAND, DISPLACEMENTS, MOTO_TYPES, CONTROL_TYPES, OTHER,
-  yearOptions, INCIDENT_DECLARATION_TEXT,
-  useCatalogBrands, useCatalogTypes, useCatalogModels, useCatalogEngines, useCatalogModelDefaults,
+  MODELS_BY_BRAND,
+  DISPLACEMENTS,
+  MOTO_TYPES,
+  CONTROL_TYPES,
+  OTHER,
+  yearOptions,
+  INCIDENT_DECLARATION_TEXT,
+  useCatalogBrands,
+  useCatalogTypes,
+  useCatalogModels,
+  useCatalogEngines,
+  useCatalogModelDefaults,
 } from "@/lib/motorcycle-catalog";
 import { USE_PROFILES, type UseProfile } from "@/lib/plan-templates";
 import { PhotoPicker } from "@/components/PhotoPicker";
@@ -22,7 +37,10 @@ import { canCreateMotorcycle } from "@/lib/plans";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Crown, ShieldAlert, CheckCircle2, Pencil, Info } from "lucide-react";
 import { ORIGIN_OPTIONS, type OriginType } from "@/lib/motorcycle-origin";
-import { invalidateMotorcycleState, setStoredActiveMotorcycleId } from "@/hooks/useActiveMotorcycle";
+import {
+  invalidateMotorcycleState,
+  setStoredActiveMotorcycleId,
+} from "@/hooks/useActiveMotorcycle";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/new")({
   head: () => ({ meta: [{ title: "Nova moto — TrailBook" }] }),
@@ -97,13 +115,15 @@ function NewMotorcycle() {
     if (suggestionApplied.suggested && suggestionApplied.modelId) {
       setControlType(suggestionApplied.suggested);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [suggestionApplied.modelId, suggestionApplied.suggested]);
 
   const motoCount = useQuery({
     queryKey: ["motorcycles", "count"],
     queryFn: async () => {
-      const { count } = await supabase.from("motorcycles").select("id", { count: "exact", head: true });
+      const { count } = await supabase
+        .from("motorcycles")
+        .select("id", { count: "exact", head: true });
       return count ?? 0;
     },
   });
@@ -111,24 +131,38 @@ function NewMotorcycle() {
 
   function goReview(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (blocked) { toast.error("Limite do plano atingido. Faça upgrade para cadastrar mais motos."); return; }
+    if (blocked) {
+      toast.error("Limite do plano atingido. Faça upgrade para cadastrar mais motos.");
+      return;
+    }
     const fd = new FormData(e.currentTarget);
     const finalBrand = brand === OTHER ? customBrand.trim() : brand;
     const finalModel = model === OTHER ? customModel.trim() : model;
     const finalDisp = displacement === OTHER ? customDisplacement.trim() : displacement;
-    if (!motoType) { toast.error("Selecione o tipo da moto."); return; }
-    if (!finalBrand) { toast.error("Selecione a marca."); return; }
-    if (!finalModel) { toast.error("Informe o modelo."); return; }
+    if (!motoType) {
+      toast.error("Selecione o tipo da moto.");
+      return;
+    }
+    if (!finalBrand) {
+      toast.error("Selecione a marca.");
+      return;
+    }
+    if (!finalModel) {
+      toast.error("Informe o modelo.");
+      return;
+    }
     // Nova → força zeros; Usada → exige leitura conforme controle
     const isNew = condition === "new";
     const parsedHours = isNew ? 0 : Number(hoursTotal || 0);
     const parsedKm = isNew ? 0 : Number(kmTotal || 0);
     if (!isNew) {
       if ((controlType === "hours" || controlType === "both") && !(parsedHours > 0)) {
-        toast.error("Informe o horímetro atual da moto usada."); return;
+        toast.error("Informe o horímetro atual da moto usada.");
+        return;
       }
       if ((controlType === "km" || controlType === "both") && !(parsedKm > 0)) {
-        toast.error("Informe o KM atual da moto usada."); return;
+        toast.error("Informe o KM atual da moto usada.");
+        return;
       }
     }
     const raw = {
@@ -145,12 +179,17 @@ function NewMotorcycle() {
       km_total: parsedKm,
     };
     const parsed = schema.safeParse(raw);
-    if (!parsed.success) { toast.error(parsed.error.issues[0].message); return; }
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0].message);
+      return;
+    }
     if (useProfile === "other" && !useProfileNote.trim()) {
-      toast.error("Descreva o perfil de uso."); return;
+      toast.error("Descreva o perfil de uso.");
+      return;
     }
     if (!originType) {
-      toast.error("Informe como a motocicleta foi adquirida."); return;
+      toast.error("Informe como a motocicleta foi adquirida.");
+      return;
     }
     setDraft(parsed.data);
     setMode("review");
@@ -159,11 +198,14 @@ function NewMotorcycle() {
 
   async function confirmAndSave() {
     if (!draft) return;
-    if (blocked) { toast.error("Limite do plano atingido."); return; }
+    if (blocked) {
+      toast.error("Limite do plano atingido.");
+      return;
+    }
     setLoading(true);
     try {
-      const { data: userData } = await supabase.auth.getUser();
-      const uid = userData.user!.id;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const uid = sessionData.session!.user.id;
       let main_photo_url: string | null = null;
       if (photo) {
         const up = await uploadFile("motorcycle-photos", photo, uid);
@@ -174,24 +216,28 @@ function NewMotorcycle() {
         accepted_at: new Date().toISOString(),
         text: incident === "no" ? INCIDENT_DECLARATION_TEXT : null,
       };
-      const { data, error } = await supabase.from("motorcycles").insert({
-        ...draft,
-        owner_id: uid,
-        main_photo_url,
-        // Baseline preservada — nunca é sobrescrita pela recomposição da
-        // linha do tempo. Fix crítico do bug de zeramento do horímetro.
-        hours_initial: draft.hours_total,
-        km_initial: draft.km_total,
-        incident_declaration: incidentDeclaration,
-        use_profile: useProfile,
-        use_profile_note: useProfile === "other" ? (useProfileNote.trim() || null) : null,
-        // Moto nova: revisão marcada como skipped (não precisa revisar plano);
-        // Moto usada: pending — dispara banner de revisão no dashboard da moto.
-        plan_review_status: draft.condition === "new" ? "skipped" : "pending",
-        origin_type: originType || null,
-        origin_notes: originNotes.trim() || null,
-        origin_set_at: originType ? new Date().toISOString() : null,
-      } as never).select("id").single();
+      const { data, error } = await supabase
+        .from("motorcycles")
+        .insert({
+          ...draft,
+          owner_id: uid,
+          main_photo_url,
+          // Baseline preservada — nunca é sobrescrita pela recomposição da
+          // linha do tempo. Fix crítico do bug de zeramento do horímetro.
+          hours_initial: draft.hours_total,
+          km_initial: draft.km_total,
+          incident_declaration: incidentDeclaration,
+          use_profile: useProfile,
+          use_profile_note: useProfile === "other" ? useProfileNote.trim() || null : null,
+          // Moto nova: revisão marcada como skipped (não precisa revisar plano);
+          // Moto usada: pending — dispara banner de revisão no dashboard da moto.
+          plan_review_status: draft.condition === "new" ? "skipped" : "pending",
+          origin_type: originType || null,
+          origin_notes: originNotes.trim() || null,
+          origin_set_at: originType ? new Date().toISOString() : null,
+        } as never)
+        .select("id")
+        .single();
       if (error) throw error;
       // Se subiu foto principal no cadastro, registra na galeria
       if (main_photo_url) {
@@ -221,8 +267,14 @@ function NewMotorcycle() {
           motorcycle_id: data.id,
           created_by: uid,
           type: "declaration",
-          title: incident === "no" ? "Declaração: sem histórico de sinistro" : "Declaração: histórico de sinistro relatado",
-          description: incident === "no" ? INCIDENT_DECLARATION_TEXT : "O proprietário declarou que esta motocicleta possui histórico de sinistro relevante.",
+          title:
+            incident === "no"
+              ? "Declaração: sem histórico de sinistro"
+              : "Declaração: histórico de sinistro relatado",
+          description:
+            incident === "no"
+              ? INCIDENT_DECLARATION_TEXT
+              : "O proprietário declarou que esta motocicleta possui histórico de sinistro relevante.",
           occurred_at: new Date().toISOString(),
         } as never);
       }
@@ -238,7 +290,9 @@ function NewMotorcycle() {
       }
     } catch (err: any) {
       toast.error(err.message ?? "Erro ao cadastrar");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }
 
   const finalModelLabel = model === OTHER ? customModel : model;
@@ -249,7 +303,7 @@ function NewMotorcycle() {
       <div className="mx-auto max-w-3xl space-y-6">
         <PageHeader
           title="Revisar e confirmar"
-          crumbs={[{ label: "Motos", to: "/motorcycles" }, { label: "Nova", }, { label: "Revisão" }]}
+          crumbs={[{ label: "Motos", to: "/motorcycles" }, { label: "Nova" }, { label: "Revisão" }]}
           description="Confira as informações antes de salvar. Você pode voltar para editar qualquer seção."
         />
         <div className="surface-elevated space-y-4 rounded-2xl p-6">
@@ -263,10 +317,10 @@ function NewMotorcycle() {
             <Kv
               k="Tipo de moto"
               v={
-                (catTypes.data ?? []).find((t) => t.code === motoType)?.label
-                ?? MOTO_TYPES.find((t) => t.value === motoType)?.label
-                ?? motoType
-                ?? "—"
+                (catTypes.data ?? []).find((t) => t.code === motoType)?.label ??
+                MOTO_TYPES.find((t) => t.value === motoType)?.label ??
+                motoType ??
+                "—"
               }
             />
             <Kv k="Estado" v={draft.condition === "new" ? "Nova" : "Usada / Seminova"} />
@@ -282,29 +336,52 @@ function NewMotorcycle() {
           <ReviewSection title="Foto principal" onEdit={() => setMode("edit")}>
             {photo ? (
               <div className="flex items-center gap-3 text-sm">
-                <img src={URL.createObjectURL(photo)} alt="" className="h-20 w-20 rounded-lg object-cover" />
+                <img
+                  src={URL.createObjectURL(photo)}
+                  alt=""
+                  className="h-20 w-20 rounded-lg object-cover"
+                />
                 <div>
                   <div className="font-medium">{photo.name}</div>
-                  <div className="text-xs text-muted-foreground">Será definida como foto principal.</div>
+                  <div className="text-xs text-muted-foreground">
+                    Será definida como foto principal.
+                  </div>
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Nenhuma foto selecionada. Você poderá adicionar depois em <strong>Fotos da moto</strong>.</p>
+              <p className="text-sm text-muted-foreground">
+                Nenhuma foto selecionada. Você poderá adicionar depois em{" "}
+                <strong>Fotos da moto</strong>.
+              </p>
             )}
           </ReviewSection>
 
           <ReviewSection title="Perfil de uso e plano" onEdit={() => setMode("edit")}>
             <Kv k="Perfil" v={USE_PROFILES.find((p) => p.value === useProfile)?.label ?? "—"} />
             {useProfile === "other" && <Kv k="Descrição" v={useProfileNote || "—"} />}
-            <Kv k="Plano padrão" v={
-              applyPlan === "review" ? "Revisar itens no próximo passo"
-              : applyPlan === "auto" ? "Aplicar automaticamente"
-              : "Configurar depois"
-            } />
+            <Kv
+              k="Plano padrão"
+              v={
+                applyPlan === "review"
+                  ? "Revisar itens no próximo passo"
+                  : applyPlan === "auto"
+                    ? "Aplicar automaticamente"
+                    : "Configurar depois"
+              }
+            />
           </ReviewSection>
 
           <ReviewSection title="Declaração de sinistro" onEdit={() => setMode("edit")}>
-            <Kv k="Histórico" v={incident === "no" ? "Sem histórico" : incident === "yes" ? "Com histórico relatado" : "Não informado"} />
+            <Kv
+              k="Histórico"
+              v={
+                incident === "no"
+                  ? "Sem histórico"
+                  : incident === "yes"
+                    ? "Com histórico relatado"
+                    : "Não informado"
+              }
+            />
             {incident === "no" && (
               <p className="mt-2 rounded-lg border border-border bg-background/40 p-3 text-[11px] text-muted-foreground">
                 <em>{INCIDENT_DECLARATION_TEXT}</em>
@@ -323,16 +400,24 @@ function NewMotorcycle() {
               </p>
             )}
             <p className="col-span-full mt-2 text-[11px] text-muted-foreground">
-              Você poderá anexar o documento (Nota Fiscal ou Recibo) depois em <strong>Documentação da moto</strong>. Motos sem documento aparecem como pendência no Dashboard, sem bloquear o uso.
+              Você poderá anexar o documento (Nota Fiscal ou Recibo) depois em{" "}
+              <strong>Documentação da moto</strong>. Motos sem documento aparecem como pendência no
+              Dashboard, sem bloquear o uso.
             </p>
           </ReviewSection>
 
           <ReviewSection title="Observações" onEdit={() => setMode("edit")}>
-            {notes.trim() ? <p className="whitespace-pre-wrap text-sm">{notes}</p> : <p className="text-sm text-muted-foreground">Nenhuma observação.</p>}
+            {notes.trim() ? (
+              <p className="whitespace-pre-wrap text-sm">{notes}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground">Nenhuma observação.</p>
+            )}
           </ReviewSection>
 
           <div className="rounded-xl border border-border bg-background/40 p-3 text-xs text-muted-foreground">
-            <strong className="text-foreground">Documentos e acessórios</strong> não são registrados no cadastro — depois de confirmar, você adiciona pelo módulo <strong>Documentação</strong> e por <strong>Registrar atividade → Acessório</strong>.
+            <strong className="text-foreground">Documentos e acessórios</strong> não são registrados
+            no cadastro — depois de confirmar, você adiciona pelo módulo{" "}
+            <strong>Documentação</strong> e por <strong>Registrar atividade → Acessório</strong>.
           </div>
 
           <div className="flex flex-wrap justify-end gap-2 pt-2">
@@ -359,9 +444,16 @@ function NewMotorcycle() {
         <div className="surface-elevated flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/40 bg-primary/5 p-4 text-sm">
           <div className="flex items-center gap-2">
             <Crown className="h-4 w-4 text-primary" />
-            <span>Plano <strong>{plan.label}</strong> permite até {plan.limits.motorcycles} moto(s). Faça upgrade para continuar.</span>
+            <span>
+              Plano <strong>{plan.label}</strong> permite até {plan.limits.motorcycles} moto(s).
+              Faça upgrade para continuar.
+            </span>
           </div>
-          <Link to="/plans"><Button size="sm" className="btn-glow">Ver planos</Button></Link>
+          <Link to="/plans">
+            <Button size="sm" className="btn-glow">
+              Ver planos
+            </Button>
+          </Link>
         </div>
       )}
       <form onSubmit={goReview} className="surface-elevated space-y-5 rounded-2xl p-6">
@@ -370,21 +462,37 @@ function NewMotorcycle() {
           <div>
             <div className="text-sm font-semibold">Identificação da moto</div>
             <div className="text-xs text-muted-foreground">
-              Selecione tipo, marca e modelo. Os campos seguintes são filtrados automaticamente. Use <em>Outro</em> quando não encontrar.
+              Selecione tipo, marca e modelo. Os campos seguintes são filtrados automaticamente. Use{" "}
+              <em>Outro</em> quando não encontrar.
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Tipo da moto" required>
-              <Select value={motoType} onValueChange={(v) => { setMotoType(v); setModel(""); setModelId(null); setDisplacement(""); }}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+              <Select
+                value={motoType}
+                onValueChange={(v) => {
+                  setMotoType(v);
+                  setModel("");
+                  setModelId(null);
+                  setDisplacement("");
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
                 <SelectContent>
                   {(catTypes.data ?? []).map((t) => (
-                    <SelectItem key={t.code} value={t.code}>{t.label}</SelectItem>
+                    <SelectItem key={t.code} value={t.code}>
+                      {t.label}
+                    </SelectItem>
                   ))}
                   {/* fallback offline */}
-                  {(catTypes.data ?? []).length === 0 && MOTO_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                  ))}
+                  {(catTypes.data ?? []).length === 0 &&
+                    MOTO_TYPES.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>
+                        {t.label}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </Field>
@@ -392,28 +500,44 @@ function NewMotorcycle() {
               <Select
                 value={brand}
                 onValueChange={(v) => {
-                  if (v === OTHER) { setBrand(OTHER); setBrandId(null); }
-                  else {
+                  if (v === OTHER) {
+                    setBrand(OTHER);
+                    setBrandId(null);
+                  } else {
                     setBrand(v);
                     const found = (catBrands.data ?? []).find((b) => b.name === v);
                     setBrandId(found?.id ?? null);
                   }
-                  setModel(""); setModelId(null); setDisplacement("");
+                  setModel("");
+                  setModelId(null);
+                  setDisplacement("");
                 }}
               >
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
                 <SelectContent>
                   {(catBrands.data ?? []).map((b) => (
-                    <SelectItem key={b.id} value={b.name}>{b.name}</SelectItem>
+                    <SelectItem key={b.id} value={b.name}>
+                      {b.name}
+                    </SelectItem>
                   ))}
-                  {(catBrands.data ?? []).length === 0 && BRANDS.map((b) => (
-                    <SelectItem key={b} value={b}>{b}</SelectItem>
-                  ))}
+                  {(catBrands.data ?? []).length === 0 &&
+                    BRANDS.map((b) => (
+                      <SelectItem key={b} value={b}>
+                        {b}
+                      </SelectItem>
+                    ))}
                   <SelectItem value={OTHER}>Outra marca…</SelectItem>
                 </SelectContent>
               </Select>
               {brand === OTHER && (
-                <Input className="mt-2" placeholder="Informe a marca" value={customBrand} onChange={(e) => setCustomBrand(e.target.value)} />
+                <Input
+                  className="mt-2"
+                  placeholder="Informe a marca"
+                  value={customBrand}
+                  onChange={(e) => setCustomBrand(e.target.value)}
+                />
               )}
             </Field>
             <Field label="Modelo" required>
@@ -422,7 +546,12 @@ function NewMotorcycle() {
                   <Select
                     value={model}
                     onValueChange={(v) => {
-                      if (v === OTHER) { setModel(OTHER); setModelId(null); setDisplacement(""); return; }
+                      if (v === OTHER) {
+                        setModel(OTHER);
+                        setModelId(null);
+                        setDisplacement("");
+                        return;
+                      }
                       setModel(v);
                       const found = (catModels.data ?? []).find((m) => m.name === v);
                       setModelId(found?.id ?? null);
@@ -430,78 +559,149 @@ function NewMotorcycle() {
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder={catModels.isLoading ? "Carregando…" : (catModels.data ?? []).length === 0 ? "Nenhum modelo — use Outro" : "Selecione"} />
+                      <SelectValue
+                        placeholder={
+                          catModels.isLoading
+                            ? "Carregando…"
+                            : (catModels.data ?? []).length === 0
+                              ? "Nenhum modelo — use Outro"
+                              : "Selecione"
+                        }
+                      />
                     </SelectTrigger>
                     <SelectContent>
                       {(catModels.data ?? []).map((m) => (
-                        <SelectItem key={m.id} value={m.name}>{m.name}</SelectItem>
+                        <SelectItem key={m.id} value={m.name}>
+                          {m.name}
+                        </SelectItem>
                       ))}
                       <SelectItem value={OTHER}>Outro modelo…</SelectItem>
                     </SelectContent>
                   </Select>
                   {model === OTHER && (
-                    <Input className="mt-2" placeholder="Informe o modelo" value={customModel} onChange={(e) => setCustomModel(e.target.value)} />
+                    <Input
+                      className="mt-2"
+                      placeholder="Informe o modelo"
+                      value={customModel}
+                      onChange={(e) => setCustomModel(e.target.value)}
+                    />
                   )}
                 </>
               ) : showModelFallback ? (
                 <>
-                  <Select value={model} onValueChange={(v) => { setModel(v); setModelId(null); }}>
-                    <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <Select
+                    value={model}
+                    onValueChange={(v) => {
+                      setModel(v);
+                      setModelId(null);
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
                     <SelectContent>
-                      {legacyModels.map((m) => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+                      {legacyModels.map((m) => (
+                        <SelectItem key={m} value={m}>
+                          {m}
+                        </SelectItem>
+                      ))}
                       <SelectItem value={OTHER}>Outro modelo…</SelectItem>
                     </SelectContent>
                   </Select>
                   {model === OTHER && (
-                    <Input className="mt-2" placeholder="Informe o modelo" value={customModel} onChange={(e) => setCustomModel(e.target.value)} />
+                    <Input
+                      className="mt-2"
+                      placeholder="Informe o modelo"
+                      value={customModel}
+                      onChange={(e) => setCustomModel(e.target.value)}
+                    />
                   )}
                 </>
               ) : (
                 <Input
-                  placeholder={motoType && brand ? "ex: CRF 250F" : "Selecione tipo e marca primeiro"}
+                  placeholder={
+                    motoType && brand ? "ex: CRF 250F" : "Selecione tipo e marca primeiro"
+                  }
                   disabled={!brand || !motoType}
                   value={customModel}
-                  onChange={(e) => { setCustomModel(e.target.value); setModel(OTHER); }}
+                  onChange={(e) => {
+                    setCustomModel(e.target.value);
+                    setModel(OTHER);
+                  }}
                 />
               )}
             </Field>
             <Field label="Cilindrada (cc)">
               {modelId && (catEngines.data ?? []).length > 0 ? (
                 <Select value={displacement} onValueChange={setDisplacement}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
                   <SelectContent>
                     {(catEngines.data ?? []).map((d) => (
-                      <SelectItem key={d} value={String(d)}>{d} cc</SelectItem>
+                      <SelectItem key={d} value={String(d)}>
+                        {d} cc
+                      </SelectItem>
                     ))}
                     <SelectItem value={OTHER}>Outra…</SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
                 <Select value={displacement} onValueChange={setDisplacement}>
-                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {DISPLACEMENTS.map((d) => <SelectItem key={d} value={d}>{d} cc</SelectItem>)}
+                    {DISPLACEMENTS.map((d) => (
+                      <SelectItem key={d} value={d}>
+                        {d} cc
+                      </SelectItem>
+                    ))}
                     <SelectItem value={OTHER}>Outra…</SelectItem>
                   </SelectContent>
                 </Select>
               )}
               {displacement === OTHER && (
-                <Input className="mt-2" type="number" placeholder="Informe a cilindrada em cc" value={customDisplacement} onChange={(e) => setCustomDisplacement(e.target.value)} />
+                <Input
+                  className="mt-2"
+                  type="number"
+                  placeholder="Informe a cilindrada em cc"
+                  value={customDisplacement}
+                  onChange={(e) => setCustomDisplacement(e.target.value)}
+                />
               )}
             </Field>
             <Field label="Ano de fabricação">
               <Select value={yearMake} onValueChange={setYearMake}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map((y) => (
+                    <SelectItem key={y} value={String(y)}>
+                      {y}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </Field>
             <Field label="Ano modelo">
               <Select value={yearModel} onValueChange={setYearModel}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione" />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map((y) => (
+                    <SelectItem key={y} value={String(y)}>
+                      {y}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
             </Field>
-            <Field label="Apelido"><Input name="nickname" placeholder="ex: A vermelhinha" /></Field>
+            <Field label="Apelido">
+              <Input name="nickname" placeholder="ex: A vermelhinha" />
+            </Field>
           </div>
         </div>
 
@@ -509,13 +709,17 @@ function NewMotorcycle() {
         <div className="rounded-2xl border border-border/60 bg-background/30 p-4 space-y-3">
           <div>
             <div className="text-sm font-semibold">Estado da moto</div>
-            <div className="text-xs text-muted-foreground">Define a leitura inicial e o fluxo de revisão do plano.</div>
+            <div className="text-xs text-muted-foreground">
+              Define a leitura inicial e o fluxo de revisão do plano.
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
-            {([
-              { v: "new", label: "Nova (zero km/h)" },
-              { v: "used", label: "Usada / Seminova" },
-            ] as const).map((o) => (
+            {(
+              [
+                { v: "new", label: "Nova (zero km/h)" },
+                { v: "used", label: "Usada / Seminova" },
+              ] as const
+            ).map((o) => (
               <button
                 key={o.v}
                 type="button"
@@ -531,19 +735,32 @@ function NewMotorcycle() {
               <div className="grid gap-4 sm:grid-cols-2">
                 {(controlType === "hours" || controlType === "both") && (
                   <Field label="Horímetro atual (h)" required>
-                    <Input type="number" step="0.1" value={hoursTotal} onChange={(e) => setHoursTotal(e.target.value)} />
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={hoursTotal}
+                      onChange={(e) => setHoursTotal(e.target.value)}
+                    />
                   </Field>
                 )}
                 {(controlType === "km" || controlType === "both") && (
                   <Field label="KM atual" required>
-                    <Input type="number" step="1" value={kmTotal} onChange={(e) => setKmTotal(e.target.value)} />
+                    <Input
+                      type="number"
+                      step="1"
+                      value={kmTotal}
+                      onChange={(e) => setKmTotal(e.target.value)}
+                    />
                   </Field>
                 )}
               </div>
               <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-200">
                 <div className="flex items-start gap-2">
                   <Info className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>Como esta moto já possui uso anterior, revise o estado atual dos itens de manutenção antes de ativar os alertas.</span>
+                  <span>
+                    Como esta moto já possui uso anterior, revise o estado atual dos itens de
+                    manutenção antes de ativar os alertas.
+                  </span>
                 </div>
               </div>
             </>
@@ -558,29 +775,57 @@ function NewMotorcycle() {
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Tipo de controle">
             <Select value={controlType} onValueChange={setControlType}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>{CONTROL_TYPES.map((c) => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}</SelectContent>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {CONTROL_TYPES.map((c) => (
+                  <SelectItem key={c.value} value={c.value}>
+                    {c.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
             </Select>
             {suggested && (
-              <p className="mt-1 text-[11px] text-muted-foreground">Sugestão do catálogo aplicada. Você pode alterar se preferir.</p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                Sugestão do catálogo aplicada. Você pode alterar se preferir.
+              </p>
             )}
           </Field>
         </div>
 
         {/* Dados opcionais */}
         <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Chassi"><Input name="chassis" /></Field>
-          <Field label="Nº motor"><Input name="engine_number" /></Field>
-          <Field label="Placa"><Input name="plate" /></Field>
-          <Field label="RENAVAM"><Input name="renavam" /></Field>
+          <Field label="Chassi">
+            <Input name="chassis" />
+          </Field>
+          <Field label="Nº motor">
+            <Input name="engine_number" />
+          </Field>
+          <Field label="Placa">
+            <Input name="plate" />
+          </Field>
+          <Field label="RENAVAM">
+            <Input name="renavam" />
+          </Field>
         </div>
 
         <Field label="Foto principal">
-          <PhotoPicker value={photo} onChange={setPhoto} label="Selecionar foto principal" hint="JPG ou PNG. Aparece no certificado público." />
+          <PhotoPicker
+            value={photo}
+            onChange={setPhoto}
+            label="Selecionar foto principal"
+            hint="JPG ou PNG. Aparece no certificado público."
+          />
         </Field>
 
         <Field label="Observações iniciais">
-          <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas gerais sobre a moto no momento do cadastro (opcional)." />
+          <Textarea
+            rows={3}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Notas gerais sobre a moto no momento do cadastro (opcional)."
+          />
         </Field>
 
         {/* Declaração de sinistro */}
@@ -591,15 +836,18 @@ function NewMotorcycle() {
               <div>
                 <div className="text-sm font-semibold">Histórico de sinistro</div>
                 <div className="text-xs text-muted-foreground">
-                  A moto já sofreu sinistro relevante (queda grave, batida, submersão, danos estruturais)?
+                  A moto já sofreu sinistro relevante (queda grave, batida, submersão, danos
+                  estruturais)?
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                {([
-                  { v: "no", label: "Não" },
-                  { v: "yes", label: "Sim" },
-                  { v: "unknown", label: "Não informado" },
-                ] as const).map((o) => (
+                {(
+                  [
+                    { v: "no", label: "Não" },
+                    { v: "yes", label: "Sim" },
+                    { v: "unknown", label: "Não informado" },
+                  ] as const
+                ).map((o) => (
                   <button
                     key={o.v}
                     type="button"
@@ -617,7 +865,8 @@ function NewMotorcycle() {
               )}
               {incident === "yes" && (
                 <p className="text-[11px] text-amber-300">
-                  Após criar a moto, registre cada ocorrência usando <strong>Registrar atividade → Sinistro</strong> para compor o histórico.
+                  Após criar a moto, registre cada ocorrência usando{" "}
+                  <strong>Registrar atividade → Sinistro</strong> para compor o histórico.
                 </p>
               )}
             </div>
@@ -628,31 +877,47 @@ function NewMotorcycle() {
         <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 space-y-3">
           <div>
             <div className="text-sm font-semibold">Perfil de uso</div>
-            <div className="text-xs text-muted-foreground">Ajusta os intervalos sugeridos do plano de manutenção.</div>
+            <div className="text-xs text-muted-foreground">
+              Ajusta os intervalos sugeridos do plano de manutenção.
+            </div>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Tipo de uso">
               <Select value={useProfile} onValueChange={(v) => setUseProfile(v as UseProfile)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {USE_PROFILES.map((p) => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                  {USE_PROFILES.map((p) => (
+                    <SelectItem key={p.value} value={p.value}>
+                      {p.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </Field>
             {useProfile === "other" && (
               <Field label="Descreva o uso" required>
-                <Input value={useProfileNote} onChange={(e) => setUseProfileNote(e.target.value)} placeholder="ex: uso comercial em fazenda" />
+                <Input
+                  value={useProfileNote}
+                  onChange={(e) => setUseProfileNote(e.target.value)}
+                  placeholder="ex: uso comercial em fazenda"
+                />
               </Field>
             )}
           </div>
           <div className="space-y-1.5">
-            <Label className="text-xs uppercase tracking-widest text-muted-foreground">Plano de manutenção</Label>
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Plano de manutenção
+            </Label>
             <div className="flex flex-wrap gap-2">
-              {([
-                { v: "review", label: "Revisar antes de aplicar" },
-                { v: "auto", label: "Aplicar plano recomendado" },
-                { v: "skip", label: "Configurar manualmente" },
-              ] as const).map((o) => (
+              {(
+                [
+                  { v: "review", label: "Revisar antes de aplicar" },
+                  { v: "auto", label: "Aplicar plano recomendado" },
+                  { v: "skip", label: "Configurar manualmente" },
+                ] as const
+              ).map((o) => (
                 <button
                   key={o.v}
                   type="button"
@@ -671,7 +936,8 @@ function NewMotorcycle() {
           <div>
             <div className="text-sm font-semibold">Como esta motocicleta foi adquirida?</div>
             <div className="text-xs text-muted-foreground">
-              Passa a compor o histórico de propriedade. Você poderá anexar Nota Fiscal ou Recibo depois — nada bloqueia o cadastro.
+              Passa a compor o histórico de propriedade. Você poderá anexar Nota Fiscal ou Recibo
+              depois — nada bloqueia o cadastro.
             </div>
           </div>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -692,7 +958,9 @@ function NewMotorcycle() {
                     <span className="text-base">{o.emoji}</span>
                     <span className="text-sm font-semibold">{o.label}</span>
                   </div>
-                  <p className={`mt-1 text-[11px] ${active ? "text-primary/80" : "text-muted-foreground"}`}>
+                  <p
+                    className={`mt-1 text-[11px] ${active ? "text-primary/80" : "text-muted-foreground"}`}
+                  >
                     {o.description}
                   </p>
                 </button>
@@ -716,20 +984,38 @@ function NewMotorcycle() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <Button type="submit" className="btn-glow" disabled={loading || blocked}>Revisar e confirmar</Button>
-          <Button type="button" variant="outline" onClick={() => navigate({ to: "/motorcycles" })}>Cancelar</Button>
+          <Button type="submit" className="btn-glow" disabled={loading || blocked}>
+            Revisar e confirmar
+          </Button>
+          <Button type="button" variant="outline" onClick={() => navigate({ to: "/motorcycles" })}>
+            Cancelar
+          </Button>
         </div>
       </form>
     </div>
   );
 }
 
-function ReviewSection({ title, onEdit, children }: { title: string; onEdit: () => void; children: React.ReactNode }) {
+function ReviewSection({
+  title,
+  onEdit,
+  children,
+}: {
+  title: string;
+  onEdit: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <div className="rounded-xl border border-border bg-background/30 p-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">{title}</h3>
-        <button type="button" onClick={onEdit} className="inline-flex items-center gap-1 text-xs text-primary hover:underline">
+        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+          {title}
+        </h3>
+        <button
+          type="button"
+          onClick={onEdit}
+          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+        >
           <Pencil className="h-3 w-3" /> Editar
         </button>
       </div>
@@ -747,11 +1033,20 @@ function Kv({ k, v }: { k: string; v: React.ReactNode }) {
   );
 }
 
-function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+function Field({
+  label,
+  required,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
       <Label className="text-xs uppercase tracking-widest text-muted-foreground">
-        {label}{required && <span className="text-primary"> *</span>}
+        {label}
+        {required && <span className="text-primary"> *</span>}
       </Label>
       {children}
     </div>

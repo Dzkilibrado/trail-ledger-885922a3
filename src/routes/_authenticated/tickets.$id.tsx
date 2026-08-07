@@ -5,14 +5,28 @@ import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/trailbook";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
-import { labelFor, PRIORITY_TONE, STATUS_TONE, TICKET_MODULES, TICKET_PRIORITIES, TICKET_STATUSES, TICKET_TYPES } from "@/lib/tickets";
+import {
+  labelFor,
+  PRIORITY_TONE,
+  STATUS_TONE,
+  TICKET_MODULES,
+  TICKET_PRIORITIES,
+  TICKET_STATUSES,
+  TICKET_TYPES,
+} from "@/lib/tickets";
 import { Shield, Send, CheckCircle2, RotateCcw, XCircle } from "lucide-react";
 import { TicketAttachments } from "@/components/TicketAttachments";
 import { CpfChangeAdminPanel } from "@/components/CpfChangeAdminPanel";
@@ -61,7 +75,9 @@ function TicketDetail() {
         sessionStorage.removeItem("tb_ticket_created");
         toast.success("Chamado aberto! Nossa equipe entrará em contato por aqui.");
       }
-    } catch { /* noop */ }
+    } catch {
+      /* noop */
+    }
   }, [id, ticket.data]);
 
   // Marca a atualização como visualizada assim que o detalhe carrega.
@@ -84,14 +100,21 @@ function TicketDetail() {
   async function send() {
     if (!body.trim()) return;
     setSending(true);
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) { setSending(false); return; }
+    const { data: s } = await supabase.auth.getSession();
+    if (!s.session?.user) {
+      setSending(false);
+      return;
+    }
     const { error } = await supabase.from("ticket_messages").insert({
-      ticket_id: id, author_id: u.user.id, body: body.trim(), is_internal: isAdmin ? internal : false,
+      ticket_id: id,
+      author_id: s.session!.user.id,
+      body: body.trim(),
+      is_internal: isAdmin ? internal : false,
     });
     setSending(false);
     if (error) return toast.error(error.message);
-    setBody(""); setInternal(false);
+    setBody("");
+    setInternal(false);
     qc.invalidateQueries({ queryKey: ["ticket-msgs", id] });
     qc.invalidateQueries({ queryKey: ["ticket", id] });
     qc.invalidateQueries({ queryKey: ["tickets", "attention-count"] });
@@ -100,7 +123,10 @@ function TicketDetail() {
   }
 
   async function updateField(field: "status" | "priority", value: string) {
-    const { error } = await supabase.from("tickets").update({ [field]: value } as any).eq("id", id);
+    const { error } = await supabase
+      .from("tickets")
+      .update({ [field]: value } as any)
+      .eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Atualizado");
     qc.invalidateQueries({ queryKey: ["ticket", id] });
@@ -110,9 +136,12 @@ function TicketDetail() {
   }
 
   async function assignToMe() {
-    const { data: u } = await supabase.auth.getUser();
-    if (!u.user) return;
-    const { error } = await supabase.from("tickets").update({ assigned_to: u.user.id }).eq("id", id);
+    const { data: s } = await supabase.auth.getSession();
+    if (!s.session?.user) return;
+    const { error } = await supabase
+      .from("tickets")
+      .update({ assigned_to: s.session!.user.id })
+      .eq("id", id);
     if (error) return toast.error(error.message);
     toast.success("Chamado atribuído a você");
     qc.invalidateQueries({ queryKey: ["ticket", id] });
@@ -120,9 +149,18 @@ function TicketDetail() {
   }
 
   async function userUpdateStatus(next: "resolved" | "open" | "cancelled") {
-    const { error } = await supabase.from("tickets").update({ status: next } as any).eq("id", id);
+    const { error } = await supabase
+      .from("tickets")
+      .update({ status: next } as any)
+      .eq("id", id);
     if (error) return toast.error(error.message);
-    toast.success(next === "resolved" ? "Marcado como resolvido" : next === "cancelled" ? "Chamado cancelado" : "Chamado reaberto");
+    toast.success(
+      next === "resolved"
+        ? "Marcado como resolvido"
+        : next === "cancelled"
+          ? "Chamado cancelado"
+          : "Chamado reaberto",
+    );
     qc.invalidateQueries({ queryKey: ["ticket", id] });
     qc.invalidateQueries({ queryKey: ["tickets", "attention-count"] });
     qc.invalidateQueries({ queryKey: ["tickets", "admin-attention-count"] });
@@ -139,14 +177,18 @@ function TicketDetail() {
         title={t.title}
         description={`${t.code} • Aberto em ${formatDate(t.created_at)}`}
         crumbs={[
-          isAdmin ? { label: "Admin — Chamados", to: "/admin/tickets" } : { label: "Meus chamados", to: "/tickets" },
+          isAdmin
+            ? { label: "Admin — Chamados", to: "/admin/tickets" }
+            : { label: "Meus chamados", to: "/tickets" },
           { label: t.code },
         ]}
       />
 
       <div className="flex flex-wrap gap-2">
         <Badge className={STATUS_TONE[t.status]}>{labelFor(TICKET_STATUSES, t.status)}</Badge>
-        <Badge className={PRIORITY_TONE[t.priority]}>{labelFor(TICKET_PRIORITIES, t.priority)}</Badge>
+        <Badge className={PRIORITY_TONE[t.priority]}>
+          {labelFor(TICKET_PRIORITIES, t.priority)}
+        </Badge>
         <Badge variant="outline">{labelFor(TICKET_TYPES, t.type)}</Badge>
         <Badge variant="outline">Módulo: {labelFor(TICKET_MODULES, t.module)}</Badge>
       </div>
@@ -162,7 +204,7 @@ function TicketDetail() {
 
       {!isAdmin && (
         <div className="flex flex-wrap gap-2">
-          {(t.status === "resolved" || t.status === "closed") ? (
+          {t.status === "resolved" || t.status === "closed" ? (
             <Button variant="outline" size="sm" onClick={() => userUpdateStatus("open")}>
               <RotateCcw className="h-4 w-4" /> Reabrir chamado
             </Button>
@@ -190,23 +232,37 @@ function TicketDetail() {
             <div>
               <Label className="text-xs">Status</Label>
               <Select value={t.status} onValueChange={(v) => updateField("status", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {TICKET_STATUSES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  {TICKET_STATUSES.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div>
               <Label className="text-xs">Prioridade</Label>
               <Select value={t.priority} onValueChange={(v) => updateField("priority", v)}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
                 <SelectContent>
-                  {TICKET_PRIORITIES.map((s) => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  {TICKET_PRIORITIES.map((s) => (
+                    <SelectItem key={s.value} value={s.value}>
+                      {s.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="flex items-end">
-              <Button variant="outline" className="w-full" onClick={assignToMe}>Assumir chamado</Button>
+              <Button variant="outline" className="w-full" onClick={assignToMe}>
+                Assumir chamado
+              </Button>
             </div>
           </div>
         </div>
@@ -220,10 +276,15 @@ function TicketDetail() {
           </div>
         )}
         {(messages.data ?? []).map((m: any) => (
-          <div key={m.id} className={`rounded-lg border p-4 ${m.is_internal ? "border-amber-500/30 bg-amber-500/5" : "border-border bg-card"}`}>
+          <div
+            key={m.id}
+            className={`rounded-lg border p-4 ${m.is_internal ? "border-amber-500/30 bg-amber-500/5" : "border-border bg-card"}`}
+          >
             <div className="mb-2 flex items-center gap-2 text-xs text-muted-foreground">
               <span>{formatDate(m.created_at)}</span>
-              {m.is_internal && <Badge className="bg-amber-500/15 text-amber-400">Nota interna</Badge>}
+              {m.is_internal && (
+                <Badge className="bg-amber-500/15 text-amber-400">Nota interna</Badge>
+              )}
             </div>
             <p className="whitespace-pre-wrap text-sm">{m.body}</p>
           </div>
@@ -232,15 +293,25 @@ function TicketDetail() {
 
       <div className="rounded-xl border border-border bg-card p-4">
         <Label className="text-xs">Nova mensagem</Label>
-        <Textarea rows={4} value={body} onChange={(e) => setBody(e.target.value)} placeholder="Escreva sua resposta…" className="mt-2" />
+        <Textarea
+          rows={4}
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder="Escreva sua resposta…"
+          className="mt-2"
+        />
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
           {isAdmin ? (
             <label className="flex items-center gap-2 text-xs text-muted-foreground">
               <Checkbox checked={internal} onCheckedChange={(v) => setInternal(!!v)} />
               Nota interna (visível apenas para administradores)
             </label>
-          ) : <span />}
-          <Button onClick={send} disabled={sending || !body.trim()}><Send className="h-4 w-4" /> Enviar</Button>
+          ) : (
+            <span />
+          )}
+          <Button onClick={send} disabled={sending || !body.trim()}>
+            <Send className="h-4 w-4" /> Enviar
+          </Button>
         </div>
       </div>
     </div>

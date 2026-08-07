@@ -42,8 +42,8 @@ export function TicketAttachments({ ticketId }: { ticketId: string }) {
     if (!files || !files.length) return;
     setUploading(true);
     try {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user?.id;
+      const { data: s } = await supabase.auth.getSession();
+      const uid = s.session?.user.id;
       if (!uid) throw new Error("Sessão expirada");
       for (const file of Array.from(files)) {
         if (file.size > MAX_BYTES) {
@@ -53,7 +53,10 @@ export function TicketAttachments({ ticketId }: { ticketId: string }) {
         const ext = file.name.split(".").pop() ?? "bin";
         const path = `${uid}/${ticketId}/${crypto.randomUUID()}.${ext}`;
         const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file);
-        if (upErr) { toast.error(upErr.message); continue; }
+        if (upErr) {
+          toast.error(upErr.message);
+          continue;
+        }
         const { error: insErr } = await supabase.from("ticket_attachments").insert({
           ticket_id: ticketId,
           uploaded_by: uid,
@@ -66,7 +69,9 @@ export function TicketAttachments({ ticketId }: { ticketId: string }) {
         if (insErr) toast.error(insErr.message);
       }
       qc.invalidateQueries({ queryKey: ["ticket-attachments", ticketId] });
-    } finally { setUploading(false); }
+    } finally {
+      setUploading(false);
+    }
   }
 
   async function open(row: Row) {
@@ -94,24 +99,49 @@ export function TicketAttachments({ ticketId }: { ticketId: string }) {
             className="hidden"
             multiple
             accept={ACCEPT}
-            onChange={(e) => { handleFiles(e.target.files); e.currentTarget.value = ""; }}
+            onChange={(e) => {
+              handleFiles(e.target.files);
+              e.currentTarget.value = "";
+            }}
           />
           <Button asChild size="sm" variant="outline" disabled={uploading}>
-            <span><Upload className="h-4 w-4" /> {uploading ? "Enviando…" : "Adicionar arquivo"}</span>
+            <span>
+              <Upload className="h-4 w-4" /> {uploading ? "Enviando…" : "Adicionar arquivo"}
+            </span>
           </Button>
         </label>
       </div>
       {rows.length === 0 ? (
-        <p className="text-xs text-muted-foreground">Nenhum anexo. Envie prints, PDFs ou fotos (até 10 MB).</p>
+        <p className="text-xs text-muted-foreground">
+          Nenhum anexo. Envie prints, PDFs ou fotos (até 10 MB).
+        </p>
       ) : (
         <ul className="space-y-1.5">
           {rows.map((r) => (
-            <li key={r.id} className="flex items-center justify-between gap-2 rounded-md border border-border/60 bg-background/40 px-2.5 py-1.5 text-xs">
-              <button onClick={() => open(r)} className="min-w-0 flex-1 truncate text-left hover:text-primary">
+            <li
+              key={r.id}
+              className="flex items-center justify-between gap-2 rounded-md border border-border/60 bg-background/40 px-2.5 py-1.5 text-xs"
+            >
+              <button
+                onClick={() => open(r)}
+                className="min-w-0 flex-1 truncate text-left hover:text-primary"
+              >
                 {r.file_name ?? r.storage_path.split("/").pop()}
               </button>
-              <button onClick={() => open(r)} className="text-muted-foreground hover:text-foreground" title="Abrir"><Download className="h-3.5 w-3.5" /></button>
-              <button onClick={() => remove(r)} className="text-muted-foreground hover:text-destructive" title="Remover"><Trash2 className="h-3.5 w-3.5" /></button>
+              <button
+                onClick={() => open(r)}
+                className="text-muted-foreground hover:text-foreground"
+                title="Abrir"
+              >
+                <Download className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => remove(r)}
+                className="text-muted-foreground hover:text-destructive"
+                title="Remover"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
             </li>
           ))}
         </ul>

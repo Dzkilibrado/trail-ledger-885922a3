@@ -198,10 +198,17 @@ export function InitialReviewSheet({
         last_done_hours: motoHours,
         last_done_km: motoKm,
       };
-      await supabase
+      const { error } = await supabase
         .from("maintenance_schedules")
         .update(patch as never)
         .in("id", ids);
+      if (error) {
+        setSaving(false);
+        toast.error("Não foi possível confirmar a revisão", {
+          description: error.message || "Tente novamente em instantes.",
+        });
+        return;
+      }
     }
     await finish();
   }

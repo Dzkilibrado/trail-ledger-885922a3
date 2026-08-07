@@ -60,7 +60,7 @@ export function RevokeReportDialog({
   async function submit() {
     if (!canSubmit) return;
     setSaving(true);
-    const { data: userRes } = await supabase.auth.getUser();
+    const { data: userRes } = await supabase.auth.getSession();
     const { error } = await supabase
       .from("health_reports")
       .update({
@@ -68,7 +68,7 @@ export function RevokeReportDialog({
         revoked_reason_code: code,
         revoked_reason_notes: needsNotes ? notes.trim() : null,
         revoked_at: new Date().toISOString(),
-        revoked_by: userRes.user?.id ?? null,
+        revoked_by: userRes.session?.user.id ?? null,
       })
       .eq("id", reportId);
     setSaving(false);

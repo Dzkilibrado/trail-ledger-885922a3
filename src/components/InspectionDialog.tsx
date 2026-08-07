@@ -1,12 +1,25 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import { ClipboardCheck } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
@@ -23,7 +36,12 @@ const DECISION_LABEL: Record<Decision, string> = {
 };
 
 export function InspectionDialog({
-  open, onOpenChange, motoId, schedule, currentHours, currentKm,
+  open,
+  onOpenChange,
+  motoId,
+  schedule,
+  currentHours,
+  currentKm,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
@@ -42,32 +60,45 @@ export function InspectionDialog({
   const signs = useQuery({
     queryKey: ["wear-signs", schedule.category],
     enabled: open,
-    queryFn: async () => (await supabase.from("maintenance_wear_signs").select("*").eq("category", schedule.category as any).order("sort_order")).data ?? [],
+    queryFn: async () =>
+      (
+        await supabase
+          .from("maintenance_wear_signs")
+          .select("*")
+          .eq("category", schedule.category as any)
+          .order("sort_order")
+      ).data ?? [],
   });
 
   async function save() {
     setSaving(true);
     try {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user!.id;
-      const foundSigns = Object.entries(checked).filter(([, v]) => v).map(([k]) => k);
+      const { data: s } = await supabase.auth.getSession();
+      const uid = s.session!.user.id;
+      const foundSigns = Object.entries(checked)
+        .filter(([, v]) => v)
+        .map(([k]) => k);
 
       // 1) Registra evento na linha do tempo
       const title = `Inspeção — ${schedule.name}${decision === "replaced" ? " · Trocado" : ""}`;
-      const { data: ev, error: evErr } = await supabase.from("events").insert({
-        motorcycle_id: motoId,
-        created_by: uid,
-        type: decision === "replaced" ? "maintenance" : "revision",
-        title,
-        description: notes || null,
-        occurred_at: new Date().toISOString(),
-        hours_at_event: currentHours,
-        km_at_event: currentKm,
-      } as never).select("id").single();
+      const { data: ev, error: evErr } = await supabase
+        .from("events")
+        .insert({
+          motorcycle_id: motoId,
+          created_by: uid,
+          type: decision === "replaced" ? "maintenance" : "revision",
+          title,
+          description: notes || null,
+          occurred_at: new Date().toISOString(),
+          hours_at_event: currentHours,
+          km_at_event: currentKm,
+        } as never)
+        .select("id")
+        .single();
       if (evErr) throw evErr;
 
       // 2) Registra inspeção
-      await supabase.from("maintenance_inspections").insert({
+      const { error: inspErr } = await supabase.from("maintenance_inspections").insert({
         motorcycle_id: motoId,
         schedule_id: schedule.id,
         event_id: ev?.id,
@@ -78,6 +109,7 @@ export function InspectionDialog({
         km_at: currentKm,
         created_by: uid,
       } as never);
+      if (inspErr) throw inspErr;
 
       // 3) Atualiza a programação conforme a decisão
       const patch: any = { updated_at: new Date().toISOString() };
@@ -96,17 +128,24 @@ export function InspectionDialog({
       } else if (decision === "replace_recommended") {
         patch.status = "active"; // permanece visível como pendente
       }
-      await supabase.from("maintenance_schedules").update(patch).eq("id", schedule.id);
+      const { error: schedErr } = await supabase
+        .from("maintenance_schedules")
+        .update(patch)
+        .eq("id", schedule.id);
+      if (schedErr) throw schedErr;
 
       toast.success("Inspeção registrada.");
       qc.invalidateQueries({ queryKey: ["schedules"] });
       qc.invalidateQueries({ queryKey: ["events", motoId] });
       qc.invalidateQueries({ queryKey: ["motorcycle", motoId] });
       onOpenChange(false);
-      setNotes(""); setChecked({});
+      setNotes("");
+      setChecked({});
     } catch (e: any) {
       toast.error(e.message ?? "Falha ao salvar inspeção.");
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -122,21 +161,30 @@ export function InspectionDialog({
         <div className="space-y-4">
           {/* Sinais de desgaste */}
           <div className="space-y-2">
-            <Label className="text-xs uppercase tracking-widest text-muted-foreground">Sinais encontrados</Label>
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Sinais encontrados
+            </Label>
             {signs.isLoading ? (
               <div className="text-xs text-muted-foreground">Carregando sinais…</div>
             ) : (signs.data?.length ?? 0) === 0 ? (
-              <div className="text-xs text-muted-foreground">Nenhum sinal cadastrado para esta categoria.</div>
+              <div className="text-xs text-muted-foreground">
+                Nenhum sinal cadastrado para esta categoria.
+              </div>
             ) : (
               <ul className="space-y-1.5">
                 {signs.data!.map((s) => (
-                  <li key={s.id} className="flex items-start gap-2 rounded-lg border border-border p-2 text-sm">
+                  <li
+                    key={s.id}
+                    className="flex items-start gap-2 rounded-lg border border-border p-2 text-sm"
+                  >
                     <Checkbox
                       id={`s-${s.id}`}
                       checked={!!checked[s.label]}
                       onCheckedChange={(v) => setChecked((c) => ({ ...c, [s.label]: !!v }))}
                     />
-                    <label htmlFor={`s-${s.id}`} className="cursor-pointer text-sm">{s.label}</label>
+                    <label htmlFor={`s-${s.id}`} className="cursor-pointer text-sm">
+                      {s.label}
+                    </label>
                   </li>
                 ))}
               </ul>
@@ -144,17 +192,30 @@ export function InspectionDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs uppercase tracking-widest text-muted-foreground">Observações</Label>
-            <Textarea rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Notas técnicas, estado visual…" />
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Observações
+            </Label>
+            <Textarea
+              rows={3}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Notas técnicas, estado visual…"
+            />
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs uppercase tracking-widest text-muted-foreground">Decisão</Label>
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Decisão
+            </Label>
             <Select value={decision} onValueChange={(v) => setDecision(v as Decision)}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
               <SelectContent>
                 {(Object.keys(DECISION_LABEL) as Decision[]).map((d) => (
-                  <SelectItem key={d} value={d}>{DECISION_LABEL[d]}</SelectItem>
+                  <SelectItem key={d} value={d}>
+                    {DECISION_LABEL[d]}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -162,7 +223,10 @@ export function InspectionDialog({
               <div className="flex items-center gap-2 pt-2 text-xs text-muted-foreground">
                 <span>Adiar por</span>
                 <input
-                  type="number" min={1} max={365} value={snoozeDays}
+                  type="number"
+                  min={1}
+                  max={365}
+                  value={snoozeDays}
                   onChange={(e) => setSnoozeDays(Number(e.target.value))}
                   className="w-20 rounded-md border border-border bg-transparent px-2 py-1 text-sm"
                 />
@@ -173,7 +237,9 @@ export function InspectionDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            Cancelar
+          </Button>
           <Button onClick={save} disabled={saving} className="btn-glow">
             {saving ? "Salvando…" : "Salvar inspeção"}
           </Button>

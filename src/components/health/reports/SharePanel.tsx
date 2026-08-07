@@ -6,7 +6,12 @@ import { Copy, Eye, Link2, ShieldOff } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { TBBottomSheet, TBButton, TBCard, TBEmptyState } from "@/design-system";
-import { NEVER_SHARED, PRESET_DESCRIPTION, PRESET_LABEL, PRESET_SECTIONS } from "@/lib/health-reports/sections";
+import {
+  NEVER_SHARED,
+  PRESET_DESCRIPTION,
+  PRESET_LABEL,
+  PRESET_SECTIONS,
+} from "@/lib/health-reports/sections";
 import { SECTION_LABEL, type ReportSection } from "@/lib/health-reports/types";
 import { formatDate } from "@/lib/trailbook";
 import { trackHealth } from "@/lib/health-reports/telemetry";
@@ -79,7 +84,7 @@ export function SharePanel({ reportId, canManage }: { reportId: string; canManag
       const token = newToken();
       const { error } = await supabase.from("health_report_shares").insert({
         report_id: reportId,
-        created_by: (await supabase.auth.getUser()).data.user?.id ?? "",
+        created_by: (await supabase.auth.getSession()).data.session?.user.id ?? "",
         preset,
         allowed_sections: sections as never,
         public_token: token,
@@ -91,7 +96,12 @@ export function SharePanel({ reportId, canManage }: { reportId: string; canManag
       await qc.invalidateQueries({ queryKey: ["health-report-shares", reportId] });
       setOpen(false);
       toast.success("Link de compartilhamento criado.");
-      trackHealth("compartilhamento_criado", { reportId, preset, dias: days, secoes: sections.length });
+      trackHealth("compartilhamento_criado", {
+        reportId,
+        preset,
+        dias: days,
+        secoes: sections.length,
+      });
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -100,7 +110,10 @@ export function SharePanel({ reportId, canManage }: { reportId: string; canManag
     mutationFn: async (id: string) => {
       const { error } = await supabase
         .from("health_report_shares")
-        .update({ revoked_at: new Date().toISOString(), revoked_reason: "Revogado pelo proprietário" })
+        .update({
+          revoked_at: new Date().toISOString(),
+          revoked_reason: "Revogado pelo proprietário",
+        })
         .eq("id", id);
       if (error) throw new Error(error.message);
     },
@@ -146,14 +159,20 @@ export function SharePanel({ reportId, canManage }: { reportId: string; canManag
           {active.map((s) => (
             <TBCard key={s.id} className="space-y-2">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="text-sm font-bold">{PRESET_LABEL[s.preset as Preset] ?? s.preset}</span>
+                <span className="text-sm font-bold">
+                  {PRESET_LABEL[s.preset as Preset] ?? s.preset}
+                </span>
                 <span className="text-xs text-muted-foreground">
                   {s.expires_at ? `Expira em ${formatDate(s.expires_at)}` : "Sem data de expiração"}
                 </span>
               </div>
               <p className="break-all text-xs text-muted-foreground">{urlOf(s.public_token)}</p>
               {qr[s.public_token] && (
-                <img src={qr[s.public_token]} alt="QR Code do laudo" className="h-40 w-40 rounded-xl bg-white p-2" />
+                <img
+                  src={qr[s.public_token]}
+                  alt="QR Code do laudo"
+                  className="h-40 w-40 rounded-xl bg-white p-2"
+                />
               )}
               <div className="flex flex-wrap gap-2">
                 <TBButton size="sm" variant="outline" onClick={() => copy(s.public_token)}>
@@ -223,7 +242,9 @@ export function SharePanel({ reportId, canManage }: { reportId: string; canManag
                   checked={sections.includes(sec)}
                   onChange={(e) => {
                     setPreset("custom");
-                    setSections((prev) => (e.target.checked ? [...prev, sec] : prev.filter((x) => x !== sec)));
+                    setSections((prev) =>
+                      e.target.checked ? [...prev, sec] : prev.filter((x) => x !== sec),
+                    );
                   }}
                 />
                 {SECTION_LABEL[sec]}
@@ -235,7 +256,12 @@ export function SharePanel({ reportId, canManage }: { reportId: string; canManag
             <div className="text-sm font-bold">Validade do link</div>
             <div className="flex flex-wrap gap-2">
               {[7, 30, 90, 0].map((d) => (
-                <TBButton key={d} size="sm" variant={days === d ? "default" : "outline"} onClick={() => setDays(d)}>
+                <TBButton
+                  key={d}
+                  size="sm"
+                  variant={days === d ? "default" : "outline"}
+                  onClick={() => setDays(d)}
+                >
                   {d === 0 ? "Sem expiração" : `${d} dias`}
                 </TBButton>
               ))}
@@ -251,7 +277,11 @@ export function SharePanel({ reportId, canManage }: { reportId: string; canManag
             </ul>
           </div>
 
-          <TBButton className="w-full" disabled={sections.length === 0 || create.isPending} onClick={() => create.mutate()}>
+          <TBButton
+            className="w-full"
+            disabled={sections.length === 0 || create.isPending}
+            onClick={() => create.mutate()}
+          >
             Criar link
           </TBButton>
         </div>

@@ -2,12 +2,26 @@ import { useEffect, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useNavigate } from "@tanstack/react-router";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -22,24 +36,71 @@ import {
   getConfirmedBuyerDetails,
 } from "@/lib/smart-receipts.functions";
 import { toast } from "sonner";
-import { FileSignature, Search, ArrowLeft, ArrowRight, CheckCircle2, Upload, Download, XCircle, Eye, Share2, Printer, Clock, FileText, PenLine } from "lucide-react";
-import { formatCurrencyBRL, publicReceiptUrl, RECEIPT_STATUS_LABEL, type ReceiptStatus } from "@/lib/smart-receipts";
+import {
+  FileSignature,
+  Search,
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  Upload,
+  Download,
+  XCircle,
+  Eye,
+  Share2,
+  Printer,
+  Clock,
+  FileText,
+  PenLine,
+} from "lucide-react";
+import {
+  formatCurrencyBRL,
+  publicReceiptUrl,
+  RECEIPT_STATUS_LABEL,
+  type ReceiptStatus,
+} from "@/lib/smart-receipts";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";
 import { LocationPicker } from "@/components/LocationPicker";
 import { useProfileSnapshot } from "@/hooks/useProfileSnapshot";
 import { ProfileDataChip } from "@/components/ProfileDataChip";
-import { isStaleStateError, staleStateUserMessage, stripStaleStatePrefix } from "@/lib/errors/stale-state";
+import {
+  isStaleStateError,
+  staleStateUserMessage,
+  stripStaleStatePrefix,
+} from "@/lib/errors/stale-state";
 import { isValidCPF, maskCPF, onlyDigits } from "@/lib/br-validators";
 
-const PAYMENT_METHODS = ["Dinheiro", "PIX", "Transferência bancária", "Financiamento", "Cartão", "Outro"];
+const PAYMENT_METHODS = [
+  "Dinheiro",
+  "PIX",
+  "Transferência bancária",
+  "Financiamento",
+  "Cartão",
+  "Outro",
+];
 
-type BuyerLookup = { id: string; full_name: string; email_masked: string | null; cpf_masked: string | null } | null;
+type BuyerLookup = {
+  id: string;
+  full_name: string;
+  email_masked: string | null;
+  cpf_masked: string | null;
+} | null;
 type ReceiptRow = {
-  id: string; code: string; status: string; version: number;
-  buyer_id: string | null; seller_id: string; external_buyer: boolean;
+  id: string;
+  code: string;
+  status: string;
+  version: number;
+  buyer_id: string | null;
+  seller_id: string;
+  external_buyer: boolean;
   buyer_snapshot: { full_name?: string; cpf?: string | null; email?: string | null } | null;
-  negotiation: { amount?: number; payment_method?: string; date?: string; location?: string | null; notes?: string | null } | null;
+  negotiation: {
+    amount?: number;
+    payment_method?: string;
+    date?: string;
+    location?: string | null;
+    notes?: string | null;
+  } | null;
   signed_pdf_path: string | null;
   seller_accepted_at: string | null;
   buyer_accepted_at: string | null;
@@ -61,7 +122,14 @@ function extractSupportMessage(message: string, requestId: string): string {
   return `Não foi possível gerar o PDF. Código: ${supportCodeFromRequestId(requestId)}`;
 }
 
-export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: controlledOpen, onOpenChange, onIssued }: {
+export function EmitReceiptDialog({
+  motorcycleId,
+  receiptId,
+  trigger,
+  open: controlledOpen,
+  onOpenChange,
+  onIssued,
+}: {
   motorcycleId: string;
   receiptId?: string;
   trigger?: React.ReactNode;
@@ -72,7 +140,10 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
   const qc = useQueryClient();
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const open = controlledOpen ?? uncontrolledOpen;
-  const setOpen = (v: boolean) => { onOpenChange?.(v); setUncontrolledOpen(v); };
+  const setOpen = (v: boolean) => {
+    onOpenChange?.(v);
+    setUncontrolledOpen(v);
+  };
 
   const [step, setStep] = useState(1);
   const [currentReceiptId, setCurrentReceiptId] = useState<string | null>(receiptId ?? null);
@@ -112,7 +183,7 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
 
   useEffect(() => {
     if (!open) return;
-    supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
+    supabase.auth.getSession().then(({ data }) => setCurrentUserId(data.session?.user.id ?? null));
   }, [open]);
 
   // Pré-preenche "Local da negociação" com a Cidade/UF do perfil do vendedor
@@ -121,7 +192,7 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
   useEffect(() => {
     if (!open) return;
     if (currentReceiptId) return; // rascunho/edição: respeita valor salvo
-    if (location) return;         // já digitado nesta sessão
+    if (location) return; // já digitado nesta sessão
     const loc = profileQ.data?.location;
     if (loc) {
       setLocation(loc);
@@ -129,14 +200,22 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     }
   }, [open, currentReceiptId, location, profileQ.data?.location]);
 
-  useEffect(() => { setCurrentReceiptId(receiptId ?? null); }, [receiptId]);
+  useEffect(() => {
+    setCurrentReceiptId(receiptId ?? null);
+  }, [receiptId]);
 
   async function reloadReceipt(id: string) {
     const { data, error } = await supabase
       .from("smart_receipts" as never)
-      .select("id, code, status, version, buyer_id, seller_id, external_buyer, buyer_snapshot, negotiation, signed_pdf_path, seller_accepted_at, buyer_accepted_at")
-      .eq("id", id).single();
-    if (error) { toast.error(error.message); return null; }
+      .select(
+        "id, code, status, version, buyer_id, seller_id, external_buyer, buyer_snapshot, negotiation, signed_pdf_path, seller_accepted_at, buyer_accepted_at",
+      )
+      .eq("id", id)
+      .single();
+    if (error) {
+      toast.error(error.message);
+      return null;
+    }
     const r = data as unknown as ReceiptRow;
     setCurrentReceipt(r);
     return r;
@@ -198,7 +277,10 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
       return;
     }
     const row = Array.isArray(data) ? (data[0] as BuyerLookup) : null;
-    if (!row) { toast.info("Nenhum usuário TrailBook encontrado"); return; }
+    if (!row) {
+      toast.info("Nenhum usuário TrailBook encontrado");
+      return;
+    }
     // Não preenche o formulário; exige confirmação explícita do vendedor.
     setBuyerCandidate(row);
   }
@@ -235,16 +317,27 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
 
   function resetForm() {
     setStep(1);
-    setCurrentReceiptId(receiptId ?? null); setCurrentReceipt(null);
-    setBuyerMode("tb"); setBuyerSearch(""); setBuyerFound(null); setBuyerCandidate(null);
-    setBuyerName(""); setBuyerCpf(""); setBuyerEmail("");
-    setAmount(""); setPaymentMethod("PIX"); setPaymentOther("");
+    setCurrentReceiptId(receiptId ?? null);
+    setCurrentReceipt(null);
+    setBuyerMode("tb");
+    setBuyerSearch("");
+    setBuyerFound(null);
+    setBuyerCandidate(null);
+    setBuyerName("");
+    setBuyerCpf("");
+    setBuyerEmail("");
+    setAmount("");
+    setPaymentMethod("PIX");
+    setPaymentOther("");
     setDate(new Date().toISOString().slice(0, 10));
-    setLocation(""); setLocationFromProfile(false); setNotes(""); setLgpd(false);
+    setLocation("");
+    setLocationFromProfile(false);
+    setNotes("");
+    setLgpd(false);
   }
 
   const amountValue = useMemo(() => Number(String(amount).replace(",", ".")), [amount]);
-  const paymentLabel = paymentMethod === "Outro" ? (paymentOther.trim() || "Outro") : paymentMethod;
+  const paymentLabel = paymentMethod === "Outro" ? paymentOther.trim() || "Outro" : paymentMethod;
 
   // Bloqueio de edição: quando o comprador TrailBook já foi confirmado, os
   // três campos (Nome, CPF, E-mail) refletem o snapshot autoritativo do
@@ -261,16 +354,37 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
   }, [buyerName, buyerCpf, buyerEmail, buyerMode, buyerFound]);
 
   function validatePartes() {
-    if (!buyerName.trim()) { toast.error("Informe o nome do comprador"); return false; }
-    if (buyerMode === "tb" && !buyerFound) { toast.error("Localize um usuário TrailBook ou selecione comprador externo"); return false; }
-    if (!isValidCPF(buyerCpf)) { toast.error("Informe um CPF válido do comprador"); return false; }
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyerEmail.trim())) { toast.error("Informe um e-mail válido do comprador"); return false; }
+    if (!buyerName.trim()) {
+      toast.error("Informe o nome do comprador");
+      return false;
+    }
+    if (buyerMode === "tb" && !buyerFound) {
+      toast.error("Localize um usuário TrailBook ou selecione comprador externo");
+      return false;
+    }
+    if (!isValidCPF(buyerCpf)) {
+      toast.error("Informe um CPF válido do comprador");
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(buyerEmail.trim())) {
+      toast.error("Informe um e-mail válido do comprador");
+      return false;
+    }
     return true;
   }
   function validateValor() {
-    if (!amountValue || amountValue <= 0) { toast.error("Informe um valor válido"); return false; }
-    if (!paymentMethod) { toast.error("Selecione a forma de pagamento"); return false; }
-    if (!date) { toast.error("Informe a data"); return false; }
+    if (!amountValue || amountValue <= 0) {
+      toast.error("Informe um valor válido");
+      return false;
+    }
+    if (!paymentMethod) {
+      toast.error("Selecione a forma de pagamento");
+      return false;
+    }
+    if (!date) {
+      toast.error("Informe a data");
+      return false;
+    }
     return true;
   }
 
@@ -291,7 +405,10 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
 
   async function saveAndIssue() {
     if (!validatePartes() || !validateValor()) return;
-    if (!lgpd) { toast.error("Aceite o consentimento LGPD"); return; }
+    if (!lgpd) {
+      toast.error("Aceite o consentimento LGPD");
+      return;
+    }
     setLoading(true);
     const requestId = makeReceiptRequestId();
     const startedAt = new Date().toISOString();
@@ -299,30 +416,41 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     try {
       let id = currentReceiptId;
       const buyerPayload = {
-        user_id: buyerMode === "tb" ? buyerFound?.id ?? null : null,
+        user_id: buyerMode === "tb" ? (buyerFound?.id ?? null) : null,
         full_name: buyerName.trim(),
         cpf: onlyDigits(buyerCpf) || null,
         email: buyerEmail.trim() || null,
       };
       const negPayload = {
-        amount: amountValue, payment_method: paymentLabel, date,
-        location: location.trim() || null, notes: notes.trim() || null,
+        amount: amountValue,
+        payment_method: paymentLabel,
+        date,
+        location: location.trim() || null,
+        notes: notes.trim() || null,
       };
       if (!id) {
         try {
-          const res = await createDraft({ data: {
-            motorcycle_id: motorcycleId, buyer: buyerPayload,
-            external_buyer: buyerMode === "external",
-            negotiation: negPayload, lgpd_consent: true,
-          }});
-          id = res.receipt.id; setCurrentReceiptId(id);
+          const res = await createDraft({
+            data: {
+              motorcycle_id: motorcycleId,
+              buyer: buyerPayload,
+              external_buyer: buyerMode === "external",
+              negotiation: negPayload,
+              lgpd_consent: true,
+            },
+          });
+          id = res.receipt.id;
+          setCurrentReceiptId(id);
         } catch (err) {
           const message = err instanceof Error ? err.message : String(err);
           if (/já existe um processo ativo/i.test(message)) {
             toast.error("Já existe um processo ativo de compra e venda para esta motocicleta.", {
               action: {
                 label: "Abrir processo existente",
-                onClick: () => { setOpen(false); navigate({ to: "/transfers", search: { filter: "awaiting_me" } }); },
+                onClick: () => {
+                  setOpen(false);
+                  navigate({ to: "/transfers", search: { filter: "awaiting_me" } });
+                },
               },
             });
             return;
@@ -330,7 +458,16 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
           throw err;
         }
       } else if (currentReceipt?.status === "draft") {
-        await updateDraft({ data: { id, patch: { buyer: buyerPayload, external_buyer: buyerMode === "external", negotiation: negPayload } } });
+        await updateDraft({
+          data: {
+            id,
+            patch: {
+              buyer: buyerPayload,
+              external_buyer: buyerMode === "external",
+              negotiation: negPayload,
+            },
+          },
+        });
       }
       stage = "generate_pdf";
       const pdfRes = await genPdf({ data: { id: id!, request_id: requestId } });
@@ -351,25 +488,40 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
         timestamp: startedAt,
         error: raw,
       });
-      const isRuntime = /__extends|__toESM|is not a function|Cannot destructure|undefined \(reading/i.test(raw);
+      const isRuntime =
+        /__extends|__toESM|is not a function|Cannot destructure|undefined \(reading/i.test(raw);
       const isBusiness = !isRuntime && raw && raw.length < 200 && !/\bat\b|\n/.test(raw);
-      const msg = isBusiness
-        ? raw
-        : extractSupportMessage(raw, requestId);
+      const msg = isBusiness ? raw : extractSupportMessage(raw, requestId);
       toast.error(msg, {
-        action: { label: "Tentar novamente", onClick: () => { void saveAndIssue(); } },
-        cancel: { label: "Fechar", onClick: () => { /* dismiss */ } },
+        action: {
+          label: "Tentar novamente",
+          onClick: () => {
+            void saveAndIssue();
+          },
+        },
+        cancel: {
+          label: "Fechar",
+          onClick: () => {
+            /* dismiss */
+          },
+        },
       });
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function onUploadSigned(file: File) {
     if (!currentReceiptId) return;
-    if (file.type !== "application/pdf") { toast.error("Envie um PDF"); return; }
+    if (file.type !== "application/pdf") {
+      toast.error("Envie um PDF");
+      return;
+    }
     setLoading(true);
     try {
       const buf = new Uint8Array(await file.arrayBuffer());
-      let bin = ""; for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
+      let bin = "";
+      for (let i = 0; i < buf.length; i++) bin += String.fromCharCode(buf[i]);
       const b64 = btoa(bin);
       const res = await attach({ data: { id: currentReceiptId, pdf_base64: b64 } });
       // Princípio v1.6: aplicar novo estado ANTES do toast
@@ -379,7 +531,9 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
       toast.success("Documento assinado anexado.");
     } catch (e) {
       await handleReceiptError(e, "anexar documento assinado");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function onAccept() {
@@ -398,7 +552,9 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
       toast.success("Aceite registrado");
     } catch (e) {
       await handleReceiptError(e, "registrar aceite");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function onComplete() {
@@ -408,11 +564,14 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
       const res = await complete({ data: { id: currentReceiptId } });
       if (res?.receipt) setCurrentReceipt(res.receipt as ReceiptRow);
       await invalidateAll();
-      setOpen(false); resetForm();
+      setOpen(false);
+      resetForm();
       toast.success("Transferência concluída. Histórico atualizado.");
     } catch (e) {
       await handleReceiptError(e, "concluir a transferência");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function onCancel() {
@@ -422,11 +581,14 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     try {
       await cancelDraft({ data: { id: currentReceiptId, reason: "Cancelado pelo vendedor" } });
       await invalidateAll();
-      setOpen(false); resetForm();
+      setOpen(false);
+      resetForm();
       toast.success("Negociação cancelada");
     } catch (e) {
       await handleReceiptError(e, "cancelar a negociação");
-    } finally { setLoading(false); }
+    } finally {
+      setLoading(false);
+    }
   }
 
   /**
@@ -457,7 +619,11 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     }
     const raw = err instanceof Error ? err.message : String(err);
     const isTechnical = /\bat\b|\n|Cannot|undefined \(reading|is not a function/.test(raw);
-    toast.error(isTechnical ? "Não foi possível concluir esta ação agora. Tente novamente em instantes." : raw);
+    toast.error(
+      isTechnical
+        ? "Não foi possível concluir esta ação agora. Tente novamente em instantes."
+        : raw,
+    );
   }
 
   function viewPdf() {
@@ -473,16 +639,24 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
     if (!currentReceipt) return;
     try {
       const res = await pdfBytesFn({ data: { code: currentReceipt.code, variant: "original" } });
-      if (!res.found) { toast.error("PDF indisponível"); return; }
+      if (!res.found) {
+        toast.error("PDF indisponível");
+        return;
+      }
       const bin = atob(res.base64);
       const bytes = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-      const buf = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
+      const buf = bytes.buffer.slice(
+        bytes.byteOffset,
+        bytes.byteOffset + bytes.byteLength,
+      ) as ArrayBuffer;
       const href = URL.createObjectURL(new Blob([buf], { type: res.contentType }));
       const a = document.createElement("a");
       a.href = href;
       a.download = res.filename ?? `${currentReceipt.code}.pdf`;
-      document.body.appendChild(a); a.click(); a.remove();
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
       setTimeout(() => URL.revokeObjectURL(href), 5_000);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Falha no download");
@@ -497,9 +671,16 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
       text: `Recibo Inteligente TrailBook — valide em ${pageUrl}`,
       url: pageUrl,
     };
-    if (typeof navigator !== "undefined" && (navigator as Navigator & { share?: (d: ShareData) => Promise<void> }).share) {
-      try { await (navigator as Navigator & { share: (d: ShareData) => Promise<void> }).share(data); return; }
-      catch { /* usuário cancelou */ return; }
+    if (
+      typeof navigator !== "undefined" &&
+      (navigator as Navigator & { share?: (d: ShareData) => Promise<void> }).share
+    ) {
+      try {
+        await (navigator as Navigator & { share: (d: ShareData) => Promise<void> }).share(data);
+        return;
+      } catch {
+        /* usuário cancelou */ return;
+      }
     }
     try {
       await navigator.clipboard.writeText(pageUrl);
@@ -524,7 +705,13 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
   }
 
   return (
-    <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
+    <Dialog
+      open={open}
+      onOpenChange={(v) => {
+        setOpen(v);
+        if (!v) resetForm();
+      }}
+    >
       {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="max-w-lg max-h-[90dvh] overflow-y-auto">
         <DialogHeader>
@@ -532,7 +719,8 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
             <FileSignature className="h-5 w-5 text-primary" /> Recibo Inteligente
           </DialogTitle>
           <DialogDescription>
-            Etapa {Math.min(step, 5)} de 5 — a transferência só se concluirá após o PDF assinado ser anexado e os aceites registrados.
+            Etapa {Math.min(step, 5)} de 5 — a transferência só se concluirá após o PDF assinado ser
+            anexado e os aceites registrados.
           </DialogDescription>
         </DialogHeader>
 
@@ -540,42 +728,77 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
           <div className="space-y-4">
             <div className="rounded-xl border border-border bg-muted/20 p-3">
               <div className="flex items-center gap-1.5">
-                <Label className="text-xs uppercase tracking-widest text-muted-foreground">Comprador</Label>
+                <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Comprador
+                </Label>
                 <HelpTooltip label="Fluxo da negociação" text={HELP.negotiationFlow} />
               </div>
               <div className="mt-2 flex gap-2">
-                <Button type="button" size="sm" variant={buyerMode === "tb" ? "default" : "outline"} onClick={() => setBuyerMode("tb")}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={buyerMode === "tb" ? "default" : "outline"}
+                  onClick={() => setBuyerMode("tb")}
+                >
                   Usuário TrailBook
                 </Button>
                 <HelpTooltip label="Comprador TrailBook" text={HELP.buyerTrailBook} />
-                <Button type="button" size="sm" variant={buyerMode === "external" ? "default" : "outline"} onClick={() => { setBuyerMode("external"); setBuyerFound(null); }}>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={buyerMode === "external" ? "default" : "outline"}
+                  onClick={() => {
+                    setBuyerMode("external");
+                    setBuyerFound(null);
+                  }}
+                >
                   Comprador externo
                 </Button>
                 <HelpTooltip label="Comprador externo" text={HELP.buyerExternal} />
               </div>
               {buyerMode === "tb" ? (
                 <div className="mt-3 flex gap-2">
-                  <Input placeholder="E-mail ou CPF" value={buyerSearch} onChange={(e) => setBuyerSearch(e.target.value)} />
-                  <Button type="button" variant="outline" onClick={lookupBuyer}><Search className="h-4 w-4" /></Button>
+                  <Input
+                    placeholder="E-mail ou CPF"
+                    value={buyerSearch}
+                    onChange={(e) => setBuyerSearch(e.target.value)}
+                  />
+                  <Button type="button" variant="outline" onClick={lookupBuyer}>
+                    <Search className="h-4 w-4" />
+                  </Button>
                 </div>
               ) : (
                 <p className="mt-2 text-[11px] text-muted-foreground">
-                  Comprador sem conta TrailBook. Só o aceite do vendedor será exigido; a moto será arquivada ao concluir.
+                  Comprador sem conta TrailBook. Só o aceite do vendedor será exigido; a moto será
+                  arquivada ao concluir.
                 </p>
               )}
               {buyerMode === "tb" && buyerCandidate && (
                 <div className="mt-3 rounded-lg border border-primary/40 bg-primary/5 p-3">
-                  <p className="text-[11px] uppercase tracking-widest text-muted-foreground">Confirme o comprador</p>
+                  <p className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                    Confirme o comprador
+                  </p>
                   <div className="mt-1 text-sm">
                     <p className="font-semibold">{buyerCandidate.full_name || "—"}</p>
-                    {buyerCandidate.email_masked && <p className="text-xs text-muted-foreground">{buyerCandidate.email_masked}</p>}
-                    {buyerCandidate.cpf_masked && <p className="text-xs text-muted-foreground">CPF {buyerCandidate.cpf_masked}</p>}
+                    {buyerCandidate.email_masked && (
+                      <p className="text-xs text-muted-foreground">{buyerCandidate.email_masked}</p>
+                    )}
+                    {buyerCandidate.cpf_masked && (
+                      <p className="text-xs text-muted-foreground">
+                        CPF {buyerCandidate.cpf_masked}
+                      </p>
+                    )}
                   </div>
                   <div className="mt-2 flex gap-2">
                     <Button type="button" size="sm" onClick={confirmBuyerCandidate}>
                       <CheckCircle2 className="h-4 w-4" /> É esse comprador
                     </Button>
-                    <Button type="button" size="sm" variant="ghost" onClick={() => setBuyerCandidate(null)}>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setBuyerCandidate(null)}
+                    >
                       Não é esse
                     </Button>
                   </div>
@@ -595,7 +818,12 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1.5 sm:col-span-2">
                 <Label htmlFor="b-name">Nome completo *</Label>
-                <Input id="b-name" value={buyerName} onChange={(e) => setBuyerName(e.target.value)} readOnly={buyerLocked} />
+                <Input
+                  id="b-name"
+                  value={buyerName}
+                  onChange={(e) => setBuyerName(e.target.value)}
+                  readOnly={buyerLocked}
+                />
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="b-cpf">CPF *</Label>
@@ -612,11 +840,18 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
               </div>
               <div className="space-y-1.5">
                 <Label htmlFor="b-email">E-mail *</Label>
-                <Input id="b-email" type="email" value={buyerEmail} onChange={(e) => setBuyerEmail(e.target.value)} readOnly={buyerLocked} />
+                <Input
+                  id="b-email"
+                  type="email"
+                  value={buyerEmail}
+                  onChange={(e) => setBuyerEmail(e.target.value)}
+                  readOnly={buyerLocked}
+                />
               </div>
               {buyerLocked && (
                 <p className="sm:col-span-2 text-[11px] text-muted-foreground">
-                  Dados carregados do perfil TrailBook do comprador. Para alterar, use "Trocar comprador".
+                  Dados carregados do perfil TrailBook do comprador. Para alterar, use "Trocar
+                  comprador".
                 </p>
               )}
             </div>
@@ -625,9 +860,13 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
 
         {step === 2 && (
           <div className="rounded-xl border border-border bg-muted/20 p-4 text-sm">
-            <Label className="text-xs uppercase tracking-widest text-muted-foreground">Motocicleta</Label>
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+              Motocicleta
+            </Label>
             <p className="mt-2 text-muted-foreground">
-              Os dados da moto (marca, modelo, ano, chassi, placa, horímetro/km atual) são capturados do TrailBook e ficarão registrados no recibo. Confira no Passaporte antes de avançar.
+              Os dados da moto (marca, modelo, ano, chassi, placa, horímetro/km atual) são
+              capturados do TrailBook e ficarão registrados no recibo. Confira no Passaporte antes
+              de avançar.
             </p>
           </div>
         )}
@@ -636,16 +875,35 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
           <div className="grid gap-3 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="amount">Valor (R$) *</Label>
-              <Input id="amount" inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="12500,00" />
+              <Input
+                id="amount"
+                inputMode="decimal"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                placeholder="12500,00"
+              />
             </div>
             <div className="space-y-1.5">
               <Label>Forma de pagamento *</Label>
               <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{PAYMENT_METHODS.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {PAYMENT_METHODS.map((p) => (
+                    <SelectItem key={p} value={p}>
+                      {p}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
               </Select>
               {paymentMethod === "Outro" && (
-                <Input className="mt-2" placeholder="Especifique" value={paymentOther} onChange={(e) => setPaymentOther(e.target.value)} />
+                <Input
+                  className="mt-2"
+                  placeholder="Especifique"
+                  value={paymentOther}
+                  onChange={(e) => setPaymentOther(e.target.value)}
+                />
               )}
             </div>
             <div className="space-y-1.5">
@@ -655,19 +913,25 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
             <div className="space-y-1.5 sm:col-span-2">
               <div className="flex items-center justify-between gap-2">
                 <Label>Local da negociação</Label>
-                {locationFromProfile && location === profileQ.data?.location && (
-                  <ProfileDataChip />
-                )}
+                {locationFromProfile && location === profileQ.data?.location && <ProfileDataChip />}
               </div>
               <LocationPicker
                 value={location}
-                onChange={(v) => { setLocation(v); setLocationFromProfile(false); }}
+                onChange={(v) => {
+                  setLocation(v);
+                  setLocationFromProfile(false);
+                }}
                 label=""
               />
             </div>
             <div className="space-y-1.5 sm:col-span-2">
               <Label htmlFor="notes">Observações</Label>
-              <Textarea id="notes" value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Estado da moto, acessórios inclusos…" />
+              <Textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Estado da moto, acessórios inclusos…"
+              />
             </div>
           </div>
         )}
@@ -675,24 +939,33 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
         {step === 4 && (
           <div className="space-y-3 text-sm">
             <div className="rounded-xl border border-border bg-muted/20 p-3">
-              <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Comprador</div>
+              <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                Comprador
+              </div>
               <div className="mt-1 font-semibold">{buyerName}</div>
               <div className="text-xs text-muted-foreground">
-                {buyerMode === "tb" ? "Usuário TrailBook" : "Comprador externo"}{buyerCpf ? ` · ${buyerCpf}` : ""}{buyerEmail ? ` · ${buyerEmail}` : ""}
+                {buyerMode === "tb" ? "Usuário TrailBook" : "Comprador externo"}
+                {buyerCpf ? ` · ${buyerCpf}` : ""}
+                {buyerEmail ? ` · ${buyerEmail}` : ""}
               </div>
             </div>
             <div className="rounded-xl border border-border bg-muted/20 p-3">
-              <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Negociação</div>
+              <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                Negociação
+              </div>
               <div className="mt-1 text-lg font-bold">{formatCurrencyBRL(amountValue)}</div>
               <div className="text-xs text-muted-foreground">
-                {paymentLabel} · {date ? new Date(date).toLocaleDateString("pt-BR") : ""}{location ? ` · ${location}` : ""}
+                {paymentLabel} · {date ? new Date(date).toLocaleDateString("pt-BR") : ""}
+                {location ? ` · ${location}` : ""}
               </div>
               {notes && <p className="mt-2 text-xs text-muted-foreground">{notes}</p>}
             </div>
             <label className="flex items-start gap-2 rounded-xl border border-border bg-muted/20 p-3 text-xs text-muted-foreground">
               <Checkbox checked={lgpd} onCheckedChange={(v) => setLgpd(!!v)} />
               <span>
-                Confirmo o registro do recibo no TrailBook e a consulta pública pelo código único (LGPD). O PDF gerado é modelo para assinatura — a transferência só se efetiva após anexar o documento assinado e as partes registrarem aceite.
+                Confirmo o registro do recibo no TrailBook e a consulta pública pelo código único
+                (LGPD). O PDF gerado é modelo para assinatura — a transferência só se efetiva após
+                anexar o documento assinado e as partes registrarem aceite.
               </span>
             </label>
           </div>
@@ -700,11 +973,17 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
 
         {step === 5 && currentReceipt && (
           <ReceiptLifecyclePanel
-            receipt={currentReceipt} userId={currentUserId} loading={loading}
-            onUpload={onUploadSigned} onAccept={onAccept} onComplete={onComplete}
+            receipt={currentReceipt}
+            userId={currentUserId}
+            loading={loading}
+            onUpload={onUploadSigned}
+            onAccept={onAccept}
+            onComplete={onComplete}
             onCancel={onCancel}
-            onView={viewPdf} onDownload={downloadPdfBlob}
-            onShare={sharePdf} onPrint={printPdf}
+            onView={viewPdf}
+            onDownload={downloadPdfBlob}
+            onShare={sharePdf}
+            onPrint={printPdf}
             onContinueLater={continueLater}
           />
         )}
@@ -718,7 +997,9 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
             )}
           </div>
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={() => setOpen(false)}>Fechar</Button>
+            <Button variant="ghost" onClick={() => setOpen(false)}>
+              Fechar
+            </Button>
             {step < 4 && (
               <Button
                 onClick={() => {
@@ -744,30 +1025,79 @@ export function EmitReceiptDialog({ motorcycleId, receiptId, trigger, open: cont
 }
 
 function ReceiptLifecyclePanel({
-  receipt, userId, loading, onUpload, onAccept, onComplete, onCancel,
-  onView, onDownload, onShare, onPrint, onContinueLater,
+  receipt,
+  userId,
+  loading,
+  onUpload,
+  onAccept,
+  onComplete,
+  onCancel,
+  onView,
+  onDownload,
+  onShare,
+  onPrint,
+  onContinueLater,
 }: {
-  receipt: ReceiptRow; userId: string | null; loading: boolean;
-  onUpload: (f: File) => void; onAccept: () => void; onComplete: () => void;
+  receipt: ReceiptRow;
+  userId: string | null;
+  loading: boolean;
+  onUpload: (f: File) => void;
+  onAccept: () => void;
+  onComplete: () => void;
   onCancel: () => void;
-  onView: () => void; onDownload: () => void; onShare: () => void; onPrint: () => void;
+  onView: () => void;
+  onDownload: () => void;
+  onShare: () => void;
+  onPrint: () => void;
   onContinueLater: () => void;
 }) {
   const isSeller = userId === receipt.seller_id;
   const isBuyer = userId === receipt.buyer_id;
   const needsBuyerAccept = !!receipt.buyer_id;
-  const canComplete = !!receipt.signed_pdf_path && !!receipt.seller_accepted_at && (!needsBuyerAccept || !!receipt.buyer_accepted_at);
-  const label = RECEIPT_STATUS_LABEL[(receipt.status as ReceiptStatus)] ?? receipt.status;
+  const canComplete =
+    !!receipt.signed_pdf_path &&
+    !!receipt.seller_accepted_at &&
+    (!needsBuyerAccept || !!receipt.buyer_accepted_at);
+  const label = RECEIPT_STATUS_LABEL[receipt.status as ReceiptStatus] ?? receipt.status;
   const justIssued = receipt.status === "issued" && !receipt.signed_pdf_path;
 
   // Timeline oficial da transferência — deriva do estado real do recibo.
   const steps: Array<{ key: string; label: string; done: boolean; current: boolean }> = [
-    { key: "created",   label: "Recibo criado",                done: true, current: false },
-    { key: "generated", label: "Documento gerado",             done: receipt.status !== "draft", current: receipt.status === "draft" },
-    { key: "signed",    label: "Documento assinado anexado",   done: !!receipt.signed_pdf_path, current: receipt.status !== "draft" && !receipt.signed_pdf_path },
-    { key: "seller",    label: "Aceite do vendedor",           done: !!receipt.seller_accepted_at, current: !!receipt.signed_pdf_path && !receipt.seller_accepted_at },
-    ...(needsBuyerAccept ? [{ key: "buyer", label: "Aceite do comprador", done: !!receipt.buyer_accepted_at, current: !!receipt.seller_accepted_at && !receipt.buyer_accepted_at }] : []),
-    { key: "done",      label: "Transferência concluída",      done: receipt.status === "completed", current: canComplete && receipt.status !== "completed" },
+    { key: "created", label: "Recibo criado", done: true, current: false },
+    {
+      key: "generated",
+      label: "Documento gerado",
+      done: receipt.status !== "draft",
+      current: receipt.status === "draft",
+    },
+    {
+      key: "signed",
+      label: "Documento assinado anexado",
+      done: !!receipt.signed_pdf_path,
+      current: receipt.status !== "draft" && !receipt.signed_pdf_path,
+    },
+    {
+      key: "seller",
+      label: "Aceite do vendedor",
+      done: !!receipt.seller_accepted_at,
+      current: !!receipt.signed_pdf_path && !receipt.seller_accepted_at,
+    },
+    ...(needsBuyerAccept
+      ? [
+          {
+            key: "buyer",
+            label: "Aceite do comprador",
+            done: !!receipt.buyer_accepted_at,
+            current: !!receipt.seller_accepted_at && !receipt.buyer_accepted_at,
+          },
+        ]
+      : []),
+    {
+      key: "done",
+      label: "Transferência concluída",
+      done: receipt.status === "completed",
+      current: canComplete && receipt.status !== "completed",
+    },
   ];
 
   // Próxima ação sugerida (uma única frase, sempre concreta).
@@ -775,7 +1105,8 @@ function ReceiptLifecyclePanel({
     if (receipt.status === "completed") return "Transferência concluída. Nenhuma ação pendente.";
     if (!receipt.signed_pdf_path) return "Anexe o PDF assinado pelas partes.";
     if (isSeller && !receipt.seller_accepted_at) return "Registre seu aceite como vendedor.";
-    if (isBuyer && needsBuyerAccept && !receipt.buyer_accepted_at) return "Registre seu aceite como comprador.";
+    if (isBuyer && needsBuyerAccept && !receipt.buyer_accepted_at)
+      return "Registre seu aceite como comprador.";
     if (needsBuyerAccept && !receipt.buyer_accepted_at) return "Aguardando aceite do comprador.";
     if (canComplete) return "Concluir transferência.";
     return "Aguardando próxima etapa da contraparte.";
@@ -790,9 +1121,13 @@ function ReceiptLifecyclePanel({
               <CheckCircle2 className="h-5 w-5" />
             </div>
             <div className="min-w-0">
-              <div className="font-display text-base font-bold text-emerald-300">Recibo criado com sucesso</div>
+              <div className="font-display text-base font-bold text-emerald-300">
+                Recibo criado com sucesso
+              </div>
               <div className="mt-0.5 text-xs text-muted-foreground">
-                Código <span className="font-mono font-semibold text-foreground">{receipt.code}</span> — {label}.
+                Código{" "}
+                <span className="font-mono font-semibold text-foreground">{receipt.code}</span> —{" "}
+                {label}.
               </div>
               <div className="mt-2 text-xs text-emerald-100/80">
                 Próxima ação: <strong className="text-emerald-200">{nextAction}</strong>
@@ -839,14 +1174,22 @@ function ReceiptLifecyclePanel({
           return (
             <li key={s.key} className="relative flex gap-3">
               <div className="flex flex-col items-center">
-                <div className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-bold ${dot}`}>
+                <div
+                  className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-[10px] font-bold ${dot}`}
+                >
                   {s.done ? "✓" : i + 1}
                 </div>
                 {!isLast && <div className={`w-px flex-1 ${line}`} />}
               </div>
-              <div className={`min-w-0 flex-1 pb-3 text-xs ${s.done ? "text-foreground" : s.current ? "text-foreground" : "text-muted-foreground"}`}>
+              <div
+                className={`min-w-0 flex-1 pb-3 text-xs ${s.done ? "text-foreground" : s.current ? "text-foreground" : "text-muted-foreground"}`}
+              >
                 {s.label}
-                {s.current && <span className="ml-1 text-[10px] uppercase tracking-widest text-amber-400">agora</span>}
+                {s.current && (
+                  <span className="ml-1 text-[10px] uppercase tracking-widest text-amber-400">
+                    agora
+                  </span>
+                )}
               </div>
             </li>
           );
@@ -860,7 +1203,9 @@ function ReceiptLifecyclePanel({
             <FileText className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Documento original</div>
+            <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
+              Documento original
+            </div>
             <div className="text-sm font-semibold">PDF modelo — para assinar</div>
             <div className="mt-2 flex flex-wrap gap-1.5">
               <Button size="sm" variant="outline" onClick={onView}>
@@ -883,11 +1228,15 @@ function ReceiptLifecyclePanel({
       {/* DOCUMENTO ASSINADO */}
       <div className="rounded-xl border border-border p-3">
         <div className="flex items-start gap-3">
-          <div className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full ${receipt.signed_pdf_path ? "bg-emerald-500/15 text-emerald-400" : "bg-muted text-muted-foreground"}`}>
+          <div
+            className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-full ${receipt.signed_pdf_path ? "bg-emerald-500/15 text-emerald-400" : "bg-muted text-muted-foreground"}`}
+          >
             <PenLine className="h-4 w-4" />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Documento assinado</div>
+            <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
+              Documento assinado
+            </div>
             <div className="text-sm font-semibold">
               {receipt.signed_pdf_path ? "Anexado ✓" : "Nenhum documento anexado"}
             </div>
@@ -896,8 +1245,15 @@ function ReceiptLifecyclePanel({
             )}
             <div className="mt-2">
               <label className="inline-flex cursor-pointer items-center gap-2 rounded-md border border-border px-3 py-1.5 text-xs hover:bg-muted">
-                <Upload className="h-4 w-4" /> {receipt.signed_pdf_path ? "Reanexar assinado" : "Anexar documento assinado"}
-                <input type="file" accept="application/pdf" hidden onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])} disabled={loading} />
+                <Upload className="h-4 w-4" />{" "}
+                {receipt.signed_pdf_path ? "Reanexar assinado" : "Anexar documento assinado"}
+                <input
+                  type="file"
+                  accept="application/pdf"
+                  hidden
+                  onChange={(e) => e.target.files?.[0] && onUpload(e.target.files[0])}
+                  disabled={loading}
+                />
               </label>
             </div>
           </div>
@@ -909,33 +1265,54 @@ function ReceiptLifecyclePanel({
         <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Aceites</div>
         <div className="flex items-center justify-between gap-3">
           <div className="text-xs">
-            Vendedor {receipt.seller_accepted_at
-              ? <span className="text-emerald-400"><CheckCircle2 className="inline h-3 w-3" /> aceito</span>
-              : <span className="text-muted-foreground">pendente</span>}
+            Vendedor{" "}
+            {receipt.seller_accepted_at ? (
+              <span className="text-emerald-400">
+                <CheckCircle2 className="inline h-3 w-3" /> aceito
+              </span>
+            ) : (
+              <span className="text-muted-foreground">pendente</span>
+            )}
           </div>
           {isSeller && receipt.status === "awaiting_acceptance" && !receipt.seller_accepted_at && (
-            <Button size="sm" onClick={onAccept} disabled={loading}>Aceitar</Button>
+            <Button size="sm" onClick={onAccept} disabled={loading}>
+              Aceitar
+            </Button>
           )}
         </div>
         {needsBuyerAccept ? (
           <div className="flex items-center justify-between gap-3">
             <div className="text-xs">
-              Comprador {receipt.buyer_accepted_at
-                ? <span className="text-emerald-400"><CheckCircle2 className="inline h-3 w-3" /> aceito</span>
-                : <span className="text-muted-foreground">pendente</span>}
+              Comprador{" "}
+              {receipt.buyer_accepted_at ? (
+                <span className="text-emerald-400">
+                  <CheckCircle2 className="inline h-3 w-3" /> aceito
+                </span>
+              ) : (
+                <span className="text-muted-foreground">pendente</span>
+              )}
             </div>
             {isBuyer && receipt.status === "awaiting_acceptance" && !receipt.buyer_accepted_at && (
-              <Button size="sm" onClick={onAccept} disabled={loading}>Aceitar</Button>
+              <Button size="sm" onClick={onAccept} disabled={loading}>
+                Aceitar
+              </Button>
             )}
           </div>
         ) : (
-          <div className="text-xs text-muted-foreground">Comprador externo — aceite não é exigido dentro do TrailBook.</div>
+          <div className="text-xs text-muted-foreground">
+            Comprador externo — aceite não é exigido dentro do TrailBook.
+          </div>
         )}
       </div>
 
       <div className="flex flex-wrap gap-2">
         {isSeller && receipt.status !== "completed" && (
-          <Button variant="ghost" onClick={onCancel} disabled={loading} className="text-destructive">
+          <Button
+            variant="ghost"
+            onClick={onCancel}
+            disabled={loading}
+            className="text-destructive"
+          >
             <XCircle className="h-4 w-4" /> Cancelar
           </Button>
         )}

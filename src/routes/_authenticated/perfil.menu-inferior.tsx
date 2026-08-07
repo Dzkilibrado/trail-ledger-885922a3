@@ -74,8 +74,8 @@ function EditBottomNavPage() {
       return;
     }
     setSaving(true);
-    const { data: u } = await supabase.auth.getUser();
-    const uid = u.user?.id;
+    const { data: s } = await supabase.auth.getSession();
+    const uid = s.session?.user.id;
     if (!uid) {
       setSaving(false);
       toast.error("Sessão expirada. Entre novamente para salvar.");

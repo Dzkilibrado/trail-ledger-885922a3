@@ -74,15 +74,17 @@ function Workshops() {
     if (!uid) return;
     const isFav = favoriteIds.has(workshopId);
     if (isFav) {
-      await supabase
+      const { error } = await supabase
         .from("workshop_favorites" as never)
         .delete()
         .eq("user_id", uid)
         .eq("workshop_id", workshopId);
+      if (error) return toast.error("Não foi possível remover dos favoritos");
     } else {
-      await supabase
+      const { error } = await supabase
         .from("workshop_favorites" as never)
         .insert({ user_id: uid, workshop_id: workshopId } as never);
+      if (error) return toast.error("Não foi possível marcar como confiança");
     }
     qc.invalidateQueries({ queryKey: ["workshop-favorites"] });
   }
@@ -143,7 +145,7 @@ function Workshops() {
       bikes: motoIds.size,
       revenue: evs.reduce((s, e) => s + (Number(e.cost) || 0), 0),
       lastService: last?.occurred_at as string | undefined,
-      isFavorite: favoriteIds.has(w.id),
+      isFavorite: favoriteIds.has(w.id ?? ""),
     };
   });
 
@@ -162,19 +164,21 @@ function Workshops() {
         (a, b) =>
           Number(b.isFavorite) - Number(a.isFavorite) ||
           b.services - a.services ||
-          a.workshop.name.localeCompare(b.workshop.name),
+          (a.workshop.name ?? "").localeCompare(b.workshop.name ?? ""),
       );
     } else if (sortBy === "usage") {
       sorted.sort(
-        (a, b) => b.services - a.services || a.workshop.name.localeCompare(b.workshop.name),
+        (a, b) =>
+          b.services - a.services || (a.workshop.name ?? "").localeCompare(b.workshop.name ?? ""),
       );
     } else if (sortBy === "recent") {
       sorted.sort(
         (a, b) =>
-          new Date(b.workshop.created_at).getTime() - new Date(a.workshop.created_at).getTime(),
+          new Date(b.workshop.created_at ?? 0).getTime() -
+          new Date(a.workshop.created_at ?? 0).getTime(),
       );
     } else {
-      sorted.sort((a, b) => a.workshop.name.localeCompare(b.workshop.name));
+      sorted.sort((a, b) => (a.workshop.name ?? "").localeCompare(b.workshop.name ?? ""));
     }
     return sorted;
   }, [allStats, stateFilter, sortBy]);
@@ -209,14 +213,14 @@ function Workshops() {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const { data: u } = await supabase.auth.getUser();
+    const { data: s } = await supabase.auth.getSession();
     const { error } = await supabase.from("workshops").insert({
       name: String(fd.get("name")),
       cnpj: String(fd.get("cnpj") || "") || null,
       city: String(fd.get("city") || "") || null,
       state: String(fd.get("state") || "") || null,
       phone: String(fd.get("phone") || "") || null,
-      owner_user_id: u.user!.id,
+      owner_user_id: s.session!.user.id,
     });
     if (error) return toast.error(error.message);
     toast.success("Oficina cadastrada");
@@ -358,7 +362,7 @@ function Workshops() {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      toggleFavorite(w.id);
+                      toggleFavorite(w.id ?? "");
                     }}
                     aria-label={
                       isFavorite
@@ -413,13 +417,13 @@ function Workshops() {
               {detailWorkshop && (
                 <button
                   type="button"
-                  onClick={() => toggleFavorite(detailWorkshop.id)}
+                  onClick={() => toggleFavorite(detailWorkshop.id ?? "")}
                   className="mr-6 flex shrink-0 items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs font-semibold text-muted-foreground hover:bg-accent hover:text-amber-400"
                 >
                   <Star
-                    className={`h-3.5 w-3.5 ${favoriteIds.has(detailWorkshop.id) ? "fill-amber-400 text-amber-400" : ""}`}
+                    className={`h-3.5 w-3.5 ${favoriteIds.has(detailWorkshop.id ?? "") ? "fill-amber-400 text-amber-400" : ""}`}
                   />
-                  {favoriteIds.has(detailWorkshop.id) ? "De confiança" : "Marcar confiança"}
+                  {favoriteIds.has(detailWorkshop.id ?? "") ? "De confiança" : "Marcar confiança"}
                 </button>
               )}
             </DialogTitle>

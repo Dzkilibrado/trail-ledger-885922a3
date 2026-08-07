@@ -9,7 +9,15 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import { isValidCPF, maskCPF, onlyDigits } from "@/lib/br-validators";
-import { CheckCircle2, ChevronLeft, ChevronRight, IdCard, Info, ShieldAlert, Upload } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  IdCard,
+  Info,
+  ShieldAlert,
+  Upload,
+} from "lucide-react";
 import { useProfileSnapshot } from "@/hooks/useProfileSnapshot";
 
 /**
@@ -37,7 +45,13 @@ function CpfChangePage() {
   const [truth, setTruth] = useState(false);
   const [sending, setSending] = useState(false);
 
-  const currentCpfMasked = useMemo(() => profile.data?.cpf ? maskCPF(profile.data.cpf).replace(/\d/g, (d, i, s) => i < s.length - 2 ? "*" : d) : "—", [profile.data?.cpf]);
+  const currentCpfMasked = useMemo(
+    () =>
+      profile.data?.cpf
+        ? maskCPF(profile.data.cpf).replace(/\d/g, (d, i, s) => (i < s.length - 2 ? "*" : d))
+        : "—",
+    [profile.data?.cpf],
+  );
   const newCpfDigits = onlyDigits(newCpf);
 
   function validateStep(): string | null {
@@ -58,7 +72,10 @@ function CpfChangePage() {
 
   async function next() {
     const err = validateStep();
-    if (err) { toast.error(err); return; }
+    if (err) {
+      toast.error(err);
+      return;
+    }
     setStep((s) => Math.min(s + 1, 4));
   }
 
@@ -66,23 +83,27 @@ function CpfChangePage() {
     if (validateStep() != null || !file) return;
     setSending(true);
     try {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) throw new Error("Não autenticado");
+      const { data: s } = await supabase.auth.getSession();
+      if (!s.session?.user) throw new Error("Não autenticado");
 
       // 1) cria chamado do tipo cpf_change
-      const { data: ticket, error: tErr } = await supabase.from("tickets").insert({
-        user_id: u.user.id,
-        type: "cpf_change" as never,
-        module: "account" as never,
-        priority: "high" as never,
-        title: "Solicitação de alteração de CPF",
-        description: reason.trim(),
-      }).select("id").single();
+      const { data: ticket, error: tErr } = await supabase
+        .from("tickets")
+        .insert({
+          user_id: s.session!.user.id,
+          type: "cpf_change" as never,
+          module: "account" as never,
+          priority: "high" as never,
+          title: "Solicitação de alteração de CPF",
+          description: reason.trim(),
+        })
+        .select("id")
+        .single();
       if (tErr || !ticket) throw new Error(tErr?.message ?? "Falha ao abrir chamado");
 
       // 2) upload do documento no bucket privado
       const ext = (file.name.split(".").pop() ?? "bin").toLowerCase();
-      const path = `${u.user.id}/${ticket.id}/${crypto.randomUUID()}.${ext}`;
+      const path = `${s.session!.user.id}/${ticket.id}/${crypto.randomUUID()}.${ext}`;
       const { error: upErr } = await supabase.storage.from("cpf-change-docs").upload(path, file, {
         contentType: file.type,
         upsert: false,
@@ -90,12 +111,15 @@ function CpfChangePage() {
       if (upErr) throw new Error(upErr.message);
 
       // 3) submissão via RPC
-      const { error: rpcErr } = await supabase.rpc("submit_cpf_change_request" as never, {
-        _ticket_id: ticket.id,
-        _new_cpf: newCpfDigits,
-        _reason: reason.trim(),
-        _document_path: path,
-      } as never);
+      const { error: rpcErr } = await supabase.rpc(
+        "submit_cpf_change_request" as never,
+        {
+          _ticket_id: ticket.id,
+          _new_cpf: newCpfDigits,
+          _reason: reason.trim(),
+          _document_path: path,
+        } as never,
+      );
       if (rpcErr) {
         // Rollback upload em caso de falha da RPC
         await supabase.storage.from("cpf-change-docs").remove([path]);
@@ -127,7 +151,9 @@ function CpfChangePage() {
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
           <div>
             <p className="font-semibold">Seu CPF atual permanece ativo até a aprovação.</p>
-            <p className="mt-1 text-amber-200/80">Análise em até 2 dias úteis. Você será notificado no chamado.</p>
+            <p className="mt-1 text-amber-200/80">
+              Análise em até 2 dias úteis. Você será notificado no chamado.
+            </p>
           </div>
         </div>
       </div>
@@ -135,15 +161,23 @@ function CpfChangePage() {
       <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
         <div className="text-xs text-muted-foreground">Passo {step + 1} de 5</div>
         <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-          <div className="h-full bg-primary transition-all" style={{ width: `${((step + 1) / 5) * 100}%` }} />
+          <div
+            className="h-full bg-primary transition-all"
+            style={{ width: `${((step + 1) / 5) * 100}%` }}
+          />
         </div>
 
         {step === 0 && (
           <div className="space-y-2">
             <Label htmlFor="reason">Motivo da alteração</Label>
-            <Textarea id="reason" rows={5} value={reason} onChange={(e) => setReason(e.target.value)}
+            <Textarea
+              id="reason"
+              rows={5}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
               placeholder="Explique com clareza (ex.: cadastro inicial com número incorreto, decisão judicial, etc.)"
-              maxLength={2000} />
+              maxLength={2000}
+            />
           </div>
         )}
 
@@ -157,13 +191,25 @@ function CpfChangePage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="newCpf">Novo CPF</Label>
-              <Input id="newCpf" inputMode="numeric" placeholder="000.000.000-00" maxLength={14}
-                value={newCpf} onChange={(e) => setNewCpf(maskCPF(e.target.value))} />
+              <Input
+                id="newCpf"
+                inputMode="numeric"
+                placeholder="000.000.000-00"
+                maxLength={14}
+                value={newCpf}
+                onChange={(e) => setNewCpf(maskCPF(e.target.value))}
+              />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="confirmCpf">Confirme o novo CPF</Label>
-              <Input id="confirmCpf" inputMode="numeric" placeholder="000.000.000-00" maxLength={14}
-                value={confirmCpf} onChange={(e) => setConfirmCpf(maskCPF(e.target.value))} />
+              <Input
+                id="confirmCpf"
+                inputMode="numeric"
+                placeholder="000.000.000-00"
+                maxLength={14}
+                value={confirmCpf}
+                onChange={(e) => setConfirmCpf(maskCPF(e.target.value))}
+              />
             </div>
           </div>
         )}
@@ -177,18 +223,25 @@ function CpfChangePage() {
                 {file ? (
                   <>
                     <div className="font-medium">{file.name}</div>
-                    <div className="text-xs text-muted-foreground">{(file.size / 1024).toFixed(0)} KB · {file.type}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {(file.size / 1024).toFixed(0)} KB · {file.type}
+                    </div>
                   </>
                 ) : (
                   <span className="text-muted-foreground">Toque para escolher um arquivo</span>
                 )}
               </div>
-              <input type="file" accept=".jpg,.jpeg,.png,.pdf" className="hidden"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)} />
+              <input
+                type="file"
+                accept=".jpg,.jpeg,.png,.pdf"
+                className="hidden"
+                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+              />
             </label>
             <p className="text-xs text-muted-foreground flex items-start gap-1.5">
               <Info className="h-3 w-3 mt-0.5" />
-              Envie CNH, RG ou comprovante oficial que mostre o CPF correto. Documento fica em bucket privado, acessível apenas por você e pelos administradores autorizados.
+              Envie CNH, RG ou comprovante oficial que mostre o CPF correto. Documento fica em
+              bucket privado, acessível apenas por você e pelos administradores autorizados.
             </p>
           </div>
         )}
@@ -198,8 +251,9 @@ function CpfChangePage() {
             <label className="flex items-start gap-3 rounded-lg border border-border p-3 text-sm">
               <Checkbox checked={truth} onCheckedChange={(v) => setTruth(!!v)} className="mt-0.5" />
               <span>
-                Declaro, sob as penas da lei, que as informações e o documento anexado são verdadeiros e de minha inteira responsabilidade.
-                Estou ciente de que informações falsas podem resultar em bloqueio da conta e sanções legais.
+                Declaro, sob as penas da lei, que as informações e o documento anexado são
+                verdadeiros e de minha inteira responsabilidade. Estou ciente de que informações
+                falsas podem resultar em bloqueio da conta e sanções legais.
               </span>
             </label>
           </div>
@@ -219,21 +273,37 @@ function CpfChangePage() {
         )}
 
         <div className="flex items-center justify-between pt-2">
-          <Button variant="ghost" size="sm" disabled={step === 0 || sending} onClick={() => setStep(step - 1)}>
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={step === 0 || sending}
+            onClick={() => setStep(step - 1)}
+          >
             <ChevronLeft className="h-4 w-4" /> Voltar
           </Button>
           {step < 4 ? (
-            <Button onClick={next} className="btn-glow">Avançar <ChevronRight className="h-4 w-4" /></Button>
+            <Button onClick={next} className="btn-glow">
+              Avançar <ChevronRight className="h-4 w-4" />
+            </Button>
           ) : (
             <Button onClick={submit} disabled={sending} className="btn-glow">
-              {sending ? "Enviando…" : (<><CheckCircle2 className="h-4 w-4" /> Enviar solicitação</>)}
+              {sending ? (
+                "Enviando…"
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4" /> Enviar solicitação
+                </>
+              )}
             </Button>
           )}
         </div>
       </div>
 
       <p className="text-center text-xs text-muted-foreground">
-        Prefere falar com o suporte antes? <Link to="/help" className="text-primary hover:underline">Central de Ajuda</Link>
+        Prefere falar com o suporte antes?{" "}
+        <Link to="/help" className="text-primary hover:underline">
+          Central de Ajuda
+        </Link>
       </p>
     </div>
   );

@@ -308,12 +308,12 @@ export function MotorcycleDocuments({
       );
       if (!ok) return;
     }
-    const { data: u } = await supabase.auth.getUser();
+    const { data: s } = await supabase.auth.getSession();
     const { error } = await supabase
       .from("motorcycle_documents" as never)
       .update({
         deleted_at: new Date().toISOString(),
-        deleted_by: u.user!.id,
+        deleted_by: s.session!.user.id,
         is_current: false,
       } as never)
       .eq("id", doc.id);
@@ -980,8 +980,8 @@ function UploadDialog({
     }
     setSaving(true);
     try {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user!.id;
+      const { data: s } = await supabase.auth.getSession();
+      const uid = s.session!.user.id;
       let ok = 0;
       for (const it of items) {
         const ext = it.file.name.split(".").pop() ?? "bin";
@@ -1317,8 +1317,8 @@ function ReplaceDialog({
     }
     setSaving(true);
     try {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user!.id;
+      const { data: s } = await supabase.auth.getSession();
+      const uid = s.session!.user.id;
       const ext = file.name.split(".").pop() ?? "bin";
       const path = `${uid}/${crypto.randomUUID()}.${ext}`;
       const up = await supabase.storage.from("documents").upload(path, file, { upsert: false });
