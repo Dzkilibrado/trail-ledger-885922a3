@@ -103,6 +103,7 @@ export const HOME_SHORTCUT_CATALOG: HomeShortcutDef[] = [
     description: "Documentação da motocicleta",
     icon: ShieldCheck,
     to: "/motorcycles/$id/control",
+    search: { tab: "documentos" },
   },
   {
     key: "recibo",
@@ -110,6 +111,7 @@ export const HOME_SHORTCUT_CATALOG: HomeShortcutDef[] = [
     description: "Emitir recibo/comprovante",
     icon: FileSignature,
     to: "/motorcycles/$id/control",
+    search: { tab: "documentos" },
   },
 ];
 

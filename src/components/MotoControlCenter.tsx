@@ -90,9 +90,12 @@ import {
 export function MotoControlCenter({
   id,
   autoOpenAction,
+  initialTab,
 }: {
   id: string;
   autoOpenAction?: "registrar";
+  /** Abre direto numa aba específica — usado pelos atalhos da tela inicial (ex: "Documentos"). */
+  initialTab?: "geral" | "checkup" | "componentes" | "atividade" | "documentos" | "historico";
 }) {
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -641,7 +644,7 @@ export function MotoControlCenter({
         <ActiveNegotiationCard motoId={m.id} negotiation={activeNegotiation.data} />
       )}
 
-      <Tabs defaultValue="geral" className="w-full">
+      <Tabs defaultValue={initialTab ?? "geral"} className="w-full">
         <TabsList className="h-auto w-full flex-wrap justify-start gap-1 bg-transparent p-0">
           <TabsTrigger value="geral" className="surface-elevated data-[state=active]:btn-glow">
             Visão Geral
