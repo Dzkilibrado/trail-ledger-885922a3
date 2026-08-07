@@ -149,13 +149,20 @@ export function InitialReviewSheet({
 
   async function finish() {
     setSaving(true);
-    await supabase
+    const { error } = await supabase
       .from("motorcycles")
       .update({
         initial_review_done_at: new Date().toISOString(),
         plan_review_status: "reviewed",
       } as never)
       .eq("id", motoId);
+    if (error) {
+      setSaving(false);
+      toast.error("Não foi possível confirmar a revisão", {
+        description: error.message || "Tente novamente em instantes.",
+      });
+      return;
+    }
     try {
       await recomposeTimeline(motoId);
     } catch {
