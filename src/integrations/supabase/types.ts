@@ -2911,6 +2911,24 @@ export type Database = {
         };
         Relationships: [];
       };
+      workshop_favorites: {
+        Row: {
+          created_at: string;
+          user_id: string;
+          workshop_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          user_id: string;
+          workshop_id: string;
+        };
+        Update: {
+          created_at?: string;
+          user_id?: string;
+          workshop_id?: string;
+        };
+        Relationships: [];
+      };
       workshops: {
         Row: {
           city: string | null;
