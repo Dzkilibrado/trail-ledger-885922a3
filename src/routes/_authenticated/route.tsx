@@ -29,7 +29,6 @@ import {
   Eye,
   ShieldCheck,
   Home,
-  MessageCircle,
   LifeBuoy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -152,7 +151,6 @@ const NAV = [
   { to: "/dashboard", label: "Início", icon: Home },
   { to: "/motorcycles", label: "Minhas Motos", icon: Bike },
   { to: "/central", label: "Central", icon: FolderOpen },
-  { to: "/comunicacao", label: "Comunicação", icon: MessageCircle },
   { to: "/perfil", label: "Perfil", icon: User },
 ] as const;
 

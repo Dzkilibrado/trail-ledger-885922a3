@@ -47,7 +47,7 @@ function AdminModules() {
         title="Módulos do Sistema"
         description="Controle o status de cada funcionalidade da plataforma sem publicar nova versão."
       />
-      <div className="grid gap-3">
+      <div className="grid grid-cols-1 gap-3">
         {(modulesQ.data ?? []).map((m) => (
           <ModuleRow key={m.id} mod={m} />
         ))}

@@ -212,7 +212,7 @@ function Agenda() {
           Nenhum item nesse filtro.
         </div>
       ) : (
-        <ul className="grid gap-3 lg:grid-cols-2">
+        <ul className="grid grid-cols-1 gap-3 lg:grid-cols-2">
           {filtered.map((e) => (
             <AgendaCard
               key={e.schedule.id}

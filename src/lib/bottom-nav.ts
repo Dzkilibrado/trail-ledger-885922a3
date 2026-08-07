@@ -2,7 +2,6 @@ import {
   Home,
   Bike,
   FolderOpen,
-  MessageCircle,
   User,
   Wallet,
   CalendarDays,
@@ -24,7 +23,6 @@ export type BottomNavKey =
   | "dashboard"
   | "motorcycles"
   | "central"
-  | "comunicacao"
   | "perfil"
   | "financial"
   | "agenda"
@@ -60,16 +58,9 @@ export const BOTTOM_NAV_CATALOG: BottomNavDef[] = [
   {
     key: "central",
     label: "Central",
-    description: "Notificações, mensagens e mais",
+    description: "Notificações, mensagens, financeiro e mais",
     icon: FolderOpen,
     to: "/central",
-  },
-  {
-    key: "comunicacao",
-    label: "Comunicação",
-    description: "Conversas e avisos",
-    icon: MessageCircle,
-    to: "/comunicacao",
   },
   { key: "perfil", label: "Perfil", description: "Sua conta", icon: User, to: "/perfil" },
   {
@@ -122,13 +113,7 @@ export const BOTTOM_NAV_BY_KEY: Record<BottomNavKey, BottomNavDef> = Object.from
 ) as Record<BottomNavKey, BottomNavDef>;
 
 /** Ordem e seleção padrão — igual ao menu ☰ de hoje. */
-export const DEFAULT_BOTTOM_NAV: BottomNavKey[] = [
-  "dashboard",
-  "motorcycles",
-  "central",
-  "comunicacao",
-  "perfil",
-];
+export const DEFAULT_BOTTOM_NAV: BottomNavKey[] = ["dashboard", "motorcycles", "central", "perfil"];
 
 /** Barra de navegação: espaço físico é limitado, então 3 a 5 itens. */
 export const MIN_BOTTOM_NAV_ITEMS = 3;
