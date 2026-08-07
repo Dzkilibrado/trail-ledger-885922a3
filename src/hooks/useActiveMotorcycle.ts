@@ -59,8 +59,8 @@ export function useActiveMotorcycles() {
   return useQuery({
     queryKey: motorcycleQueryKeys.active,
     queryFn: async (): Promise<ActiveMotorcycle[]> => {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user?.id;
+      const { data: s } = await supabase.auth.getSession();
+      const uid = s.session?.user.id;
       if (!uid) return [];
       const { data, error } = await supabase
         .from("motorcycles")
@@ -78,8 +78,8 @@ export function useAllMyMotorcycles() {
   return useQuery({
     queryKey: motorcycleQueryKeys.all,
     queryFn: async (): Promise<ActiveMotorcycle[]> => {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user?.id;
+      const { data: s } = await supabase.auth.getSession();
+      const uid = s.session?.user.id;
       if (!uid) return [];
       const { data, error } = await supabase
         .from("motorcycles")
@@ -96,8 +96,8 @@ export function useArchivedMotorcyclesCount() {
   return useQuery({
     queryKey: motorcycleQueryKeys.archivedCount,
     queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      const uid = u.user?.id;
+      const { data: s } = await supabase.auth.getSession();
+      const uid = s.session?.user.id;
       if (!uid) return 0;
       const { count, error } = await supabase
         .from("motorcycles")
@@ -155,18 +155,21 @@ export function useActiveMotorcycle() {
     if (storedId !== activeId) setStoredActiveMotorcycleId(activeId);
   }, [hydrated, activeMotos.isSuccess, activeMotos.isFetching, activeId, storedId]);
 
-  const setActiveId = useCallback((id: string | null) => {
-    if (!id) {
-      setStoredActiveMotorcycleId(null);
-      return;
-    }
-    if (!activeMotos.isSuccess) {
-      setStoredActiveMotorcycleId(id);
-      return;
-    }
-    const existsAndActive = motos.some((m) => m.id === id);
-    setStoredActiveMotorcycleId(existsAndActive ? id : null);
-  }, [activeMotos.isSuccess, motos]);
+  const setActiveId = useCallback(
+    (id: string | null) => {
+      if (!id) {
+        setStoredActiveMotorcycleId(null);
+        return;
+      }
+      if (!activeMotos.isSuccess) {
+        setStoredActiveMotorcycleId(id);
+        return;
+      }
+      const existsAndActive = motos.some((m) => m.id === id);
+      setStoredActiveMotorcycleId(existsAndActive ? id : null);
+    },
+    [activeMotos.isSuccess, motos],
+  );
 
   return {
     activeId,
