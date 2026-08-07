@@ -88,13 +88,20 @@ export const Route = createFileRoute("/_authenticated")({
       path.startsWith("/tickets/");
     if (!allowedForIncomplete) {
       try {
-        const { data: p, error: pErr } = await supabase
+        // Timeout defensivo: sem isso, uma rede instável no meio da troca de
+        // tela deixa o app preso indefinidamente na tela "Preparando seu
+        // TrailBook..." (nenhum erro, nenhuma opção de tentar de novo).
+        const profilePromise = supabase
           .from("profiles")
           .select(
             "cpf,status,blocked_reason,inactive_reason,profile_completed_at,full_name,birth_date,email,phone,whatsapp,whatsapp_same_as_phone,uf,city",
           )
           .eq("id", user.id)
           .maybeSingle();
+        const timeout = new Promise<{ data: null; error: { message: string } }>((resolve) =>
+          setTimeout(() => resolve({ data: null, error: { message: "timeout" } }), 8000),
+        );
+        const { data: p, error: pErr } = await Promise.race([profilePromise, timeout]);
         if (pErr) {
           // network / RLS glitch: let the app render; the sidebar/profile query
           // will retry and surface a friendlier state.
