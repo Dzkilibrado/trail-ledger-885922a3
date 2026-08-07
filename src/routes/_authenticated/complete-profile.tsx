@@ -31,13 +31,13 @@ export const Route = createFileRoute("/_authenticated/complete-profile")({
 type Draft = {
   full_name: string;
   display_name: string;
-  cpf: string;              // masked
-  birth_date: string;       // yyyy-mm-dd
+  cpf: string; // masked
+  birth_date: string; // yyyy-mm-dd
   email: string;
-  phone: string;            // masked
-  whatsapp: string;         // masked
+  phone: string; // masked
+  whatsapp: string; // masked
   whatsapp_same_as_phone: boolean;
-  location: string;         // "Cidade / UF"
+  location: string; // "Cidade / UF"
   cep: string;
   bairro: string;
   logradouro: string;
@@ -46,9 +46,20 @@ type Draft = {
 };
 
 const EMPTY: Draft = {
-  full_name: "", display_name: "", cpf: "", birth_date: "",
-  email: "", phone: "", whatsapp: "", whatsapp_same_as_phone: false,
-  location: "", cep: "", bairro: "", logradouro: "", numero: "", complemento: "",
+  full_name: "",
+  display_name: "",
+  cpf: "",
+  birth_date: "",
+  email: "",
+  phone: "",
+  whatsapp: "",
+  whatsapp_same_as_phone: false,
+  location: "",
+  cep: "",
+  bairro: "",
+  logradouro: "",
+  numero: "",
+  complemento: "",
 };
 
 const STEP_LABELS = ["Dados pessoais", "Contato", "Localização", "Conferência final"] as const;
@@ -93,19 +104,26 @@ function CompleteProfilePage() {
 
   useEffect(() => {
     (async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) { navigate({ to: "/auth" }); return; }
+      const { data: s } = await supabase.auth.getSession();
+      if (!s.session?.user) {
+        navigate({ to: "/auth" });
+        return;
+      }
+      const user = s.session.user;
       const { data: p } = await supabase
         .from("profiles")
-        .select("full_name,display_name,cpf,birth_date,email,phone,whatsapp,whatsapp_same_as_phone,uf,city,cep,bairro,logradouro,numero,complemento,cpf_locked_at")
-        .eq("id", u.user.id).maybeSingle();
+        .select(
+          "full_name,display_name,cpf,birth_date,email,phone,whatsapp,whatsapp_same_as_phone,uf,city,cep,bairro,logradouro,numero,complemento,cpf_locked_at",
+        )
+        .eq("id", user.id)
+        .maybeSingle();
       const loc = p?.uf && p?.city ? `${p.city} / ${p.uf}` : "";
       setDraft({
-        full_name: p?.full_name ?? (u.user.user_metadata?.full_name as string) ?? "",
+        full_name: p?.full_name ?? (user.user_metadata?.full_name as string) ?? "",
         display_name: p?.display_name ?? "",
         cpf: p?.cpf ? maskCPF(p.cpf) : "",
         birth_date: p?.birth_date ?? "",
-        email: p?.email ?? u.user.email ?? "",
+        email: p?.email ?? user.email ?? "",
         phone: p?.phone ?? "",
         whatsapp: p?.whatsapp ?? "",
         whatsapp_same_as_phone: !!p?.whatsapp_same_as_phone,
@@ -117,7 +135,7 @@ function CompleteProfilePage() {
         complemento: p?.complemento ?? "",
       });
       setCpfLocked(!!p?.cpf_locked_at);
-      await refreshCompleteness(u.user.id);
+      await refreshCompleteness(user.id);
       // Entrar no primeiro passo com pendências
       const firstStep = pickFirstStep(p);
       setStep(firstStep);
@@ -196,7 +214,10 @@ function CompleteProfilePage() {
         _full_name: draft.full_name.trim(),
       });
       if (error) {
-        if (/CPF já cadastrado/i.test(error.message)) { setCpfConflict(true); return { ok: false, error: "conflict" }; }
+        if (/CPF já cadastrado/i.test(error.message)) {
+          setCpfConflict(true);
+          return { ok: false, error: "conflict" };
+        }
         return { ok: false, error: error.message };
       }
       setCpfLocked(true);
@@ -216,7 +237,8 @@ function CompleteProfilePage() {
     if (step === 1) {
       if (!draft.email.trim()) return "E-mail obrigatório";
       if (onlyDigits(draft.phone).length < 10) return "Celular inválido";
-      if (!draft.whatsapp_same_as_phone && onlyDigits(draft.whatsapp).length < 10) return "WhatsApp inválido";
+      if (!draft.whatsapp_same_as_phone && onlyDigits(draft.whatsapp).length < 10)
+        return "WhatsApp inválido";
     }
     if (step === 2) {
       const p = parseLocation(draft.location);
@@ -252,9 +274,16 @@ function CompleteProfilePage() {
   async function finish() {
     setSaving(true);
     const r = await persistPartial();
-    if (!r.ok) { setSaving(false); if (r.error !== "conflict") toast.error(r.error ?? "Falha ao salvar"); return; }
+    if (!r.ok) {
+      setSaving(false);
+      if (r.error !== "conflict") toast.error(r.error ?? "Falha ao salvar");
+      return;
+    }
     const { data: u } = await supabase.auth.getUser();
-    if (!u.user) { setSaving(false); return; }
+    if (!u.user) {
+      setSaving(false);
+      return;
+    }
     // Revalida completude no servidor — só marca `profile_completed_at`
     // quando `missing` estiver vazio (fonte da verdade é o RPC).
     const { data: comp } = await supabase.rpc("profile_completeness", { _user: u.user.id });
@@ -267,7 +296,10 @@ function CompleteProfilePage() {
       toast.error(`Ainda faltam: ${labels}`);
       return;
     }
-    await supabase.from("profiles").update({ profile_completed_at: new Date().toISOString() }).eq("id", u.user.id);
+    await supabase
+      .from("profiles")
+      .update({ profile_completed_at: new Date().toISOString() })
+      .eq("id", u.user.id);
     setSaving(false);
     // Notifica módulos que consomem o snapshot (Smart Receipt etc.)
     invalidateProfile();
@@ -291,7 +323,9 @@ function CompleteProfilePage() {
       {/* Barra de progresso */}
       <div className="mb-4 rounded-2xl border border-border bg-card p-4">
         <div className="flex items-center justify-between text-xs">
-          <span className="font-bold uppercase tracking-widest text-muted-foreground">Perfil {pct}% completo</span>
+          <span className="font-bold uppercase tracking-widest text-muted-foreground">
+            Perfil {pct}% completo
+          </span>
           <span className="text-muted-foreground">Passo {step + 1} de 4</span>
         </div>
         <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
@@ -309,10 +343,16 @@ function CompleteProfilePage() {
             const done = i < step;
             return (
               <div key={label} className="flex flex-1 items-center gap-1">
-                <div className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[10px] font-bold ${done ? "bg-primary text-primary-foreground" : active ? "bg-primary/20 text-primary ring-2 ring-primary" : "bg-muted text-muted-foreground"}`}>
+                <div
+                  className={`grid h-6 w-6 shrink-0 place-items-center rounded-full text-[10px] font-bold ${done ? "bg-primary text-primary-foreground" : active ? "bg-primary/20 text-primary ring-2 ring-primary" : "bg-muted text-muted-foreground"}`}
+                >
                   {done ? <CheckCircle2 className="h-3 w-3" /> : i + 1}
                 </div>
-                <span className={`hidden truncate text-[10px] sm:inline ${active ? "font-semibold text-foreground" : "text-muted-foreground"}`}>{label}</span>
+                <span
+                  className={`hidden truncate text-[10px] sm:inline ${active ? "font-semibold text-foreground" : "text-muted-foreground"}`}
+                >
+                  {label}
+                </span>
               </div>
             );
           })}
@@ -324,25 +364,44 @@ function CompleteProfilePage() {
           <>
             <StepHeader icon={<User className="h-4 w-4" />} title="Dados pessoais" />
             <Field label="Nome completo" required>
-              <Input value={draft.full_name} onChange={(e) => update("full_name", e.target.value)} />
+              <Input
+                value={draft.full_name}
+                onChange={(e) => update("full_name", e.target.value)}
+              />
             </Field>
             <Field label="Como quer ser chamado (opcional)">
-              <Input value={draft.display_name} onChange={(e) => update("display_name", e.target.value)} placeholder="Apelido" />
+              <Input
+                value={draft.display_name}
+                onChange={(e) => update("display_name", e.target.value)}
+                placeholder="Apelido"
+              />
             </Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="CPF" required help={HELP.cpf}>
                 <Input
-                  inputMode="numeric" placeholder="000.000.000-00" maxLength={14}
+                  inputMode="numeric"
+                  placeholder="000.000.000-00"
+                  maxLength={14}
                   value={draft.cpf}
                   disabled={cpfLocked}
                   onChange={(e) => update("cpf", maskCPF(e.target.value))}
                 />
                 {cpfLocked && (
-                  <p className="text-[10px] text-muted-foreground">CPF validado. <Link to="/tickets/cpf-change" className="text-primary underline">Solicitar alteração via suporte</Link>.</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    CPF validado.{" "}
+                    <Link to="/tickets/cpf-change" className="text-primary underline">
+                      Solicitar alteração via suporte
+                    </Link>
+                    .
+                  </p>
                 )}
               </Field>
               <Field label="Nascimento" required>
-                <Input type="date" value={draft.birth_date} onChange={(e) => update("birth_date", e.target.value)} />
+                <Input
+                  type="date"
+                  value={draft.birth_date}
+                  onChange={(e) => update("birth_date", e.target.value)}
+                />
               </Field>
             </div>
           </>
@@ -355,8 +414,13 @@ function CompleteProfilePage() {
               <Input value={draft.email} disabled />
             </Field>
             <Field label="Celular" required help={HELP.phone}>
-              <Input inputMode="tel" placeholder="(11) 99999-9999" maxLength={16}
-                value={draft.phone} onChange={(e) => update("phone", maskPhone(e.target.value))} />
+              <Input
+                inputMode="tel"
+                placeholder="(11) 99999-9999"
+                maxLength={16}
+                value={draft.phone}
+                onChange={(e) => update("phone", maskPhone(e.target.value))}
+              />
             </Field>
             <div className="flex items-center gap-2">
               <Checkbox
@@ -364,12 +428,19 @@ function CompleteProfilePage() {
                 checked={draft.whatsapp_same_as_phone}
                 onCheckedChange={(c) => toggleWhatsappSame(!!c)}
               />
-              <Label htmlFor="wa-same" className="text-sm">Meu WhatsApp é igual ao celular</Label>
+              <Label htmlFor="wa-same" className="text-sm">
+                Meu WhatsApp é igual ao celular
+              </Label>
             </div>
             {!draft.whatsapp_same_as_phone && (
               <Field label="WhatsApp" required help={HELP.whatsapp}>
-                <Input inputMode="tel" placeholder="(11) 99999-9999" maxLength={16}
-                  value={draft.whatsapp} onChange={(e) => update("whatsapp", maskPhone(e.target.value))} />
+                <Input
+                  inputMode="tel"
+                  placeholder="(11) 99999-9999"
+                  maxLength={16}
+                  value={draft.whatsapp}
+                  onChange={(e) => update("whatsapp", maskPhone(e.target.value))}
+                />
               </Field>
             )}
           </>
@@ -380,10 +451,19 @@ function CompleteProfilePage() {
             <StepHeader icon={<MapPin className="h-4 w-4" />} title="Localização" />
             <div>
               <div className="mb-1.5 flex items-center gap-1.5">
-                <span className="text-xs uppercase tracking-widest text-muted-foreground">Estado e Cidade *</span>
-                <HelpTooltip label="Estado e Cidade" text={HELP.stateField + " Também é reutilizado em documentos oficiais."} />
+                <span className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Estado e Cidade *
+                </span>
+                <HelpTooltip
+                  label="Estado e Cidade"
+                  text={HELP.stateField + " Também é reutilizado em documentos oficiais."}
+                />
               </div>
-              <LocationPicker value={draft.location} onChange={(v) => update("location", v)} label="" />
+              <LocationPicker
+                value={draft.location}
+                onChange={(v) => update("location", v)}
+                label=""
+              />
             </div>
 
             <button
@@ -395,13 +475,34 @@ function CompleteProfilePage() {
             </button>
             {showAddress && (
               <div className="grid grid-cols-2 gap-3">
-                <Field label="CEP"><Input value={draft.cep} onChange={(e) => update("cep", e.target.value)} maxLength={9} placeholder="00000-000" /></Field>
-                <Field label="Bairro"><Input value={draft.bairro} onChange={(e) => update("bairro", e.target.value)} /></Field>
+                <Field label="CEP">
+                  <Input
+                    value={draft.cep}
+                    onChange={(e) => update("cep", e.target.value)}
+                    maxLength={9}
+                    placeholder="00000-000"
+                  />
+                </Field>
+                <Field label="Bairro">
+                  <Input value={draft.bairro} onChange={(e) => update("bairro", e.target.value)} />
+                </Field>
                 <div className="col-span-2">
-                  <Field label="Logradouro"><Input value={draft.logradouro} onChange={(e) => update("logradouro", e.target.value)} /></Field>
+                  <Field label="Logradouro">
+                    <Input
+                      value={draft.logradouro}
+                      onChange={(e) => update("logradouro", e.target.value)}
+                    />
+                  </Field>
                 </div>
-                <Field label="Número"><Input value={draft.numero} onChange={(e) => update("numero", e.target.value)} /></Field>
-                <Field label="Complemento"><Input value={draft.complemento} onChange={(e) => update("complemento", e.target.value)} /></Field>
+                <Field label="Número">
+                  <Input value={draft.numero} onChange={(e) => update("numero", e.target.value)} />
+                </Field>
+                <Field label="Complemento">
+                  <Input
+                    value={draft.complemento}
+                    onChange={(e) => update("complemento", e.target.value)}
+                  />
+                </Field>
               </div>
             )}
           </>
@@ -411,7 +512,8 @@ function CompleteProfilePage() {
           <>
             <StepHeader icon={<CheckCircle2 className="h-4 w-4" />} title="Conferência final" />
             <p className="-mt-1 text-xs text-muted-foreground">
-              Revise as informações abaixo. Para corrigir algo, use o botão <span className="font-medium text-foreground">Editar</span> da seção correspondente.
+              Revise as informações abaixo. Para corrigir algo, use o botão{" "}
+              <span className="font-medium text-foreground">Editar</span> da seção correspondente.
             </p>
 
             <ReviewBlock
@@ -432,7 +534,14 @@ function CompleteProfilePage() {
             >
               <ReviewRow label="E-mail" value={draft.email} />
               <ReviewRow label="Celular" value={draft.phone} />
-              <ReviewRow label="WhatsApp" value={draft.whatsapp_same_as_phone ? draft.phone + " (mesmo do celular)" : draft.whatsapp} />
+              <ReviewRow
+                label="WhatsApp"
+                value={
+                  draft.whatsapp_same_as_phone
+                    ? draft.phone + " (mesmo do celular)"
+                    : draft.whatsapp
+                }
+              />
             </ReviewBlock>
 
             <ReviewBlock
@@ -444,7 +553,15 @@ function CompleteProfilePage() {
               {(draft.cep || draft.logradouro) && (
                 <ReviewRow
                   label="Endereço"
-                  value={[draft.logradouro, draft.numero, draft.complemento, draft.bairro, draft.cep].filter(Boolean).join(", ")}
+                  value={[
+                    draft.logradouro,
+                    draft.numero,
+                    draft.complemento,
+                    draft.bairro,
+                    draft.cep,
+                  ]
+                    .filter(Boolean)
+                    .join(", ")}
                 />
               )}
             </ReviewBlock>
@@ -470,15 +587,12 @@ function CompleteProfilePage() {
               else setStep(step - 1);
             }}
           >
-            <ChevronLeft className="h-4 w-4" /> {returnToReview ? "Cancelar" : step === 0 ? "Sair" : "Voltar"}
+            <ChevronLeft className="h-4 w-4" />{" "}
+            {returnToReview ? "Cancelar" : step === 0 ? "Sair" : "Voltar"}
           </Button>
           {step < 3 ? (
             <Button disabled={saving} onClick={next} className="btn-glow">
-              {saving
-                ? "Salvando…"
-                : returnToReview
-                  ? "Salvar e voltar à conferência"
-                  : "Avançar"}{" "}
+              {saving ? "Salvando…" : returnToReview ? "Salvar e voltar à conferência" : "Avançar"}{" "}
               <ChevronRight className="h-4 w-4" />
             </Button>
           ) : (
@@ -490,7 +604,10 @@ function CompleteProfilePage() {
       </div>
 
       <p className="text-xs text-muted-foreground text-center mt-4">
-        Problemas para concluir? <Link to="/help" className="text-primary hover:underline">Preciso de ajuda</Link>
+        Problemas para concluir?{" "}
+        <Link to="/help" className="text-primary hover:underline">
+          Preciso de ajuda
+        </Link>
       </p>
 
       <CpfConflictDialog
@@ -498,9 +615,22 @@ function CompleteProfilePage() {
         onOpenChange={setCpfConflict}
         title="Este CPF já está vinculado a outra conta"
         description="O CPF informado já pertence a uma conta existente do TrailBook. Recupere o acesso da conta original ou abra um chamado."
-        onRecover={async () => { setCpfConflict(false); await supabase.auth.signOut(); navigate({ to: "/auth" }); toast.info("Use 'Esqueci minha senha?' com o e-mail da conta original."); }}
-        onOpenHelp={async () => { setCpfConflict(false); await supabase.auth.signOut(); navigate({ to: "/help" }); }}
-        onBackToLogin={async () => { setCpfConflict(false); await supabase.auth.signOut(); navigate({ to: "/auth" }); }}
+        onRecover={async () => {
+          setCpfConflict(false);
+          await supabase.auth.signOut();
+          navigate({ to: "/auth" });
+          toast.info("Use 'Esqueci minha senha?' com o e-mail da conta original.");
+        }}
+        onOpenHelp={async () => {
+          setCpfConflict(false);
+          await supabase.auth.signOut();
+          navigate({ to: "/help" });
+        }}
+        onBackToLogin={async () => {
+          setCpfConflict(false);
+          await supabase.auth.signOut();
+          navigate({ to: "/auth" });
+        }}
       />
     </div>
   );
@@ -514,12 +644,23 @@ function StepHeader({ icon, title }: { icon: React.ReactNode; title: string }) {
   );
 }
 
-function Field({ label, required, help, children }: { label: string; required?: boolean; help?: string; children: React.ReactNode }) {
+function Field({
+  label,
+  required,
+  help,
+  children,
+}: {
+  label: string;
+  required?: boolean;
+  help?: string;
+  children: React.ReactNode;
+}) {
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-1.5">
         <Label className="text-xs uppercase tracking-widest text-muted-foreground">
-          {label}{required ? " *" : ""}
+          {label}
+          {required ? " *" : ""}
         </Label>
         {help && <HelpTooltip label={label} text={help} />}
       </div>
@@ -532,7 +673,9 @@ function ReviewRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-start justify-between gap-3 border-b border-border/50 py-2 text-sm last:border-0">
       <span className="text-xs uppercase tracking-widest text-muted-foreground">{label}</span>
-      <span className="text-right font-medium">{value || <em className="text-muted-foreground">—</em>}</span>
+      <span className="text-right font-medium">
+        {value || <em className="text-muted-foreground">—</em>}
+      </span>
     </div>
   );
 }

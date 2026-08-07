@@ -13,10 +13,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { DollarSign, TrendingUp, Calendar, Bike, Search, X } from "lucide-react";
+import { DollarSign, TrendingUp, Calendar, Bike, Search, X, AlertTriangle } from "lucide-react";
 import { ExportMenu } from "@/components/ExportMenu";
 import type { ExportColumn } from "@/lib/exports";
 import { useActiveMotorcycles } from "@/hooks/useActiveMotorcycle";
+import { TBLoadingState } from "@/design-system";
 
 export const Route = createFileRoute("/_authenticated/financial")({
   head: () => ({ meta: [{ title: "Financeiro — TrailBook" }] }),
@@ -41,14 +42,16 @@ function Financial() {
   const events = useQuery({
     queryKey: ["events", "all-with-cost"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("events")
         .select("*, motorcycles(nickname, model), workshops(name)")
         .not("cost", "is", null)
         .order("occurred_at", { ascending: false });
+      if (error) throw error;
       return data ?? [];
     },
   });
+  const isLoading = events.isLoading || motos.isLoading;
 
   const filtered = useMemo(() => {
     const now = new Date();
@@ -154,243 +157,303 @@ function Financial() {
         title="Financeiro"
         description="Acompanhe quanto cada motocicleta custa em peças, mão de obra e acessórios."
         actions={
-          <ExportMenu
-            filename="trailbook-financeiro"
-            title="Financeiro — TrailBook"
-            subtitle={`${filtered.length} lançamento(s) · Total ${brl(total)}`}
-            columns={exportColumns}
-            rows={filtered}
-          />
+          !isLoading &&
+          !events.isError && (
+            <ExportMenu
+              filename="trailbook-financeiro"
+              title="Financeiro — TrailBook"
+              subtitle={`${filtered.length} lançamento(s) · Total ${brl(total)}`}
+              columns={exportColumns}
+              rows={filtered}
+            />
+          )
         }
       />
 
-      {/* KPIs */}
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Kpi icon={DollarSign} label="Total acumulado" value={brl(allTotal)} accent="primary" />
-        <Kpi icon={Calendar} label="Mês atual" value={brl(monthTotal)} />
-        <Kpi icon={TrendingUp} label={String(now.getFullYear())} value={brl(yearTotal)} />
-      </div>
-
-      {/* Filtros */}
-      <div className="surface-elevated flex flex-wrap items-center gap-2 rounded-2xl p-3">
-        <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
-          <SelectTrigger className="w-36">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todo o período</SelectItem>
-            <SelectItem value="30d">Últimos 30 dias</SelectItem>
-            <SelectItem value="month">Mês atual</SelectItem>
-            <SelectItem value="year">Ano atual</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={motoId} onValueChange={setMotoId}>
-          <SelectTrigger className="w-48">
-            <SelectValue placeholder="Todas as motos" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as motos</SelectItem>
-            {(motos.data ?? []).map((m) => (
-              <SelectItem key={m.id} value={m.id}>
-                {m.nickname || m.model}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-44">
-            <SelectValue placeholder="Todos os tipos" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todos os tipos</SelectItem>
-            {Object.entries(EVENT_TYPE_LABEL).map(([k, v]) => (
-              <SelectItem key={k} value={k}>
-                {v}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={workshopId} onValueChange={setWorkshopId}>
-          <SelectTrigger className="w-44">
-            <SelectValue placeholder="Todas as oficinas" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Todas as oficinas</SelectItem>
-            {(workshops.data ?? [])
-              .filter((w) => w.id && w.name)
-              .map((w) => (
-                <SelectItem key={w.id!} value={w.id!}>
-                  {w.name}
-                </SelectItem>
-              ))}
-          </SelectContent>
-        </Select>
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar…"
-            className="h-9 w-56 pl-7"
-          />
-        </div>
-        {activeFilters > 0 && (
-          <Button variant="ghost" size="sm" onClick={clearFilters}>
-            <X className="h-3.5 w-3.5" /> Limpar
-          </Button>
-        )}
-        <div className="ml-auto text-sm text-muted-foreground">
-          {filtered.length} lançamento(s) · {brl(total)}
-        </div>
-      </div>
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="surface-elevated rounded-2xl p-5">
-          <h2 className="mb-3 font-display font-bold">Por tipo de evento</h2>
-          <div className="space-y-2">
-            {Object.entries(byType)
-              .sort((a, b) => b[1] - a[1])
-              .map(([t, v]) => (
-                <div key={t} className="space-y-1">
-                  <div className="flex items-center justify-between gap-2 text-sm">
-                    <span className="min-w-0 truncate text-muted-foreground">
-                      {EVENT_TYPE_LABEL[t as keyof typeof EVENT_TYPE_LABEL] ?? t}
-                    </span>
-                    <span className="shrink-0 font-semibold">{brl(v)}</span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full bg-primary"
-                      style={{ width: `${total > 0 ? (v / total) * 100 : 0}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            {Object.keys(byType).length === 0 && (
-              <div className="text-sm text-muted-foreground">Sem gastos no filtro.</div>
-            )}
+      {isLoading ? (
+        <TBLoadingState label="Carregando seu financeiro…" />
+      ) : events.isError ? (
+        <div className="surface-elevated flex flex-col items-center gap-3 rounded-2xl border border-destructive/30 p-8 text-center">
+          <AlertTriangle className="h-8 w-8 text-destructive" />
+          <div>
+            <div className="font-semibold text-destructive">
+              Não foi possível carregar o financeiro
+            </div>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Isso é diferente de "sem gastos" — houve uma falha ao buscar os dados. Verifique sua
+              conexão e tente novamente antes de tirar qualquer conclusão sobre seus custos.
+            </p>
           </div>
+          <Button onClick={() => events.refetch()}>Tentar novamente</Button>
         </div>
-
-        <div className="surface-elevated rounded-2xl p-5">
-          <h2 className="mb-3 font-display font-bold">Por motocicleta</h2>
-          <div className="space-y-2">
-            {Object.entries(byMoto)
-              .sort((a, b) => b[1].total - a[1].total)
-              .map(([k, m]) => (
-                <div key={k} className="space-y-1">
-                  <div className="flex items-center justify-between gap-2 text-sm">
-                    <span className="flex min-w-0 items-center gap-1 text-muted-foreground">
-                      <Bike className="h-3 w-3 shrink-0" />{" "}
-                      <span className="truncate">{m.name}</span>
-                    </span>
-                    <span className="shrink-0 font-semibold">{brl(m.total)}</span>
-                  </div>
-                  <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                    <div
-                      className="h-full bg-primary"
-                      style={{ width: `${total > 0 ? (m.total / total) * 100 : 0}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            {Object.keys(byMoto).length === 0 && (
-              <div className="text-sm text-muted-foreground">—</div>
-            )}
+      ) : (
+        <>
+          {/* KPIs */}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Kpi icon={DollarSign} label="Total acumulado" value={brl(allTotal)} accent="primary" />
+            <Kpi icon={Calendar} label="Mês atual" value={brl(monthTotal)} />
+            <Kpi icon={TrendingUp} label={String(now.getFullYear())} value={brl(yearTotal)} />
           </div>
-        </div>
 
-        <div className="surface-elevated rounded-2xl p-5">
-          <h2 className="mb-3 font-display font-bold">Últimos lançamentos</h2>
-          <div className="space-y-2 max-h-80 overflow-y-auto">
-            {filtered.slice(0, 15).map((e) => (
-              <div
-                key={e.id}
-                className="flex items-start justify-between gap-3 border-b border-border/40 pb-2 text-sm last:border-0"
-              >
-                <div className="min-w-0">
-                  <div className="truncate font-medium">{e.title}</div>
-                  <div className="text-xs text-muted-foreground">
-                    {formatDate(e.occurred_at)} ·{" "}
-                    {(e.motorcycles as any)?.nickname || (e.motorcycles as any)?.model}
-                  </div>
-                </div>
-                <div className="shrink-0 font-semibold text-primary">{brl(Number(e.cost))}</div>
+          {/* Filtros */}
+          <div className="surface-elevated grid grid-cols-1 gap-2 rounded-2xl p-3 sm:flex sm:flex-wrap sm:items-center">
+            <Select value={period} onValueChange={(v) => setPeriod(v as Period)}>
+              <SelectTrigger className="w-full sm:w-36">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todo o período</SelectItem>
+                <SelectItem value="30d">Últimos 30 dias</SelectItem>
+                <SelectItem value="month">Mês atual</SelectItem>
+                <SelectItem value="year">Ano atual</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={motoId} onValueChange={setMotoId}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="Todas as motos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as motos</SelectItem>
+                {(motos.data ?? []).map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.nickname || m.model}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-full sm:w-44">
+                <SelectValue placeholder="Todos os tipos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos os tipos</SelectItem>
+                {Object.entries(EVENT_TYPE_LABEL).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>
+                    {v}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={workshopId} onValueChange={setWorkshopId}>
+              <SelectTrigger className="w-full sm:w-44">
+                <SelectValue placeholder="Todas as oficinas" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas as oficinas</SelectItem>
+                {(workshops.data ?? [])
+                  .filter((w) => w.id && w.name)
+                  .map((w) => (
+                    <SelectItem key={w.id!} value={w.id!}>
+                      {w.name}
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+            <div className="relative w-full sm:w-56">
+              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Buscar…"
+                className="h-9 w-full pl-7"
+              />
+            </div>
+            {activeFilters > 0 && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="w-full sm:w-auto">
+                <X className="h-3.5 w-3.5" /> Limpar
+              </Button>
+            )}
+            <div className="text-sm text-muted-foreground sm:ml-auto">
+              {filtered.length} lançamento(s) · {brl(total)}
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="surface-elevated rounded-2xl p-5">
+              <h2 className="mb-3 font-display font-bold">Por tipo de evento</h2>
+              <div className="space-y-2">
+                {Object.entries(byType)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([t, v]) => (
+                    <div key={t} className="space-y-1">
+                      <div className="flex items-center justify-between gap-2 text-sm">
+                        <span className="min-w-0 truncate text-muted-foreground">
+                          {EVENT_TYPE_LABEL[t as keyof typeof EVENT_TYPE_LABEL] ?? t}
+                        </span>
+                        <span className="shrink-0 font-semibold">{brl(v)}</span>
+                      </div>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full bg-primary"
+                          style={{ width: `${total > 0 ? (v / total) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                {Object.keys(byType).length === 0 && (
+                  <div className="text-sm text-muted-foreground">Sem gastos no filtro.</div>
+                )}
               </div>
-            ))}
-            {filtered.length === 0 && (
-              <div className="text-sm text-muted-foreground">
-                Nenhum lançamento. Registre custos abrindo uma moto e clicando em{" "}
-                <strong>Registrar atividade</strong>.
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
+            </div>
 
-      {/* Detalhamento */}
-      <div className="surface-elevated overflow-hidden rounded-2xl">
-        <div className="flex items-center justify-between border-b border-border/60 p-4">
-          <h2 className="font-display font-bold">Detalhamento</h2>
-          <span className="text-xs text-muted-foreground">{filtered.length} lançamento(s)</span>
-        </div>
-        <div className="max-h-[480px] overflow-auto">
-          <table className="w-full text-sm">
-            <thead className="sticky top-0 bg-card">
-              <tr className="border-b border-border/60 text-left text-xs uppercase tracking-widest text-muted-foreground">
-                <th className="px-4 py-2 font-medium">Data</th>
-                <th className="px-4 py-2 font-medium">Moto</th>
-                <th className="px-4 py-2 font-medium">Tipo</th>
-                <th className="px-4 py-2 font-medium">Título</th>
-                <th className="px-4 py-2 font-medium">Oficina</th>
-                <th className="px-4 py-2 text-right font-medium">KM</th>
-                <th className="px-4 py-2 text-right font-medium">Valor</th>
-              </tr>
-            </thead>
-            <tbody>
+            <div className="surface-elevated rounded-2xl p-5">
+              <h2 className="mb-3 font-display font-bold">Por motocicleta</h2>
+              <div className="space-y-2">
+                {Object.entries(byMoto)
+                  .sort((a, b) => b[1].total - a[1].total)
+                  .map(([k, m]) => (
+                    <div key={k} className="space-y-1">
+                      <div className="flex items-center justify-between gap-2 text-sm">
+                        <span className="flex min-w-0 items-center gap-1 text-muted-foreground">
+                          <Bike className="h-3 w-3 shrink-0" />{" "}
+                          <span className="truncate">{m.name}</span>
+                        </span>
+                        <span className="shrink-0 font-semibold">{brl(m.total)}</span>
+                      </div>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full bg-primary"
+                          style={{ width: `${total > 0 ? (m.total / total) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                {Object.keys(byMoto).length === 0 && (
+                  <div className="text-sm text-muted-foreground">—</div>
+                )}
+              </div>
+            </div>
+
+            <div className="surface-elevated rounded-2xl p-5">
+              <h2 className="mb-3 font-display font-bold">Últimos lançamentos</h2>
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {filtered.slice(0, 15).map((e) => (
+                  <div
+                    key={e.id}
+                    className="flex items-start justify-between gap-3 border-b border-border/40 pb-2 text-sm last:border-0"
+                  >
+                    <div className="min-w-0">
+                      <div className="truncate font-medium">{e.title}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatDate(e.occurred_at)} ·{" "}
+                        {(e.motorcycles as any)?.nickname || (e.motorcycles as any)?.model}
+                      </div>
+                    </div>
+                    <div className="shrink-0 font-semibold text-primary">{brl(Number(e.cost))}</div>
+                  </div>
+                ))}
+                {filtered.length === 0 && (
+                  <div className="text-sm text-muted-foreground">
+                    Nenhum lançamento. Registre custos abrindo uma moto e clicando em{" "}
+                    <strong>Registrar atividade</strong>.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Detalhamento */}
+          <div className="surface-elevated overflow-hidden rounded-2xl">
+            <div className="flex items-center justify-between border-b border-border/60 p-4">
+              <h2 className="font-display font-bold">Detalhamento</h2>
+              <span className="text-xs text-muted-foreground">{filtered.length} lançamento(s)</span>
+            </div>
+
+            {/* Mobile: lista de cartões — nada de tabela com rolagem lateral. */}
+            <div className="max-h-[480px] space-y-2 overflow-y-auto p-3 md:hidden">
               {filtered.map((e) => (
-                <tr key={e.id} className="border-b border-border/40 hover:bg-muted/30">
-                  <td className="whitespace-nowrap px-4 py-2 text-muted-foreground">
-                    {formatDate(e.occurred_at)}
-                  </td>
-                  <td className="px-4 py-2">
-                    {(e.motorcycles as any)?.nickname || (e.motorcycles as any)?.model || "—"}
-                  </td>
-                  <td className="px-4 py-2 text-xs">
-                    {EVENT_TYPE_LABEL[e.type as keyof typeof EVENT_TYPE_LABEL] || e.type}
-                  </td>
-                  <td className="px-4 py-2">{e.title || "—"}</td>
-                  <td className="px-4 py-2 text-muted-foreground">
-                    {(e.workshops as any)?.name || "—"}
-                  </td>
-                  <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">
-                    {e.km_at_event ?? "—"}
-                  </td>
-                  <td className="px-4 py-2 text-right font-semibold text-primary tabular-nums">
-                    {brl(Number(e.cost))}
-                  </td>
-                </tr>
+                <div key={e.id} className="rounded-xl border border-border/60 bg-card/40 p-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="truncate text-sm font-semibold">{e.title || "—"}</div>
+                      <div className="text-xs text-muted-foreground">
+                        {formatDate(e.occurred_at)} ·{" "}
+                        {(e.motorcycles as any)?.nickname || (e.motorcycles as any)?.model || "—"}
+                      </div>
+                    </div>
+                    <div className="shrink-0 font-semibold text-primary tabular-nums">
+                      {brl(Number(e.cost))}
+                    </div>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                    <span>
+                      {EVENT_TYPE_LABEL[e.type as keyof typeof EVENT_TYPE_LABEL] || e.type}
+                    </span>
+                    {(e.workshops as any)?.name && <span>· {(e.workshops as any).name}</span>}
+                    {e.km_at_event != null && <span>· {e.km_at_event} km</span>}
+                  </div>
+                </div>
               ))}
               {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={7} className="px-4 py-8 text-center text-sm text-muted-foreground">
-                    Nenhum lançamento no filtro atual.
-                  </td>
-                </tr>
+                <div className="px-2 py-8 text-center text-sm text-muted-foreground">
+                  Nenhum lançamento no filtro atual.
+                </div>
               )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+            </div>
 
-      <div className="surface-elevated rounded-2xl border border-dashed border-border p-4 text-xs text-muted-foreground">
-        💡 <strong>Como registrar despesas:</strong> abra a motocicleta, clique em{" "}
-        <Link to="/motorcycles" className="text-primary underline">
-          Registrar atividade
-        </Link>
-        , preencha o campo <strong>Custo R$</strong>. Todo evento com custo aparece aqui
-        automaticamente.
-      </div>
+            {/* Desktop/tablet: tabela completa. */}
+            <div className="hidden max-h-[480px] overflow-auto md:block">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-card">
+                  <tr className="border-b border-border/60 text-left text-xs uppercase tracking-widest text-muted-foreground">
+                    <th className="px-4 py-2 font-medium">Data</th>
+                    <th className="px-4 py-2 font-medium">Moto</th>
+                    <th className="px-4 py-2 font-medium">Tipo</th>
+                    <th className="px-4 py-2 font-medium">Título</th>
+                    <th className="px-4 py-2 font-medium">Oficina</th>
+                    <th className="px-4 py-2 text-right font-medium">KM</th>
+                    <th className="px-4 py-2 text-right font-medium">Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map((e) => (
+                    <tr key={e.id} className="border-b border-border/40 hover:bg-muted/30">
+                      <td className="whitespace-nowrap px-4 py-2 text-muted-foreground">
+                        {formatDate(e.occurred_at)}
+                      </td>
+                      <td className="px-4 py-2">
+                        {(e.motorcycles as any)?.nickname || (e.motorcycles as any)?.model || "—"}
+                      </td>
+                      <td className="px-4 py-2 text-xs">
+                        {EVENT_TYPE_LABEL[e.type as keyof typeof EVENT_TYPE_LABEL] || e.type}
+                      </td>
+                      <td className="px-4 py-2">{e.title || "—"}</td>
+                      <td className="px-4 py-2 text-muted-foreground">
+                        {(e.workshops as any)?.name || "—"}
+                      </td>
+                      <td className="px-4 py-2 text-right tabular-nums text-muted-foreground">
+                        {e.km_at_event ?? "—"}
+                      </td>
+                      <td className="px-4 py-2 text-right font-semibold text-primary tabular-nums">
+                        {brl(Number(e.cost))}
+                      </td>
+                    </tr>
+                  ))}
+                  {filtered.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={7}
+                        className="px-4 py-8 text-center text-sm text-muted-foreground"
+                      >
+                        Nenhum lançamento no filtro atual.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="surface-elevated rounded-2xl border border-dashed border-border p-4 text-xs text-muted-foreground">
+            💡 <strong>Como registrar despesas:</strong> abra a motocicleta, clique em{" "}
+            <Link to="/motorcycles" className="text-primary underline">
+              Registrar atividade
+            </Link>
+            , preencha o campo <strong>Custo R$</strong>. Todo evento com custo aparece aqui
+            automaticamente.
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -2,7 +2,16 @@ import { useMemo, useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, AlertTriangle, Heart, Wrench, FolderOpen, Camera, Sparkles, Stethoscope } from "lucide-react";
+import {
+  ChevronRight,
+  AlertTriangle,
+  Heart,
+  Wrench,
+  FolderOpen,
+  Camera,
+  Sparkles,
+  Stethoscope,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { computeCockpitSnapshot } from "@/lib/til";
 import { HealthHeroWidget } from "./widgets/HealthHeroWidget";
@@ -24,12 +33,16 @@ export function Cockpit({ motoId }: { motoId: string }) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { setActiveId } = useActiveMotorcycle();
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setCurrentUserId(data.user?.id ?? null));
+    supabase.auth.getSession().then(({ data }) => setCurrentUserId(data.session?.user.id ?? null));
   }, []);
   const moto = useQuery({
     queryKey: ["motorcycle", motoId],
     queryFn: async () => {
-      const { data, error } = await supabase.from("motorcycles").select("*").eq("id", motoId).single();
+      const { data, error } = await supabase
+        .from("motorcycles")
+        .select("*")
+        .eq("id", motoId)
+        .single();
       if (error) throw error;
       return data;
     },
@@ -51,7 +64,8 @@ export function Cockpit({ motoId }: { motoId: string }) {
   const schedules = useQuery({
     queryKey: ["schedules", motoId],
     queryFn: async () =>
-      (await supabase.from("maintenance_schedules").select("*").eq("motorcycle_id", motoId)).data ?? [],
+      (await supabase.from("maintenance_schedules").select("*").eq("motorcycle_id", motoId)).data ??
+      [],
   });
 
   const attachments = useQuery({
@@ -130,7 +144,9 @@ export function Cockpit({ motoId }: { motoId: string }) {
             </div>
           </div>
           <Button asChild size="sm" variant="outline" className="shrink-0">
-            <Link to="/motorcycles/$id/control" params={{ id: m.id }}>Adicionar</Link>
+            <Link to="/motorcycles/$id/control" params={{ id: m.id }}>
+              Adicionar
+            </Link>
           </Button>
         </div>
       )}

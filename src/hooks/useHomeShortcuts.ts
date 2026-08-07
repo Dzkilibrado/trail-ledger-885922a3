@@ -5,8 +5,8 @@ import { resolveHomeShortcuts } from "@/lib/home-shortcuts";
 export const HOME_SHORTCUTS_QUERY_KEY = ["home-shortcuts"] as const;
 
 async function fetchHomeShortcutKeys(): Promise<string[] | null> {
-  const { data: u } = await supabase.auth.getUser();
-  const uid = u.user?.id;
+  const { data: s } = await supabase.auth.getSession();
+  const uid = s.session?.user.id;
   if (!uid) return null;
   const { data } = await supabase
     .from("profiles")

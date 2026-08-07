@@ -247,7 +247,7 @@ const QuickActions = memo(function QuickActions({ motoId }: { motoId: string }) 
             <Link
               key={it.key}
               to={it.to as any}
-              params={{ id: motoId } as any}
+              params={(it.needsMoto === false ? undefined : { id: motoId }) as any}
               search={(it.search ?? undefined) as any}
               className="group flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-border bg-card px-2 py-3 text-center transition-colors hover:border-primary/40 hover:bg-accent/40"
             >

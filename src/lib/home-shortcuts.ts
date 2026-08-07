@@ -8,14 +8,18 @@ import {
   ShieldCheck,
   Stethoscope,
   Wrench,
+  Wallet,
+  CalendarDays,
+  QrCode,
   type LucideIcon,
 } from "lucide-react";
 
 /**
  * Catálogo de atalhos que o usuário pode escolher para a tela inicial.
  *
- * `to` sempre relativo à moto ativa (usa params={{ id }} na Link). Se um dia
- * fizer sentido ter atalho que não depende de moto, adicionar `needsMoto: false`.
+ * Por padrão `to` é relativo à moto ativa (usa params={{ id }} na Link).
+ * Atalhos que apontam para uma seção global (não depende de moto) marcam
+ * `needsMoto: false` — o Dashboard não injeta o parâmetro de moto nesses.
  */
 export type HomeShortcutKey =
   | "passaporte"
@@ -27,7 +31,11 @@ export type HomeShortcutKey =
   | "cockpit"
   | "checkups"
   | "central-moto"
-  | "registrar-atividade";
+  | "registrar-atividade"
+  | "financeiro"
+  | "agenda"
+  | "oficinas"
+  | "certificados";
 
 export interface HomeShortcutDef {
   key: HomeShortcutKey;
@@ -37,6 +45,8 @@ export interface HomeShortcutDef {
   to: string;
   /** Parâmetros de busca opcionais — ex: abrir um formulário direto na tela de destino. */
   search?: Record<string, string>;
+  /** false = seção global, não depende de uma moto específica. Padrão: true. */
+  needsMoto?: boolean;
 }
 
 export const HOME_SHORTCUT_CATALOG: HomeShortcutDef[] = [
@@ -112,6 +122,38 @@ export const HOME_SHORTCUT_CATALOG: HomeShortcutDef[] = [
     icon: FileSignature,
     to: "/motorcycles/$id/control",
     search: { tab: "documentos" },
+  },
+  {
+    key: "financeiro",
+    label: "Financeiro",
+    description: "Custos e gastos de todas as motos",
+    icon: Wallet,
+    to: "/financial",
+    needsMoto: false,
+  },
+  {
+    key: "agenda",
+    label: "Agenda",
+    description: "Compromissos e lembretes",
+    icon: CalendarDays,
+    to: "/agenda",
+    needsMoto: false,
+  },
+  {
+    key: "oficinas",
+    label: "Oficinas",
+    description: "Oficinas parceiras e de confiança",
+    icon: Wrench,
+    to: "/workshops",
+    needsMoto: false,
+  },
+  {
+    key: "certificados",
+    label: "Certificados",
+    description: "Certificados digitais emitidos",
+    icon: QrCode,
+    to: "/certificates",
+    needsMoto: false,
   },
 ];
 

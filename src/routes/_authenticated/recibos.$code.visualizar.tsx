@@ -29,7 +29,10 @@ export const Route = createFileRoute("/_authenticated/recibos/$code/visualizar")
   head: ({ params }) => ({
     meta: [
       { title: `Visualizar recibo ${params.code} — TrailBook` },
-      { name: "description", content: `Visualização controlada do Recibo Inteligente ${params.code}.` },
+      {
+        name: "description",
+        content: `Visualização controlada do Recibo Inteligente ${params.code}.`,
+      },
       { name: "robots", content: "noindex,nofollow" },
     ],
   }),
@@ -52,26 +55,28 @@ function ReceiptViewer() {
         .select("id, status, closure_type, seller_id, buyer_id, motorcycle_id, signed_pdf_path")
         .eq("code", code)
         .maybeSingle();
-      return (data as {
-        id?: string;
-        status?: string;
-        closure_type?: ClosureType | null;
-        seller_id?: string;
-        buyer_id?: string | null;
-        motorcycle_id?: string;
-        signed_pdf_path?: string | null;
-      } | null) ?? null;
+      return (
+        (data as {
+          id?: string;
+          status?: string;
+          closure_type?: ClosureType | null;
+          seller_id?: string;
+          buyer_id?: string | null;
+          motorcycle_id?: string;
+          signed_pdf_path?: string | null;
+        } | null) ?? null
+      );
     },
   });
 
   const uidQ = useQuery({
     queryKey: ["auth-uid"],
-    queryFn: async () => (await supabase.auth.getUser()).data.user?.id ?? null,
+    queryFn: async () => (await supabase.auth.getSession()).data.session?.user.id ?? null,
     staleTime: 60_000,
   });
 
   const statusLabel = meta.data?.status
-    ? RECEIPT_STATUS_LABEL[meta.data.status as ReceiptStatus] ?? meta.data.status
+    ? (RECEIPT_STATUS_LABEL[meta.data.status as ReceiptStatus] ?? meta.data.status)
     : null;
 
   const status = meta.data?.status ?? null;
@@ -91,29 +96,37 @@ function ReceiptViewer() {
   // Papel do usuário atual para expor a ação de encerrar quando aplicável.
   const uid = uidQ.data ?? null;
   const role: "seller" | "buyer" | null =
-    uid && meta.data?.seller_id === uid ? "seller"
-    : uid && meta.data?.buyer_id === uid ? "buyer"
-    : null;
+    uid && meta.data?.seller_id === uid
+      ? "seller"
+      : uid && meta.data?.buyer_id === uid
+        ? "buyer"
+        : null;
   const canClose =
-    role !== null && status !== null &&
+    role !== null &&
+    status !== null &&
     (role === "seller"
       ? ["draft", "issued", "awaiting_acceptance"].includes(status)
       : ["issued", "awaiting_acceptance"].includes(status));
 
   // Pode anexar documento assinado? Apenas partes, em processo ativo (não completed/cancelled/etc).
   const canAttach =
-    role !== null && status !== null &&
-    ["issued", "awaiting_acceptance"].includes(status);
+    role !== null && status !== null && ["issued", "awaiting_acceptance"].includes(status);
   const hasSigned = Boolean(meta.data?.signed_pdf_path);
   const attachLabel = hasSigned ? "Reanexar assinado" : "Anexar documento assinado";
 
   function goBack() {
-    if (from) { navigate({ to: from }); return; }
+    if (from) {
+      navigate({ to: from });
+      return;
+    }
     if (typeof window !== "undefined" && window.history.length > 1) router.history.back();
     else navigate({ to: "/transfers", search: { receipt: code } });
   }
   function close() {
-    if (from) { navigate({ to: from }); return; }
+    if (from) {
+      navigate({ to: from });
+      return;
+    }
     navigate({ to: "/transfers", search: { receipt: code } });
   }
 
@@ -157,7 +170,11 @@ function ReceiptViewer() {
             origin="receipt_view"
             motorcycleId={meta.data.motorcycle_id}
             trigger={
-              <Button variant="outline" size="sm" className="w-full text-destructive hover:text-destructive">
+              <Button
+                variant="outline"
+                size="sm"
+                className="w-full text-destructive hover:text-destructive"
+              >
                 <X className="h-4 w-4" />
                 {role === "seller" ? "Cancelar processo" : "Recusar compra"}
               </Button>

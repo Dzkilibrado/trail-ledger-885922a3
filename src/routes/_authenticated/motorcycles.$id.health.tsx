@@ -13,15 +13,22 @@ export const Route = createFileRoute("/_authenticated/motorcycles/$id/health")({
 function HealthPage() {
   const { id } = Route.useParams();
   const [uid, setUid] = useState<string | null>(null);
-  useEffect(() => { supabase.auth.getUser().then(({ data }) => setUid(data.user?.id ?? null)); }, []);
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setUid(data.session?.user.id ?? null));
+  }, []);
 
   const moto = useQuery({
     queryKey: ["motorcycle", id],
-    queryFn: async () => (await supabase.from("motorcycles").select("*").eq("id", id).single()).data,
+    queryFn: async () =>
+      (await supabase.from("motorcycles").select("*").eq("id", id).single()).data,
   });
 
   if (!moto.data) {
-    return <div className="mx-auto max-w-2xl"><div className="surface-elevated h-40 animate-pulse rounded-2xl" /></div>;
+    return (
+      <div className="mx-auto max-w-2xl">
+        <div className="surface-elevated h-40 animate-pulse rounded-2xl" />
+      </div>
+    );
   }
   const m = moto.data;
   const isOwner = !!uid && (m as any).owner_id === uid;

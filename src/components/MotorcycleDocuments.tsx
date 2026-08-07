@@ -131,7 +131,7 @@ export function MotorcycleDocuments({
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [uid, setUid] = useState<string | null>(null);
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUid(data.user?.id ?? null));
+    supabase.auth.getSession().then(({ data }) => setUid(data.session?.user.id ?? null));
   }, []);
 
   const pendency = useMotoDocumentPendency(motorcycleId);

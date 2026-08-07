@@ -45,8 +45,8 @@ export type ProfileSnapshot = {
 };
 
 async function fetchSnapshot(): Promise<ProfileSnapshot | null> {
-  const { data: u } = await supabase.auth.getUser();
-  const uid = u.user?.id;
+  const { data: s } = await supabase.auth.getSession();
+  const uid = s.session?.user.id;
   if (!uid) return null;
   const { data: p } = await supabase
     .from("profiles")
@@ -58,7 +58,7 @@ async function fetchSnapshot(): Promise<ProfileSnapshot | null> {
   if (!p) return null;
   const full_name = p.full_name ?? "";
   const display_name = p.display_name ?? "";
-  const email = p.email ?? u.user?.email ?? "";
+  const email = p.email ?? s.session?.user.email ?? "";
   const phone = p.phone ?? "";
   const waSame = !!p.whatsapp_same_as_phone;
   const whatsapp = p.whatsapp ?? "";
@@ -68,7 +68,14 @@ async function fetchSnapshot(): Promise<ProfileSnapshot | null> {
     .filter((s) => s && String(s).trim())
     .join(", ");
   const isComplete = !!(
-    full_name && p.cpf && p.birth_date && email && phone && whatsappResolved && p.uf && p.city
+    full_name &&
+    p.cpf &&
+    p.birth_date &&
+    email &&
+    phone &&
+    whatsappResolved &&
+    p.uf &&
+    p.city
   );
   return {
     uid,

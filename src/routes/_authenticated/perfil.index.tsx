@@ -102,12 +102,12 @@ function AccountCenter() {
   const meQ = useQuery({
     queryKey: ["account-center", "me"],
     queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return null;
+      const { data: s } = await supabase.auth.getSession();
+      if (!s.session?.user) return null;
       const { data } = await supabase
         .from("profiles")
         .select("full_name, email, avatar_url")
-        .eq("id", u.user.id)
+        .eq("id", s.session.user.id)
         .maybeSingle();
       return data;
     },

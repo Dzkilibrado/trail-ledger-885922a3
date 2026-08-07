@@ -5,8 +5,8 @@ import { resolveBottomNav } from "@/lib/bottom-nav";
 export const BOTTOM_NAV_QUERY_KEY = ["bottom-nav-items"] as const;
 
 async function fetchBottomNavKeys(): Promise<string[] | null> {
-  const { data: u } = await supabase.auth.getUser();
-  const uid = u.user?.id;
+  const { data: s } = await supabase.auth.getSession();
+  const uid = s.session?.user.id;
   if (!uid) return null;
   const { data } = await supabase
     .from("profiles")

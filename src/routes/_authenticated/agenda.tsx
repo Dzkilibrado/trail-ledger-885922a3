@@ -3,7 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Calendar, AlertTriangle, Clock, CheckCircle2, EyeOff, Pause, Bike } from "lucide-react";
-import { priorityList, evaluateSchedule, usageRate, type ScheduleStatus } from "@/lib/maintenance-engine";
+import {
+  priorityList,
+  evaluateSchedule,
+  usageRate,
+  type ScheduleStatus,
+} from "@/lib/maintenance-engine";
 import { MAINT_CATEGORY_LABEL, formatDate, type MaintenanceCategory } from "@/lib/trailbook";
 import { PageHeader } from "@/components/PageHeader";
 import { ScheduleActionsMenu } from "@/components/ScheduleActionsMenu";
@@ -37,13 +42,48 @@ const FILTERS: { key: FilterKey; label: string }[] = [
 ];
 
 const STATUS_META: Record<ExtStatus, { label: string; badge: string; bar: string; icon: any }> = {
-  overdue: { label: "Vencida",   badge: "bg-destructive/15 text-destructive border-destructive/30", bar: "bg-destructive",   icon: AlertTriangle },
-  due:     { label: "Vence agora", badge: "bg-amber-500/15 text-amber-400 border-amber-500/30",     bar: "bg-amber-400",     icon: AlertTriangle },
-  soon:    { label: "Próxima",   badge: "bg-amber-400/10 text-amber-300 border-amber-400/30",       bar: "bg-amber-300",     icon: Clock },
-  ok:      { label: "Em dia",    badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30", bar: "bg-emerald-400",   icon: CheckCircle2 },
-  snoozed: { label: "Postergada", badge: "bg-sky-500/15 text-sky-400 border-sky-500/30",            bar: "bg-sky-400/50",    icon: Pause },
-  ignored: { label: "Ignorada",   badge: "bg-muted text-muted-foreground border-border",            bar: "bg-muted",         icon: EyeOff },
-  done:    { label: "Concluída",  badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30", bar: "bg-emerald-400",  icon: CheckCircle2 },
+  overdue: {
+    label: "Vencida",
+    badge: "bg-destructive/15 text-destructive border-destructive/30",
+    bar: "bg-destructive",
+    icon: AlertTriangle,
+  },
+  due: {
+    label: "Vence agora",
+    badge: "bg-amber-500/15 text-amber-400 border-amber-500/30",
+    bar: "bg-amber-400",
+    icon: AlertTriangle,
+  },
+  soon: {
+    label: "Próxima",
+    badge: "bg-amber-400/10 text-amber-300 border-amber-400/30",
+    bar: "bg-amber-300",
+    icon: Clock,
+  },
+  ok: {
+    label: "Em dia",
+    badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    bar: "bg-emerald-400",
+    icon: CheckCircle2,
+  },
+  snoozed: {
+    label: "Postergada",
+    badge: "bg-sky-500/15 text-sky-400 border-sky-500/30",
+    bar: "bg-sky-400/50",
+    icon: Pause,
+  },
+  ignored: {
+    label: "Ignorada",
+    badge: "bg-muted text-muted-foreground border-border",
+    bar: "bg-muted",
+    icon: EyeOff,
+  },
+  done: {
+    label: "Concluída",
+    badge: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    bar: "bg-emerald-400",
+    icon: CheckCircle2,
+  },
 };
 
 function Agenda() {
@@ -53,11 +93,17 @@ function Agenda() {
   const motos = useActiveMotorcycles();
   const schedules = useQuery({
     queryKey: ["schedules"],
-    queryFn: async () => (await supabase.from("maintenance_schedules").select("*").eq("active", true)).data ?? [],
+    queryFn: async () =>
+      (await supabase.from("maintenance_schedules").select("*").eq("active", true)).data ?? [],
   });
   const events = useQuery({
     queryKey: ["events", "all"],
-    queryFn: async () => (await supabase.from("events").select("id, motorcycle_id, occurred_at, hours_delta, km_delta")).data ?? [],
+    queryFn: async () =>
+      (
+        await supabase
+          .from("events")
+          .select("id, motorcycle_id, occurred_at, hours_delta, km_delta")
+      ).data ?? [],
   });
 
   // Computa todas as entradas com status estendido (sem filtrar dormentes)
@@ -90,7 +136,8 @@ function Agenda() {
     // Ordenação: vencidas > devidas > próximas > em dia > postergadas > ignoradas > concluídas
     const order: ExtStatus[] = ["overdue", "due", "soon", "ok", "snoozed", "ignored", "done"];
     out.sort((a, b) => {
-      const da = order.indexOf(a.status), db = order.indexOf(b.status);
+      const da = order.indexOf(a.status),
+        db = order.indexOf(b.status);
       if (da !== db) return da - db;
       const pa = a.computed?.progress ?? 0;
       const pb = b.computed?.progress ?? 0;
@@ -100,7 +147,15 @@ function Agenda() {
   }, [motos.data, schedules.data, events.data]);
 
   const counts = useMemo(() => {
-    const c: Record<string, number> = { all: entries.length, overdue: 0, soon: 0, ok: 0, snoozed: 0, ignored: 0, done: 0 };
+    const c: Record<string, number> = {
+      all: entries.length,
+      overdue: 0,
+      soon: 0,
+      ok: 0,
+      snoozed: 0,
+      ignored: 0,
+      done: 0,
+    };
     for (const e of entries) {
       if (e.status === "overdue" || e.status === "due") c.overdue++;
       else if (e.status === "soon") c.soon++;
@@ -112,7 +167,8 @@ function Agenda() {
 
   const filtered = useMemo(() => {
     if (filter === "all") return entries;
-    if (filter === "overdue") return entries.filter((e) => e.status === "overdue" || e.status === "due");
+    if (filter === "overdue")
+      return entries.filter((e) => e.status === "overdue" || e.status === "due");
     if (filter === "soon") return entries.filter((e) => e.status === "soon");
     if (filter === "ok") return entries.filter((e) => e.status === "ok");
     return entries.filter((e) => e.status === filter);
@@ -147,7 +203,8 @@ function Agenda() {
           <Calendar className="mx-auto h-10 w-10 text-muted-foreground" />
           <h2 className="mt-4 font-display text-lg font-bold">Nenhum lembrete configurado</h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Abra uma moto e use <strong>Plano de manutenção</strong> para aplicar o catálogo recomendado.
+            Abra uma moto e use <strong>Plano de manutenção</strong> para aplicar o catálogo
+            recomendado.
           </p>
         </div>
       ) : filtered.length === 0 ? (
@@ -195,39 +252,61 @@ function AgendaCard({ entry, onComplete }: { entry: Entry; onComplete: () => voi
   return (
     <li className="surface-elevated rounded-2xl p-4">
       <div className="flex items-start gap-3">
-        <div className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg border ${meta.badge}`}>
+        <div
+          className={`mt-0.5 grid h-8 w-8 shrink-0 place-items-center rounded-lg border ${meta.badge}`}
+        >
           <Icon className="h-4 w-4" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div className="min-w-0">
               <div className="truncate font-semibold">{schedule.name}</div>
-              <Link to="/motorcycles/$id" params={{ id: moto.id }} className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground">
+              <Link
+                to="/motorcycles/$id"
+                params={{ id: moto.id }}
+                className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+              >
                 <Bike className="h-3 w-3" /> {moto.nickname || moto.model}
                 <span className="opacity-50">·</span>
                 <span>{MAINT_CATEGORY_LABEL[schedule.category as MaintenanceCategory]}</span>
               </Link>
             </div>
-            <div className="flex items-center gap-1">
-              <span className={`rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${meta.badge}`}>{meta.label}</span>
+            <div className="flex shrink-0 items-center gap-1">
+              <span
+                className={`shrink-0 whitespace-nowrap rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase ${meta.badge}`}
+              >
+                {meta.label}
+              </span>
               <ScheduleActionsMenu schedule={schedule} onComplete={onComplete} />
             </div>
           </div>
 
           {computed && (
             <div className="mt-2 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-              {computed.remaining.hours != null && <span>{computed.remaining.hours.toFixed(1)} h restantes</span>}
-              {computed.remaining.km != null && <span>{computed.remaining.km.toFixed(0)} km restantes</span>}
-              {computed.remaining.days != null && <span>{Math.round(computed.remaining.days)} dias restantes</span>}
-              {computed.estimatedDueDate && <span>· est. {computed.estimatedDueDate.toLocaleDateString("pt-BR")}</span>}
+              {computed.remaining.hours != null && (
+                <span>{computed.remaining.hours.toFixed(1)} h restantes</span>
+              )}
+              {computed.remaining.km != null && (
+                <span>{computed.remaining.km.toFixed(0)} km restantes</span>
+              )}
+              {computed.remaining.days != null && (
+                <span>{Math.round(computed.remaining.days)} dias restantes</span>
+              )}
+              {computed.estimatedDueDate && (
+                <span>· est. {computed.estimatedDueDate.toLocaleDateString("pt-BR")}</span>
+              )}
             </div>
           )}
 
           {!computed && status === "snoozed" && snoozedUntil && (
-            <div className="mt-2 text-xs text-muted-foreground">Reaparece em {formatDate(snoozedUntil)}</div>
+            <div className="mt-2 text-xs text-muted-foreground">
+              Reaparece em {formatDate(snoozedUntil)}
+            </div>
           )}
           {lastDoneAt && (
-            <div className="mt-1 text-[11px] text-muted-foreground">Última execução: {formatDate(lastDoneAt)}</div>
+            <div className="mt-1 text-[11px] text-muted-foreground">
+              Última execução: {formatDate(lastDoneAt)}
+            </div>
           )}
 
           {computed && (

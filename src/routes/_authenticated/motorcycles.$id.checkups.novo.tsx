@@ -8,9 +8,15 @@ export const Route = createFileRoute("/_authenticated/motorcycles/$id/checkups/n
   head: () => ({
     meta: [
       { title: "Check-up Inteligente — TrailBook" },
-      { name: "description", content: "Faça o Check-up da sua moto e emita o Laudo Inteligente TrailBook." },
+      {
+        name: "description",
+        content: "Faça o Check-up da sua moto e emita o Laudo Inteligente TrailBook.",
+      },
       { property: "og:title", content: "Check-up Inteligente — TrailBook" },
-      { property: "og:description", content: "Análise guiada da saúde da moto com emissão de laudo." },
+      {
+        property: "og:description",
+        content: "Análise guiada da saúde da moto com emissão de laudo.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
     ],
@@ -22,7 +28,7 @@ function NewCheckupPage() {
   const { id } = Route.useParams();
   const [uid, setUid] = useState<string | null>(null);
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUid(data.user?.id ?? null));
+    supabase.auth.getSession().then(({ data }) => setUid(data.session?.user.id ?? null));
   }, []);
 
   return (

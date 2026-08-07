@@ -7,9 +7,11 @@ export function useIsAdmin() {
   const q = useQuery({
     queryKey: ["me", "is-admin"],
     queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return false;
-      const { data, error } = await supabase.rpc("is_user_admin" as any, { _user_id: u.user.id });
+      const { data: s } = await supabase.auth.getSession();
+      if (!s.session?.user) return false;
+      const { data, error } = await supabase.rpc("is_user_admin" as any, {
+        _user_id: s.session.user.id,
+      });
       if (error) throw error;
       return data === true;
     },

@@ -6,9 +6,13 @@ export function usePlan(): { plan: PlanDef; loading: boolean } {
   const q = useQuery({
     queryKey: ["profile", "me"],
     queryFn: async () => {
-      const { data: u } = await supabase.auth.getUser();
-      if (!u.user) return null;
-      const { data } = await supabase.from("profiles").select("plan, plan_since").eq("id", u.user.id).maybeSingle();
+      const { data: s } = await supabase.auth.getSession();
+      if (!s.session?.user) return null;
+      const { data } = await supabase
+        .from("profiles")
+        .select("plan, plan_since")
+        .eq("id", s.session.user.id)
+        .maybeSingle();
       return data;
     },
     staleTime: 60_000,

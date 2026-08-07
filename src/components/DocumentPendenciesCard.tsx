@@ -19,7 +19,7 @@ export function DocumentPendenciesCard({ scopeMotoId }: { scopeMotoId?: string |
   const [uid, setUid] = useState<string | null>(null);
   const { activeId } = useActiveMotorcycle();
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUid(data.user?.id ?? null));
+    supabase.auth.getSession().then(({ data }) => setUid(data.session?.user.id ?? null));
   }, []);
   // Cada Dashboard representa apenas UMA moto (v1.6.11): filtra pendências
   // pela moto em foco. Se nenhuma foi indicada, cai para a moto ativa.
@@ -51,10 +51,7 @@ export function DocumentPendenciesCard({ scopeMotoId }: { scopeMotoId?: string |
       <ul className="space-y-2">
         {rows.slice(0, 4).map((r) => {
           const originInfo = findOrigin(r.origin_type);
-          const label =
-            r.nickname ||
-            [r.brand, r.model].filter(Boolean).join(" ") ||
-            "Motocicleta";
+          const label = r.nickname || [r.brand, r.model].filter(Boolean).join(" ") || "Motocicleta";
           return (
             <li key={r.motorcycle_id}>
               <Link
