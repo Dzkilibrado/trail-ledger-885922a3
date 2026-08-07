@@ -15,14 +15,20 @@ type PdfDoc = {
 };
 type PdfPage = {
   getViewport: (opts: { scale: number }) => { width: number; height: number };
-  render: (opts: { canvasContext: CanvasRenderingContext2D; viewport: unknown; canvas?: HTMLCanvasElement }) => { promise: Promise<void>; cancel: () => void };
+  render: (opts: {
+    canvasContext: CanvasRenderingContext2D;
+    viewport: unknown;
+    canvas?: HTMLCanvasElement;
+  }) => { promise: Promise<void>; cancel: () => void };
   cleanup?: () => void;
 };
 
 async function loadPdfJs() {
   const pdfjs = await import("pdfjs-dist/build/pdf.mjs");
   const workerUrl = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
-  (pdfjs as unknown as { GlobalWorkerOptions: { workerSrc: string } }).GlobalWorkerOptions.workerSrc = workerUrl;
+  (
+    pdfjs as unknown as { GlobalWorkerOptions: { workerSrc: string } }
+  ).GlobalWorkerOptions.workerSrc = workerUrl;
   return pdfjs as unknown as {
     getDocument: (src: { data: Uint8Array }) => { promise: Promise<PdfDoc> };
   };
@@ -45,29 +51,43 @@ export function PdfBytesView({
 
   useEffect(() => {
     let cancelled = false;
-    if (!bytes) { setState("idle"); return; }
+    if (!bytes) {
+      setState("idle");
+      return;
+    }
     setState("loading");
     (async () => {
       try {
         const pdfjs = await loadPdfJs();
         const task = pdfjs.getDocument({ data: bytes.slice() });
         const doc = await task.promise;
-        if (cancelled) { void doc.destroy(); return; }
+        if (cancelled) {
+          void doc.destroy();
+          return;
+        }
         if (docRef.current) await docRef.current.destroy().catch(() => {});
         docRef.current = doc;
         setNumPages(doc.numPages);
         setState("ready");
       } catch (err) {
         console.error("[PdfBytesView] falha ao abrir documento", err);
-        if (!cancelled) { setState("error"); onError?.(err); }
+        if (!cancelled) {
+          setState("error");
+          onError?.(err);
+        }
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [bytes, onError]);
 
-  useEffect(() => () => {
-    if (docRef.current) void docRef.current.destroy().catch(() => {});
-  }, []);
+  useEffect(
+    () => () => {
+      if (docRef.current) void docRef.current.destroy().catch(() => {});
+    },
+    [],
+  );
 
   if (state === "loading" || state === "idle") {
     return (
@@ -118,20 +138,32 @@ function PdfPages({
   const pages = Array.from({ length: numPages }, (_, i) => i + 1);
 
   return (
-    <div ref={containerRef} className="mx-auto flex max-w-3xl flex-col items-center gap-3 p-2 sm:p-4">
-      {containerWidth > 0 && pages.map((n) => (
-        <PdfPageCanvas
-          key={n}
-          doc={doc}
-          pageNumber={n}
-          targetWidth={Math.max(280, containerWidth - 16) * zoom}
-        />
-      ))}
+    <div
+      ref={containerRef}
+      className="mx-auto flex max-w-3xl flex-col items-center gap-3 p-2 sm:p-4"
+    >
+      {containerWidth > 0 &&
+        pages.map((n) => (
+          <PdfPageCanvas
+            key={n}
+            doc={doc}
+            pageNumber={n}
+            targetWidth={Math.max(280, containerWidth - 16) * zoom}
+          />
+        ))}
     </div>
   );
 }
 
-function PdfPageCanvas({ doc, pageNumber, targetWidth }: { doc: PdfDoc; pageNumber: number; targetWidth: number }) {
+function PdfPageCanvas({
+  doc,
+  pageNumber,
+  targetWidth,
+}: {
+  doc: PdfDoc;
+  pageNumber: number;
+  targetWidth: number;
+}) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
   const [error, setError] = useState(false);
@@ -165,16 +197,31 @@ function PdfPageCanvas({ doc, pageNumber, targetWidth }: { doc: PdfDoc; pageNumb
         }
       }
     })();
-    return () => { cancelled = true; try { renderTask?.cancel(); } catch { /* noop */ } };
+    return () => {
+      cancelled = true;
+      try {
+        renderTask?.cancel();
+      } catch {
+        /* noop */
+      }
+    };
   }, [doc, pageNumber, targetWidth]);
 
   return (
     <div
       data-page-number={pageNumber}
-      className="relative w-full max-w-full overflow-hidden rounded-md border border-border bg-white shadow-sm"
-      style={size ? { aspectRatio: `${size.w} / ${size.h}` } : { minHeight: 200 }}
+      className="relative mx-auto overflow-hidden rounded-md border border-border bg-white shadow-sm"
+      style={
+        size
+          ? { width: size.w, aspectRatio: `${size.w} / ${size.h}` }
+          : { minHeight: 200, width: targetWidth }
+      }
     >
-      <canvas ref={canvasRef} className="block h-auto w-full" />
+      <canvas
+        ref={canvasRef}
+        className="block h-auto"
+        style={{ width: size ? size.w : targetWidth }}
+      />
       {error && (
         <div className="absolute inset-0 flex items-center justify-center bg-background/80 p-3 text-center text-xs text-muted-foreground">
           Não foi possível renderizar a página {pageNumber}.
