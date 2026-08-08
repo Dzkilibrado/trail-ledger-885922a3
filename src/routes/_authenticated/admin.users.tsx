@@ -48,6 +48,7 @@ import {
   Bike,
   Clock,
   Eye,
+  ChevronDown,
   FileText,
   KeyRound,
   Pencil,
@@ -160,6 +161,18 @@ function AdminUsers() {
   const [loginProv, setLoginProv] = useState("all");
   const [search, setSearch] = useState("");
   const [detailsUser, setDetailsUser] = useState<string | null>(null);
+  const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
+
+  const advancedFiltersActive = [
+    role !== "all",
+    plan !== "all",
+    loginProv !== "all",
+    isHomolog !== "any",
+    period !== "all",
+    hasMoto !== "any",
+    hasTicket !== "any",
+    hasDocs !== "any",
+  ].filter(Boolean).length;
 
   const filters = useMemo(
     () => ({
@@ -227,44 +240,127 @@ function AdminUsers() {
         crumbs={[{ label: "Admin", to: "/admin" }, { label: "Usuários" }]}
       />
 
-      <div className="grid gap-3 rounded-xl border border-border bg-card p-4 md:grid-cols-3 lg:grid-cols-5">
-        <Field label="Status">
-          <SelectBox value={status} onChange={setStatus} options={STATUS_OPTS} />
-        </Field>
-        <Field label="Perfil">
-          <SelectBox value={role} onChange={setRole} options={ROLE_OPTS} />
-        </Field>
-        <Field label="Plano">
-          <SelectBox value={plan} onChange={setPlan} options={PLAN_OPTS} />
-        </Field>
-        <Field label="Tipo de login">
-          <SelectBox value={loginProv} onChange={setLoginProv} options={LOGIN_OPTS} />
-        </Field>
-        <Field label="Homologação">
-          <SelectBox value={isHomolog} onChange={setIsHomolog} options={YESNO} />
-        </Field>
-        <Field label="Cadastro">
-          <SelectBox value={period} onChange={setPeriod} options={PERIOD_OPTS} />
-        </Field>
-        <Field label="Possui moto">
-          <SelectBox value={hasMoto} onChange={setHasMoto} options={YESNO} />
-        </Field>
-        <Field label="Chamado aberto">
-          <SelectBox value={hasTicket} onChange={setHasTicket} options={YESNO} />
-        </Field>
-        <Field label="Possui documentos">
-          <SelectBox value={hasDocs} onChange={setHasDocs} options={YESNO} />
-        </Field>
-        <Field label="Buscar">
-          <Input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Nome, e-mail, CPF ou WhatsApp"
+      <div className="space-y-3 rounded-xl border border-border bg-card p-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Status">
+            <SelectBox value={status} onChange={setStatus} options={STATUS_OPTS} />
+          </Field>
+          <Field label="Buscar">
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Nome, e-mail, CPF ou WhatsApp"
+            />
+          </Field>
+        </div>
+        <button
+          type="button"
+          onClick={() => setMoreFiltersOpen((v) => !v)}
+          className="flex items-center gap-1.5 text-xs font-semibold text-primary"
+        >
+          <ChevronDown
+            className={`h-3.5 w-3.5 transition-transform ${moreFiltersOpen ? "rotate-180" : ""}`}
           />
-        </Field>
+          {moreFiltersOpen ? "Menos filtros" : "Mais filtros"}
+          {advancedFiltersActive > 0 && (
+            <span className="rounded-full bg-primary/15 px-1.5 py-0.5 text-primary">
+              {advancedFiltersActive}
+            </span>
+          )}
+        </button>
+        {moreFiltersOpen && (
+          <div className="grid gap-3 border-t border-border pt-3 sm:grid-cols-3 lg:grid-cols-4">
+            <Field label="Perfil">
+              <SelectBox value={role} onChange={setRole} options={ROLE_OPTS} />
+            </Field>
+            <Field label="Plano">
+              <SelectBox value={plan} onChange={setPlan} options={PLAN_OPTS} />
+            </Field>
+            <Field label="Tipo de login">
+              <SelectBox value={loginProv} onChange={setLoginProv} options={LOGIN_OPTS} />
+            </Field>
+            <Field label="Homologação">
+              <SelectBox value={isHomolog} onChange={setIsHomolog} options={YESNO} />
+            </Field>
+            <Field label="Cadastro">
+              <SelectBox value={period} onChange={setPeriod} options={PERIOD_OPTS} />
+            </Field>
+            <Field label="Possui moto">
+              <SelectBox value={hasMoto} onChange={setHasMoto} options={YESNO} />
+            </Field>
+            <Field label="Chamado aberto">
+              <SelectBox value={hasTicket} onChange={setHasTicket} options={YESNO} />
+            </Field>
+            <Field label="Possui documentos">
+              <SelectBox value={hasDocs} onChange={setHasDocs} options={YESNO} />
+            </Field>
+          </div>
+        )}
       </div>
 
-      <div className="overflow-x-auto rounded-xl border border-border bg-card">
+      {/* Mobile: lista de cartões — sem rolagem lateral de tabela */}
+      <div className="space-y-2 md:hidden">
+        {(users.data ?? []).map((u) => (
+          <div key={u.id} className="rounded-xl border border-border bg-card p-4">
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="truncate font-medium">{u.full_name || "—"}</span>
+                  {u.is_admin && (
+                    <Badge className="shrink-0 border-primary/30 bg-primary/15 text-primary">
+                      🛡 Admin
+                    </Badge>
+                  )}
+                  {u.is_homologation && (
+                    <Badge className="shrink-0 border-amber-500/30 bg-amber-500/15 text-amber-400">
+                      🧪 Homolog
+                    </Badge>
+                  )}
+                </div>
+                <div className="truncate text-xs text-muted-foreground">{u.email || "—"}</div>
+                <div className="truncate text-xs text-muted-foreground">{u.phone || "—"}</div>
+              </div>
+              <Badge className={`shrink-0 ${STATUS_TONE[u.status]}`}>{u.status}</Badge>
+            </div>
+            <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs">
+              <div className="rounded-lg bg-muted/40 py-1.5">
+                <div className="font-semibold">{u.motorcycles_count}</div>
+                <div className="text-muted-foreground">Motos</div>
+              </div>
+              <div className="rounded-lg bg-muted/40 py-1.5">
+                <div className="font-semibold">{u.open_tickets}</div>
+                <div className="text-muted-foreground">Chamados</div>
+              </div>
+              <div className="rounded-lg bg-muted/40 py-1.5 uppercase">
+                <div className="font-semibold">{u.plan}</div>
+                <div className="text-muted-foreground normal-case">Plano</div>
+              </div>
+            </div>
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <span className="text-[11px] text-muted-foreground">
+                Cadastro: {formatDate(u.created_at)}
+              </span>
+              <div className="flex shrink-0 gap-1">
+                <Button size="sm" variant="outline" onClick={() => setDetailsUser(u.id)}>
+                  <Eye className="h-3.5 w-3.5" /> Detalhes
+                </Button>
+                {u.status !== "active" && (
+                  <Button size="sm" variant="outline" onClick={() => quickReactivate(u.id)}>
+                    Reativar
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        ))}
+        {!users.isLoading && !users.data?.length && (
+          <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+            Nenhum usuário encontrado com os filtros atuais.
+          </div>
+        )}
+      </div>
+
+      <div className="hidden overflow-x-auto rounded-xl border border-border bg-card md:block">
         <Table>
           <TableHeader>
             <TableRow>
