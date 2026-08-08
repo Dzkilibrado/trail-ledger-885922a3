@@ -239,9 +239,12 @@ function NewMotorcycle() {
         .select("id")
         .single();
       if (error) throw error;
+
+      const secondaryIssues: string[] = [];
+
       // Se subiu foto principal no cadastro, registra na galeria
       if (main_photo_url) {
-        await supabase.from("motorcycle_photos").insert({
+        const { error: photoErr } = await supabase.from("motorcycle_photos").insert({
           motorcycle_id: data.id,
           storage_path: main_photo_url,
           bucket: "motorcycle-photos",
@@ -249,10 +252,15 @@ function NewMotorcycle() {
           is_primary: true,
           created_by: uid,
         } as never);
+        // A moto já foi criada com a foto principal salva (main_photo_url);
+        // isso aqui é só a cópia dela na galeria. Se falhar, a foto não some,
+        // só não aparece ainda na aba Documentos — por isso avisamos sem
+        // bloquear o cadastro.
+        if (photoErr) secondaryIssues.push("a foto não foi adicionada à galeria");
       }
       // Observação geral, se preenchida
       if (notes.trim()) {
-        await supabase.from("events").insert({
+        const { error: noteErr } = await supabase.from("events").insert({
           motorcycle_id: data.id,
           created_by: uid,
           type: "note",
@@ -260,10 +268,11 @@ function NewMotorcycle() {
           description: notes.trim(),
           occurred_at: new Date().toISOString(),
         } as never);
+        if (noteErr) secondaryIssues.push("a observação inicial não foi salva");
       }
       // Registra declaração inicial na linha do tempo
       if (incident !== "unknown") {
-        await supabase.from("events").insert({
+        const { error: declErr } = await supabase.from("events").insert({
           motorcycle_id: data.id,
           created_by: uid,
           type: "declaration",
@@ -277,10 +286,17 @@ function NewMotorcycle() {
               : "O proprietário declarou que esta motocicleta possui histórico de sinistro relevante.",
           occurred_at: new Date().toISOString(),
         } as never);
+        if (declErr)
+          secondaryIssues.push("a declaração de sinistro não foi registrada na linha do tempo");
       }
       setStoredActiveMotorcycleId(data.id);
       await invalidateMotorcycleState(qc);
       toast.success("Moto cadastrada!");
+      if (secondaryIssues.length > 0) {
+        toast.warning("Alguns detalhes não foram salvos", {
+          description: `A moto foi cadastrada normalmente, mas ${secondaryIssues.join(" e ")}. Você pode adicionar isso depois pela Central da moto.`,
+        });
+      }
       if (applyPlan === "skip" || applyPlan === "auto") {
         // "auto" também não abre wizard — aplicaremos o plano padrão em segundo plano no futuro.
         // Por ora, "auto" leva para a moto (o usuário pode aplicar depois).
