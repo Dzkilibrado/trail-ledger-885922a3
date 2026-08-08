@@ -550,8 +550,8 @@ function PublicCert() {
                           key={u.schedule.id}
                           className="flex items-center justify-between rounded-xl border border-border bg-card px-3 py-2"
                         >
-                          <div>
-                            <div className="text-sm font-semibold">{u.label}</div>
+                          <div className="min-w-0 flex-1">
+                            <div className="truncate text-sm font-semibold">{u.label}</div>
                             <div className="text-xs text-muted-foreground">
                               {MAINT_CATEGORY_LABEL[u.category]}
                               {u.estimatedDueDate
@@ -560,7 +560,7 @@ function PublicCert() {
                             </div>
                           </div>
                           <span
-                            className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${tagTone}`}
+                            className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${tagTone}`}
                           >
                             {tag}
                           </span>

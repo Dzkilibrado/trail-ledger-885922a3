@@ -727,8 +727,8 @@ export function MotoControlCenter({
                                 <Icon className={`mt-0.5 h-4 w-4 ${color}`} />
                                 <div className="min-w-0 flex-1">
                                   <div className="flex items-baseline justify-between gap-2">
-                                    <div className="font-medium">{s.label}</div>
-                                    <div className={`text-xs ${color}`}>
+                                    <div className="min-w-0 truncate font-medium">{s.label}</div>
+                                    <div className={`shrink-0 text-xs ${color}`}>
                                       {s.status === "overdue"
                                         ? "Vencida"
                                         : s.status === "due"

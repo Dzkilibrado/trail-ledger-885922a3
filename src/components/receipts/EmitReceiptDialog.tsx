@@ -805,11 +805,17 @@ export function EmitReceiptDialog({
                 </div>
               )}
               {buyerMode === "tb" && buyerFound && !buyerCandidate && (
-                <div className="mt-2 flex items-center justify-between gap-2">
-                  <p className="text-[11px] text-emerald-500">
+                <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                  <p className="min-w-0 text-[11px] text-emerald-500">
                     Comprador TrailBook confirmado: {buyerFound.full_name}
                   </p>
-                  <Button type="button" size="sm" variant="ghost" onClick={clearConfirmedBuyer}>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={clearConfirmedBuyer}
+                    className="shrink-0"
+                  >
                     Trocar comprador
                   </Button>
                 </div>

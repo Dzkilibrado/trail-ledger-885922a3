@@ -78,9 +78,14 @@ function HomologAdmin() {
             <p className="font-semibold text-amber-200">Ambiente separado dos dados reais</p>
             <p className="mt-1 text-muted-foreground">
               Todas as contas (@homolog.trailbook.test) e motos ([HOMOLOG]) ficam marcadas com{" "}
-              <code className="rounded bg-muted/50 px-1">is_homologation = true</code>. Não confundir com o
-              futuro Demo Mode (uso comercial). Consulte{" "}
-              <a className="text-primary hover:underline" href="/docs/homologacao/README.md" target="_blank" rel="noreferrer">
+              <code className="rounded bg-muted/50 px-1">is_homologation = true</code>. Não
+              confundir com o futuro Demo Mode (uso comercial). Consulte{" "}
+              <a
+                className="text-primary hover:underline"
+                href="/docs/homologacao/README.md"
+                target="_blank"
+                rel="noreferrer"
+              >
                 docs/homologacao
               </a>{" "}
               para a lista completa de cenários.
@@ -96,8 +101,8 @@ function HomologAdmin() {
             <h3 className="font-display font-semibold">Provisionar / Atualizar</h3>
           </div>
           <p className="mb-4 text-sm text-muted-foreground">
-            Cria (ou atualiza) as 5 contas de homologação e 10 motocicletas fictícias.
-            Idempotente — pode rodar quantas vezes quiser.
+            Cria (ou atualiza) as 5 contas de homologação e 10 motocicletas fictícias. Idempotente —
+            pode rodar quantas vezes quiser.
           </p>
           <Button onClick={() => seedMut.mutate()} disabled={seedMut.isPending}>
             <RefreshCw className={seedMut.isPending ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} />
@@ -111,8 +116,8 @@ function HomologAdmin() {
             <h3 className="font-display font-semibold">Resetar dados</h3>
           </div>
           <p className="mb-3 text-sm text-muted-foreground">
-            Remove todas as motos de homologação (e dados associados via cascade). As contas são preservadas
-            para o próximo seed.
+            Remove todas as motos de homologação (e dados associados via cascade). As contas são
+            preservadas para o próximo seed.
           </p>
           <div className="flex flex-col gap-2 sm:flex-row">
             <Input
@@ -144,12 +149,17 @@ function HomologAdmin() {
           ) : (
             <ul className="space-y-2">
               {users.map((u) => (
-                <li key={u.id} className="flex items-center justify-between rounded-lg border border-border p-3 text-sm">
-                  <div>
-                    <div className="font-medium">{u.full_name}</div>
-                    <div className="text-xs text-muted-foreground">{u.email}</div>
+                <li
+                  key={u.id}
+                  className="flex items-center justify-between gap-2 rounded-lg border border-border p-3 text-sm"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate font-medium">{u.full_name}</div>
+                    <div className="truncate text-xs text-muted-foreground">{u.email}</div>
                   </div>
-                  <Badge variant="outline">{u.plan}</Badge>
+                  <Badge variant="outline" className="shrink-0">
+                    {u.plan}
+                  </Badge>
                 </li>
               ))}
             </ul>
@@ -168,14 +178,19 @@ function HomologAdmin() {
           ) : (
             <ul className="space-y-2">
               {motos.map((m) => (
-                <li key={m.id} className="flex items-center justify-between rounded-lg border border-border p-3 text-sm">
+                <li
+                  key={m.id}
+                  className="flex items-center justify-between rounded-lg border border-border p-3 text-sm"
+                >
                   <div className="min-w-0">
                     <div className="truncate font-medium">{m.nickname}</div>
                     <div className="text-xs text-muted-foreground">
                       {m.brand} {m.model} · {m.year_model}
                     </div>
                   </div>
-                  <Badge variant={m.status === "archived" ? "secondary" : "outline"}>{m.status}</Badge>
+                  <Badge variant={m.status === "archived" ? "secondary" : "outline"}>
+                    {m.status}
+                  </Badge>
                 </li>
               ))}
             </ul>
@@ -187,5 +202,9 @@ function HomologAdmin() {
 }
 
 function EmptyLine({ text }: { text: string }) {
-  return <p className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">{text}</p>;
+  return (
+    <p className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
+      {text}
+    </p>
+  );
 }
