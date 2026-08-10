@@ -9,6 +9,9 @@ import {
   ArrowRight,
   ChevronLeft,
   ChevronRight,
+  Stethoscope,
+  CalendarClock,
+  Headset,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -171,6 +174,21 @@ const BENEFITS = [
     icon: Award,
     title: "Selos de Qualidade",
     desc: "O cuidado com a sua moto vira reputação verificável.",
+  },
+  {
+    icon: Stethoscope,
+    title: "Check-up e Laudo Digital",
+    desc: "Avaliação completa da moto, com laudo emitido e histórico de check-ups guardado.",
+  },
+  {
+    icon: CalendarClock,
+    title: "Agenda Inteligente",
+    desc: "Próximas manutenções calculadas a partir do uso real — nada de planilha ou estimativa no chute.",
+  },
+  {
+    icon: Headset,
+    title: "Suporte dedicado",
+    desc: "Equipe de suporte disponível dentro do próprio app para dúvidas, chamados e problemas.",
   },
 ];
 
@@ -410,6 +428,14 @@ const FAQS = [
   {
     q: "Posso usar o TrailBook para motos off-road?",
     a: "Sim. O TrailBook foi construído para motocicletas de trilha, enduro, motocross e coleção — com ou sem documento.",
+  },
+  {
+    q: "O que é o Check-up e Laudo Digital?",
+    a: "Uma avaliação completa da moto a partir de tudo que já foi registrado. O TrailBook emite um laudo digital e guarda o histórico de check-ups, para você acompanhar a evolução da moto ao longo do tempo.",
+  },
+  {
+    q: "E se eu tiver um problema ou uma dúvida?",
+    a: "Você abre um chamado direto pelo app, a qualquer momento. Nossa equipe de suporte acompanha e responde por lá — sem precisar sair do TrailBook.",
   },
 ];
 
