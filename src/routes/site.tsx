@@ -18,7 +18,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
-import { appUrl, appSignUpUrl, externalLinkProps } from "@/lib/external-links";
+import { appUrl, appSignUpUrl } from "@/lib/external-links";
+import { ExternalLink } from "@/components/ExternalLink";
 import heroImage from "@/assets/landing-hero.jpg";
 import phoneImage from "@/assets/landing-phone.jpg";
 import certificateImage from "@/assets/landing-certificate.jpg";
@@ -74,21 +75,19 @@ function SiteHeader() {
           <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground btn-glow">
             <Bike className="h-5 w-5" />
           </div>
-          <span className="font-display text-lg font-bold tracking-tight">
-            TrailBook
-          </span>
+          <span className="font-display text-lg font-bold tracking-tight">TrailBook</span>
         </Link>
         <nav className="flex items-center gap-2">
-          <a href={appUrl()} {...externalLinkProps}>
+          <ExternalLink href={appUrl()}>
             <Button variant="ghost" size="sm" className="whitespace-nowrap text-sm font-medium">
               Abrir o aplicativo
             </Button>
-          </a>
-          <a href={appSignUpUrl()} {...externalLinkProps}>
+          </ExternalLink>
+          <ExternalLink href={appSignUpUrl()}>
             <Button size="sm" className="btn-glow whitespace-nowrap">
               Criar uma conta
             </Button>
-          </a>
+          </ExternalLink>
         </nav>
       </div>
     </header>
@@ -105,25 +104,24 @@ function Hero() {
       <div className="container mx-auto grid gap-8 px-4 py-10 sm:px-6 sm:py-16 lg:grid-cols-[1.05fr_1fr] lg:gap-14 lg:py-20">
         <div className="flex flex-col justify-center gap-5">
           <h1 className="font-display text-[2rem] font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
-            O histórico completo da{" "}
-            <span className="text-gradient-primary">sua moto</span>.
+            O histórico completo da <span className="text-gradient-primary">sua moto</span>.
           </h1>
           <p className="max-w-xl text-base text-muted-foreground sm:text-lg">
-            Organize manutenções, documentos e proprietários em um Passaporte
-            Digital que acompanha a motocicleta.
+            Organize manutenções, documentos e proprietários em um Passaporte Digital que acompanha
+            a motocicleta.
           </p>
           <div className="flex flex-col gap-3 sm:flex-row">
-            <a href={appSignUpUrl()} {...externalLinkProps} className="w-full sm:w-auto">
+            <ExternalLink href={appSignUpUrl()} className="w-full sm:w-auto">
               <Button size="lg" className="btn-glow w-full sm:w-auto">
                 Criar uma conta
                 <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
-            </a>
-            <a href={appUrl()} {...externalLinkProps} className="w-full sm:w-auto">
+            </ExternalLink>
+            <ExternalLink href={appUrl()} className="w-full sm:w-auto">
               <Button size="lg" variant="outline" className="w-full sm:w-auto">
                 Abrir o aplicativo
               </Button>
-            </a>
+            </ExternalLink>
           </div>
         </div>
 
@@ -181,7 +179,11 @@ function Benefits() {
     <section className="container mx-auto px-4 py-14 sm:px-6 sm:py-20">
       <SectionHeader
         eyebrow="Por que TrailBook"
-        title={<>Tudo que sua moto precisa em <span className="text-gradient-primary">um só lugar</span>.</>}
+        title={
+          <>
+            Tudo que sua moto precisa em <span className="text-gradient-primary">um só lugar</span>.
+          </>
+        }
       />
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {BENEFITS.map((b) => (
@@ -189,9 +191,7 @@ function Benefits() {
             <div className="mb-4 grid h-11 w-11 place-items-center rounded-xl bg-primary/15 text-primary">
               <b.icon className="h-5 w-5" />
             </div>
-            <h3 className="font-display text-lg font-bold leading-tight">
-              {b.title}
-            </h3>
+            <h3 className="font-display text-lg font-bold leading-tight">{b.title}</h3>
             <p className="mt-2 text-sm text-muted-foreground">{b.desc}</p>
           </div>
         ))}
@@ -206,9 +206,17 @@ function Benefits() {
 
 const STEPS = [
   { n: "1", title: "Cadastre sua moto", desc: "Modelo, ano e uma foto em minutos." },
-  { n: "2", title: "Organize documentos e manutenções", desc: "Anexe notas, garantias e revisões." },
+  {
+    n: "2",
+    title: "Organize documentos e manutenções",
+    desc: "Anexe notas, garantias e revisões.",
+  },
   { n: "3", title: "Acompanhe o histórico", desc: "Timeline completa e Selos de Qualidade." },
-  { n: "4", title: "Compartilhe o Passaporte Digital", desc: "Link seguro com o próximo proprietário." },
+  {
+    n: "4",
+    title: "Compartilhe o Passaporte Digital",
+    desc: "Link seguro com o próximo proprietário.",
+  },
 ];
 
 function HowItWorks() {
@@ -217,7 +225,11 @@ function HowItWorks() {
       <div className="container mx-auto px-4 py-14 sm:px-6 sm:py-20">
         <SectionHeader
           eyebrow="Como funciona"
-          title={<>Quatro passos e <span className="text-gradient-primary">pronto</span>.</>}
+          title={
+            <>
+              Quatro passos e <span className="text-gradient-primary">pronto</span>.
+            </>
+          }
         />
         <ol className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {STEPS.map((s) => (
@@ -225,9 +237,7 @@ function HowItWorks() {
               <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground font-display text-lg font-bold btn-glow">
                 {s.n}
               </span>
-              <h3 className="font-display text-base font-bold leading-tight">
-                {s.title}
-              </h3>
+              <h3 className="font-display text-base font-bold leading-tight">{s.title}</h3>
               <p className="text-sm text-muted-foreground">{s.desc}</p>
             </li>
           ))}
@@ -288,7 +298,11 @@ function AppShowcase() {
     <section className="container mx-auto px-4 py-14 sm:px-6 sm:py-20">
       <SectionHeader
         eyebrow="Veja o aplicativo"
-        title={<>Feito para o <span className="text-gradient-primary">seu bolso</span>.</>}
+        title={
+          <>
+            Feito para o <span className="text-gradient-primary">seu bolso</span>.
+          </>
+        }
       />
 
       <div className="relative mx-auto max-w-3xl">
@@ -317,9 +331,7 @@ function AppShowcase() {
                 />
               </div>
               <div className="p-5 sm:p-6">
-                <h3 className="font-display text-lg font-bold leading-tight">
-                  {s.title}
-                </h3>
+                <h3 className="font-display text-lg font-bold leading-tight">{s.title}</h3>
                 <p className="mt-2 text-sm text-muted-foreground">{s.desc}</p>
               </div>
             </article>
@@ -365,10 +377,7 @@ function AppShowcase() {
             ))}
           </div>
 
-          <span
-            className="text-xs font-semibold text-muted-foreground"
-            aria-live="polite"
-          >
+          <span className="text-xs font-semibold text-muted-foreground" aria-live="polite">
             {index + 1} de {SLIDES.length}
           </span>
         </div>
@@ -410,7 +419,11 @@ function FAQ() {
       <div className="container mx-auto px-4 py-14 sm:px-6 sm:py-20">
         <SectionHeader
           eyebrow="Perguntas frequentes"
-          title={<>Dúvidas <span className="text-gradient-primary">mais comuns</span>.</>}
+          title={
+            <>
+              Dúvidas <span className="text-gradient-primary">mais comuns</span>.
+            </>
+          }
         />
         <div className="mx-auto max-w-3xl">
           <Accordion type="single" collapsible className="surface-elevated rounded-2xl px-5">
@@ -420,12 +433,8 @@ function FAQ() {
                 value={`item-${i}`}
                 className="border-border/60 last:border-b-0"
               >
-                <AccordionTrigger className="text-left font-semibold">
-                  {f.q}
-                </AccordionTrigger>
-                <AccordionContent className="text-sm text-muted-foreground">
-                  {f.a}
-                </AccordionContent>
+                <AccordionTrigger className="text-left font-semibold">{f.q}</AccordionTrigger>
+                <AccordionContent className="text-sm text-muted-foreground">{f.a}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
@@ -446,26 +455,26 @@ function FinalCTA() {
         <div className="pointer-events-none absolute inset-0 opacity-60 [background:radial-gradient(600px_300px_at_50%_-20%,oklch(0.72_0.19_50/0.35),transparent_60%)]" />
         <div className="relative">
           <h2 className="font-display text-2xl font-bold leading-tight sm:text-4xl">
-            Comece a organizar a{" "}
-            <span className="text-gradient-primary">história da sua moto</span>.
+            Comece a organizar a <span className="text-gradient-primary">história da sua moto</span>
+            .
           </h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <div className="flex flex-col items-center gap-2">
               <p className="text-sm text-muted-foreground">Ainda não utiliza o TrailBook?</p>
-              <a href={appSignUpUrl()} {...externalLinkProps} className="w-full sm:w-auto">
+              <ExternalLink href={appSignUpUrl()} className="w-full sm:w-auto">
                 <Button size="lg" className="btn-glow w-full sm:w-auto">
                   Criar uma conta
                   <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
-              </a>
+              </ExternalLink>
             </div>
             <div className="flex flex-col items-center gap-2">
               <p className="text-sm text-muted-foreground">Já possui uma conta?</p>
-              <a href={appUrl()} {...externalLinkProps} className="w-full sm:w-auto">
+              <ExternalLink href={appUrl()} className="w-full sm:w-auto">
                 <Button size="lg" variant="outline" className="w-full sm:w-auto">
                   Abrir o aplicativo
                 </Button>
-              </a>
+              </ExternalLink>
             </div>
           </div>
         </div>
@@ -489,19 +498,17 @@ function SiteFooter() {
           <span className="font-display text-lg font-bold">TrailBook</span>
         </div>
         <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">
-          <a href={appUrl()} {...externalLinkProps} className="hover:text-foreground">
+          <ExternalLink href={appUrl()} className="hover:text-foreground">
             Abrir o aplicativo
-          </a>
-          <a href={appSignUpUrl()} {...externalLinkProps} className="hover:text-foreground">
+          </ExternalLink>
+          <ExternalLink href={appSignUpUrl()} className="hover:text-foreground">
             Criar uma conta
-          </a>
+          </ExternalLink>
           <span className="text-muted-foreground/70">Termos</span>
           <span className="text-muted-foreground/70">Privacidade</span>
           <span className="text-muted-foreground/70">Contato</span>
         </nav>
-        <div className="text-xs text-muted-foreground">
-          © {new Date().getFullYear()} TrailBook
-        </div>
+        <div className="text-xs text-muted-foreground">© {new Date().getFullYear()} TrailBook</div>
       </div>
     </footer>
   );
@@ -511,13 +518,7 @@ function SiteFooter() {
 /*  SECTION HEADER                                               */
 /* ============================================================ */
 
-function SectionHeader({
-  eyebrow,
-  title,
-}: {
-  eyebrow?: string;
-  title: React.ReactNode;
-}) {
+function SectionHeader({ eyebrow, title }: { eyebrow?: string; title: React.ReactNode }) {
   return (
     <div className="mx-auto mb-8 max-w-2xl text-center sm:mb-12">
       {eyebrow && (

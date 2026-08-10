@@ -5,7 +5,8 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useWelcomeBackground } from "./useWelcomeBackground";
 import { getWelcomeGreeting, type WelcomeGreeting } from "./greeting";
-import { siteUrl, externalLinkProps } from "@/lib/external-links";
+import { siteUrl } from "@/lib/external-links";
+import { ExternalLink } from "@/components/ExternalLink";
 
 /**
  * Tela de Boas-vindas do TrailBook.
@@ -33,10 +34,7 @@ export function AppWelcome({ canSignUp = true }: { canSignUp?: boolean }) {
             height={1344}
             fetchPriority="high"
             decoding="async"
-            className={cn(
-              "h-full w-full object-cover",
-              animate && "animate-ken-burns",
-            )}
+            className={cn("h-full w-full object-cover", animate && "animate-ken-burns")}
           />
         ) : null}
         <div
@@ -57,8 +55,8 @@ export function AppWelcome({ canSignUp = true }: { canSignUp?: boolean }) {
           </p>
 
           <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-            Acompanhe manutenções, documentos e o histórico completo da sua moto
-            off-road em um só lugar.
+            Acompanhe manutenções, documentos e o histórico completo da sua moto off-road em um só
+            lugar.
           </p>
 
           <div className="mt-6 min-h-[3.25rem]" aria-live="polite">
@@ -72,7 +70,11 @@ export function AppWelcome({ canSignUp = true }: { canSignUp?: boolean }) {
         </div>
 
         <div className="mt-7 flex flex-col gap-3">
-          <Button asChild size="lg" className="min-h-[52px] w-full rounded-xl text-base font-semibold">
+          <Button
+            asChild
+            size="lg"
+            className="min-h-[52px] w-full rounded-xl text-base font-semibold"
+          >
             <Link to="/auth" search={{ tab: "signin" as const, recuperar: undefined }}>
               Entrar
             </Link>
@@ -100,16 +102,15 @@ export function AppWelcome({ canSignUp = true }: { canSignUp?: boolean }) {
           </Link>
         </div>
 
-        {/* Site Institucional abre no navegador padrão do aparelho — o app
-            permanece aberto em segundo plano, preservando todo o estado. */}
-        <a
+        {/* Site Institucional abre em navegador in-app separado (nunca navega
+            o WebView do próprio app) — o app permanece intacto ao voltar. */}
+        <ExternalLink
           href={siteUrl()}
-          {...externalLinkProps}
           className="mx-auto mt-4 inline-flex min-h-[44px] items-center gap-1.5 text-sm font-medium text-primary underline-offset-4 hover:underline"
         >
           Conheça o TrailBook
           <ArrowRight className="h-4 w-4" aria-hidden />
-        </a>
+        </ExternalLink>
       </main>
     </div>
   );
