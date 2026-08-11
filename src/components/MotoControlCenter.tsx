@@ -33,7 +33,7 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { LastReportCard } from "@/components/health/reports/LastReportCard";
-import { ClipboardCheck, Wand2 } from "lucide-react";
+import { ClipboardCheck, Wand2, Pencil, MoreVertical } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -454,6 +454,13 @@ export function MotoControlCenter({
               <div className="flex flex-wrap gap-2 rounded-xl border border-border bg-muted/20 p-3">
                 {isOwner && (
                   <Button variant="outline" asChild>
+                    <Link to="/motorcycles/$id/editar" params={{ id: m.id }}>
+                      <Pencil className="h-4 w-4" /> Editar dados da moto
+                    </Link>
+                  </Button>
+                )}
+                {isOwner && (
+                  <Button variant="outline" asChild>
                     <Link to="/motorcycles/$id/components" params={{ id: m.id }}>
                       <Wand2 className="h-4 w-4" /> Componentes
                     </Link>
@@ -835,6 +842,13 @@ export function MotoControlCenter({
 
         <TabsContent value="atividade" className="space-y-8">
           <section>
+            {isOwner && !isArchived && (events.data?.length ?? 0) > 0 && (
+              <p className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground">
+                <Pencil className="h-3 w-3 shrink-0" /> Errou uma hora, km ou data ao registrar?
+                Toque no <MoreVertical className="mx-0.5 inline h-3 w-3" /> de qualquer atividade
+                para corrigir — o sistema recalcula tudo sozinho.
+              </p>
+            )}
             {events.isLoading ? (
               <ol className="relative space-y-4 border-l border-border pl-6" aria-hidden="true">
                 {Array.from({ length: 3 }).map((_, i) => (

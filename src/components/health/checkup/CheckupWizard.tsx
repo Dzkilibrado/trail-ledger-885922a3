@@ -80,7 +80,17 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
       validity,
       issuedAt: issuedAtRef,
     });
-  }, [health.moto, health.snapshot, health.events, health.inspections, gating, validity, uid, ownerName, issuedAtRef]);
+  }, [
+    health.moto,
+    health.snapshot,
+    health.events,
+    health.inspections,
+    gating,
+    validity,
+    uid,
+    ownerName,
+    issuedAtRef,
+  ]);
 
   // Abre o Check-up assim que a tela é montada (chave de idempotência da emissão).
   useEffect(() => {
@@ -148,8 +158,14 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
       });
       await qc.invalidateQueries({ queryKey: ["health-reports", motoId] });
       await qc.invalidateQueries({ queryKey: ["health-report-last", motoId] });
-      toast.success(res.reused ? "Este Check-up já havia sido emitido." : "Laudo emitido com sucesso.");
-      trackHealth("laudo_emitido", { motoId, code: String(res.report.code ?? ""), reused: !!res.reused });
+      toast.success(
+        res.reused ? "Este Check-up já havia sido emitido." : "Laudo emitido com sucesso.",
+      );
+      trackHealth("laudo_emitido", {
+        motoId,
+        code: String(res.report.code ?? ""),
+        reused: !!res.reused,
+      });
       navigate({
         to: "/motorcycles/$id/checkups/$code",
         params: { id: motoId, code: String(res.report.code ?? "") },
@@ -172,7 +188,12 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
                 i < step ? "bg-primary" : i === step ? "bg-primary/60" : "bg-muted",
               )}
             />
-            <span className={cn("mt-1 block text-[10px]", i === step ? "font-bold" : "text-muted-foreground")}>
+            <span
+              className={cn(
+                "mt-1 block text-[10px]",
+                i === step ? "font-bold" : "text-muted-foreground",
+              )}
+            >
               {s}
             </span>
           </li>
@@ -191,7 +212,8 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
             </div>
             <div className="text-muted-foreground">
               {moto.nickname ? `${moto.nickname} · ` : ""}
-              {moto.plate ?? "sem placa"} · {Number(moto.hours_total ?? 0)} h · {Number(moto.km_total ?? 0)} km
+              {moto.plate ?? "sem placa"} · {Number(moto.hours_total ?? 0)} h ·{" "}
+              {Number(moto.km_total ?? 0)} km
             </div>
           </div>
           <TBButton onClick={() => setStep(1)}>Continuar</TBButton>
@@ -202,13 +224,19 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
         <TBCard className="space-y-3">
           <h2 className="text-base font-black">Os dados estão atualizados?</h2>
           <p className="text-sm text-muted-foreground">
-            O laudo usa apenas o que já está registrado no TrailBook. Se algo estiver desatualizado, registre antes de
-            continuar — o resultado fica muito mais confiável.
+            O laudo usa apenas o que já está registrado no TrailBook. Se algo estiver desatualizado,
+            registre antes de continuar — o resultado fica muito mais confiável.
           </p>
           <ul className="space-y-1 text-sm">
-            <li>Horímetro atual: <strong>{Number(moto.hours_total ?? 0)} h</strong></li>
-            <li>Odômetro atual: <strong>{Number(moto.km_total ?? 0)} km</strong></li>
-            <li>Atividades registradas: <strong>{health.events.length}</strong></li>
+            <li>
+              Horímetro atual: <strong>{Number(moto.hours_total ?? 0)} h</strong>
+            </li>
+            <li>
+              Odômetro atual: <strong>{Number(moto.km_total ?? 0)} km</strong>
+            </li>
+            <li>
+              Atividades registradas: <strong>{health.events.length}</strong>
+            </li>
           </ul>
           <div className="flex flex-wrap gap-2">
             <TBButton variant="outline" asChild>
@@ -249,7 +277,14 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
                 ))}
               </ul>
               <TBButton asChild variant="outline">
-                <Link to="/motorcycles/$id" params={{ id: motoId }}>
+                <Link
+                  to={
+                    gating.blockers.some((b) => b.code === "no_identification")
+                      ? "/motorcycles/$id/editar"
+                      : "/motorcycles/$id"
+                  }
+                  params={{ id: motoId }}
+                >
                   Resolver pendências
                 </Link>
               </TBButton>
@@ -258,13 +293,15 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
             <TBCard className="space-y-3">
               <div className="flex items-center gap-2">
                 <h2 className="text-base font-black">Análise concluída</h2>
-                {health.snapshot && <TBStatusPill status={health.snapshot.health.status} size="sm" />}
+                {health.snapshot && (
+                  <TBStatusPill status={health.snapshot.health.status} size="sm" />
+                )}
               </div>
               {gating.mode === "with_reservations" ? (
                 <>
                   <p className="text-sm text-muted-foreground">
-                    O laudo pode ser emitido, mas com ressalvas. Elas ficam registradas no documento com total
-                    transparência.
+                    O laudo pode ser emitido, mas com ressalvas. Elas ficam registradas no documento
+                    com total transparência.
                   </p>
                   <ul className="list-disc space-y-1 pl-5 text-sm">
                     {gating.reservations.map((r, i) => (
@@ -288,7 +325,8 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
           <TBCard className="space-y-1">
             <h2 className="text-base font-black">Prévia do laudo</h2>
             <p className="text-sm text-muted-foreground">
-              Este é exatamente o conteúdo que será registrado. Depois de emitido, o laudo não pode ser alterado.
+              Este é exatamente o conteúdo que será registrado. Depois de emitido, o laudo não pode
+              ser alterado.
             </p>
           </TBCard>
           <ReportSnapshotView snapshot={previewSnapshot} />
@@ -310,12 +348,17 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
               onChange={(e) => setAccepted(e.target.checked)}
             />
             <span>
-              Declaro que as informações registradas no TrailBook são verdadeiras e que este laudo reflete apenas os
-              dados existentes até esta data. Ele não substitui inspeção mecânica presencial.
+              Declaro que as informações registradas no TrailBook são verdadeiras e que este laudo
+              reflete apenas os dados existentes até esta data. Ele não substitui inspeção mecânica
+              presencial.
             </span>
           </label>
           <TBButton className="w-full" disabled={!accepted || issuing || !runId} onClick={emit}>
-            {issuing ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Check className="h-4 w-4" aria-hidden />}
+            {issuing ? (
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+            ) : (
+              <Check className="h-4 w-4" aria-hidden />
+            )}
             {issuing ? "Emitindo laudo…" : "Emitir laudo"}
           </TBButton>
         </TBCard>

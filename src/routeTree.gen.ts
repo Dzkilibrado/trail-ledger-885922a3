@@ -62,6 +62,7 @@ import { Route as AuthenticatedRecibosCodeVisualizarRouteImport } from './routes
 import { Route as AuthenticatedMotorcyclesIdPlanRouteImport } from './routes/_authenticated/motorcycles.$id.plan'
 import { Route as AuthenticatedMotorcyclesIdPassportRouteImport } from './routes/_authenticated/motorcycles.$id.passport'
 import { Route as AuthenticatedMotorcyclesIdHealthRouteImport } from './routes/_authenticated/motorcycles.$id.health'
+import { Route as AuthenticatedMotorcyclesIdEditarRouteImport } from './routes/_authenticated/motorcycles.$id.editar'
 import { Route as AuthenticatedMotorcyclesIdControlRouteImport } from './routes/_authenticated/motorcycles.$id.control'
 import { Route as AuthenticatedMotorcyclesIdComponentsRouteImport } from './routes/_authenticated/motorcycles.$id.components'
 import { Route as AuthenticatedMotorcyclesIdCertificateRouteImport } from './routes/_authenticated/motorcycles.$id.certificate'
@@ -360,6 +361,12 @@ const AuthenticatedMotorcyclesIdHealthRoute =
     path: '/health',
     getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
   } as any)
+const AuthenticatedMotorcyclesIdEditarRoute =
+  AuthenticatedMotorcyclesIdEditarRouteImport.update({
+    id: '/editar',
+    path: '/editar',
+    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
+  } as any)
 const AuthenticatedMotorcyclesIdControlRoute =
   AuthenticatedMotorcyclesIdControlRouteImport.update({
     id: '/control',
@@ -454,6 +461,7 @@ export interface FileRoutesByFullPath {
   '/motorcycles/$id/certificate': typeof AuthenticatedMotorcyclesIdCertificateRoute
   '/motorcycles/$id/components': typeof AuthenticatedMotorcyclesIdComponentsRoute
   '/motorcycles/$id/control': typeof AuthenticatedMotorcyclesIdControlRoute
+  '/motorcycles/$id/editar': typeof AuthenticatedMotorcyclesIdEditarRoute
   '/motorcycles/$id/health': typeof AuthenticatedMotorcyclesIdHealthRoute
   '/motorcycles/$id/passport': typeof AuthenticatedMotorcyclesIdPassportRoute
   '/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
@@ -512,6 +520,7 @@ export interface FileRoutesByTo {
   '/motorcycles/$id/certificate': typeof AuthenticatedMotorcyclesIdCertificateRoute
   '/motorcycles/$id/components': typeof AuthenticatedMotorcyclesIdComponentsRoute
   '/motorcycles/$id/control': typeof AuthenticatedMotorcyclesIdControlRoute
+  '/motorcycles/$id/editar': typeof AuthenticatedMotorcyclesIdEditarRoute
   '/motorcycles/$id/health': typeof AuthenticatedMotorcyclesIdHealthRoute
   '/motorcycles/$id/passport': typeof AuthenticatedMotorcyclesIdPassportRoute
   '/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
@@ -575,6 +584,7 @@ export interface FileRoutesById {
   '/_authenticated/motorcycles/$id/certificate': typeof AuthenticatedMotorcyclesIdCertificateRoute
   '/_authenticated/motorcycles/$id/components': typeof AuthenticatedMotorcyclesIdComponentsRoute
   '/_authenticated/motorcycles/$id/control': typeof AuthenticatedMotorcyclesIdControlRoute
+  '/_authenticated/motorcycles/$id/editar': typeof AuthenticatedMotorcyclesIdEditarRoute
   '/_authenticated/motorcycles/$id/health': typeof AuthenticatedMotorcyclesIdHealthRoute
   '/_authenticated/motorcycles/$id/passport': typeof AuthenticatedMotorcyclesIdPassportRoute
   '/_authenticated/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
@@ -638,6 +648,7 @@ export interface FileRouteTypes {
     | '/motorcycles/$id/certificate'
     | '/motorcycles/$id/components'
     | '/motorcycles/$id/control'
+    | '/motorcycles/$id/editar'
     | '/motorcycles/$id/health'
     | '/motorcycles/$id/passport'
     | '/motorcycles/$id/plan'
@@ -696,6 +707,7 @@ export interface FileRouteTypes {
     | '/motorcycles/$id/certificate'
     | '/motorcycles/$id/components'
     | '/motorcycles/$id/control'
+    | '/motorcycles/$id/editar'
     | '/motorcycles/$id/health'
     | '/motorcycles/$id/passport'
     | '/motorcycles/$id/plan'
@@ -758,6 +770,7 @@ export interface FileRouteTypes {
     | '/_authenticated/motorcycles/$id/certificate'
     | '/_authenticated/motorcycles/$id/components'
     | '/_authenticated/motorcycles/$id/control'
+    | '/_authenticated/motorcycles/$id/editar'
     | '/_authenticated/motorcycles/$id/health'
     | '/_authenticated/motorcycles/$id/passport'
     | '/_authenticated/motorcycles/$id/plan'
@@ -1155,6 +1168,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMotorcyclesIdHealthRouteImport
       parentRoute: typeof AuthenticatedMotorcyclesIdRoute
     }
+    '/_authenticated/motorcycles/$id/editar': {
+      id: '/_authenticated/motorcycles/$id/editar'
+      path: '/editar'
+      fullPath: '/motorcycles/$id/editar'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdEditarRouteImport
+      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
+    }
     '/_authenticated/motorcycles/$id/control': {
       id: '/_authenticated/motorcycles/$id/control'
       path: '/control'
@@ -1251,6 +1271,7 @@ interface AuthenticatedMotorcyclesIdRouteChildren {
   AuthenticatedMotorcyclesIdCertificateRoute: typeof AuthenticatedMotorcyclesIdCertificateRoute
   AuthenticatedMotorcyclesIdComponentsRoute: typeof AuthenticatedMotorcyclesIdComponentsRoute
   AuthenticatedMotorcyclesIdControlRoute: typeof AuthenticatedMotorcyclesIdControlRoute
+  AuthenticatedMotorcyclesIdEditarRoute: typeof AuthenticatedMotorcyclesIdEditarRoute
   AuthenticatedMotorcyclesIdHealthRoute: typeof AuthenticatedMotorcyclesIdHealthRoute
   AuthenticatedMotorcyclesIdPassportRoute: typeof AuthenticatedMotorcyclesIdPassportRoute
   AuthenticatedMotorcyclesIdPlanRoute: typeof AuthenticatedMotorcyclesIdPlanRoute
@@ -1269,6 +1290,8 @@ const AuthenticatedMotorcyclesIdRouteChildren: AuthenticatedMotorcyclesIdRouteCh
       AuthenticatedMotorcyclesIdComponentsRoute,
     AuthenticatedMotorcyclesIdControlRoute:
       AuthenticatedMotorcyclesIdControlRoute,
+    AuthenticatedMotorcyclesIdEditarRoute:
+      AuthenticatedMotorcyclesIdEditarRoute,
     AuthenticatedMotorcyclesIdHealthRoute:
       AuthenticatedMotorcyclesIdHealthRoute,
     AuthenticatedMotorcyclesIdPassportRoute:
@@ -1371,3 +1394,13 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

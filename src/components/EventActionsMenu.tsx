@@ -6,14 +6,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { MoreVertical, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -36,7 +49,13 @@ type EventRow = {
  * comuns e recalcula automaticamente saldos + programações vinculadas.
  * Toda operação grava em `audit_log`.
  */
-export function EventActionsMenu({ event, onChanged }: { event: EventRow; onChanged?: () => void }) {
+export function EventActionsMenu({
+  event,
+  onChanged,
+}: {
+  event: EventRow;
+  onChanged?: () => void;
+}) {
   const qc = useQueryClient();
   const [editing, setEditing] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -58,11 +77,15 @@ export function EventActionsMenu({ event, onChanged }: { event: EventRow; onChan
       const hasHours = hoursInt !== "" || minutes !== "";
       const hasKm = km !== "";
       const hasCost = cost !== "";
-      const newHoursDelta = hasHours ? toDecimalHours(Number(hoursInt || 0), Number(minutes || 0)) : null;
+      const newHoursDelta = hasHours
+        ? toDecimalHours(Number(hoursInt || 0), Number(minutes || 0))
+        : null;
       const newKmDelta = hasKm ? Number(km) : null;
       const newCost = hasCost ? Number(cost) : null;
-      if (newHoursDelta != null && (!Number.isFinite(newHoursDelta) || newHoursDelta < 0)) throw new Error("Duração inválida");
-      if (newKmDelta != null && (!Number.isFinite(newKmDelta) || newKmDelta < 0)) throw new Error("Distância inválida");
+      if (newHoursDelta != null && (!Number.isFinite(newHoursDelta) || newHoursDelta < 0))
+        throw new Error("Duração inválida");
+      if (newKmDelta != null && (!Number.isFinite(newKmDelta) || newKmDelta < 0))
+        throw new Error("Distância inválida");
       if (newCost != null && !Number.isFinite(newCost)) throw new Error("Custo inválido");
       const newOccurred = new Date(occurredAt).toISOString();
 
@@ -86,7 +109,9 @@ export function EventActionsMenu({ event, onChanged }: { event: EventRow; onChan
       onChanged?.();
     } catch (err: any) {
       toast.error(err.message ?? "Falha ao atualizar atividade.");
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function remove() {
@@ -107,14 +132,21 @@ export function EventActionsMenu({ event, onChanged }: { event: EventRow; onChan
       onChanged?.();
     } catch (err: any) {
       toast.error(err.message ?? "Falha ao excluir atividade.");
-    } finally { setSaving(false); }
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="Ações da atividade" className="h-7 w-7">
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label="Editar ou excluir esta atividade"
+            className="h-9 w-9 shrink-0"
+          >
             <MoreVertical className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
@@ -122,7 +154,10 @@ export function EventActionsMenu({ event, onChanged }: { event: EventRow; onChan
           <DropdownMenuItem onClick={() => setEditing(true)}>
             <Pencil className="h-3.5 w-3.5" /> Editar atividade
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => setConfirming(true)} className="text-destructive focus:text-destructive">
+          <DropdownMenuItem
+            onClick={() => setConfirming(true)}
+            className="text-destructive focus:text-destructive"
+          >
             <Trash2 className="h-3.5 w-3.5" /> Excluir atividade
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -138,37 +173,86 @@ export function EventActionsMenu({ event, onChanged }: { event: EventRow; onChan
           </DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1.5">
-              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Título</Label>
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Título
+              </Label>
               <Input value={title} onChange={(e) => setTitle(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Data</Label>
-              <Input type="datetime-local" value={occurredAt} onChange={(e) => setOccurredAt(e.target.value)} />
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Data
+              </Label>
+              <Input
+                type="datetime-local"
+                value={occurredAt}
+                onChange={(e) => setOccurredAt(e.target.value)}
+              />
             </div>
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
               <div className="space-y-1.5">
-                <Label className="text-xs uppercase tracking-widest text-muted-foreground">Horas</Label>
-                <Input type="number" step="1" min="0" value={hoursInt} onChange={(e) => setHoursInt(e.target.value)} />
+                <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Horas
+                </Label>
+                <Input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={hoursInt}
+                  onChange={(e) => setHoursInt(e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs uppercase tracking-widest text-muted-foreground">Minutos</Label>
-                <Input type="number" step="1" min="0" max="59" value={minutes} onChange={(e) => setMinutes(e.target.value)} />
+                <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Minutos
+                </Label>
+                <Input
+                  type="number"
+                  step="1"
+                  min="0"
+                  max="59"
+                  value={minutes}
+                  onChange={(e) => setMinutes(e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs uppercase tracking-widest text-muted-foreground">KM</Label>
-                <Input type="number" step="1" min="0" value={km} onChange={(e) => setKm(e.target.value)} />
+                <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                  KM
+                </Label>
+                <Input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={km}
+                  onChange={(e) => setKm(e.target.value)}
+                />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs uppercase tracking-widest text-muted-foreground">Custo R$</Label>
-                <Input type="number" step="0.01" min="0" value={cost} onChange={(e) => setCost(e.target.value)} />
+                <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Custo R$
+                </Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={cost}
+                  onChange={(e) => setCost(e.target.value)}
+                />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs uppercase tracking-widest text-muted-foreground">Observações</Label>
-              <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} />
+              <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                Observações
+              </Label>
+              <Textarea
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
             </div>
             <div className="flex justify-end gap-2 pt-1">
-              <Button variant="ghost" onClick={() => setEditing(false)}>Cancelar</Button>
+              <Button variant="ghost" onClick={() => setEditing(false)}>
+                Cancelar
+              </Button>
               <Button onClick={save} disabled={saving} className="btn-glow">
                 {saving ? "Salvando…" : "Salvar alterações"}
               </Button>
@@ -182,14 +266,17 @@ export function EventActionsMenu({ event, onChanged }: { event: EventRow; onChan
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir esta atividade?</AlertDialogTitle>
             <AlertDialogDescription>
-              A atividade será removida do histórico. O TrailBook vai recalcular
-              agenda, saúde da moto, índice de conservação e alertas.
-              A operação fica registrada na auditoria.
+              A atividade será removida do histórico. O TrailBook vai recalcular agenda, saúde da
+              moto, índice de conservação e alertas. A operação fica registrada na auditoria.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={saving}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={remove} disabled={saving} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction
+              onClick={remove}
+              disabled={saving}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
               {saving ? "Excluindo…" : "Excluir atividade"}
             </AlertDialogAction>
           </AlertDialogFooter>
