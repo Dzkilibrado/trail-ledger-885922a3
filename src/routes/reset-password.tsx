@@ -1,6 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Bike } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -67,9 +66,7 @@ function ResetPasswordPage() {
     <div className="min-h-dvh surface-hero grid place-items-center px-4 py-10">
       <div className="w-full max-w-md">
         <Link to="/" className="mb-6 flex items-center justify-center gap-2">
-          <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground btn-glow">
-            <Bike className="h-5 w-5" />
-          </div>
+          <img src="/icons/icon-192.png" alt="TrailBook" className="h-9 w-9 rounded-lg" />
           <span className="font-display text-xl font-bold">TrailBook</span>
         </Link>
         <div className="surface-elevated rounded-2xl p-6">

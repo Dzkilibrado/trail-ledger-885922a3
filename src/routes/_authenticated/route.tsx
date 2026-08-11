@@ -403,9 +403,7 @@ function SidebarBody({
       {/* Header + logo */}
       <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
         <Link to="/dashboard" onClick={onClose} className="flex items-center gap-2">
-          <div className="grid h-8 w-8 place-items-center rounded-lg bg-primary text-primary-foreground btn-glow">
-            <Bike className="h-4 w-4" />
-          </div>
+          <img src="/icons/icon-192.png" alt="TrailBook" className="h-8 w-8 rounded-lg" />
           <span className="font-display text-lg font-bold">TrailBook</span>
         </Link>
         {onClose && (

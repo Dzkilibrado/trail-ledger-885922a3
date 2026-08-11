@@ -75,9 +75,7 @@ function SiteHeader() {
     <header className="sticky top-0 z-40 border-b border-border/60 bg-background/85 backdrop-blur-xl">
       <div className="container mx-auto flex items-center justify-between gap-3 px-4 py-3 sm:px-6">
         <Link to="/site" className="flex min-w-0 items-center gap-2">
-          <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground btn-glow">
-            <Bike className="h-5 w-5" />
-          </div>
+          <img src="/icons/icon-192.png" alt="TrailBook" className="h-9 w-9 shrink-0 rounded-lg" />
           <span className="font-display text-lg font-bold tracking-tight">TrailBook</span>
         </Link>
         <nav className="flex items-center gap-2">
@@ -518,9 +516,7 @@ function SiteFooter() {
     <footer className="border-t border-border/60 bg-background">
       <div className="container mx-auto flex flex-col gap-6 px-4 py-8 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="flex items-center gap-2">
-          <div className="grid h-9 w-9 place-items-center rounded-lg bg-primary text-primary-foreground">
-            <Bike className="h-5 w-5" />
-          </div>
+          <img src="/icons/icon-192.png" alt="TrailBook" className="h-9 w-9 rounded-lg" />
           <span className="font-display text-lg font-bold">TrailBook</span>
         </div>
         <nav className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-muted-foreground">

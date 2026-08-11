@@ -337,9 +337,7 @@ function PublicCert() {
             >
               <ArrowLeft className="h-4 w-4" />
             </button>
-            <div className="grid h-7 w-7 place-items-center rounded-lg bg-primary text-primary-foreground">
-              <Bike className="h-4 w-4" />
-            </div>
+            <img src="/icons/icon-192.png" alt="TrailBook" className="h-7 w-7 rounded-lg" />
             <div className="min-w-0 truncate font-display text-sm font-bold leading-none">
               TrailBook{" "}
               <span className="ml-1 text-[10px] font-normal uppercase tracking-widest text-muted-foreground">
