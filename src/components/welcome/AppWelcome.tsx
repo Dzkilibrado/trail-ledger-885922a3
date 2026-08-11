@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { Bike, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useWelcomeBackground } from "./useWelcomeBackground";
@@ -45,9 +45,11 @@ export function AppWelcome({ canSignUp = true }: { canSignUp?: boolean }) {
 
       <main className="relative z-10 mx-auto flex w-full max-w-[420px] flex-1 flex-col justify-end px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-[max(2rem,env(safe-area-inset-top))]">
         <div className="animate-fade-in">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/40 bg-primary/15 backdrop-blur-sm">
-            <Bike className="h-7 w-7 text-primary" aria-hidden />
-          </div>
+          <img
+            src="/icons/icon-192.png"
+            alt="TrailBook"
+            className="h-14 w-14 rounded-2xl border border-primary/40 backdrop-blur-sm"
+          />
 
           <h1 className="mt-5 font-display text-4xl font-bold tracking-tight">TrailBook</h1>
           <p className="mt-1 text-sm font-medium text-primary">
