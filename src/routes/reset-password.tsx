@@ -21,6 +21,7 @@ export const Route = createFileRoute("/reset-password")({
 function ResetPasswordPage() {
   const navigate = useNavigate();
   const [ready, setReady] = useState(false);
+  const [isGoogleOnly, setIsGoogleOnly] = useState(false);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
   const [loading, setLoading] = useState(false);
@@ -28,10 +29,24 @@ function ResetPasswordPage() {
   useEffect(() => {
     // Supabase auto-parses the recovery token from the URL hash and fires
     // a PASSWORD_RECOVERY event with a temporary session.
+    function checkProviders() {
+      supabase.auth.getUser().then(({ data }) => {
+        const providers = data.user?.identities?.map((i) => i.provider) ?? [];
+        setIsGoogleOnly(providers.includes("google") && !providers.includes("email"));
+      });
+    }
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") setReady(true);
+      if (event === "PASSWORD_RECOVERY" || event === "SIGNED_IN") {
+        setReady(true);
+        checkProviders();
+      }
     });
-    supabase.auth.getSession().then(({ data }) => { if (data.session) setReady(true); });
+    supabase.auth.getSession().then(({ data }) => {
+      if (data.session) {
+        setReady(true);
+        checkProviders();
+      }
+    });
     return () => sub.subscription.unsubscribe();
   }, []);
 
@@ -59,23 +74,53 @@ function ResetPasswordPage() {
         </Link>
         <div className="surface-elevated rounded-2xl p-6">
           <h1 className="font-display text-xl font-bold mb-1">Redefinir senha</h1>
-          <p className="text-sm text-muted-foreground mb-5">Escolha uma nova senha para sua conta.</p>
+          <p className="text-sm text-muted-foreground mb-5">
+            Escolha uma nova senha para sua conta.
+          </p>
           {!ready ? (
             <p className="text-sm text-muted-foreground">
               Validando link… Se você não chegou aqui pelo e-mail de redefinição,{" "}
-              <Link to="/auth" className="text-primary hover:underline">volte ao login</Link>.
+              <Link to="/auth" className="text-primary hover:underline">
+                volte ao login
+              </Link>
+              .
             </p>
           ) : (
             <form className="space-y-4" onSubmit={handleSubmit}>
+              {isGoogleOnly && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
+                  Sua conta usa login com o Google — você não precisa de senha para entrar. Se
+                  preferir, pode continuar e definir uma senha aqui como uma forma extra de acesso,
+                  mas isso não substitui o login com Google.
+                </div>
+              )}
               <div className="space-y-1.5">
-                <Label className="text-xs uppercase tracking-widest text-muted-foreground">Nova senha</Label>
-                <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" />
+                <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Nova senha
+                </Label>
+                <Input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs uppercase tracking-widest text-muted-foreground">Confirmar senha</Label>
-                <Input type="password" value={confirm} onChange={(e) => setConfirm(e.target.value)} required autoComplete="new-password" />
+                <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Confirmar senha
+                </Label>
+                <Input
+                  type="password"
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                />
               </div>
-              <Button disabled={loading} type="submit" className="w-full btn-glow">Salvar nova senha</Button>
+              <Button disabled={loading} type="submit" className="w-full btn-glow">
+                Salvar nova senha
+              </Button>
               <Link
                 to="/perfil"
                 className="block text-center text-xs text-muted-foreground hover:text-foreground"

@@ -46,6 +46,7 @@ import { Route as AuthenticatedTicketsNewRouteImport } from './routes/_authentic
 import { Route as AuthenticatedTicketsCpfChangeRouteImport } from './routes/_authenticated/tickets.cpf-change'
 import { Route as AuthenticatedTicketsIdRouteImport } from './routes/_authenticated/tickets.$id'
 import { Route as AuthenticatedPerfilMenuInferiorRouteImport } from './routes/_authenticated/perfil.menu-inferior'
+import { Route as AuthenticatedPerfilContaRouteImport } from './routes/_authenticated/perfil.conta'
 import { Route as AuthenticatedPerfilAtalhosRouteImport } from './routes/_authenticated/perfil.atalhos'
 import { Route as AuthenticatedMotorcyclesNewRouteImport } from './routes/_authenticated/motorcycles.new'
 import { Route as AuthenticatedMotorcyclesIdRouteImport } from './routes/_authenticated/motorcycles.$id'
@@ -264,6 +265,12 @@ const AuthenticatedPerfilMenuInferiorRoute =
     path: '/perfil/menu-inferior',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPerfilContaRoute =
+  AuthenticatedPerfilContaRouteImport.update({
+    id: '/perfil/conta',
+    path: '/perfil/conta',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPerfilAtalhosRoute =
   AuthenticatedPerfilAtalhosRouteImport.update({
     id: '/perfil/atalhos',
@@ -433,6 +440,7 @@ export interface FileRoutesByFullPath {
   '/motorcycles/$id': typeof AuthenticatedMotorcyclesIdRouteWithChildren
   '/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
   '/perfil/atalhos': typeof AuthenticatedPerfilAtalhosRoute
+  '/perfil/conta': typeof AuthenticatedPerfilContaRoute
   '/perfil/menu-inferior': typeof AuthenticatedPerfilMenuInferiorRoute
   '/tickets/$id': typeof AuthenticatedTicketsIdRoute
   '/tickets/cpf-change': typeof AuthenticatedTicketsCpfChangeRoute
@@ -490,6 +498,7 @@ export interface FileRoutesByTo {
   '/documents/$id': typeof AuthenticatedDocumentsIdRoute
   '/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
   '/perfil/atalhos': typeof AuthenticatedPerfilAtalhosRoute
+  '/perfil/conta': typeof AuthenticatedPerfilContaRoute
   '/perfil/menu-inferior': typeof AuthenticatedPerfilMenuInferiorRoute
   '/tickets/$id': typeof AuthenticatedTicketsIdRoute
   '/tickets/cpf-change': typeof AuthenticatedTicketsCpfChangeRoute
@@ -552,6 +561,7 @@ export interface FileRoutesById {
   '/_authenticated/motorcycles/$id': typeof AuthenticatedMotorcyclesIdRouteWithChildren
   '/_authenticated/motorcycles/new': typeof AuthenticatedMotorcyclesNewRoute
   '/_authenticated/perfil/atalhos': typeof AuthenticatedPerfilAtalhosRoute
+  '/_authenticated/perfil/conta': typeof AuthenticatedPerfilContaRoute
   '/_authenticated/perfil/menu-inferior': typeof AuthenticatedPerfilMenuInferiorRoute
   '/_authenticated/tickets/$id': typeof AuthenticatedTicketsIdRoute
   '/_authenticated/tickets/cpf-change': typeof AuthenticatedTicketsCpfChangeRoute
@@ -614,6 +624,7 @@ export interface FileRouteTypes {
     | '/motorcycles/$id'
     | '/motorcycles/new'
     | '/perfil/atalhos'
+    | '/perfil/conta'
     | '/perfil/menu-inferior'
     | '/tickets/$id'
     | '/tickets/cpf-change'
@@ -671,6 +682,7 @@ export interface FileRouteTypes {
     | '/documents/$id'
     | '/motorcycles/new'
     | '/perfil/atalhos'
+    | '/perfil/conta'
     | '/perfil/menu-inferior'
     | '/tickets/$id'
     | '/tickets/cpf-change'
@@ -732,6 +744,7 @@ export interface FileRouteTypes {
     | '/_authenticated/motorcycles/$id'
     | '/_authenticated/motorcycles/new'
     | '/_authenticated/perfil/atalhos'
+    | '/_authenticated/perfil/conta'
     | '/_authenticated/perfil/menu-inferior'
     | '/_authenticated/tickets/$id'
     | '/_authenticated/tickets/cpf-change'
@@ -1030,6 +1043,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPerfilMenuInferiorRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/perfil/conta': {
+      id: '/_authenticated/perfil/conta'
+      path: '/perfil/conta'
+      fullPath: '/perfil/conta'
+      preLoaderRoute: typeof AuthenticatedPerfilContaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/perfil/atalhos': {
       id: '/_authenticated/perfil/atalhos'
       path: '/perfil/atalhos'
@@ -1293,6 +1313,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedMotorcyclesIdRoute: typeof AuthenticatedMotorcyclesIdRouteWithChildren
   AuthenticatedMotorcyclesNewRoute: typeof AuthenticatedMotorcyclesNewRoute
   AuthenticatedPerfilAtalhosRoute: typeof AuthenticatedPerfilAtalhosRoute
+  AuthenticatedPerfilContaRoute: typeof AuthenticatedPerfilContaRoute
   AuthenticatedPerfilMenuInferiorRoute: typeof AuthenticatedPerfilMenuInferiorRoute
   AuthenticatedDocumentsIndexRoute: typeof AuthenticatedDocumentsIndexRoute
   AuthenticatedMotorcyclesIndexRoute: typeof AuthenticatedMotorcyclesIndexRoute
@@ -1323,6 +1344,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedMotorcyclesIdRoute: AuthenticatedMotorcyclesIdRouteWithChildren,
   AuthenticatedMotorcyclesNewRoute: AuthenticatedMotorcyclesNewRoute,
   AuthenticatedPerfilAtalhosRoute: AuthenticatedPerfilAtalhosRoute,
+  AuthenticatedPerfilContaRoute: AuthenticatedPerfilContaRoute,
   AuthenticatedPerfilMenuInferiorRoute: AuthenticatedPerfilMenuInferiorRoute,
   AuthenticatedDocumentsIndexRoute: AuthenticatedDocumentsIndexRoute,
   AuthenticatedMotorcyclesIndexRoute: AuthenticatedMotorcyclesIndexRoute,

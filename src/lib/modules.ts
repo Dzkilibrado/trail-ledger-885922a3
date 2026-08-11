@@ -74,7 +74,16 @@ export function resolveRouteModule(pathname: string): string | undefined {
 }
 
 /** Chaves de módulo que hoje controlam alguma rota de verdade — usado para avisar no painel admin quando um módulo não está ligado a nada. */
-export const LINKED_MODULE_KEYS = new Set(ROUTE_MODULE_RULES.map((r) => r.moduleKey));
+/** Chaves de módulos que são AÇÕES (não telas/rotas) — controlam algo
+ * dentro de uma tela existente em vez de gatear uma rota inteira. Ficam
+ * de fora de ROUTE_MODULE_RULES por natureza, mas são "vinculadas" de
+ * verdade (não devem aparecer com o aviso de módulo órfão). */
+const ACTION_MODULE_KEYS = ["account_reset", "account_deletion"];
+
+export const LINKED_MODULE_KEYS = new Set([
+  ...ROUTE_MODULE_RULES.map((r) => r.moduleKey),
+  ...ACTION_MODULE_KEYS,
+]);
 
 /** Mantido para o menu lateral, que usa apenas os itens de nível principal. */
 export const ROUTE_TO_MODULE: Record<string, string> = {

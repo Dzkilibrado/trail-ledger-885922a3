@@ -5,6 +5,7 @@ import {
   Settings,
   Crown,
   KeyRound,
+  AlertOctagon,
   ShieldCheck,
   HelpCircle,
   FileText,
@@ -55,7 +56,15 @@ const PREFERENCES: Row[] = [
   { to: "/plans", label: "Plano atual", icon: Crown, hint: "Seu plano e benefícios" },
 ];
 
-const SECURITY: Row[] = [{ to: "/reset-password", label: "Alterar senha", icon: KeyRound }];
+const SECURITY: Row[] = [
+  { to: "/reset-password", label: "Alterar senha", icon: KeyRound },
+  {
+    to: "/perfil/conta",
+    label: "Gerenciar conta",
+    icon: AlertOctagon,
+    hint: "Redefinir ou excluir sua conta",
+  },
+];
 
 const SUPPORT: Row[] = [
   {
