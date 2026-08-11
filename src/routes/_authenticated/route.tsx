@@ -192,7 +192,10 @@ function AuthedLayout() {
     await qc.cancelQueries();
     qc.clear();
     await supabase.auth.signOut();
-    navigate({ to: "/auth", replace: true });
+    // Volta pra tela de Boas-vindas (com a arte/hero), não direto pro
+    // formulário de login — é a primeira impressão que o usuário espera
+    // ver de novo, igual quando abre o app pela primeira vez.
+    navigate({ to: "/", replace: true });
   }
 
   const askSignOut = () => setSignOutOpen(true);

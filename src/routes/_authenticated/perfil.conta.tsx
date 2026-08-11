@@ -155,7 +155,7 @@ function DeleteCard() {
     }
     toast.success("Conta excluída. Sentiremos sua falta.");
     await supabase.auth.signOut();
-    window.location.href = "/auth";
+    window.location.href = "/";
   }
 
   return (
