@@ -7,16 +7,8 @@ import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { TBLoadingState } from "@/design-system";
 import { BRANDS } from "@/lib/trailbook";
-import { yearOptions } from "@/lib/motorcycle-catalog";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id/editar")({
   head: () => ({ meta: [{ title: "Editar dados da moto — TrailBook" }] }),
@@ -77,8 +69,6 @@ function EditMotorcyclePage() {
       renavam: moto.data.renavam ?? "",
     });
   }, [moto.data]);
-
-  const years = yearOptions();
 
   function set(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -167,21 +157,16 @@ function EditMotorcyclePage() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <Field label="Marca">
-            <Select value={form.brand ?? ""} onValueChange={(v) => set("brand", v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {BRANDS.map((b) => (
-                  <SelectItem key={b} value={b}>
-                    {b}
-                  </SelectItem>
-                ))}
-                {!BRANDS.includes(form.brand) && form.brand && (
-                  <SelectItem value={form.brand}>{form.brand}</SelectItem>
-                )}
-              </SelectContent>
-            </Select>
+            <Input
+              value={form.brand ?? ""}
+              onChange={(e) => set("brand", e.target.value)}
+              list="brand-suggestions"
+            />
+            <datalist id="brand-suggestions">
+              {BRANDS.map((b) => (
+                <option key={b} value={b} />
+              ))}
+            </datalist>
           </Field>
           <Field label="Modelo">
             <Input value={form.model ?? ""} onChange={(e) => set("model", e.target.value)} />
@@ -190,32 +175,26 @@ function EditMotorcyclePage() {
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <Field label="Ano fabricação">
-            <Select value={form.year_make ?? ""} onValueChange={(v) => set("year_make", v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="—" />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map((y) => (
-                  <SelectItem key={y} value={String(y)}>
-                    {y}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input
+              type="number"
+              inputMode="numeric"
+              placeholder="Ex: 2020"
+              min={1950}
+              max={2100}
+              value={form.year_make ?? ""}
+              onChange={(e) => set("year_make", e.target.value)}
+            />
           </Field>
           <Field label="Ano modelo">
-            <Select value={form.year_model ?? ""} onValueChange={(v) => set("year_model", v)}>
-              <SelectTrigger>
-                <SelectValue placeholder="—" />
-              </SelectTrigger>
-              <SelectContent>
-                {years.map((y) => (
-                  <SelectItem key={y} value={String(y)}>
-                    {y}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input
+              type="number"
+              inputMode="numeric"
+              placeholder="Ex: 2020"
+              min={1950}
+              max={2100}
+              value={form.year_model ?? ""}
+              onChange={(e) => set("year_model", e.target.value)}
+            />
           </Field>
           <Field label="Cilindrada (cc)">
             <Input
