@@ -51,6 +51,8 @@ function EditMotorcyclePage() {
       if (error) throw error;
       return data;
     },
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 
   const [form, setForm] = useState<Record<string, string>>({});
@@ -82,24 +84,40 @@ function EditMotorcyclePage() {
     if (!form.model?.trim()) return toast.error("Informe o modelo.");
 
     setSaving(true);
-    const { error } = await supabase
+    const payload = {
+      nickname: form.nickname.trim() || null,
+      brand: form.brand.trim(),
+      model: form.model.trim(),
+      year_make: form.year_make ? Number(form.year_make) : null,
+      year_model: form.year_model ? Number(form.year_model) : null,
+      displacement: form.displacement ? Number(form.displacement) : null,
+      plate: form.plate.trim() || null,
+      chassis: form.chassis.trim() || null,
+      engine_number: form.engine_number.trim() || null,
+      renavam: form.renavam.trim() || null,
+    };
+    const { data: updated, error } = await supabase
       .from("motorcycles")
-      .update({
-        nickname: form.nickname.trim() || null,
-        brand: form.brand.trim(),
-        model: form.model.trim(),
-        year_make: form.year_make ? Number(form.year_make) : null,
-        year_model: form.year_model ? Number(form.year_model) : null,
-        displacement: form.displacement ? Number(form.displacement) : null,
-        plate: form.plate.trim() || null,
-        chassis: form.chassis.trim() || null,
-        engine_number: form.engine_number.trim() || null,
-        renavam: form.renavam.trim() || null,
-      } as never)
-      .eq("id", id);
+      .update(payload as never)
+      .eq("id", id)
+      .select(
+        "nickname, brand, model, year_make, year_model, displacement, plate, chassis, engine_number, renavam",
+      )
+      .single();
     setSaving(false);
     if (error) {
       toast.error("Não foi possível salvar as alterações", { description: error.message });
+      return;
+    }
+    // Confere se o que voltou do banco bate com o que foi enviado — se algo
+    // divergir (ex: uma trava silenciosa), avisa em vez de fingir sucesso.
+    const mismatch = (Object.keys(payload) as (keyof typeof payload)[]).find(
+      (k) => (updated as any)?.[k] !== payload[k],
+    );
+    if (mismatch) {
+      toast.error("Os dados não foram salvos como esperado", {
+        description: `O campo "${mismatch}" não foi atualizado corretamente. Tente novamente ou fale com o suporte.`,
+      });
       return;
     }
     await qc.invalidateQueries();
