@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
@@ -56,8 +56,14 @@ function EditMotorcyclePage() {
   });
 
   const [form, setForm] = useState<Record<string, string>>({});
+  const hydratedRef = useRef(false);
   useEffect(() => {
-    if (!moto.data) return;
+    // Só copia os dados do banco pro formulário UMA vez, no primeiro
+    // carregamento. Sem essa trava, qualquer nova busca em segundo plano
+    // (ex: refetchOnMount) sobrescreveria o que o usuário está digitando
+    // com o que ainda está salvo no banco — apagando edições em andamento.
+    if (!moto.data || hydratedRef.current) return;
+    hydratedRef.current = true;
     setForm({
       nickname: moto.data.nickname ?? "",
       brand: moto.data.brand ?? "",
