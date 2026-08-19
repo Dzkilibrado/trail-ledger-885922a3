@@ -188,7 +188,7 @@ export function Cockpit({ motoId }: { motoId: string }) {
           description="Emita e compartilhe o laudo da sua moto"
         />
         <ActionCard
-          to="/motorcycles/$id/control" search={{ action: undefined, tab: undefined }}
+          to="/motorcycles/$id/control"
           params={{ id: m.id }}
           icon={<FolderOpen className="h-5 w-5 text-amber-400" />}
           title="Central da Moto"
