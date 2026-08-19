@@ -155,7 +155,7 @@ function HelpPage() {
                     Voltar ao início
                   </Button>
                 ) : (
-                  <Button className="btn-glow" onClick={() => navigate({ to: "/auth" })}>
+                  <Button className="btn-glow" onClick={() => navigate({ to: "/auth", search: {} })}>
                     Voltar ao login
                   </Button>
                 )}
@@ -294,7 +294,7 @@ function HelpPage() {
                       type="button"
                       variant="outline"
                       className="sm:w-40"
-                      onClick={() => navigate({ to: "/auth" })}
+                      onClick={() => navigate({ to: "/auth", search: {} })}
                     >
                       Voltar ao login
                     </Button>
