@@ -2443,6 +2443,7 @@ export type Database = {
           blocked_at: string | null
           blocked_notes: string | null
           blocked_reason: string | null
+          bottom_nav_items: string[] | null
           cep: string | null
           city: string | null
           complemento: string | null
@@ -2480,6 +2481,7 @@ export type Database = {
           blocked_at?: string | null
           blocked_notes?: string | null
           blocked_reason?: string | null
+          bottom_nav_items?: string[] | null
           cep?: string | null
           city?: string | null
           complemento?: string | null
@@ -2517,6 +2519,7 @@ export type Database = {
           blocked_at?: string | null
           blocked_notes?: string | null
           blocked_reason?: string | null
+          bottom_nav_items?: string[] | null
           cep?: string | null
           city?: string | null
           complemento?: string | null
@@ -2596,7 +2599,7 @@ export type Database = {
           code: string
           completed_at: string | null
           created_at: string
-          created_by: string
+          created_by: string | null
           external_buyer: boolean
           id: string
           issued_at: string | null
@@ -2639,7 +2642,7 @@ export type Database = {
           code: string
           completed_at?: string | null
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           external_buyer?: boolean
           id?: string
           issued_at?: string | null
@@ -2682,7 +2685,7 @@ export type Database = {
           code?: string
           completed_at?: string | null
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           external_buyer?: boolean
           id?: string
           issued_at?: string | null
@@ -2931,6 +2934,32 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      workshop_favorites: {
+        Row: {
+          created_at: string
+          user_id: string
+          workshop_id: string
+        }
+        Insert: {
+          created_at?: string
+          user_id: string
+          workshop_id: string
+        }
+        Update: {
+          created_at?: string
+          user_id?: string
+          workshop_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workshop_favorites_workshop_id_fkey"
+            columns: ["workshop_id"]
+            isOneToOne: false
+            referencedRelation: "workshops"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workshops: {
         Row: {
@@ -3625,6 +3654,7 @@ export type Database = {
           km_total: number
         }[]
       }
+      delete_own_account: { Args: never; Returns: undefined }
       emit_system_message: {
         Args: {
           _body: string
@@ -3741,6 +3771,7 @@ export type Database = {
         Returns: boolean
       }
       hash_cpf: { Args: { _cpf: string }; Returns: string }
+      is_feature_enabled: { Args: { _key: string }; Returns: boolean }
       is_moto_owner: { Args: { _moto_id: string }; Returns: boolean }
       is_public_certificate_motorcycle_photo: {
         Args: { _object_name: string }
@@ -3803,6 +3834,7 @@ export type Database = {
         Args: { _message: string; _moto_id: string; _to_email: string }
         Returns: string
       }
+      reset_own_account: { Args: never; Returns: undefined }
       respond_ownership_transfer: {
         Args: { _approve: boolean; _transfer_id: string }
         Returns: undefined
