@@ -35,7 +35,7 @@ export const SignupEmail = ({
         <Text style={text}>
           Que bom ter você no{' '}
           <Link href={siteUrl} style={link}>
-            <strong>{siteName}</strong>
+            <strong>TrailBook</strong>
           </Link>
           , o histórico confiável da sua moto off-road.
         </Text>

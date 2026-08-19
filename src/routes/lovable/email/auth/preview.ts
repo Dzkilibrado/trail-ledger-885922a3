@@ -18,7 +18,7 @@ const EMAIL_TEMPLATES: Record<string, React.ComponentType<any>> = {
 }
 
 // Configuration
-const SITE_NAME = "trail-ledger"
+const SITE_NAME = "TrailBook"
 const ROOT_DOMAIN = "trailbook.com.br"
 
 // Sample data for preview mode ONLY (not used in actual email sending).
