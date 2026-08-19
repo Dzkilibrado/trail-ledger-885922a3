@@ -44,7 +44,7 @@ export function NextActionWidget({
           )}
           {(action.kind === "renew_document" || action.kind === "add_photo") && (
             <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
-              <Link to="/motorcycles/$id/control" search={{}} params={{ id: moto.id }}>
+              <Link to="/motorcycles/$id/control" search={{ action: undefined, tab: undefined }} params={{ id: moto.id }}>
                 {action.label}
               </Link>
             </Button>
