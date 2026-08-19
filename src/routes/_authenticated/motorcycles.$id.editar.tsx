@@ -118,7 +118,7 @@ function EditMotorcyclePage() {
     }
     await qc.invalidateQueries();
     toast.success("Dados da moto atualizados.");
-    navigate({ to: "/motorcycles/$id/control", params: { id } });
+    navigate({ to: "/motorcycles/$id/control", params: { id }, search: { action: undefined, tab: undefined } });
   }
 
   if (moto.isLoading) return <TBLoadingState label="Carregando dados da moto…" />;
@@ -138,8 +138,7 @@ function EditMotorcyclePage() {
           { label: "Minhas Motos", to: "/motorcycles" },
           {
             label: moto.data.nickname || moto.data.model,
-            to: "/motorcycles/$id",
-            params: { id } as never,
+            to: `/motorcycles/${id}`,
           },
           { label: "Editar" },
         ]}

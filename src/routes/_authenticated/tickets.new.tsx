@@ -57,7 +57,7 @@ function NewTicketPage() {
       const userId = sessionData.session?.user.id;
       if (!userId) {
         toast.error("Sua sessão expirou. Entre novamente para abrir o chamado.");
-        navigate({ to: "/auth" });
+        navigate({ to: "/auth", search: { tab: "signin" as const, recuperar: undefined } });
         return;
       }
 

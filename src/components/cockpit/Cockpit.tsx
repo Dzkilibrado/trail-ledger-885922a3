@@ -144,7 +144,7 @@ export function Cockpit({ motoId }: { motoId: string }) {
             </div>
           </div>
           <Button asChild size="sm" variant="outline" className="shrink-0">
-            <Link to="/motorcycles/$id/control" params={{ id: m.id }}>
+            <Link to="/motorcycles/$id/control" search={{ action: undefined, tab: undefined }} params={{ id: m.id }}>
               Adicionar
             </Link>
           </Button>

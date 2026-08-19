@@ -59,7 +59,7 @@ function ResetPasswordPage() {
     if (error) return toast.error(error.message);
     toast.success("Senha atualizada. Faça login novamente.");
     await supabase.auth.signOut();
-    navigate({ to: "/auth" });
+    navigate({ to: "/auth", search: { tab: "signin" as const, recuperar: undefined } });
   }
 
   return (
@@ -77,7 +77,7 @@ function ResetPasswordPage() {
           {!ready ? (
             <p className="text-sm text-muted-foreground">
               Validando link… Se você não chegou aqui pelo e-mail de redefinição,{" "}
-              <Link to="/auth" className="text-primary hover:underline">
+              <Link to="/auth" search={{ tab: "signin" as const, recuperar: undefined }} className="text-primary hover:underline">
                 volte ao login
               </Link>
               .

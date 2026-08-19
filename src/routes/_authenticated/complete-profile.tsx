@@ -106,7 +106,7 @@ function CompleteProfilePage() {
     (async () => {
       const { data: s } = await supabase.auth.getSession();
       if (!s.session?.user) {
-        navigate({ to: "/auth" });
+        navigate({ to: "/auth", search: { tab: "signin" as const, recuperar: undefined } });
         return;
       }
       const user = s.session.user;
@@ -629,7 +629,7 @@ function CompleteProfilePage() {
         onRecover={async () => {
           setCpfConflict(false);
           await supabase.auth.signOut();
-          navigate({ to: "/auth" });
+          navigate({ to: "/auth", search: { tab: "signin" as const, recuperar: undefined } });
           toast.info("Use 'Esqueci minha senha?' com o e-mail da conta original.");
         }}
         onOpenHelp={async () => {
@@ -640,7 +640,7 @@ function CompleteProfilePage() {
         onBackToLogin={async () => {
           setCpfConflict(false);
           await supabase.auth.signOut();
-          navigate({ to: "/auth" });
+          navigate({ to: "/auth", search: { tab: "signin" as const, recuperar: undefined } });
         }}
       />
     </div>

@@ -64,7 +64,7 @@ export const Route = createFileRoute("/_authenticated")({
     // truly no session do we bounce the user to sign-in.
     const { data: sessionData } = await supabase.auth.getSession();
     const user = sessionData.session?.user ?? null;
-    if (!user) throw redirect({ to: "/auth" });
+    if (!user) throw redirect({ to: "/auth", search: { tab: "signin" as const, recuperar: undefined } });
 
     // Force profile completion (CPF) before accessing anything else.
     // Tolerate transient network errors — do NOT sign the user out on a
