@@ -58,6 +58,8 @@ import { Route as AuthenticatedAdminMessagesRouteImport } from './routes/_authen
 import { Route as AuthenticatedAdminHomologRouteImport } from './routes/_authenticated/admin.homolog'
 import { Route as AuthenticatedAdminDocumentsRouteImport } from './routes/_authenticated/admin.documents'
 import { Route as AuthenticatedMotorcyclesIdIndexRouteImport } from './routes/_authenticated/motorcycles.$id.index'
+import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
+import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as AuthenticatedRecibosCodeVisualizarRouteImport } from './routes/_authenticated/recibos.$code.visualizar'
 import { Route as AuthenticatedMotorcyclesIdPlanRouteImport } from './routes/_authenticated/motorcycles.$id.plan'
 import { Route as AuthenticatedMotorcyclesIdPassportRouteImport } from './routes/_authenticated/motorcycles.$id.passport'
@@ -337,6 +339,16 @@ const AuthenticatedMotorcyclesIdIndexRoute =
     path: '/',
     getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
   } as any)
+const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
+  id: '/lovable/email/auth/webhook',
+  path: '/lovable/email/auth/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
+  id: '/lovable/email/auth/preview',
+  path: '/lovable/email/auth/preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthenticatedRecibosCodeVisualizarRoute =
   AuthenticatedRecibosCodeVisualizarRouteImport.update({
     id: '/recibos/$code/visualizar',
@@ -466,6 +478,8 @@ export interface FileRoutesByFullPath {
   '/motorcycles/$id/passport': typeof AuthenticatedMotorcyclesIdPassportRoute
   '/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
   '/recibos/$code/visualizar': typeof AuthenticatedRecibosCodeVisualizarRoute
+  '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
+  '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/motorcycles/$id/': typeof AuthenticatedMotorcyclesIdIndexRoute
   '/motorcycles/$id/checkups/$code': typeof AuthenticatedMotorcyclesIdCheckupsCodeRoute
   '/motorcycles/$id/checkups/comparar': typeof AuthenticatedMotorcyclesIdCheckupsCompararRoute
@@ -525,6 +539,8 @@ export interface FileRoutesByTo {
   '/motorcycles/$id/passport': typeof AuthenticatedMotorcyclesIdPassportRoute
   '/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
   '/recibos/$code/visualizar': typeof AuthenticatedRecibosCodeVisualizarRoute
+  '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
+  '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/motorcycles/$id': typeof AuthenticatedMotorcyclesIdIndexRoute
   '/motorcycles/$id/checkups/$code': typeof AuthenticatedMotorcyclesIdCheckupsCodeRoute
   '/motorcycles/$id/checkups/comparar': typeof AuthenticatedMotorcyclesIdCheckupsCompararRoute
@@ -589,6 +605,8 @@ export interface FileRoutesById {
   '/_authenticated/motorcycles/$id/passport': typeof AuthenticatedMotorcyclesIdPassportRoute
   '/_authenticated/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
   '/_authenticated/recibos/$code/visualizar': typeof AuthenticatedRecibosCodeVisualizarRoute
+  '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
+  '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
   '/_authenticated/motorcycles/$id/': typeof AuthenticatedMotorcyclesIdIndexRoute
   '/_authenticated/motorcycles/$id/checkups/$code': typeof AuthenticatedMotorcyclesIdCheckupsCodeRoute
   '/_authenticated/motorcycles/$id/checkups/comparar': typeof AuthenticatedMotorcyclesIdCheckupsCompararRoute
@@ -653,6 +671,8 @@ export interface FileRouteTypes {
     | '/motorcycles/$id/passport'
     | '/motorcycles/$id/plan'
     | '/recibos/$code/visualizar'
+    | '/lovable/email/auth/preview'
+    | '/lovable/email/auth/webhook'
     | '/motorcycles/$id/'
     | '/motorcycles/$id/checkups/$code'
     | '/motorcycles/$id/checkups/comparar'
@@ -712,6 +732,8 @@ export interface FileRouteTypes {
     | '/motorcycles/$id/passport'
     | '/motorcycles/$id/plan'
     | '/recibos/$code/visualizar'
+    | '/lovable/email/auth/preview'
+    | '/lovable/email/auth/webhook'
     | '/motorcycles/$id'
     | '/motorcycles/$id/checkups/$code'
     | '/motorcycles/$id/checkups/comparar'
@@ -775,6 +797,8 @@ export interface FileRouteTypes {
     | '/_authenticated/motorcycles/$id/passport'
     | '/_authenticated/motorcycles/$id/plan'
     | '/_authenticated/recibos/$code/visualizar'
+    | '/lovable/email/auth/preview'
+    | '/lovable/email/auth/webhook'
     | '/_authenticated/motorcycles/$id/'
     | '/_authenticated/motorcycles/$id/checkups/$code'
     | '/_authenticated/motorcycles/$id/checkups/comparar'
@@ -793,6 +817,8 @@ export interface RootRouteChildren {
   LTokenRoute: typeof LTokenRoute
   RCodeRoute: typeof RCodeRoute
   ApiPublicAppVersionRoute: typeof ApiPublicAppVersionRoute
+  LovableEmailAuthPreviewRoute: typeof LovableEmailAuthPreviewRoute
+  LovableEmailAuthWebhookRoute: typeof LovableEmailAuthWebhookRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1140,6 +1166,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMotorcyclesIdIndexRouteImport
       parentRoute: typeof AuthenticatedMotorcyclesIdRoute
     }
+    '/lovable/email/auth/webhook': {
+      id: '/lovable/email/auth/webhook'
+      path: '/lovable/email/auth/webhook'
+      fullPath: '/lovable/email/auth/webhook'
+      preLoaderRoute: typeof LovableEmailAuthWebhookRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/lovable/email/auth/preview': {
+      id: '/lovable/email/auth/preview'
+      path: '/lovable/email/auth/preview'
+      fullPath: '/lovable/email/auth/preview'
+      preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authenticated/recibos/$code/visualizar': {
       id: '/_authenticated/recibos/$code/visualizar'
       path: '/recibos/$code/visualizar'
@@ -1390,6 +1430,8 @@ const rootRouteChildren: RootRouteChildren = {
   LTokenRoute: LTokenRoute,
   RCodeRoute: RCodeRoute,
   ApiPublicAppVersionRoute: ApiPublicAppVersionRoute,
+  LovableEmailAuthPreviewRoute: LovableEmailAuthPreviewRoute,
+  LovableEmailAuthWebhookRoute: LovableEmailAuthWebhookRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
