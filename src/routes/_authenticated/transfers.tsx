@@ -430,6 +430,7 @@ function ProcessCard({
       navigate({
         to: "/motorcycles/$id/control",
         params: { id: item.motorcycle_id },
+        search: {},
       });
       return;
     }

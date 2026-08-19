@@ -138,8 +138,7 @@ function EditMotorcyclePage() {
           { label: "Minhas Motos", to: "/motorcycles" },
           {
             label: moto.data.nickname || moto.data.model,
-            to: "/motorcycles/$id",
-            params: { id } as never,
+            to: `/motorcycles/${id}`,
           },
           { label: "Editar" },
         ]}
