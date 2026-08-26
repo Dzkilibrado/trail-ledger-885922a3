@@ -88,7 +88,6 @@ function NewMotorcycle() {
   const [incident, setIncident] = useState<"yes" | "no" | "unknown">("unknown");
   const [useProfile, setUseProfile] = useState<UseProfile>("normal");
   const [useProfileNote, setUseProfileNote] = useState("");
-  const [applyPlan, setApplyPlan] = useState<"review" | "auto" | "skip">("review");
   const [notes, setNotes] = useState("");
   const [originType, setOriginType] = useState<OriginType | "">("");
   const [originNotes, setOriginNotes] = useState("");
@@ -297,13 +296,12 @@ function NewMotorcycle() {
           description: `A moto foi cadastrada normalmente, mas ${secondaryIssues.join(" e ")}. Você pode adicionar isso depois pela Central da moto.`,
         });
       }
-      if (applyPlan === "skip" || applyPlan === "auto") {
-        // "auto" também não abre wizard — aplicaremos o plano padrão em segundo plano no futuro.
-        // Por ora, "auto" leva para a moto (o usuário pode aplicar depois).
-        navigate({ to: "/motorcycles/$id", params: { id: data.id } });
-      } else {
-        navigate({ to: "/motorcycles/$id/plan", params: { id: data.id }, search: { first: true } });
-      }
+      // Sempre segue direto para o plano de manutenção: ele já sugere os
+      // itens e prazos automaticamente (o usuário só revisa e confirma).
+      // Isso garante que toda moto cadastrada termine com um plano de
+      // verdade — sem isso, a "Revisão inicial" fica sem nenhum
+      // componente para mostrar.
+      navigate({ to: "/motorcycles/$id/plan", params: { id: data.id }, search: { first: true } });
     } catch (err: any) {
       toast.error(err.message ?? "Erro ao cadastrar");
     } finally {
@@ -375,16 +373,7 @@ function NewMotorcycle() {
           <ReviewSection title="Perfil de uso e plano" onEdit={() => setMode("edit")}>
             <Kv k="Perfil" v={USE_PROFILES.find((p) => p.value === useProfile)?.label ?? "—"} />
             {useProfile === "other" && <Kv k="Descrição" v={useProfileNote || "—"} />}
-            <Kv
-              k="Plano padrão"
-              v={
-                applyPlan === "review"
-                  ? "Revisar itens no próximo passo"
-                  : applyPlan === "auto"
-                    ? "Aplicar automaticamente"
-                    : "Configurar depois"
-              }
-            />
+            <Kv k="Plano de manutenção" v="Sugerido automaticamente no próximo passo" />
           </ReviewSection>
 
           <ReviewSection title="Declaração de sinistro" onEdit={() => setMode("edit")}>
@@ -922,28 +911,12 @@ function NewMotorcycle() {
               </Field>
             )}
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Plano de manutenção
-            </Label>
-            <div className="flex flex-wrap gap-2">
-              {(
-                [
-                  { v: "review", label: "Revisar antes de aplicar" },
-                  { v: "auto", label: "Aplicar plano recomendado" },
-                  { v: "skip", label: "Configurar manualmente" },
-                ] as const
-              ).map((o) => (
-                <button
-                  key={o.v}
-                  type="button"
-                  onClick={() => setApplyPlan(o.v)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${applyPlan === o.v ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
-                >
-                  {o.label}
-                </button>
-              ))}
-            </div>
+          <div className="space-y-1.5 rounded-lg border border-primary/20 bg-primary/5 p-3">
+            <div className="text-xs font-semibold text-primary">Plano de manutenção</div>
+            <p className="text-[11px] text-muted-foreground">
+              No próximo passo, sugerimos automaticamente os itens e prazos de manutenção
+              recomendados para essa moto — é só revisar e confirmar.
+            </p>
           </div>
         </div>
 
