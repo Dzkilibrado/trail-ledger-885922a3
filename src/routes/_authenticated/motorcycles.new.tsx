@@ -35,8 +35,9 @@ import { toast } from "sonner";
 import { usePlan } from "@/hooks/usePlan";
 import { canCreateMotorcycle } from "@/lib/plans";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Crown, ShieldAlert, CheckCircle2, Pencil, Info } from "lucide-react";
+import { Crown, ShieldAlert, CheckCircle2, Pencil, Info, Paperclip, X } from "lucide-react";
 import { ORIGIN_OPTIONS, type OriginType } from "@/lib/motorcycle-origin";
+import { DOC_TYPE_LABEL } from "@/lib/motorcycle-documents";
 import {
   invalidateMotorcycleState,
   setStoredActiveMotorcycleId,
@@ -91,6 +92,9 @@ function NewMotorcycle() {
   const [notes, setNotes] = useState("");
   const [originType, setOriginType] = useState<OriginType | "">("");
   const [originNotes, setOriginNotes] = useState("");
+  // Upload opcional do documento de origem durante o cadastro
+  const [wantsDocUpload, setWantsDocUpload] = useState<boolean | null>(null);
+  const [originDocFile, setOriginDocFile] = useState<File | null>(null);
   const [mode, setMode] = useState<"edit" | "review">("edit");
   const [draft, setDraft] = useState<z.infer<typeof schema> | null>(null);
   const { plan } = usePlan();
@@ -296,6 +300,41 @@ function NewMotorcycle() {
           description: `A moto foi cadastrada normalmente, mas ${secondaryIssues.join(" e ")}. Você pode adicionar isso depois pela Central da moto.`,
         });
       }
+      if (originDocFile) {
+        try {
+          const { data: s } = await supabase.auth.getSession();
+          const uid2 = s.session?.user.id;
+          if (uid2) {
+            const { path } = await uploadFile("documents", originDocFile, uid2);
+            const docType =
+              originType === "zero_km"
+                ? "invoice"
+                : originType === "private"
+                  ? "bill_of_sale"
+                  : originType === "dealer"
+                    ? "invoice"
+                    : "other";
+            await supabase.from("motorcycle_documents" as never).insert({
+              motorcycle_id: data.id,
+              doc_type: docType,
+              bucket: "documents",
+              storage_path: path,
+              file_name: originDocFile.name,
+              mime_type: originDocFile.type || null,
+              size_bytes: originDocFile.size,
+              created_by: uid2,
+              version: 1,
+              is_current: true,
+              is_origin_document: true,
+            } as never);
+          }
+        } catch {
+          toast.warning("Moto cadastrada, mas o documento de origem não foi salvo", {
+            description: "Você pode anexar o documento depois, na Central da moto → Documentos.",
+          });
+        }
+      }
+
       // Sempre segue direto para o plano de manutenção: ele já sugere os
       // itens e prazos automaticamente (o usuário só revisa e confirma).
       // Isso garante que toda moto cadastrada termine com um plano de
@@ -969,6 +1008,115 @@ function NewMotorcycle() {
                 }
               />
             </Field>
+          )}
+
+          {/* Upload opcional do documento de origem */}
+          {originType && originType !== "trailbook_transfer" && (
+            <div className="rounded-xl border border-dashed border-border bg-muted/20 p-4 space-y-3">
+              {wantsDocUpload === null ? (
+                <>
+                  <div className="flex items-start gap-2">
+                    <Paperclip className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                    <div>
+                      <p className="text-sm font-medium">
+                        Está com o documento da moto em mãos agora?
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {originType === "zero_km" && "Nota Fiscal da concessionária, por exemplo."}
+                        {originType === "private" && "Recibo de Compra e Venda ou Nota Fiscal."}
+                        {originType === "dealer" && "Nota Fiscal ou Recibo da loja."}
+                        {originType === "other" && "Qualquer comprovante da origem da moto."} Não é
+                        obrigatório — você pode anexar depois.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button type="button" size="sm" onClick={() => setWantsDocUpload(true)}>
+                      Sim, quero anexar agora
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => setWantsDocUpload(false)}
+                    >
+                      Não, faço depois
+                    </Button>
+                  </div>
+                </>
+              ) : wantsDocUpload === false ? (
+                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span>
+                    📌 Lembrete: anexe o documento depois em{" "}
+                    <strong>Central da moto → Documentos</strong>.
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setWantsDocUpload(null)}
+                    className="underline hover:text-foreground"
+                  >
+                    Mudei de ideia
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-primary flex items-center gap-1.5">
+                    <Paperclip className="h-3.5 w-3.5" /> Selecione o arquivo
+                  </p>
+                  {!originDocFile ? (
+                    <label className="flex cursor-pointer flex-col items-center gap-1 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4 text-center hover:border-primary/70">
+                      <Paperclip className="h-6 w-6 text-primary/60" />
+                      <span className="text-xs text-muted-foreground">
+                        Toque para selecionar — PDF, JPG ou PNG (máx. 20 MB)
+                      </span>
+                      <input
+                        type="file"
+                        accept="application/pdf,image/*"
+                        className="sr-only"
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          if (f && f.size > 20 * 1024 * 1024) {
+                            toast.error("Arquivo muito grande", {
+                              description: "Máximo permitido: 20 MB.",
+                            });
+                            return;
+                          }
+                          setOriginDocFile(f ?? null);
+                        }}
+                      />
+                    </label>
+                  ) : (
+                    <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card p-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-medium">{originDocFile.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {(originDocFile.size / 1024).toFixed(0)} KB · será salvo ao confirmar o
+                          cadastro
+                        </p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setOriginDocFile(null)}
+                        className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+                        aria-label="Remover arquivo"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setWantsDocUpload(null);
+                      setOriginDocFile(null);
+                    }}
+                    className="text-xs text-muted-foreground underline hover:text-foreground"
+                  >
+                    Cancelar e fazer depois
+                  </button>
+                </div>
+              )}
+            </div>
           )}
         </div>
 
