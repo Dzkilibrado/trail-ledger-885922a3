@@ -103,6 +103,8 @@ export function MotoControlCenter({
   const [archiveReason, setArchiveReason] = useState<string>("");
   const [archiveReasonOther, setArchiveReasonOther] = useState<string>("");
   const [unarchiveOpen, setUnarchiveOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteWord, setDeleteWord] = useState("");
   const [moreActionsOpen, setMoreActionsOpen] = useState(false);
   const [inspectTarget, setInspectTarget] = useState<null | {
     id: string;
@@ -252,6 +254,19 @@ export function MotoControlCenter({
     toast.success("Moto arquivada. Histórico preservado para auditoria.");
     navigate({ to: "/motorcycles" });
   }
+  async function deleteMoto() {
+    const { error } = await supabase.from("motorcycles").delete().eq("id", m.id);
+    if (error) {
+      toast.error("Não foi possível excluir a moto", { description: error.message });
+      return;
+    }
+    setDeleteOpen(false);
+    setDeleteWord("");
+    await qc.invalidateQueries();
+    toast.success(`${m.nickname || m.model} foi excluída permanentemente.`);
+    navigate({ to: "/motorcycles" });
+  }
+
   async function unarchiveMoto() {
     const { error } = await supabase.rpc(
       "unarchive_motorcycle" as never,
@@ -637,6 +652,75 @@ export function MotoControlCenter({
                         >
                           Arquivar moto
                         </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                )}
+                {isOwner && !isArchived && (
+                  <AlertDialog
+                    open={deleteOpen}
+                    onOpenChange={(o) => {
+                      setDeleteOpen(o);
+                      if (!o) setDeleteWord("");
+                    }}
+                  >
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="border-destructive/30 text-destructive hover:bg-destructive/10"
+                      >
+                        <Trash2 className="h-4 w-4" /> Excluir moto
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                          <Trash2 className="h-5 w-5" /> Excluir permanentemente?
+                        </AlertDialogTitle>
+                        <AlertDialogDescription asChild>
+                          <div className="space-y-3 text-sm">
+                            <p>
+                              <strong>Excluir</strong> é diferente de <strong>Arquivar</strong>. Ao
+                              arquivar, a moto sai da garagem ativa mas todo o histórico fica
+                              preservado — você pode restaurá-la a qualquer momento.
+                            </p>
+                            <p>
+                              Ao excluir, <strong>{m.nickname || m.model}</strong> e{" "}
+                              <strong>tudo que está associado a ela</strong> — manutenções,
+                              documentos, atividades, certificados, fotos e registros — será apagado
+                              permanentemente do sistema.{" "}
+                              <span className="font-semibold text-destructive">
+                                Esta ação não pode ser desfeita.
+                              </span>
+                            </p>
+                            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
+                              Se a moto foi vendida ou está parada, considere{" "}
+                              <strong>Arquivar</strong> em vez de excluir — o histórico dela pode
+                              ser valioso no futuro.
+                            </div>
+                            <p className="text-muted-foreground">
+                              Para confirmar, digite{" "}
+                              <strong className="text-foreground">EXCLUIR</strong> abaixo.
+                            </p>
+                          </div>
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <Input
+                        value={deleteWord}
+                        onChange={(e) => setDeleteWord(e.target.value.toUpperCase())}
+                        placeholder="EXCLUIR"
+                        autoFocus
+                      />
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <Button
+                          variant="destructive"
+                          disabled={deleteWord !== "EXCLUIR"}
+                          onClick={deleteMoto}
+                          className="disabled:opacity-40"
+                        >
+                          Excluir permanentemente
+                        </Button>
                       </AlertDialogFooter>
                     </AlertDialogContent>
                   </AlertDialog>
