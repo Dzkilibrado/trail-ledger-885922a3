@@ -187,7 +187,7 @@ function AuthPage() {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email: su.email.trim(),
       password: su.password,
       options: {
@@ -210,6 +210,21 @@ function AuthPage() {
         ? error.message.replace(/^.*CPF/i, "CPF")
         : error.message;
       return toast.error(msg);
+    }
+    // Sinal oficial do Supabase para "e-mail já tem conta confirmada": o
+    // cadastro não retorna erro (por segurança, para não revelar quais
+    // e-mails existem no sistema), mas o usuário retornado vem sem
+    // nenhuma "identity" — não é criada uma conta nova de verdade, nem é
+    // enviado e-mail nenhum. Sem esse aviso, a pessoa fica esperando um
+    // e-mail que nunca chega.
+    if (data?.user && data.user.identities?.length === 0) {
+      toast.error("Este e-mail já tem uma conta no TrailBook", {
+        description:
+          'Você pode entrar normalmente, ou usar "Esqueci minha senha" se não lembra o acesso.',
+      });
+      setIdentifier(su.email.trim());
+      navigate({ to: "/auth", search: { tab: "signin" } });
+      return;
     }
     setSignupSent(su.email.trim());
     toast.success("Conta criada! Enviamos um e-mail de confirmação.");
