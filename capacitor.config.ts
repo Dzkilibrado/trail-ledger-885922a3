@@ -16,6 +16,10 @@ const config: CapacitorConfig = {
   },
   android: {
     allowMixedContent: false,
+    // Permite que o usuário tire screenshot da tela no app.
+    // O bloqueio padrão (FLAG_SECURE) é ativado automaticamente pelo
+    // WebView do Capacitor em alguns dispositivos — não foi intencional.
+    allowScreenCapture: true,
   },
   plugins: {
     StatusBar: {
