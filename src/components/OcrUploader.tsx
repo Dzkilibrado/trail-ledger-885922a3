@@ -98,7 +98,7 @@ export function OcrUploader({
 
       if (ocrResult.items.length === 0) {
         setErrorMsg(
-          "Não encontramos itens reconhecíveis neste documento.\nVerifique se é uma Nota Fiscal, Ordem de Serviço ou Cupom Fiscal.",
+          "Não encontramos itens de moto/serviço reconhecíveis neste documento.\nO sistema identifica apenas peças, acessórios e serviços de motocicleta — endereços, telefones e totais são ignorados automaticamente.",
         );
         setStep("error");
         return;
@@ -357,57 +357,10 @@ export function OcrUploader({
                     </span>
                   </div>
 
-                  {/* Valores */}
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <div>
-                      <p className="text-[10px] text-muted-foreground">Qtd</p>
-                      <Input
-                        type="number"
-                        inputMode="decimal"
-                        min={0}
-                        value={item.qty ?? ""}
-                        onChange={(e) =>
-                          updateItem(idx, {
-                            qty: e.target.value ? parseFloat(e.target.value) : undefined,
-                          })
-                        }
-                        className="h-7 text-xs"
-                        placeholder="—"
-                      />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-muted-foreground">Vl unit (R$)</p>
-                      <Input
-                        type="number"
-                        inputMode="decimal"
-                        min={0}
-                        value={item.unitValue ?? ""}
-                        onChange={(e) =>
-                          updateItem(idx, {
-                            unitValue: e.target.value ? parseFloat(e.target.value) : undefined,
-                          })
-                        }
-                        className="h-7 text-xs"
-                        placeholder="—"
-                      />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-muted-foreground">Total (R$)</p>
-                      <Input
-                        type="number"
-                        inputMode="decimal"
-                        min={0}
-                        value={item.totalValue ?? ""}
-                        onChange={(e) =>
-                          updateItem(idx, {
-                            totalValue: e.target.value ? parseFloat(e.target.value) : undefined,
-                          })
-                        }
-                        className="h-7 text-xs"
-                        placeholder="—"
-                      />
-                    </div>
-                  </div>
+                  {/* Valores preenchidos no próximo passo */}
+                  <p className="text-[10px] text-muted-foreground/70 italic">
+                    Quantidade e valores preenchidos no próximo passo.
+                  </p>
 
                   {/* Texto original */}
                   <p className="text-[10px] text-muted-foreground/60 italic truncate">
@@ -418,12 +371,6 @@ export function OcrUploader({
             </div>
           ))}
         </div>
-
-        {result.documentTotal && (
-          <p className="text-xs text-muted-foreground text-right">
-            Total do documento: <strong>R$ {result.documentTotal.toFixed(2)}</strong>
-          </p>
-        )}
 
         <div className="flex gap-2">
           <Button

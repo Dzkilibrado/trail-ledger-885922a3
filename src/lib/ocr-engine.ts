@@ -1,6 +1,16 @@
 /**
- * OCR Engine — Entrega 3
- * Processamento 100% client-side, sem custo por requisição.
+ * OCR Engine — versão simplificada e mais confiável
+ *
+ * Estratégia: identificar APENAS itens de moto/acessório/serviço.
+ * Valores (qty, unitValue, total) ficam em branco — o usuário preenche.
+ * Isso elimina a maior fonte de erro: confundir ano/modelo/código com valor.
+ *
+ * Ignorado explicitamente:
+ * - Endereço, telefone, CNPJ, CPF, e-mail
+ * - Cabeçalhos, totais, subtotais
+ * - Datas (não confundir com valores)
+ * - Códigos de produto (números puros sem contexto)
+ * - Modelo/referência do item (ex: "SR39 110/90-19") — não é valor
  */
 
 import type { MaintenanceCategory } from "@/lib/trailbook";
@@ -16,9 +26,10 @@ export interface OcrSuggestedItem {
   normalizedName: string;
   category: MaintenanceCategory;
   itemKind: "technical" | "labor" | "expense";
-  qty?: number;
-  unitValue?: number;
-  totalValue?: number;
+  // Intencionalmente vazios — usuário preenche
+  qty?: undefined;
+  unitValue?: undefined;
+  totalValue?: undefined;
   confidence: "high" | "medium" | "low";
   scheduleId?: string;
   templateItemId?: string;
@@ -32,6 +43,28 @@ export interface OcrResult {
   documentTotal?: number;
 }
 
+// ============================================================
+// Linhas que devem ser IGNORADAS completamente
+// (endereço, telefone, fiscal, cabeçalho, totais)
+// ============================================================
+const IGNORE_PATTERNS = [
+  /\b(rua|av\.|avenida|alameda|travessa|estrada|rod\.)\b/i,
+  /\b(bairro|cidade|municipio|cep|uf|estado)\b/i,
+  /\b(cnpj|cpf|ie:|inscri|i\.e\.)\b/i,
+  /\b(fone|telefone|tel\.|celular|whatsapp|e-mail|email|site|www)\b/i,
+  /\b(nf-?e?|nfc-?e?|sat|cupom|ecf|nota fiscal|serie|chave)\b/i,
+  /\b(total\s*(da\s*os|geral|do\s*pedido|dos\s*serv|dos\s*mat|da\s*nota|itens))\b/i,
+  /\b(subtotal|desconto|acrescimo|troco|dinheiro|cartao|pix|pagamento)\b/i,
+  /\b(data|hora|emissao|emissão|validade|vencimento)\b/i,
+  /\b(obrigado|volte\s*sempre|nao\s*e\s*valido|nao\s*comprova|consumidor)\b/i,
+  /\b(ordem\s*de\s*servi|os\s*n[°º]|n[°º]\s*os|orcamento|orçamento)\b/i,
+  /^(qtd\.?|un\.?|vr\.?\s*unit|vr\.?\s*total|item\s+cod|descricao|descri[çc]ao)\s*$/i,
+  /^\s*[-=*_]{3,}\s*$/,
+];
+
+// ============================================================
+// Dicionário de normalização — identifica itens de moto
+// ============================================================
 type DictEntry = {
   pattern: RegExp;
   name: string;
@@ -42,7 +75,19 @@ type DictEntry = {
 const DICT: DictEntry[] = [
   // Motor
   {
-    pattern: /\b(oleo|óleo|oil)\b.*\b(motor|engine)\b/i,
+    pattern: /\b(oleo|óleo|oil)\b.*\b(motor|engine|4t|2t)\b/i,
+    name: "Óleo do motor",
+    category: "engine",
+    itemKind: "technical",
+  },
+  {
+    pattern: /\b(motor|engine)\b.*\b(oleo|óleo|oil)\b/i,
+    name: "Óleo do motor",
+    category: "engine",
+    itemKind: "technical",
+  },
+  {
+    pattern: /\boleo\s*(motor|4t|2t|sintetico|mineral)\b/i,
     name: "Óleo do motor",
     category: "engine",
     itemKind: "technical",
@@ -54,215 +99,218 @@ const DICT: DictEntry[] = [
     itemKind: "technical",
   },
   {
-    pattern: /\b(vela|spark|plug)\b/i,
-    name: "Vela de ignição",
-    category: "engine",
-    itemKind: "technical",
-  },
-  {
     pattern: /\b(filtro|filter)\b.*\b(oleo|óleo|oil)\b/i,
     name: "Filtro de óleo",
     category: "engine",
     itemKind: "technical",
   },
+  { pattern: /\bvela\b/i, name: "Vela de ignição", category: "engine", itemKind: "technical" },
   {
-    pattern: /\b(carburador|carb)\b/i,
-    name: "Carburador",
+    pattern: /\b(spark\s*plug|iridium|ngk|champion)\b/i,
+    name: "Vela de ignição",
     category: "engine",
     itemKind: "technical",
   },
+  { pattern: /\bcarburador\b/i, name: "Carburador", category: "engine", itemKind: "technical" },
   // Transmissão
+  { pattern: /\bcorrente\b/i, name: "Corrente", category: "transmission", itemKind: "technical" },
   {
-    pattern: /\b(corrente|chain)\b/i,
-    name: "Corrente",
-    category: "transmission",
-    itemKind: "technical",
-  },
-  {
-    pattern: /\b(kit.*(transm|relac|corrente)|relação kit)\b/i,
+    pattern: /\b(kit\s*(corrente|transm|relac)|kit\s*relação|kit\s*relacao)\b/i,
     name: "Kit transmissão",
     category: "transmission",
     itemKind: "technical",
   },
+  { pattern: /\bcoroa\b/i, name: "Coroa", category: "transmission", itemKind: "technical" },
   {
-    pattern: /\b(coroa|sprocket rear)\b/i,
-    name: "Coroa",
+    pattern: /\b(pinhão|pinhao)\b/i,
+    name: "Pinhão",
     category: "transmission",
     itemKind: "technical",
   },
   {
-    pattern: /\b(pinhão|pinhao|sprocket front)\b/i,
-    name: "Pinhão",
+    pattern: /\b(guia|deslizador)\b.*corrente\b/i,
+    name: "Guia de corrente",
     category: "transmission",
     itemKind: "technical",
   },
   // Freios
   {
-    pattern: /\b(pastilha|pad|brake pad)\b.*\b(diant|front)\b/i,
-    name: "Pastilhas dianteiras",
-    category: "brakes",
-    itemKind: "technical",
-  },
-  {
-    pattern: /\b(pastilha|pad|brake pad)\b.*\b(tras|rear)\b/i,
-    name: "Pastilhas traseiras",
-    category: "brakes",
-    itemKind: "technical",
-  },
-  {
-    pattern: /\b(pastilha|pad)\b/i,
+    pattern: /\bpastilha\b/i,
     name: "Pastilhas de freio",
     category: "brakes",
     itemKind: "technical",
   },
   {
-    pattern: /\b(fluido|fluid)\b.*\b(freio|brake)\b/i,
+    pattern: /\bpastilha\b.*diant/i,
+    name: "Pastilhas dianteiras",
+    category: "brakes",
+    itemKind: "technical",
+  },
+  {
+    pattern: /\bpastilha\b.*tras/i,
+    name: "Pastilhas traseiras",
+    category: "brakes",
+    itemKind: "technical",
+  },
+  {
+    pattern: /\b(fluido|fluid)\b.*freio/i,
     name: "Fluido de freio",
     category: "brakes",
     itemKind: "technical",
   },
   {
-    pattern: /\b(disco)\b.*\b(freio|brake)\b/i,
+    pattern: /\bdisco\b.*freio/i,
     name: "Disco de freio",
     category: "brakes",
     itemKind: "technical",
   },
   // Suspensão
   {
-    pattern: /\b(oleo|óleo)\b.*\b(garfo|fork)\b/i,
-    name: "Óleo do garfo dianteiro",
+    pattern: /\b(oleo|óleo)\b.*garfo/i,
+    name: "Óleo do garfo",
     category: "suspension",
     itemKind: "technical",
   },
   {
-    pattern: /\b(vedacao|vedação|seal|retentor)\b.*\b(garfo|fork)\b/i,
+    pattern: /\b(vedac|seal|retentor)\b.*garfo/i,
     name: "Vedações do garfo",
     category: "suspension",
     itemKind: "technical",
   },
   {
-    pattern: /\b(amortecedor|shock)\b/i,
-    name: "Amortecedor traseiro",
+    pattern: /\bamortecedor\b/i,
+    name: "Amortecedor",
     category: "suspension",
     itemKind: "technical",
   },
-  // Rodas / Pneus
+  // Rodas / Pneus — atenção extra para não confundir modelo com valor
   {
-    pattern: /\b(pneu|tire|tyre)\b.*\b(diant|front)\b/i,
+    pattern: /\bpneu\b.*diant/i,
     name: "Pneu dianteiro",
     category: "wheels",
     itemKind: "technical",
   },
+  { pattern: /\bpneu\b.*tras/i, name: "Pneu traseiro", category: "wheels", itemKind: "technical" },
   {
-    pattern: /\b(pneu|tire|tyre)\b.*\b(tras|rear)\b/i,
-    name: "Pneu traseiro",
+    pattern: /\bpneu\b.*(cross|off|trilha|enduro|motocross|xr|crf|kx|yz|rm)\b/i,
+    name: "Pneu off-road",
     category: "wheels",
     itemKind: "technical",
   },
-  { pattern: /\b(pneu|tire|tyre)\b/i, name: "Pneu", category: "wheels", itemKind: "technical" },
+  { pattern: /\bpneu\b/i, name: "Pneu", category: "wheels", itemKind: "technical" },
   {
-    pattern: /\b(camara|câmara|inner tube)\b/i,
+    pattern: /\bcâmara\b|\bcamara\b/i,
     name: "Câmara de ar",
     category: "wheels",
     itemKind: "technical",
   },
-  { pattern: /\b(raio|spoke)\b/i, name: "Raios", category: "wheels", itemKind: "technical" },
+  { pattern: /\braio\b/i, name: "Raios", category: "wheels", itemKind: "technical" },
   // Elétrica
+  { pattern: /\bbateria\b/i, name: "Bateria", category: "electrical", itemKind: "technical" },
   {
-    pattern: /\b(bateria|battery)\b/i,
-    name: "Bateria",
-    category: "electrical",
-    itemKind: "technical",
-  },
-  {
-    pattern: /\b(cabo.*vela|vela.*cabo|spark.*wire)\b/i,
+    pattern: /\bcabo\b.*vela/i,
     name: "Cabo de vela",
     category: "electrical",
     itemKind: "technical",
   },
   // Arrefecimento
   {
-    pattern: /\b(liquido|líquido|coolant)\b.*\b(arrefec|cool)\b/i,
+    pattern: /\b(liquido|líquido)\b.*arrefec/i,
     name: "Líquido de arrefecimento",
     category: "cooling",
     itemKind: "technical",
   },
-  { pattern: /\b(radiador)\b/i, name: "Radiador", category: "cooling", itemKind: "technical" },
+  { pattern: /\bradiador\b/i, name: "Radiador", category: "cooling", itemKind: "technical" },
   // Estrutura
   {
-    pattern: /\b(guida[oõ]|handlebar|guidão)\b/i,
+    pattern: /\bguidão\b|\bguida[oõ]\b/i,
     name: "Guidão",
     category: "other",
     itemKind: "technical",
   },
-  { pattern: /\b(manete|lever)\b/i, name: "Manetes", category: "other", itemKind: "technical" },
+  { pattern: /\bmanete\b/i, name: "Manetes", category: "other", itemKind: "technical" },
   {
-    pattern: /\b(protetor.*motor|skid plate)\b/i,
+    pattern: /\bprotetor\b.*motor/i,
     name: "Protetor de motor",
     category: "other",
     itemKind: "technical",
   },
   {
-    pattern: /\b(plastico|plástico|carenagem)\b/i,
+    pattern: /\bplástico\b|\bplastico\b|\bcarenagem\b/i,
     name: "Plásticos / carenagens",
     category: "other",
     itemKind: "technical",
   },
+  // Lubrificantes / consumíveis
+  { pattern: /\bgraxa\b/i, name: "Graxa", category: "other", itemKind: "technical" },
   {
-    pattern: /\b(graxa|grease|lubrificante|wp)\b/i,
-    name: "Graxa / lubrificante",
+    pattern: /\b(wp|wd-40|lubrificante|lubri)\b/i,
+    name: "Lubrificante",
     category: "other",
     itemKind: "technical",
   },
+  { pattern: /\bpresilha\b/i, name: "Presilha", category: "other", itemKind: "technical" },
+  // Mão de obra — padrões comuns em OS brasileira
   {
-    pattern: /\b(presilha|clamp|abraçadeira)\b/i,
-    name: "Presilha / fixador",
-    category: "other",
-    itemKind: "technical",
-  },
-  // Mão de obra
-  {
-    pattern: /\b(m\.?o\.?|mao.?de.?obra|mão.?de.?obra|labor)\b/i,
+    pattern: /\b(m\.?o\.?|mao\s*de\s*obra|mão\s*de\s*obra|mao-de-obra)\b/i,
     name: "Mão de obra",
     category: "other",
     itemKind: "labor",
   },
   {
-    pattern:
-      /\b(servico|serviço|instalac|instalação|montagem|desmontagem|troca.*pneu|balanceamento|alinhamento)\b/i,
-    name: "Serviço",
+    pattern: /\b(trocar?\s*(pneu|oleo|corrente|pastilha|vela)|troca\s+de)\b/i,
+    name: "Serviço de troca",
+    category: "other",
+    itemKind: "labor",
+  },
+  {
+    pattern: /\b(balancear|balanceamento|alinhar|alinhamento)\b/i,
+    name: "Balanceamento / alinhamento",
+    category: "other",
+    itemKind: "labor",
+  },
+  {
+    pattern: /\b(instalac|instalação|montar|montagem|desmontar|desmontagem)\b/i,
+    name: "Serviço de instalação",
+    category: "other",
+    itemKind: "labor",
+  },
+  {
+    pattern: /\b(revisao|revisão|servico|serviço)\b/i,
+    name: "Serviço / revisão",
     category: "other",
     itemKind: "labor",
   },
   // Despesas
   {
-    pattern: /\b(desconto|discount|abatimento)\b/i,
+    pattern: /\b(desconto|abatimento)\b/i,
     name: "Desconto",
     category: "other",
     itemKind: "expense",
   },
   {
-    pattern: /\b(taxa|fee|tarifa|frete|freight)\b/i,
+    pattern: /\b(taxa|frete|entrega)\b/i,
     name: "Taxa / frete",
     category: "other",
     itemKind: "expense",
   },
 ];
 
+// ============================================================
+// Validação de qualidade da imagem
+// ============================================================
 export async function validateImageQuality(file: File): Promise<OcrQualityResult> {
   const warnings: string[] = [];
   if (!file.type.startsWith("image/")) return { ok: true, warnings: [] };
-
   return new Promise((resolve) => {
     const img = new Image();
     const url = URL.createObjectURL(file);
     img.onload = () => {
       URL.revokeObjectURL(url);
-      const w = img.naturalWidth;
-      const h = img.naturalHeight;
-      if (w < 600 || h < 400) {
-        warnings.push(`Resolução baixa (${w}×${h}px). Imagens maiores geram resultados melhores.`);
-      }
+      const w = img.naturalWidth,
+        h = img.naturalHeight;
+      if (w < 600 || h < 400)
+        warnings.push(`Resolução baixa (${w}×${h}px). Imagens maiores melhoram a leitura.`);
       const canvas = document.createElement("canvas");
       canvas.width = Math.min(w, 200);
       canvas.height = Math.min(h, 200);
@@ -270,27 +318,21 @@ export async function validateImageQuality(file: File): Promise<OcrQualityResult
       if (ctx) {
         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
         const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-        let brightCount = 0,
-          darkCount = 0;
+        let bright = 0,
+          dark = 0;
         const total = data.length / 4;
         for (let i = 0; i < data.length; i += 4) {
           const b = (data[i] + data[i + 1] + data[i + 2]) / 3;
-          if (b > 180) brightCount++;
-          else if (b < 80) darkCount++;
+          if (b > 200) bright++;
+          else if (b < 50) dark++;
         }
-        if (brightCount / total > 0.95) {
-          resolve({ ok: false, warnings: ["A imagem parece toda branca. Verifique a câmera."] });
+        if (bright / total > 0.95) {
+          resolve({ ok: false, warnings: ["Imagem toda branca — verifique a câmera."] });
           return;
         }
-        if (darkCount / total > 0.95) {
-          resolve({
-            ok: false,
-            warnings: ["A imagem parece toda escura. Verifique a iluminação."],
-          });
+        if (dark / total > 0.95) {
+          resolve({ ok: false, warnings: ["Imagem toda escura — verifique a iluminação."] });
           return;
-        }
-        if (brightCount / total < 0.1 && darkCount / total < 0.1) {
-          warnings.push("Contraste baixo. Tente usar boa iluminação e fundo neutro.");
         }
       }
       resolve({ ok: true, warnings });
@@ -303,6 +345,9 @@ export async function validateImageQuality(file: File): Promise<OcrQualityResult
   });
 }
 
+// ============================================================
+// Extração de texto de PDF digital
+// ============================================================
 async function extractTextFromPdf(file: File): Promise<string> {
   const { getDocument } = await import("pdfjs-dist");
   const buf = await file.arrayBuffer();
@@ -329,8 +374,7 @@ async function renderPdfPageToDataUrl(file: File): Promise<string> {
   const canvas = document.createElement("canvas");
   canvas.width = vp.width;
   canvas.height = vp.height;
-  const ctx = canvas.getContext("2d")!;
-  await page.render({ canvasContext: ctx, viewport: vp }).promise;
+  await page.render({ canvasContext: canvas.getContext("2d")!, viewport: vp }).promise;
   return canvas.toDataURL("image/png");
 }
 
@@ -348,111 +392,48 @@ async function runTesseract(src: string | File): Promise<{ text: string; confide
   return { text: data.text, confidence: data.confidence };
 }
 
-interface RawItem {
-  rawDescription: string;
-  qty?: number;
-  unitValue?: number;
-  totalValue?: number;
-}
+// ============================================================
+// Identifica se uma linha é um item de moto
+// Retorna o item normalizado ou null se deve ser ignorado
+// ============================================================
+function identifyItem(line: string, schedules: any[]): OcrSuggestedItem | null {
+  // 1. Ignora linhas de cabeçalho/endereço/totais
+  if (IGNORE_PATTERNS.some((p) => p.test(line))) return null;
 
-function parseLines(text: string): RawItem[] {
-  const lines = text
-    .split(/\n/)
-    .map((l) => l.trim())
-    .filter((l) => l.length > 3);
-  const valuePattern = /(\d+[.,]?\d*)/g;
-  const items: RawItem[] = [];
-  for (const line of lines) {
-    if (
-      /^(total|subtotal|qtd\.|un\.|vr\s|valor|item|cod|descri|data:|cnpj|cpf|emiss|fone|tel\.|end\.|rua|av\.)/i.test(
-        line,
-      )
-    )
-      continue;
-    if (/^[-=*]+$/.test(line) || line.length < 5) continue;
-    const numbers = [...line.matchAll(valuePattern)].map((m) => parseFloat(m[0].replace(",", ".")));
-    if (numbers.length === 0) continue;
-    const rawDescription = line.replace(valuePattern, "").replace(/\s+/g, " ").trim();
-    if (rawDescription.length < 3) continue;
-    let qty: number | undefined, unitValue: number | undefined, totalValue: number | undefined;
-    if (numbers.length >= 3) {
-      qty = numbers[0];
-      unitValue = numbers[1];
-      totalValue = numbers[numbers.length - 1];
-    } else if (numbers.length === 2) {
-      if (numbers[0] <= 10 && numbers[1] > numbers[0]) {
-        qty = numbers[0];
-        totalValue = numbers[1];
-        unitValue = numbers[1] / numbers[0];
-      } else {
-        unitValue = numbers[0];
-        totalValue = numbers[1];
-      }
-    } else {
-      totalValue = numbers[0];
-    }
-    if (totalValue !== undefined && (totalValue < 0.5 || totalValue > 50000)) {
-      totalValue = undefined;
-      unitValue = undefined;
-    }
-    items.push({ rawDescription, qty, unitValue, totalValue });
-  }
-  return items;
-}
+  // 2. Ignora linhas muito curtas ou só números
+  const stripped = line.replace(/[\d.,\s\-\/]/g, "").trim();
+  if (stripped.length < 3) return null;
 
-function normalize(raw: RawItem, schedules: any[]): OcrSuggestedItem {
+  // 3. Tenta o dicionário
   for (const entry of DICT) {
-    if (entry.pattern.test(raw.rawDescription)) {
+    if (entry.pattern.test(line)) {
       const matched = schedules.find(
         (s) =>
           s.name.toLowerCase().includes(entry.name.toLowerCase().split(" ")[0]) ||
           entry.name.toLowerCase().includes(s.name.toLowerCase().split(" ")[0]),
       );
       return {
-        rawDescription: raw.rawDescription,
+        rawDescription: line.trim(),
         normalizedName: entry.name,
         category: entry.category,
         itemKind: entry.itemKind,
-        qty: raw.qty,
-        unitValue: raw.unitValue,
-        totalValue: raw.totalValue,
         confidence: "high",
         scheduleId: matched?.id,
         templateItemId: matched?.template_item_id,
       };
     }
   }
-  return {
-    rawDescription: raw.rawDescription,
-    normalizedName: raw.rawDescription,
-    category: "other",
-    itemKind: "technical",
-    qty: raw.qty,
-    unitValue: raw.unitValue,
-    totalValue: raw.totalValue,
-    confidence: "low",
-  };
+
+  return null; // Não reconhecido = não mostra (evita trazer endereço/telefone)
 }
 
-function extractDate(text: string): string | undefined {
-  const m = text.match(/(\d{2})[\/\-\.](\d{2})[\/\-\.](\d{2,4})/);
-  if (!m) return undefined;
-  const year = m[3].length === 2 ? `20${m[3]}` : m[3];
-  return `${year}-${m[2].padStart(2, "0")}-${m[1].padStart(2, "0")}`;
-}
-
-function extractDocumentTotal(text: string): number | undefined {
-  const line = text
-    .split("\n")
-    .find((l) => /\b(total\s*(da\s*os|geral|do\s*pedido|dos\s*serv|dos\s*mat))\b/i.test(l));
-  if (!line) return undefined;
-  const m = line.match(/(\d+[.,]\d{2})/g);
-  return m ? parseFloat(m[m.length - 1].replace(",", ".")) : undefined;
-}
-
+// ============================================================
+// Entrada principal
+// ============================================================
 export async function runOcr(file: File, schedules: any[]): Promise<OcrResult> {
   let rawText = "",
     confidence = 100;
+
   if (file.type === "application/pdf") {
     const direct = await extractTextFromPdf(file);
     if (direct.trim().length > 50) {
@@ -467,25 +448,41 @@ export async function runOcr(file: File, schedules: any[]): Promise<OcrResult> {
     rawText = r.text;
     confidence = r.confidence;
   }
+
   const quality: OcrQualityResult = { ok: true, warnings: [], confidence };
-  if (confidence < 60)
+
+  if (confidence < 50) {
     quality.warnings.push(
-      `Confiança da leitura baixa (${Math.round(confidence)}%). Revise os itens com atenção.`,
+      `Confiança da leitura: ${Math.round(confidence)}%. ` +
+        `Tente fotografar em superfície plana, com boa iluminação e o documento bem enquadrado.`,
     );
+  }
+
   const wordCount = rawText.trim().split(/\s+/).length;
   if (wordCount < 5) {
     quality.ok = false;
-    quality.warnings.push("Não conseguimos identificar texto suficiente neste documento.");
+    quality.warnings.push(
+      "Não conseguimos identificar texto suficiente. Tente novamente com melhor iluminação.",
+    );
     return { quality, items: [], rawText };
   }
-  const items = parseLines(rawText)
-    .map((raw) => normalize(raw, schedules))
-    .filter((it) => it.normalizedName.length > 2);
-  return {
-    quality,
-    items,
-    rawText,
-    date: extractDate(rawText),
-    documentTotal: extractDocumentTotal(rawText),
-  };
+
+  // Processa linha por linha — só retorna itens reconhecidos
+  const lines = rawText
+    .split(/\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 3);
+  const seen = new Set<string>();
+  const items: OcrSuggestedItem[] = [];
+
+  for (const line of lines) {
+    const item = identifyItem(line, schedules);
+    if (!item) continue;
+    // Deduplicação: mesmo item normalizado não entra duas vezes
+    if (seen.has(item.normalizedName)) continue;
+    seen.add(item.normalizedName);
+    items.push(item);
+  }
+
+  return { quality, items, rawText };
 }
