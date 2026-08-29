@@ -57,14 +57,12 @@ import {
 } from "@/components/ui/select";
 import { useState } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { AuditSummary } from "@/components/AuditDialog";
 import { toast } from "sonner";
 import { priorityList } from "@/lib/maintenance-engine";
 import { computeConservation, categoryHealth, docsHealth, historyHealth } from "@/lib/conservation";
 import { useEffect } from "react";
 // Certificado Digital agora vive em rota dedicada por moto (/motorcycles/$id/certificate)
 import { TransferOwnershipDialog } from "@/components/TransferOwnershipDialog";
-import { OwnershipTimeline } from "@/components/OwnershipTimeline";
 import { MotorcycleDocuments } from "@/components/MotorcycleDocuments";
 import { MotorcyclePhotos } from "@/components/MotorcyclePhotos";
 import { InspectionDialog } from "@/components/InspectionDialog";
@@ -184,36 +182,6 @@ export function MotoControlCenter({
     enabled: !!events.data,
   });
 
-  const ownership = useQuery({
-    queryKey: ["ownership", id],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("ownership_history")
-        .select("id, owner_id, started_at, ended_at, method")
-        .eq("motorcycle_id", id)
-        .order("started_at", { ascending: true });
-      if (error) throw error;
-      const ownerIds = Array.from(
-        new Set((data ?? []).map((r: any) => r.owner_id).filter(Boolean)),
-      );
-      let names = new Map<string, string | null>();
-      if (ownerIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, full_name")
-          .in("id", ownerIds);
-        names = new Map((profiles ?? []).map((p: any) => [p.id, p.full_name ?? null]));
-      }
-      return (data ?? []).map((r: any) => ({
-        id: r.id,
-        started_at: r.started_at,
-        ended_at: r.ended_at,
-        method: r.method,
-        owner_name: names.get(r.owner_id) ?? null,
-      }));
-    },
-  });
-
   const pendingTransfer = useQuery({
     queryKey: ["transfers-for-moto", id],
     queryFn: async () => {
@@ -225,19 +193,6 @@ export function MotoControlCenter({
         .eq("status", "pending")
         .maybeSingle();
       return data;
-    },
-  });
-
-  const audit = useQuery({
-    queryKey: ["audit", id],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("audit_log")
-        .select("*")
-        .eq("motorcycle_id", id)
-        .order("created_at", { ascending: false })
-        .limit(20);
-      return data ?? [];
     },
   });
 
@@ -776,9 +731,6 @@ export function MotoControlCenter({
           <TabsTrigger value="documentos" className="surface-elevated data-[state=active]:btn-glow">
             Documentos
           </TabsTrigger>
-          <TabsTrigger value="historico" className="surface-elevated data-[state=active]:btn-glow">
-            Histórico
-          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="geral" className="space-y-8">
@@ -1142,16 +1094,6 @@ export function MotoControlCenter({
               isOwner={isOwner && !isArchived}
               count={(receiptsForMoto.data ?? []).length}
             />
-          </section>
-        </TabsContent>
-
-        <TabsContent value="historico" className="space-y-8">
-          <section className="space-y-3">
-            <h2 className="font-display text-lg font-bold">Histórico de proprietários</h2>
-            <OwnershipTimeline entries={ownership.data ?? []} />
-          </section>
-          <section className="space-y-3">
-            <AuditSummary rows={(audit.data ?? []) as any} />
           </section>
         </TabsContent>
       </Tabs>
