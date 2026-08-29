@@ -61,6 +61,7 @@ import { Route as AuthenticatedMotorcyclesIdIndexRouteImport } from './routes/_a
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
 import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as AuthenticatedRecibosCodeVisualizarRouteImport } from './routes/_authenticated/recibos.$code.visualizar'
+import { Route as AuthenticatedMotorcyclesIdRegistrarManutencaoRouteImport } from './routes/_authenticated/motorcycles.$id.registrar-manutencao'
 import { Route as AuthenticatedMotorcyclesIdPlanRouteImport } from './routes/_authenticated/motorcycles.$id.plan'
 import { Route as AuthenticatedMotorcyclesIdPassportRouteImport } from './routes/_authenticated/motorcycles.$id.passport'
 import { Route as AuthenticatedMotorcyclesIdHealthRouteImport } from './routes/_authenticated/motorcycles.$id.health'
@@ -355,6 +356,12 @@ const AuthenticatedRecibosCodeVisualizarRoute =
     path: '/recibos/$code/visualizar',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedMotorcyclesIdRegistrarManutencaoRoute =
+  AuthenticatedMotorcyclesIdRegistrarManutencaoRouteImport.update({
+    id: '/registrar-manutencao',
+    path: '/registrar-manutencao',
+    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
+  } as any)
 const AuthenticatedMotorcyclesIdPlanRoute =
   AuthenticatedMotorcyclesIdPlanRouteImport.update({
     id: '/plan',
@@ -477,6 +484,7 @@ export interface FileRoutesByFullPath {
   '/motorcycles/$id/health': typeof AuthenticatedMotorcyclesIdHealthRoute
   '/motorcycles/$id/passport': typeof AuthenticatedMotorcyclesIdPassportRoute
   '/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
+  '/motorcycles/$id/registrar-manutencao': typeof AuthenticatedMotorcyclesIdRegistrarManutencaoRoute
   '/recibos/$code/visualizar': typeof AuthenticatedRecibosCodeVisualizarRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -538,6 +546,7 @@ export interface FileRoutesByTo {
   '/motorcycles/$id/health': typeof AuthenticatedMotorcyclesIdHealthRoute
   '/motorcycles/$id/passport': typeof AuthenticatedMotorcyclesIdPassportRoute
   '/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
+  '/motorcycles/$id/registrar-manutencao': typeof AuthenticatedMotorcyclesIdRegistrarManutencaoRoute
   '/recibos/$code/visualizar': typeof AuthenticatedRecibosCodeVisualizarRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -604,6 +613,7 @@ export interface FileRoutesById {
   '/_authenticated/motorcycles/$id/health': typeof AuthenticatedMotorcyclesIdHealthRoute
   '/_authenticated/motorcycles/$id/passport': typeof AuthenticatedMotorcyclesIdPassportRoute
   '/_authenticated/motorcycles/$id/plan': typeof AuthenticatedMotorcyclesIdPlanRoute
+  '/_authenticated/motorcycles/$id/registrar-manutencao': typeof AuthenticatedMotorcyclesIdRegistrarManutencaoRoute
   '/_authenticated/recibos/$code/visualizar': typeof AuthenticatedRecibosCodeVisualizarRoute
   '/lovable/email/auth/preview': typeof LovableEmailAuthPreviewRoute
   '/lovable/email/auth/webhook': typeof LovableEmailAuthWebhookRoute
@@ -670,6 +680,7 @@ export interface FileRouteTypes {
     | '/motorcycles/$id/health'
     | '/motorcycles/$id/passport'
     | '/motorcycles/$id/plan'
+    | '/motorcycles/$id/registrar-manutencao'
     | '/recibos/$code/visualizar'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -731,6 +742,7 @@ export interface FileRouteTypes {
     | '/motorcycles/$id/health'
     | '/motorcycles/$id/passport'
     | '/motorcycles/$id/plan'
+    | '/motorcycles/$id/registrar-manutencao'
     | '/recibos/$code/visualizar'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -796,6 +808,7 @@ export interface FileRouteTypes {
     | '/_authenticated/motorcycles/$id/health'
     | '/_authenticated/motorcycles/$id/passport'
     | '/_authenticated/motorcycles/$id/plan'
+    | '/_authenticated/motorcycles/$id/registrar-manutencao'
     | '/_authenticated/recibos/$code/visualizar'
     | '/lovable/email/auth/preview'
     | '/lovable/email/auth/webhook'
@@ -1187,6 +1200,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRecibosCodeVisualizarRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/motorcycles/$id/registrar-manutencao': {
+      id: '/_authenticated/motorcycles/$id/registrar-manutencao'
+      path: '/registrar-manutencao'
+      fullPath: '/motorcycles/$id/registrar-manutencao'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdRegistrarManutencaoRouteImport
+      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
+    }
     '/_authenticated/motorcycles/$id/plan': {
       id: '/_authenticated/motorcycles/$id/plan'
       path: '/plan'
@@ -1315,6 +1335,7 @@ interface AuthenticatedMotorcyclesIdRouteChildren {
   AuthenticatedMotorcyclesIdHealthRoute: typeof AuthenticatedMotorcyclesIdHealthRoute
   AuthenticatedMotorcyclesIdPassportRoute: typeof AuthenticatedMotorcyclesIdPassportRoute
   AuthenticatedMotorcyclesIdPlanRoute: typeof AuthenticatedMotorcyclesIdPlanRoute
+  AuthenticatedMotorcyclesIdRegistrarManutencaoRoute: typeof AuthenticatedMotorcyclesIdRegistrarManutencaoRoute
   AuthenticatedMotorcyclesIdIndexRoute: typeof AuthenticatedMotorcyclesIdIndexRoute
   AuthenticatedMotorcyclesIdCheckupsCodeRoute: typeof AuthenticatedMotorcyclesIdCheckupsCodeRoute
   AuthenticatedMotorcyclesIdCheckupsCompararRoute: typeof AuthenticatedMotorcyclesIdCheckupsCompararRoute
@@ -1337,6 +1358,8 @@ const AuthenticatedMotorcyclesIdRouteChildren: AuthenticatedMotorcyclesIdRouteCh
     AuthenticatedMotorcyclesIdPassportRoute:
       AuthenticatedMotorcyclesIdPassportRoute,
     AuthenticatedMotorcyclesIdPlanRoute: AuthenticatedMotorcyclesIdPlanRoute,
+    AuthenticatedMotorcyclesIdRegistrarManutencaoRoute:
+      AuthenticatedMotorcyclesIdRegistrarManutencaoRoute,
     AuthenticatedMotorcyclesIdIndexRoute: AuthenticatedMotorcyclesIdIndexRoute,
     AuthenticatedMotorcyclesIdCheckupsCodeRoute:
       AuthenticatedMotorcyclesIdCheckupsCodeRoute,

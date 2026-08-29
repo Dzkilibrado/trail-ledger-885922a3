@@ -33,7 +33,7 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { LastReportCard } from "@/components/health/reports/LastReportCard";
-import { ClipboardCheck, Wand2, Pencil, MoreVertical } from "lucide-react";
+import { ClipboardCheck, Wand2, Pencil, MoreVertical, Wrench } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -434,12 +434,25 @@ export function MotoControlCenter({
             </div>
             <div className="flex flex-wrap gap-2">
               {isOwner && (
-                <NewEventDialog
-                  moto={m}
-                  triggerLabel="Registrar atividade"
-                  open={autoOpenEvent}
-                  onOpenChange={(v) => setAutoOpenEvent(v ? true : undefined)}
-                />
+                <>
+                  <Button
+                    className="btn-glow"
+                    onClick={() =>
+                      navigate({
+                        to: "/motorcycles/$id/registrar-manutencao" as never,
+                        params: { id: m.id } as never,
+                      })
+                    }
+                  >
+                    <Wrench className="h-4 w-4" /> Registrar manutenção
+                  </Button>
+                  <NewEventDialog
+                    moto={m}
+                    triggerLabel="Registrar uso"
+                    open={autoOpenEvent}
+                    onOpenChange={(v) => setAutoOpenEvent(v ? true : undefined)}
+                  />
+                </>
               )}
               <Button variant="outline" asChild className="btn-glow">
                 <Link to="/motorcycles/$id/passport" params={{ id: m.id }}>
