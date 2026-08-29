@@ -808,7 +808,20 @@ function ItemsStep({
         <OcrUploader
           schedules={schedules}
           onConfirm={(ocrItems, date) => {
-            ocrItems.forEach((it) => addItem(it));
+            // Adiciona todos de uma vez — forEach + addItem individual causa
+            // problema de closure: cada chamada lê o items do render anterior
+            // e sobrescreve, resultando em apenas o último item sendo salvo
+            const newItems = ocrItems.map((it) => ({
+              localId: crypto.randomUUID(),
+              category: (it.category ?? "other") as MaintenanceCategory,
+              service: it.service ?? "",
+              itemKind: (it.itemKind ?? "technical") as ItemKind,
+              scheduleId: it.scheduleId,
+              templateItemId: it.templateItemId,
+              qty: it.qty,
+              unitValue: it.unitValue,
+            }));
+            onItemsChange([...items, ...newItems]);
             setMode("menu");
           }}
           onCancel={() => setMode("menu")}

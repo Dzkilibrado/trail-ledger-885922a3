@@ -1,6 +1,7 @@
 import { useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { cn } from "@/lib/utils";
 import { StoragePhoto } from "@/components/StoragePhoto";
 import { EventTypeIcon } from "@/components/EventTypeIcon";
 import { NewEventDialog } from "@/components/NewEventDialog";
@@ -33,7 +34,7 @@ import {
   AccordionContent,
 } from "@/components/ui/accordion";
 import { LastReportCard } from "@/components/health/reports/LastReportCard";
-import { ClipboardCheck, Wand2, Pencil, MoreVertical, Wrench } from "lucide-react";
+import { ClipboardCheck, Wand2, Pencil, MoreVertical, Wrench, Search } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -105,6 +106,10 @@ export function MotoControlCenter({
   const [unarchiveOpen, setUnarchiveOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteWord, setDeleteWord] = useState("");
+  const [activitySearch, setActivitySearch] = useState("");
+  const [activityTypeFilter, setActivityTypeFilter] = useState<
+    "all" | "maintenance" | "usage" | "incident" | "accessory" | "note"
+  >("all");
   const [moreActionsOpen, setMoreActionsOpen] = useState(false);
   const [inspectTarget, setInspectTarget] = useState<null | {
     id: string;
@@ -938,7 +943,56 @@ export function MotoControlCenter({
           </TabsContent>
         )}
 
-        <TabsContent value="atividade" className="space-y-8">
+        <TabsContent value="atividade" className="space-y-4">
+          {/* Filtros */}
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Buscar por item, serviço ou local…"
+                  value={activitySearch}
+                  onChange={(e) => setActivitySearch(e.target.value)}
+                  className="h-9 w-full rounded-xl border border-border bg-card pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                />
+              </div>
+              {activitySearch && (
+                <button
+                  onClick={() => setActivitySearch("")}
+                  className="rounded-xl border border-border bg-card px-3 text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Limpar
+                </button>
+              )}
+            </div>
+            <div className="flex gap-1.5 overflow-x-auto pb-1">
+              {(
+                [
+                  ["all", "Todas"],
+                  ["maintenance", "Manutenções"],
+                  ["usage", "Uso"],
+                  ["incident", "Sinistros"],
+                  ["accessory", "Acessórios"],
+                  ["note", "Notas"],
+                ] as const
+              ).map(([val, label]) => (
+                <button
+                  key={val}
+                  onClick={() => setActivityTypeFilter(val)}
+                  className={cn(
+                    "shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition",
+                    activityTypeFilter === val
+                      ? "border-primary bg-primary/10 text-primary"
+                      : "border-border text-muted-foreground hover:border-primary/40",
+                  )}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <section>
             {isOwner && !isArchived && (events.data?.length ?? 0) > 0 && (
               <p className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -961,66 +1015,114 @@ export function MotoControlCenter({
                 ))}
               </ol>
             ) : events.data && events.data.length > 0 ? (
-              <ol className="relative space-y-4 border-l border-border pl-6">
-                {events.data.map((e) => (
-                  <li key={e.id} className="relative">
-                    <span className="absolute -left-[34px] top-2 h-3 w-3 rounded-full bg-primary ring-4 ring-background" />
-                    <div className="surface-elevated rounded-2xl p-4">
-                      <div className="flex items-start gap-3">
-                        <EventTypeIcon type={e.type} />
-                        <div className="min-w-0 flex-1">
-                          <div className="flex flex-wrap items-baseline justify-between gap-2">
-                            <div className="font-semibold">{e.title}</div>
-                            <div className="flex items-center gap-1">
-                              <div className="text-xs text-muted-foreground">
-                                {formatDate(e.occurred_at)}
+              (() => {
+                const filtered = events.data.filter((e) => {
+                  if (activityTypeFilter !== "all") {
+                    if (
+                      activityTypeFilter === "maintenance" &&
+                      e.type !== "maintenance" &&
+                      e.type !== "revision"
+                    )
+                      return false;
+                    if (activityTypeFilter !== "maintenance" && e.type !== activityTypeFilter)
+                      return false;
+                  }
+                  if (activitySearch.trim()) {
+                    const q = activitySearch.toLowerCase();
+                    return (
+                      e.title?.toLowerCase().includes(q) ||
+                      e.location?.toLowerCase().includes(q) ||
+                      e.description?.toLowerCase().includes(q)
+                    );
+                  }
+                  return true;
+                });
+
+                if (filtered.length === 0) {
+                  return (
+                    <div className="rounded-2xl border border-dashed border-border p-8 text-center">
+                      <p className="text-sm text-muted-foreground">
+                        {activitySearch
+                          ? `Nenhuma atividade encontrada para "${activitySearch}"`
+                          : "Nenhuma atividade nesta categoria"}
+                      </p>
+                      {activitySearch && (
+                        <button
+                          onClick={() => setActivitySearch("")}
+                          className="mt-2 text-xs text-primary hover:underline"
+                        >
+                          Limpar busca
+                        </button>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <ol className="relative space-y-4 border-l border-border pl-6">
+                    {filtered.map((e) => (
+                      <li key={e.id} className="relative">
+                        <span className="absolute -left-[34px] top-2 h-3 w-3 rounded-full bg-primary ring-4 ring-background" />
+                        <div className="surface-elevated rounded-2xl p-4">
+                          <div className="flex items-start gap-3">
+                            <EventTypeIcon type={e.type} />
+                            <div className="min-w-0 flex-1">
+                              <div className="flex flex-wrap items-baseline justify-between gap-2">
+                                <div className="font-semibold">{e.title}</div>
+                                <div className="flex items-center gap-1">
+                                  <div className="text-xs text-muted-foreground">
+                                    {formatDate(e.occurred_at)}
+                                  </div>
+                                  {isOwner && !isArchived && <EventActionsMenu event={e as any} />}
+                                </div>
                               </div>
-                              {isOwner && !isArchived && <EventActionsMenu event={e as any} />}
+                              <div className="text-xs uppercase tracking-widest text-muted-foreground">
+                                {EVENT_TYPE_LABEL[e.type]}
+                              </div>
+                              {e.description && (
+                                <p className="mt-2 text-sm text-muted-foreground">
+                                  {e.description}
+                                </p>
+                              )}
+                              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                {e.hours_at_event != null && (
+                                  <span>{Number(e.hours_at_event).toFixed(1)} h</span>
+                                )}
+                                {e.km_at_event != null && (
+                                  <span>{Number(e.km_at_event).toFixed(0)} km</span>
+                                )}
+                                {e.location && <span>{e.location}</span>}
+                                {e.cost != null && (
+                                  <span className="font-semibold text-primary">
+                                    {brl(Number(e.cost))}
+                                  </span>
+                                )}
+                              </div>
+                              {(() => {
+                                const meta = (e.metadata ?? {}) as Record<string, unknown>;
+                                const code =
+                                  typeof meta.receipt_code === "string" ? meta.receipt_code : null;
+                                if (e.type !== "ownership_transfer" || !code) return null;
+                                return (
+                                  <div className="mt-3 flex flex-wrap gap-1.5">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => openReceiptPdf(code, "signed")}
+                                    >
+                                      <Eye className="h-3.5 w-3.5" /> Visualizar recibo
+                                    </Button>
+                                  </div>
+                                );
+                              })()}
                             </div>
                           </div>
-                          <div className="text-xs uppercase tracking-widest text-muted-foreground">
-                            {EVENT_TYPE_LABEL[e.type]}
-                          </div>
-                          {e.description && (
-                            <p className="mt-2 text-sm text-muted-foreground">{e.description}</p>
-                          )}
-                          <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                            {e.hours_at_event != null && (
-                              <span>{Number(e.hours_at_event).toFixed(1)} h</span>
-                            )}
-                            {e.km_at_event != null && (
-                              <span>{Number(e.km_at_event).toFixed(0)} km</span>
-                            )}
-                            {e.location && <span>{e.location}</span>}
-                            {e.cost != null && (
-                              <span className="font-semibold text-primary">
-                                {brl(Number(e.cost))}
-                              </span>
-                            )}
-                          </div>
-                          {(() => {
-                            const meta = (e.metadata ?? {}) as Record<string, unknown>;
-                            const code =
-                              typeof meta.receipt_code === "string" ? meta.receipt_code : null;
-                            if (e.type !== "ownership_transfer" || !code) return null;
-                            return (
-                              <div className="mt-3 flex flex-wrap gap-1.5">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  onClick={() => openReceiptPdf(code, "signed")}
-                                >
-                                  <Eye className="h-3.5 w-3.5" /> Visualizar recibo
-                                </Button>
-                              </div>
-                            );
-                          })()}
                         </div>
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ol>
+                      </li>
+                    ))}
+                  </ol>
+                );
+              })()
             ) : (
               <div className="surface-elevated rounded-2xl p-10 text-center text-sm text-muted-foreground">
                 Nenhum evento registrado ainda. Clique em <strong>Registrar atividade</strong> para
