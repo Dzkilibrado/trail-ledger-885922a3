@@ -448,7 +448,7 @@ export function MotoControlCenter({
                   </Button>
                   <NewEventDialog
                     moto={m}
-                    triggerLabel="Registrar uso"
+                    triggerLabel="Registrar atividade"
                     open={autoOpenEvent}
                     onOpenChange={(v) => setAutoOpenEvent(v ? true : undefined)}
                   />

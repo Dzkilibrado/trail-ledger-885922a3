@@ -32,8 +32,6 @@ export const EVENT_TYPE_LABEL: Record<EventType, string> = {
  */
 export const ACTIVITY_EVENT_TYPES: EventType[] = [
   "usage",
-  "maintenance",
-  "revision",
   "incident",
   "accessory",
   "warranty",
