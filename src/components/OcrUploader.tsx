@@ -376,11 +376,14 @@ export function OcrUploader({
                         inputMode="decimal"
                         min={0}
                         value={item.qty ?? ""}
-                        onChange={(e) =>
-                          updateItem(idx, {
-                            qty: e.target.value ? parseFloat(e.target.value) : undefined,
-                          })
-                        }
+                        onChange={(e) => {
+                          const qty = e.target.value ? parseFloat(e.target.value) : undefined;
+                          const total =
+                            qty !== undefined && item.unitValue !== undefined
+                              ? parseFloat((qty * item.unitValue).toFixed(2))
+                              : item.totalValue;
+                          updateItem(idx, { qty, totalValue: total });
+                        }}
                         className="h-7 text-xs"
                         placeholder="—"
                       />
@@ -392,11 +395,14 @@ export function OcrUploader({
                         inputMode="decimal"
                         min={0}
                         value={item.unitValue ?? ""}
-                        onChange={(e) =>
-                          updateItem(idx, {
-                            unitValue: e.target.value ? parseFloat(e.target.value) : undefined,
-                          })
-                        }
+                        onChange={(e) => {
+                          const unitValue = e.target.value ? parseFloat(e.target.value) : undefined;
+                          const total =
+                            unitValue !== undefined && item.qty !== undefined
+                              ? parseFloat((item.qty * unitValue).toFixed(2))
+                              : item.totalValue;
+                          updateItem(idx, { unitValue, totalValue: total });
+                        }}
                         className="h-7 text-xs"
                         placeholder="—"
                       />

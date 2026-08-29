@@ -520,8 +520,11 @@ export async function runOcr(file: File, schedules: any[]): Promise<OcrResult> {
   for (const line of candidates) {
     const item = identifyItem(line, schedules);
     if (!item) continue;
-    if (seen.has(item.normalizedName)) continue;
-    seen.add(item.normalizedName);
+    // Deduplicação apenas para itens com MESMO nome E mesma categoria
+    // (evita descartar "Pneu dianteiro" e "Pneu traseiro" por ambos conterem "Pneu")
+    const dedupeKey = `${item.normalizedName}||${item.category}`;
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
     items.push(item);
   }
 
