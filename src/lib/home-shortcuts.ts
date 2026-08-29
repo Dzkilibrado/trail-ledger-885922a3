@@ -32,6 +32,7 @@ export type HomeShortcutKey =
   | "checkups"
   | "central-moto"
   | "registrar-atividade"
+  | "registrar-manutencao"
   | "financeiro"
   | "agenda"
   | "oficinas"
@@ -67,10 +68,17 @@ export const HOME_SHORTCUT_CATALOG: HomeShortcutDef[] = [
   {
     key: "registrar-atividade",
     label: "Registrar atividade",
-    description: "Manutenção, sinistro, acessório e outros eventos",
+    description: "Sinistro, acessório, garantia, nota e outros eventos",
     icon: Plus,
     to: "/motorcycles/$id/control",
     search: { action: "registrar" },
+  },
+  {
+    key: "registrar-manutencao",
+    label: "Registrar manutenção",
+    description: "Novo fluxo: busca, catálogo, mapa visual e leitura de NF",
+    icon: Wrench,
+    to: "/motorcycles/$id/registrar-manutencao",
   },
   {
     key: "checkups",
