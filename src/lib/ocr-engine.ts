@@ -26,10 +26,10 @@ export interface OcrSuggestedItem {
   normalizedName: string;
   category: MaintenanceCategory;
   itemKind: "technical" | "labor" | "expense";
-  // Intencionalmente vazios — usuário preenche
-  qty?: undefined;
-  unitValue?: undefined;
-  totalValue?: undefined;
+  // Sempre vazios vindos do OCR — editados pelo usuário na revisão
+  qty?: number;
+  unitValue?: number;
+  totalValue?: number;
   confidence: "high" | "medium" | "low";
   scheduleId?: string;
   templateItemId?: string;
@@ -236,7 +236,7 @@ const DICT: DictEntry[] = [
     itemKind: "technical",
   },
   // Lubrificantes / consumíveis
-  { pattern: /\bgraxa\b/i, name: "Graxa", category: "other", itemKind: "technical" },
+  { pattern: /\bgraxa\b/i, name: "Graxa / lubrificante", category: "other", itemKind: "technical" },
   {
     pattern: /\b(wp|wd-40|lubrificante|lubri)\b/i,
     name: "Lubrificante",
@@ -390,6 +390,21 @@ async function runTesseract(src: string | File): Promise<{ text: string; confide
 // Identifica se uma linha é um item de moto
 // Retorna o item normalizado ou null se deve ser ignorado
 // ============================================================
+
+// Padrões de SERVIÇO/LABOR verificados com prioridade máxima
+// (antes de qualquer peça) para evitar que "MAO DE OBRA TROCAR PNEU"
+// seja classificado como "Pneu"
+const LABOR_PRIORITY: { pattern: RegExp; name: string }[] = [
+  { pattern: /\b(ma[oõ]\s*d[ae]\s*obra|mão\s*de\s*obra|m\.o\.)\b/i, name: "Mão de obra" },
+  {
+    pattern: /\bbalanceamento\b|\balinhar\b|\balinhamento\b/i,
+    name: "Balanceamento / alinhamento",
+  },
+  { pattern: /\b(instalac|instalação|montagem|desmontagem)\b/i, name: "Serviço de instalação" },
+  { pattern: /\bdiagnóstico\b|\bdiagnostico\b/i, name: "Diagnóstico" },
+  { pattern: /\bregulagem\b/i, name: "Regulagem" },
+];
+
 function identifyItem(line: string, schedules: any[]): OcrSuggestedItem | null {
   // 1. Ignora linhas de cabeçalho/endereço/totais
   if (IGNORE_PATTERNS.some((p) => p.test(line))) return null;
@@ -398,7 +413,21 @@ function identifyItem(line: string, schedules: any[]): OcrSuggestedItem | null {
   const stripped = line.replace(/[\d.,\s\-\/]/g, "").trim();
   if (stripped.length < 3) return null;
 
-  // 3. Tenta o dicionário
+  // 3. Verifica labor com prioridade ANTES do dicionário geral
+  //    Evita que "MAO DE OBRA TROCAR PNEU" vire "Pneu"
+  for (const labor of LABOR_PRIORITY) {
+    if (labor.pattern.test(line)) {
+      return {
+        rawDescription: line.trim(),
+        normalizedName: labor.name,
+        category: "other",
+        itemKind: "labor",
+        confidence: "high",
+      };
+    }
+  }
+
+  // 4. Tenta o dicionário geral
   for (const entry of DICT) {
     if (entry.pattern.test(line)) {
       const matched = schedules.find(

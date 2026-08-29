@@ -357,10 +357,57 @@ export function OcrUploader({
                     </span>
                   </div>
 
-                  {/* Valores preenchidos no próximo passo */}
-                  <p className="text-[10px] text-muted-foreground/70 italic">
-                    Quantidade e valores preenchidos no próximo passo.
-                  </p>
+                  {/* Valores — deixar vazios para preenchimento manual */}
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Qtd</p>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        value={item.qty ?? ""}
+                        onChange={(e) =>
+                          updateItem(idx, {
+                            qty: e.target.value ? parseFloat(e.target.value) : undefined,
+                          })
+                        }
+                        className="h-7 text-xs"
+                        placeholder="—"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Vl unit (R$)</p>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        value={item.unitValue ?? ""}
+                        onChange={(e) =>
+                          updateItem(idx, {
+                            unitValue: e.target.value ? parseFloat(e.target.value) : undefined,
+                          })
+                        }
+                        className="h-7 text-xs"
+                        placeholder="—"
+                      />
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-muted-foreground">Total (R$)</p>
+                      <Input
+                        type="number"
+                        inputMode="decimal"
+                        min={0}
+                        value={item.totalValue ?? ""}
+                        onChange={(e) =>
+                          updateItem(idx, {
+                            totalValue: e.target.value ? parseFloat(e.target.value) : undefined,
+                          })
+                        }
+                        className="h-7 text-xs"
+                        placeholder="—"
+                      />
+                    </div>
+                  </div>
 
                   {/* Texto original */}
                   <p className="text-[10px] text-muted-foreground/60 italic truncate">
