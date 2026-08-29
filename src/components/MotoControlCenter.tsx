@@ -255,6 +255,7 @@ export function MotoControlCenter({
     navigate({ to: "/motorcycles" });
   }
   async function deleteMoto() {
+    if (!m) return;
     const { error } = await supabase.from("motorcycles").delete().eq("id", m.id);
     if (error) {
       toast.error("Não foi possível excluir a moto", { description: error.message });

@@ -223,7 +223,7 @@ function AuthPage() {
           'Você pode entrar normalmente, ou usar "Esqueci minha senha" se não lembra o acesso.',
       });
       setIdentifier(su.email.trim());
-      navigate({ to: "/auth", search: { tab: "signin" } });
+      navigate({ to: "/auth", search: { tab: "signin" as const, recuperar: undefined } });
       return;
     }
     setSignupSent(su.email.trim());
