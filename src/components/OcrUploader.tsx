@@ -298,6 +298,16 @@ export function OcrUploader({
           Revise, corrija se necessário e selecione o que deseja adicionar.
         </p>
 
+        {/* Texto bruto — ajuda a verificar o que o sistema leu */}
+        <details className="rounded-xl border border-border bg-muted/20 p-2">
+          <summary className="cursor-pointer text-[11px] text-muted-foreground select-none">
+            Ver texto lido pelo sistema
+          </summary>
+          <pre className="mt-2 max-h-32 overflow-y-auto whitespace-pre-wrap text-[10px] text-muted-foreground/80 font-mono">
+            {result.rawText}
+          </pre>
+        </details>
+
         <div className="max-h-[45vh] overflow-y-auto space-y-2 pr-1">
           {editingItems.map((item, idx) => (
             <div

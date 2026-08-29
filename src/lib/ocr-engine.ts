@@ -184,13 +184,20 @@ const DICT: DictEntry[] = [
     itemKind: "technical",
   },
   // Rodas / Pneus — específico antes do genérico
+  // diant. / dianteiro / DIANT / front
   {
-    pattern: /\bpneu\b.*diant/i,
+    pattern: /\bpneu\b.{0,30}(diant|front|dian\b)/i,
     name: "Pneu dianteiro",
     category: "wheels",
     itemKind: "technical",
   },
-  { pattern: /\bpneu\b.*tras/i, name: "Pneu traseiro", category: "wheels", itemKind: "technical" },
+  // tras. / traseiro / TRAS / rear
+  {
+    pattern: /\bpneu\b.{0,30}(tras|rear|tr\b)/i,
+    name: "Pneu traseiro",
+    category: "wheels",
+    itemKind: "technical",
+  },
   { pattern: /\bpneu\b/i, name: "Pneu", category: "wheels", itemKind: "technical" },
   {
     pattern: /\bcâmara\b|\bcamara\b/i,
@@ -248,12 +255,6 @@ const DICT: DictEntry[] = [
   {
     pattern: /\b(m\.?o\.?b?\.?|ma[oõ]\s*d[ae]\s*obra|mão\s*de\s*obra|mo\s+de\s+obra)\b/i,
     name: "Mão de obra",
-    category: "other",
-    itemKind: "labor",
-  },
-  {
-    pattern: /\b(trocar?\s*(pneu|oleo|corrente|pastilha|vela)|troca\s+de)\b/i,
-    name: "Serviço de troca",
     category: "other",
     itemKind: "labor",
   },
@@ -395,7 +396,17 @@ async function runTesseract(src: string | File): Promise<{ text: string; confide
 // (antes de qualquer peça) para evitar que "MAO DE OBRA TROCAR PNEU"
 // seja classificado como "Pneu"
 const LABOR_PRIORITY: { pattern: RegExp; name: string }[] = [
-  { pattern: /\b(ma[oõ]\s*d[ae]\s*obra|mão\s*de\s*obra|m\.o\.)\b/i, name: "Mão de obra" },
+  // Mão de obra — cobre variações reais de OCR:
+  // "MAO DE OBRA", "MAODE OBRA", "MA0 DE OBRA" (zero), "MO DE OBRA"
+  {
+    pattern: /\b(ma[o0õ]\s*d[ae]\s*obra|ma[o0õ]de\s*obra|mão\s*de\s*obra|m\.o\.)\b/i,
+    name: "Mão de obra",
+  },
+  // "TROCAR PNEU", "TROCA DE CORRENTE" — serviço explícito de troca
+  {
+    pattern: /\b(trocar?\s+(pneu|oleo|óleo|corrente|pastilha|vela)|troca\s+de\s+\w+)\b/i,
+    name: "Serviço de troca",
+  },
   {
     pattern: /\bbalanceamento\b|\balinhar\b|\balinhamento\b/i,
     name: "Balanceamento / alinhamento",
