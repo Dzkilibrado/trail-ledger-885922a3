@@ -292,7 +292,7 @@ function RegistrarManutencao() {
           _workshop_id: workshopId || null,
           _location: location || null,
           _description: description || null,
-          _items_upsert: JSON.stringify(itemsUpsert),
+          _items_upsert: itemsUpsert,
           _items_delete: [],
         } as never,
       );

@@ -183,7 +183,7 @@ const DICT: DictEntry[] = [
     category: "suspension",
     itemKind: "technical",
   },
-  // Rodas / Pneus — atenção extra para não confundir modelo com valor
+  // Rodas / Pneus — específico antes do genérico
   {
     pattern: /\bpneu\b.*diant/i,
     name: "Pneu dianteiro",
@@ -191,12 +191,6 @@ const DICT: DictEntry[] = [
     itemKind: "technical",
   },
   { pattern: /\bpneu\b.*tras/i, name: "Pneu traseiro", category: "wheels", itemKind: "technical" },
-  {
-    pattern: /\bpneu\b.*(cross|off|trilha|enduro|motocross|xr|crf|kx|yz|rm)\b/i,
-    name: "Pneu off-road",
-    category: "wheels",
-    itemKind: "technical",
-  },
   { pattern: /\bpneu\b/i, name: "Pneu", category: "wheels", itemKind: "technical" },
   {
     pattern: /\bcâmara\b|\bcamara\b/i,
@@ -252,7 +246,7 @@ const DICT: DictEntry[] = [
   { pattern: /\bpresilha\b/i, name: "Presilha", category: "other", itemKind: "technical" },
   // Mão de obra — padrões comuns em OS brasileira
   {
-    pattern: /\b(m\.?o\.?|mao\s*de\s*obra|mão\s*de\s*obra|mao-de-obra)\b/i,
+    pattern: /\b(m\.?o\.?b?\.?|ma[oõ]\s*d[ae]\s*obra|mão\s*de\s*obra|mo\s+de\s+obra)\b/i,
     name: "Mão de obra",
     category: "other",
     itemKind: "labor",
@@ -467,18 +461,25 @@ export async function runOcr(file: File, schedules: any[]): Promise<OcrResult> {
     return { quality, items: [], rawText };
   }
 
-  // Processa linha por linha — só retorna itens reconhecidos
+  // Processa linha por linha + pares de linhas consecutivas
+  // (Tesseract frequentemente quebra uma linha de OS em duas)
   const lines = rawText
     .split(/\n/)
     .map((l) => l.trim())
     .filter((l) => l.length > 3);
+
+  // Gera candidatos: linhas individuais + linhas concatenadas em pares
+  const candidates: string[] = [...lines];
+  for (let i = 0; i < lines.length - 1; i++) {
+    candidates.push(`${lines[i]} ${lines[i + 1]}`);
+  }
+
   const seen = new Set<string>();
   const items: OcrSuggestedItem[] = [];
 
-  for (const line of lines) {
+  for (const line of candidates) {
     const item = identifyItem(line, schedules);
     if (!item) continue;
-    // Deduplicação: mesmo item normalizado não entra duas vezes
     if (seen.has(item.normalizedName)) continue;
     seen.add(item.normalizedName);
     items.push(item);

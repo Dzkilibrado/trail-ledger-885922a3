@@ -426,7 +426,7 @@ export function MotoControlCenter({
             {isOwner && !isArchived && pendency.data?.has_origin_pendency && (
               <OriginPendencyBanner motoId={m.id} userId={currentUserId} pendency={pendency.data} />
             )}
-            {!isArchived && <BadgeSection motorcycleId={m.id} variant="compact" />}
+            {/* Selos de qualidade removidos por decisão de UX — código preservado */}
             <div className="grid grid-cols-3 gap-3">
               <Stat label="Horas" value={`${Number(m.hours_total).toFixed(1)} h`} />
               <Stat label="Km" value={Number(m.km_total).toFixed(0)} />
