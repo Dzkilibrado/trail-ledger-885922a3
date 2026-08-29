@@ -3,7 +3,18 @@ import { useState, useMemo, useRef } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { z } from "zod";
-import { Search, Plus, X, ChevronRight, Wrench, Zap, Check, ArrowLeft, Map } from "lucide-react";
+import {
+  Search,
+  Plus,
+  X,
+  ChevronRight,
+  Wrench,
+  Zap,
+  Check,
+  ArrowLeft,
+  Map,
+  FileText,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +23,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { MAINT_CATEGORY_LABEL, type MaintenanceCategory } from "@/lib/trailbook";
 import { cn } from "@/lib/utils";
 import { MotoMap } from "@/components/MotoMap";
+import { OcrUploader } from "@/components/OcrUploader";
 
 // ============================================================
 // Rota
@@ -410,7 +422,9 @@ function ItemsStep({
   onNext: () => void;
   onBack: () => void;
 }) {
-  const [mode, setMode] = useState<"menu" | "search" | "catalog" | "map" | "addItem">("menu");
+  const [mode, setMode] = useState<"menu" | "search" | "catalog" | "map" | "ocr" | "addItem">(
+    "menu",
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<MaintenanceCategory | null>(null);
   const [editingItem, setEditingItem] = useState<Partial<MaintenanceItem> | null>(null);
@@ -544,6 +558,20 @@ function ItemsStep({
               <p className="font-semibold text-muted-foreground">Adicionar outro item</p>
               <p className="text-xs text-muted-foreground">Item livre não listado no catálogo</p>
             </div>
+          </button>
+
+          <button
+            onClick={() => setMode("ocr")}
+            className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/50"
+          >
+            <FileText className="h-5 w-5 shrink-0 text-primary" />
+            <div>
+              <p className="font-semibold">Ler documento fiscal</p>
+              <p className="text-xs text-muted-foreground">
+                Nota Fiscal, OS ou Cupom — preenche automaticamente
+              </p>
+            </div>
+            <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
           </button>
         </div>
 
@@ -758,6 +786,33 @@ function ItemsStep({
             {items.length > 1 ? "s" : ""}
           </Button>
         )}
+      </div>
+    );
+  }
+
+  // ---- OCR ----
+  if (mode === "ocr") {
+    return (
+      <div className="mx-auto w-full max-w-xl space-y-4 pb-24">
+        <div className="flex items-center gap-3">
+          <button onClick={() => setMode("menu")} className="rounded-lg p-1.5 hover:bg-muted">
+            <ArrowLeft className="h-5 w-5" />
+          </button>
+          <div>
+            <h2 className="font-display font-bold">Ler documento</h2>
+            <p className="text-xs text-muted-foreground">
+              Foto ou arquivo da Nota Fiscal / OS / Cupom
+            </p>
+          </div>
+        </div>
+        <OcrUploader
+          schedules={schedules}
+          onConfirm={(ocrItems, date) => {
+            ocrItems.forEach((it) => addItem(it));
+            setMode("menu");
+          }}
+          onCancel={() => setMode("menu")}
+        />
       </div>
     );
   }
