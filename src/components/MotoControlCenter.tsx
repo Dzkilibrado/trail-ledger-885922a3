@@ -1130,9 +1130,13 @@ export function MotoControlCenter({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-3">
-      <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
-      <div className="font-display text-lg font-bold">{value}</div>
+    <div className="rounded-xl border border-border bg-card p-3 min-w-0">
+      <div className="text-[10px] uppercase tracking-widest text-muted-foreground truncate">
+        {label}
+      </div>
+      <div className="font-display font-bold text-sm sm:text-base leading-tight break-words">
+        {value}
+      </div>
     </div>
   );
 }
