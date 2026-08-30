@@ -21,6 +21,7 @@ import {
   type OcrResult,
 } from "@/lib/ocr-engine";
 import type { MaintenanceItem } from "./types-registrar";
+import { useModule } from "@/hooks/useModules";
 
 const CATEGORY_ICON: Record<MaintenanceCategory, string> = {
   engine: "🔧",
@@ -60,6 +61,10 @@ export function OcrUploader({
   const [file, setFile] = useState<File | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const cameraRef = useRef<HTMLInputElement>(null);
+
+  // Controle granular dos sub-botões de OCR pelo painel admin
+  const modFoto = useModule("manut_ocr_foto");
+  const modArquivo = useModule("manut_ocr_arquivo");
 
   async function processFile(f: File) {
     if (!ACCEPTED_TYPES.includes(f.type)) {
@@ -154,22 +159,45 @@ export function OcrUploader({
         </p>
 
         <div className="grid grid-cols-2 gap-3">
-          <button
-            onClick={() => cameraRef.current?.click()}
-            className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card py-6 hover:border-primary/50 active:scale-95 transition"
-          >
-            <Camera className="h-8 w-8 text-primary" />
-            <span className="text-sm font-semibold">Tirar foto</span>
-            <span className="text-[11px] text-muted-foreground">Câmera do celular</span>
-          </button>
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="flex flex-col items-center gap-2 rounded-2xl border border-border bg-card py-6 hover:border-primary/50 active:scale-95 transition"
-          >
-            <Upload className="h-8 w-8 text-primary" />
-            <span className="text-sm font-semibold">Selecionar arquivo</span>
-            <span className="text-[11px] text-muted-foreground">{ACCEPTED_LABEL}</span>
-          </button>
+          {/* Tirar foto — controlado pelo módulo manut_ocr_foto */}
+          {modFoto.status !== "disabled" && (
+            <button
+              onClick={() => modFoto.status === "active" && cameraRef.current?.click()}
+              disabled={modFoto.status !== "active"}
+              className={cn(
+                "flex flex-col items-center gap-2 rounded-2xl border bg-card py-6 active:scale-95 transition",
+                modFoto.status === "active"
+                  ? "border-border hover:border-primary/50"
+                  : "border-amber-500/30 opacity-60 cursor-not-allowed",
+              )}
+            >
+              <Camera className="h-8 w-8 text-primary" />
+              <span className="text-sm font-semibold">Tirar foto</span>
+              <span className="text-[11px] text-muted-foreground">
+                {modFoto.status === "maintenance" ? "Em manutenção" : "Câmera do celular"}
+              </span>
+            </button>
+          )}
+
+          {/* Selecionar arquivo — controlado pelo módulo manut_ocr_arquivo */}
+          {modArquivo.status !== "disabled" && (
+            <button
+              onClick={() => modArquivo.status === "active" && fileRef.current?.click()}
+              disabled={modArquivo.status !== "active"}
+              className={cn(
+                "flex flex-col items-center gap-2 rounded-2xl border bg-card py-6 active:scale-95 transition",
+                modArquivo.status === "active"
+                  ? "border-border hover:border-primary/50"
+                  : "border-amber-500/30 opacity-60 cursor-not-allowed",
+              )}
+            >
+              <Upload className="h-8 w-8 text-primary" />
+              <span className="text-sm font-semibold">Selecionar arquivo</span>
+              <span className="text-[11px] text-muted-foreground">
+                {modArquivo.status === "maintenance" ? "Em manutenção" : ACCEPTED_LABEL}
+              </span>
+            </button>
+          )}
         </div>
 
         <div className="rounded-xl border border-border bg-muted/20 p-3 text-[11px] text-muted-foreground space-y-1">

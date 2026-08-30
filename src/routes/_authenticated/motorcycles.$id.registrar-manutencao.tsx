@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { useModule } from "@/hooks/useModules";
 import { MAINT_CATEGORY_LABEL, type MaintenanceCategory } from "@/lib/trailbook";
 import { cn } from "@/lib/utils";
 import { MotoMap } from "@/components/MotoMap";
@@ -430,6 +431,16 @@ function ItemsStep({
   const [editingItem, setEditingItem] = useState<Partial<MaintenanceItem> | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
+  // Controle granular pelo painel admin — cada opção pode ser
+  // habilitada, desabilitada ou colocada em manutenção individualmente
+  const modBusca = useModule("manut_busca");
+  const modCatalogo = useModule("manut_catalogo");
+  const modMapa = useModule("manut_mapa");
+  const modOcr = useModule("manut_ocr");
+
+  const isActive = (s: string) => s === "active";
+  const isMaint = (s: string) => s === "maintenance";
+
   const filteredSchedules = useMemo(() => {
     if (selectedCategory) return schedules.filter((s) => s.category === selectedCategory);
     if (searchQuery.trim()) {
@@ -517,54 +528,91 @@ function ItemsStep({
           </p>
         )}
 
-        {/* Opções de entrada — compactas */}
+        {/* Opções de entrada — controladas pelo painel admin */}
         <div className="grid grid-cols-2 gap-2">
-          <button
-            onClick={() => {
-              setMode("search");
-              setTimeout(() => searchRef.current?.focus(), 100);
-            }}
-            className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card py-4 hover:border-primary/50 transition"
-          >
-            <Search className="h-5 w-5 text-primary" />
-            <span className="text-xs font-semibold">Buscar</span>
-            <span className="text-[10px] text-muted-foreground text-center px-2">
-              pneu, óleo, corrente…
-            </span>
-          </button>
-
-          <button
-            onClick={() => setMode("catalog")}
-            className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card py-4 hover:border-primary/50 transition"
-          >
-            <Wrench className="h-5 w-5 text-primary" />
-            <span className="text-xs font-semibold">Catálogo</span>
-            <span className="text-[10px] text-muted-foreground text-center px-2">
-              por categoria
-            </span>
-          </button>
-
-          <button
-            onClick={() => setMode("map")}
-            className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card py-4 hover:border-primary/50 transition"
-          >
-            <Map className="h-5 w-5 text-primary" />
-            <span className="text-xs font-semibold">Mapa da moto</span>
-            <span className="text-[10px] text-muted-foreground text-center px-2">
-              toque na região
-            </span>
-          </button>
-
-          <button
-            onClick={() => setMode("ocr")}
-            className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card py-4 hover:border-primary/50 transition"
-          >
-            <FileText className="h-5 w-5 text-primary" />
-            <span className="text-xs font-semibold">Ler documento</span>
-            <span className="text-[10px] text-muted-foreground text-center px-2">
-              NF, OS, cupom
-            </span>
-          </button>
+          {modBusca.status !== "disabled" && (
+            <button
+              onClick={() => {
+                if (!isMaint(modBusca.status)) {
+                  setMode("search");
+                  setTimeout(() => searchRef.current?.focus(), 100);
+                }
+              }}
+              disabled={isMaint(modBusca.status)}
+              className={cn(
+                "flex flex-col items-center gap-1.5 rounded-2xl border bg-card py-4 transition",
+                isActive(modBusca.status)
+                  ? "border-border hover:border-primary/50"
+                  : "border-amber-500/30 opacity-60",
+              )}
+            >
+              <Search className="h-5 w-5 text-primary" />
+              <span className="text-xs font-semibold">Buscar</span>
+              <span className="text-[10px] text-muted-foreground text-center px-2">
+                {isMaint(modBusca.status) ? "Em manutenção" : "pneu, óleo, corrente…"}
+              </span>
+            </button>
+          )}
+          {modCatalogo.status !== "disabled" && (
+            <button
+              onClick={() => {
+                if (!isMaint(modCatalogo.status)) setMode("catalog");
+              }}
+              disabled={isMaint(modCatalogo.status)}
+              className={cn(
+                "flex flex-col items-center gap-1.5 rounded-2xl border bg-card py-4 transition",
+                isActive(modCatalogo.status)
+                  ? "border-border hover:border-primary/50"
+                  : "border-amber-500/30 opacity-60",
+              )}
+            >
+              <Wrench className="h-5 w-5 text-primary" />
+              <span className="text-xs font-semibold">Catálogo</span>
+              <span className="text-[10px] text-muted-foreground text-center px-2">
+                {isMaint(modCatalogo.status) ? "Em manutenção" : "por categoria"}
+              </span>
+            </button>
+          )}
+          {modMapa.status !== "disabled" && (
+            <button
+              onClick={() => {
+                if (!isMaint(modMapa.status)) setMode("map");
+              }}
+              disabled={isMaint(modMapa.status)}
+              className={cn(
+                "flex flex-col items-center gap-1.5 rounded-2xl border bg-card py-4 transition",
+                isActive(modMapa.status)
+                  ? "border-border hover:border-primary/50"
+                  : "border-amber-500/30 opacity-60",
+              )}
+            >
+              <Map className="h-5 w-5 text-primary" />
+              <span className="text-xs font-semibold">Mapa da moto</span>
+              <span className="text-[10px] text-muted-foreground text-center px-2">
+                {isMaint(modMapa.status) ? "Em manutenção" : "toque na região"}
+              </span>
+            </button>
+          )}
+          {modOcr.status !== "disabled" && (
+            <button
+              onClick={() => {
+                if (!isMaint(modOcr.status)) setMode("ocr");
+              }}
+              disabled={isMaint(modOcr.status)}
+              className={cn(
+                "flex flex-col items-center gap-1.5 rounded-2xl border bg-card py-4 transition",
+                isActive(modOcr.status)
+                  ? "border-border hover:border-primary/50"
+                  : "border-amber-500/30 opacity-60",
+              )}
+            >
+              <FileText className="h-5 w-5 text-primary" />
+              <span className="text-xs font-semibold">Ler documento</span>
+              <span className="text-[10px] text-muted-foreground text-center px-2">
+                {isMaint(modOcr.status) ? "Em manutenção" : "NF, OS, cupom"}
+              </span>
+            </button>
+          )}
         </div>
 
         <button
