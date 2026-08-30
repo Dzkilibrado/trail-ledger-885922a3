@@ -430,6 +430,7 @@ function ItemsStep({
   const [selectedCategory, setSelectedCategory] = useState<MaintenanceCategory | null>(null);
   const [editingItem, setEditingItem] = useState<Partial<MaintenanceItem> | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
 
   // Controle granular pelo painel admin — cada opção pode ser
   // habilitada, desabilitada ou colocada em manutenção individualmente
@@ -478,10 +479,23 @@ function ItemsStep({
           <button onClick={onBack} className="rounded-lg p-1.5 hover:bg-muted">
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <div>
+          <div className="flex-1 min-w-0">
             <h1 className="font-display text-xl font-bold">O que foi feito?</h1>
             <p className="text-sm text-muted-foreground">{motoName}</p>
           </div>
+          {/* Acesso rápido ao histórico */}
+          <button
+            onClick={() =>
+              navigate({
+                to: "/motorcycles/$id/historico-manutencao" as never,
+                params: { id: motoId } as never,
+              })
+            }
+            className="shrink-0 flex items-center gap-1 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:border-primary/50 hover:text-foreground transition"
+          >
+            <Zap className="h-3.5 w-3.5" />
+            Histórico
+          </button>
         </div>
 
         {/* Lista de itens + botão Continuar */}

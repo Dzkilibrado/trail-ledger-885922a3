@@ -726,7 +726,7 @@ export function MotoControlCenter({
             </TabsTrigger>
           )}
           <TabsTrigger value="atividade" className="surface-elevated data-[state=active]:btn-glow">
-            Linha do tempo
+            Histórico
           </TabsTrigger>
           <TabsTrigger value="documentos" className="surface-elevated data-[state=active]:btn-glow">
             Documentos
@@ -918,22 +918,22 @@ export function MotoControlCenter({
                 </button>
               )}
             </div>
-            <div className="flex gap-1.5 overflow-x-auto pb-1">
+            <div className="flex flex-wrap gap-1.5">
               {(
                 [
                   ["all", "Todas"],
-                  ["maintenance", "Manutenções"],
-                  ["usage", "Uso"],
-                  ["incident", "Sinistros"],
-                  ["accessory", "Acessórios"],
-                  ["note", "Notas"],
+                  ["maintenance", "🔧 Manutenções"],
+                  ["usage", "🏍 Uso"],
+                  ["incident", "⚠️ Sinistros"],
+                  ["accessory", "🎽 Acessórios"],
+                  ["note", "📝 Notas"],
                 ] as const
               ).map(([val, label]) => (
                 <button
                   key={val}
                   onClick={() => setActivityTypeFilter(val)}
                   className={cn(
-                    "shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition",
+                    "rounded-full border px-3 py-1 text-xs font-medium transition",
                     activityTypeFilter === val
                       ? "border-primary bg-primary/10 text-primary"
                       : "border-border text-muted-foreground hover:border-primary/40",
