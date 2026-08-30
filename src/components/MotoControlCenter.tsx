@@ -406,6 +406,17 @@ export function MotoControlCenter({
                   >
                     <Wrench className="h-4 w-4" /> Registrar manutenção
                   </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() =>
+                      navigate({
+                        to: "/motorcycles/$id/historico-manutencao" as never,
+                        params: { id: m.id } as never,
+                      })
+                    }
+                  >
+                    <Search className="h-4 w-4" /> Histórico
+                  </Button>
                   <NewEventDialog
                     moto={m}
                     triggerLabel="Registrar atividade"
@@ -1130,13 +1141,11 @@ export function MotoControlCenter({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-3 min-w-0">
-      <div className="text-[10px] uppercase tracking-widest text-muted-foreground truncate">
+    <div className="rounded-xl border border-border bg-card p-3 min-w-0 overflow-hidden">
+      <div className="text-[10px] uppercase tracking-widest text-muted-foreground truncate mb-0.5">
         {label}
       </div>
-      <div className="font-display font-bold text-sm sm:text-base leading-tight break-words">
-        {value}
-      </div>
+      <div className="font-display font-bold text-sm leading-tight truncate">{value}</div>
     </div>
   );
 }

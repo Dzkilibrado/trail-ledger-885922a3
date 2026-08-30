@@ -4,6 +4,7 @@ import {
   FolderOpen,
   Heart,
   Plus,
+  Search,
   Share2,
   ShieldCheck,
   Stethoscope,
@@ -33,6 +34,7 @@ export type HomeShortcutKey =
   | "central-moto"
   | "registrar-atividade"
   | "registrar-manutencao"
+  | "historico-manutencao"
   | "financeiro"
   | "agenda"
   | "oficinas"
@@ -79,6 +81,13 @@ export const HOME_SHORTCUT_CATALOG: HomeShortcutDef[] = [
     description: "Novo fluxo: busca, catálogo, mapa visual e leitura de NF",
     icon: Wrench,
     to: "/motorcycles/$id/registrar-manutencao",
+  },
+  {
+    key: "historico-manutencao",
+    label: "Histórico",
+    description: "Consultar, editar e excluir manutenções registradas",
+    icon: Search,
+    to: "/motorcycles/$id/historico-manutencao",
   },
   {
     key: "checkups",
