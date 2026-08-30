@@ -462,7 +462,7 @@ function ItemsStep({
   // ---- menu inicial ----
   if (mode === "menu") {
     return (
-      <div className="mx-auto w-full max-w-xl space-y-5 pb-24">
+      <div className="mx-auto w-full max-w-xl space-y-4 pb-24">
         <div className="flex items-center gap-3">
           <button onClick={onBack} className="rounded-lg p-1.5 hover:bg-muted">
             <ArrowLeft className="h-5 w-5" />
@@ -473,114 +473,109 @@ function ItemsStep({
           </div>
         </div>
 
-        {/* Itens já adicionados */}
-        {items.length > 0 && (
-          <div className="space-y-2">
-            {items.map((it) => (
-              <div
-                key={it.localId}
-                className="flex items-center justify-between gap-2 rounded-xl border border-border bg-card p-3"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-medium text-sm">{it.service}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {CATEGORY_ICON[it.category]} {MAINT_CATEGORY_LABEL[it.category]}
-                    {it.unitValue ? ` · R$ ${((it.qty ?? 1) * it.unitValue).toFixed(2)}` : ""}
-                  </p>
-                </div>
-                <button
-                  onClick={() => removeItem(it.localId)}
-                  className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
+        {/* Lista de itens + botão Continuar */}
+        {items.length > 0 ? (
+          <>
+            <div className="space-y-2">
+              {items.map((it) => (
+                <div
+                  key={it.localId}
+                  className="flex items-center justify-between gap-2 rounded-xl border border-border bg-card p-3"
                 >
-                  <X className="h-4 w-4" />
-                </button>
+                  <div className="min-w-0">
+                    <p className="truncate font-medium text-sm">{it.service}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {CATEGORY_ICON[it.category]} {MAINT_CATEGORY_LABEL[it.category]}
+                      {it.unitValue ? ` · R$ ${((it.qty ?? 1) * it.unitValue).toFixed(2)}` : ""}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => removeItem(it.localId)}
+                    className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <Button onClick={onNext} className="w-full btn-glow text-base" size="lg">
+              Continuar com {items.length} item{items.length > 1 ? "s" : ""}
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t border-border" />
               </div>
-            ))}
-          </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-background px-2 text-muted-foreground">ou adicionar mais</span>
+              </div>
+            </div>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground text-center py-2">
+            Selecione o que foi feito nesta manutenção
+          </p>
         )}
 
-        {/* Opções de entrada */}
-        <div className="space-y-2">
+        {/* Opções de entrada — compactas */}
+        <div className="grid grid-cols-2 gap-2">
           <button
             onClick={() => {
               setMode("search");
               setTimeout(() => searchRef.current?.focus(), 100);
             }}
-            className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/50"
+            className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card py-4 hover:border-primary/50 transition"
           >
-            <Search className="h-5 w-5 shrink-0 text-primary" />
-            <div>
-              <p className="font-semibold">Buscar item / serviço</p>
-              <p className="text-xs text-muted-foreground">
-                Digite pneu, corrente, óleo, mão de obra…
-              </p>
-            </div>
-            <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
+            <Search className="h-5 w-5 text-primary" />
+            <span className="text-xs font-semibold">Buscar</span>
+            <span className="text-[10px] text-muted-foreground text-center px-2">
+              pneu, óleo, corrente…
+            </span>
           </button>
 
           <button
             onClick={() => setMode("catalog")}
-            className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/50"
+            className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card py-4 hover:border-primary/50 transition"
           >
-            <Wrench className="h-5 w-5 shrink-0 text-primary" />
-            <div>
-              <p className="font-semibold">Componentes da moto</p>
-              <p className="text-xs text-muted-foreground">
-                Ver por categoria: Motor, Freios, Rodas…
-              </p>
-            </div>
-            <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
+            <Wrench className="h-5 w-5 text-primary" />
+            <span className="text-xs font-semibold">Catálogo</span>
+            <span className="text-[10px] text-muted-foreground text-center px-2">
+              por categoria
+            </span>
           </button>
 
           <button
             onClick={() => setMode("map")}
-            className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/50"
+            className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card py-4 hover:border-primary/50 transition"
           >
-            <Map className="h-5 w-5 shrink-0 text-primary" />
-            <div>
-              <p className="font-semibold">Mapa visual da moto</p>
-              <p className="text-xs text-muted-foreground">
-                Toque na região da moto para selecionar a peça
-              </p>
-            </div>
-            <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
-          </button>
-
-          <button
-            onClick={() => {
-              setEditingItem({});
-              setMode("addItem");
-            }}
-            className="flex w-full items-center gap-3 rounded-2xl border border-dashed border-border bg-card/60 p-4 text-left transition hover:border-primary/50"
-          >
-            <Plus className="h-5 w-5 shrink-0 text-muted-foreground" />
-            <div>
-              <p className="font-semibold text-muted-foreground">Adicionar outro item</p>
-              <p className="text-xs text-muted-foreground">Item livre não listado no catálogo</p>
-            </div>
+            <Map className="h-5 w-5 text-primary" />
+            <span className="text-xs font-semibold">Mapa da moto</span>
+            <span className="text-[10px] text-muted-foreground text-center px-2">
+              toque na região
+            </span>
           </button>
 
           <button
             onClick={() => setMode("ocr")}
-            className="flex w-full items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/50"
+            className="flex flex-col items-center gap-1.5 rounded-2xl border border-border bg-card py-4 hover:border-primary/50 transition"
           >
-            <FileText className="h-5 w-5 shrink-0 text-primary" />
-            <div>
-              <p className="font-semibold">Ler documento fiscal</p>
-              <p className="text-xs text-muted-foreground">
-                Nota Fiscal, OS ou Cupom — preenche automaticamente
-              </p>
-            </div>
-            <ChevronRight className="ml-auto h-4 w-4 text-muted-foreground" />
+            <FileText className="h-5 w-5 text-primary" />
+            <span className="text-xs font-semibold">Ler documento</span>
+            <span className="text-[10px] text-muted-foreground text-center px-2">
+              NF, OS, cupom
+            </span>
           </button>
         </div>
 
-        {items.length > 0 && (
-          <Button onClick={onNext} className="w-full btn-glow text-base" size="lg">
-            Continuar com {items.length} item{items.length > 1 ? "s" : ""}
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        )}
+        <button
+          onClick={() => {
+            setEditingItem({});
+            setMode("addItem");
+          }}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-card/60 py-3 text-sm text-muted-foreground hover:border-primary/50 transition"
+        >
+          <Plus className="h-4 w-4" /> Item livre / outro
+        </button>
       </div>
     );
   }
@@ -769,15 +764,33 @@ function ItemsStep({
           <div>
             <h2 className="font-display font-bold">Mapa da moto</h2>
             <p className="text-xs text-muted-foreground">
-              Toque numa região para ver os componentes
+              {items.length > 0
+                ? `${items.length} item${items.length > 1 ? "s" : ""} selecionado${items.length > 1 ? "s" : ""}`
+                : "Toque numa região para ver os componentes"}
             </p>
           </div>
         </div>
         <MotoMap
           schedules={schedules}
           addedItems={items}
-          onAdd={(name, category, scheduleId, templateItemId) => {
-            addItem({ service: name, category, itemKind: "technical", scheduleId, templateItemId });
+          onToggle={(name, category, scheduleId, templateItemId) => {
+            const existing = items.find(
+              (it) => it.service === name || (scheduleId && it.scheduleId === scheduleId),
+            );
+            if (existing) {
+              // Toggle off: remove o item
+              onItemsChange(items.filter((it) => it.localId !== existing.localId));
+            } else {
+              // Toggle on: abre formulário para informar qty/valor
+              setEditingItem({
+                service: name,
+                category,
+                itemKind: "technical",
+                scheduleId,
+                templateItemId,
+              });
+              setMode("addItem");
+            }
           }}
         />
         {items.length > 0 && (
@@ -864,12 +877,12 @@ function AddItemForm({
   const [itemKind, setItemKind] = useState<ItemKind>(
     initial.itemKind ?? inferItemKind(initial.service ?? ""),
   );
-  const [product, setProduct] = useState(initial.product ?? "");
-  const [brand, setBrand] = useState(initial.brand ?? "");
   const [qty, setQty] = useState(initial.qty ? String(initial.qty) : "");
   const [unitValue, setUnitValue] = useState(initial.unitValue ? String(initial.unitValue) : "");
 
   const isLinkedToSchedule = !!initial.scheduleId;
+  const total =
+    qty && unitValue ? (parseFloat(qty || "1") * parseFloat(unitValue || "0")).toFixed(2) : null;
 
   function confirm() {
     if (!service.trim()) {
@@ -881,8 +894,6 @@ function AddItemForm({
       service: service.trim(),
       category,
       itemKind,
-      product: product.trim() || undefined,
-      brand: brand.trim() || undefined,
       qty: qty ? parseFloat(qty) : undefined,
       unitValue: unitValue ? parseFloat(unitValue) : undefined,
     });
@@ -900,9 +911,10 @@ function AddItemForm({
       </div>
 
       <div className="space-y-4 rounded-2xl border border-border bg-card p-5">
+        {/* Serviço */}
         <div className="space-y-1.5">
           <Label className="text-xs uppercase tracking-widest text-muted-foreground">
-            Serviço / O que foi feito
+            O que foi feito
           </Label>
           <Input
             value={service}
@@ -915,6 +927,7 @@ function AddItemForm({
           />
         </div>
 
+        {/* Categoria — só para itens livres */}
         {!isLinkedToSchedule && (
           <div className="space-y-1.5">
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">
@@ -940,55 +953,34 @@ function AddItemForm({
           </div>
         )}
 
-        <div className="space-y-1.5">
-          <Label className="text-xs uppercase tracking-widest text-muted-foreground">Tipo</Label>
-          <div className="flex gap-2">
-            {(["technical", "labor", "expense"] as ItemKind[]).map((k) => {
-              const labels = {
-                technical: "Peça / Componente",
-                labor: "Mão de obra",
-                expense: "Despesa / Outro",
-              };
-              return (
-                <button
-                  key={k}
-                  type="button"
-                  onClick={() => setItemKind(k)}
-                  className={cn(
-                    "flex-1 rounded-xl border px-2 py-2 text-xs font-medium transition",
-                    itemKind === k
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:border-primary/40",
-                  )}
-                >
-                  {labels[k]}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
+        {/* Tipo — só para itens livres */}
+        {!isLinkedToSchedule && (
           <div className="space-y-1.5">
-            <Label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Produto / Material
-            </Label>
-            <Input
-              value={product}
-              onChange={(e) => setProduct(e.target.value)}
-              placeholder="Opcional"
-            />
+            <Label className="text-xs uppercase tracking-widest text-muted-foreground">Tipo</Label>
+            <div className="flex gap-2">
+              {(["technical", "labor", "expense"] as ItemKind[]).map((k) => {
+                const labels = { technical: "Peça", labor: "Mão de obra", expense: "Despesa" };
+                return (
+                  <button
+                    key={k}
+                    type="button"
+                    onClick={() => setItemKind(k)}
+                    className={cn(
+                      "flex-1 rounded-xl border px-2 py-2 text-xs font-medium transition",
+                      itemKind === k
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border text-muted-foreground hover:border-primary/40",
+                    )}
+                  >
+                    {labels[k]}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs uppercase tracking-widest text-muted-foreground">Marca</Label>
-            <Input
-              value={brand}
-              onChange={(e) => setBrand(e.target.value)}
-              placeholder="Opcional"
-            />
-          </div>
-        </div>
+        )}
 
+        {/* Qty + Valor + Total automático */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">
@@ -1018,15 +1010,16 @@ function AddItemForm({
           </div>
         </div>
 
-        {qty && unitValue && (
-          <p className="text-right text-sm font-semibold text-primary">
-            Total: R$ {(parseFloat(qty || "1") * parseFloat(unitValue || "0")).toFixed(2)}
-          </p>
+        {total && (
+          <div className="flex items-center justify-between rounded-xl bg-primary/5 px-4 py-2">
+            <span className="text-xs text-muted-foreground">Total calculado</span>
+            <span className="font-bold text-primary">R$ {total}</span>
+          </div>
         )}
       </div>
 
       <Button onClick={confirm} className="w-full btn-glow">
-        Adicionar item
+        {isLinkedToSchedule ? "Confirmar item" : "Adicionar item"}
       </Button>
     </div>
   );
