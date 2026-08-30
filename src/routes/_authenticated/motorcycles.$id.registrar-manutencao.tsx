@@ -9,7 +9,7 @@ import {
   X,
   ChevronRight,
   Wrench,
-  Zap,
+  Clock,
   Check,
   ArrowLeft,
   Map,
@@ -483,19 +483,6 @@ function ItemsStep({
             <h1 className="font-display text-xl font-bold">O que foi feito?</h1>
             <p className="text-sm text-muted-foreground">{motoName}</p>
           </div>
-          {/* Acesso rápido ao histórico */}
-          <button
-            onClick={() =>
-              navigate({
-                to: "/motorcycles/$id/historico-manutencao" as never,
-                params: { id: motoId } as never,
-              })
-            }
-            className="shrink-0 flex items-center gap-1 rounded-xl border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:border-primary/50 hover:text-foreground transition"
-          >
-            <Zap className="h-3.5 w-3.5" />
-            Histórico
-          </button>
         </div>
 
         {/* Lista de itens + botão Continuar */}
@@ -637,6 +624,28 @@ function ItemsStep({
           className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-card/60 py-3 text-sm text-muted-foreground hover:border-primary/50 transition"
         >
           <Plus className="h-4 w-4" /> Item livre / outro
+        </button>
+
+        {/* Card de Histórico de Manutenção — mesmo nível das outras opções */}
+        <button
+          onClick={() =>
+            navigate({
+              to: "/motorcycles/$id/historico-manutencao" as never,
+              params: { id: motoId } as never,
+            })
+          }
+          className="flex w-full items-center gap-4 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/50 active:scale-[0.98]"
+        >
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+            <Clock className="h-5 w-5 text-primary" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="font-semibold">Histórico de Manutenção</p>
+            <p className="text-xs text-muted-foreground">
+              Consultar, editar e excluir manutenções anteriores
+            </p>
+          </div>
+          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
         </button>
       </div>
     );

@@ -406,17 +406,6 @@ export function MotoControlCenter({
                   >
                     <Wrench className="h-4 w-4" /> Registrar manutenção
                   </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() =>
-                      navigate({
-                        to: "/motorcycles/$id/historico-manutencao" as never,
-                        params: { id: m.id } as never,
-                      })
-                    }
-                  >
-                    <Search className="h-4 w-4" /> Histórico
-                  </Button>
                   <NewEventDialog
                     moto={m}
                     triggerLabel="Registrar atividade"
