@@ -66,6 +66,7 @@ import { Route as AuthenticatedMotorcyclesIdPlanRouteImport } from './routes/_au
 import { Route as AuthenticatedMotorcyclesIdPassportRouteImport } from './routes/_authenticated/motorcycles.$id.passport'
 import { Route as AuthenticatedMotorcyclesIdHistoricoManutencaoRouteImport } from './routes/_authenticated/motorcycles.$id.historico-manutencao'
 import { Route as AuthenticatedMotorcyclesIdHealthRouteImport } from './routes/_authenticated/motorcycles.$id.health'
+import { Route as AuthenticatedMotorcyclesIdEditarManutencaoRouteImport } from './routes/_authenticated/motorcycles.$id.editar-manutencao'
 import { Route as AuthenticatedMotorcyclesIdEditarRouteImport } from './routes/_authenticated/motorcycles.$id.editar'
 import { Route as AuthenticatedMotorcyclesIdControlRouteImport } from './routes/_authenticated/motorcycles.$id.control'
 import { Route as AuthenticatedMotorcyclesIdComponentsRouteImport } from './routes/_authenticated/motorcycles.$id.components'
@@ -387,6 +388,12 @@ const AuthenticatedMotorcyclesIdHealthRoute =
     path: '/health',
     getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
   } as any)
+const AuthenticatedMotorcyclesIdEditarManutencaoRoute =
+  AuthenticatedMotorcyclesIdEditarManutencaoRouteImport.update({
+    id: '/editar-manutencao',
+    path: '/editar-manutencao',
+    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
+  } as any)
 const AuthenticatedMotorcyclesIdEditarRoute =
   AuthenticatedMotorcyclesIdEditarRouteImport.update({
     id: '/editar',
@@ -488,6 +495,7 @@ export interface FileRoutesByFullPath {
   '/motorcycles/$id/components': typeof AuthenticatedMotorcyclesIdComponentsRoute
   '/motorcycles/$id/control': typeof AuthenticatedMotorcyclesIdControlRoute
   '/motorcycles/$id/editar': typeof AuthenticatedMotorcyclesIdEditarRoute
+  '/motorcycles/$id/editar-manutencao': typeof AuthenticatedMotorcyclesIdEditarManutencaoRoute
   '/motorcycles/$id/health': typeof AuthenticatedMotorcyclesIdHealthRoute
   '/motorcycles/$id/historico-manutencao': typeof AuthenticatedMotorcyclesIdHistoricoManutencaoRoute
   '/motorcycles/$id/passport': typeof AuthenticatedMotorcyclesIdPassportRoute
@@ -551,6 +559,7 @@ export interface FileRoutesByTo {
   '/motorcycles/$id/components': typeof AuthenticatedMotorcyclesIdComponentsRoute
   '/motorcycles/$id/control': typeof AuthenticatedMotorcyclesIdControlRoute
   '/motorcycles/$id/editar': typeof AuthenticatedMotorcyclesIdEditarRoute
+  '/motorcycles/$id/editar-manutencao': typeof AuthenticatedMotorcyclesIdEditarManutencaoRoute
   '/motorcycles/$id/health': typeof AuthenticatedMotorcyclesIdHealthRoute
   '/motorcycles/$id/historico-manutencao': typeof AuthenticatedMotorcyclesIdHistoricoManutencaoRoute
   '/motorcycles/$id/passport': typeof AuthenticatedMotorcyclesIdPassportRoute
@@ -619,6 +628,7 @@ export interface FileRoutesById {
   '/_authenticated/motorcycles/$id/components': typeof AuthenticatedMotorcyclesIdComponentsRoute
   '/_authenticated/motorcycles/$id/control': typeof AuthenticatedMotorcyclesIdControlRoute
   '/_authenticated/motorcycles/$id/editar': typeof AuthenticatedMotorcyclesIdEditarRoute
+  '/_authenticated/motorcycles/$id/editar-manutencao': typeof AuthenticatedMotorcyclesIdEditarManutencaoRoute
   '/_authenticated/motorcycles/$id/health': typeof AuthenticatedMotorcyclesIdHealthRoute
   '/_authenticated/motorcycles/$id/historico-manutencao': typeof AuthenticatedMotorcyclesIdHistoricoManutencaoRoute
   '/_authenticated/motorcycles/$id/passport': typeof AuthenticatedMotorcyclesIdPassportRoute
@@ -687,6 +697,7 @@ export interface FileRouteTypes {
     | '/motorcycles/$id/components'
     | '/motorcycles/$id/control'
     | '/motorcycles/$id/editar'
+    | '/motorcycles/$id/editar-manutencao'
     | '/motorcycles/$id/health'
     | '/motorcycles/$id/historico-manutencao'
     | '/motorcycles/$id/passport'
@@ -750,6 +761,7 @@ export interface FileRouteTypes {
     | '/motorcycles/$id/components'
     | '/motorcycles/$id/control'
     | '/motorcycles/$id/editar'
+    | '/motorcycles/$id/editar-manutencao'
     | '/motorcycles/$id/health'
     | '/motorcycles/$id/historico-manutencao'
     | '/motorcycles/$id/passport'
@@ -817,6 +829,7 @@ export interface FileRouteTypes {
     | '/_authenticated/motorcycles/$id/components'
     | '/_authenticated/motorcycles/$id/control'
     | '/_authenticated/motorcycles/$id/editar'
+    | '/_authenticated/motorcycles/$id/editar-manutencao'
     | '/_authenticated/motorcycles/$id/health'
     | '/_authenticated/motorcycles/$id/historico-manutencao'
     | '/_authenticated/motorcycles/$id/passport'
@@ -1248,6 +1261,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMotorcyclesIdHealthRouteImport
       parentRoute: typeof AuthenticatedMotorcyclesIdRoute
     }
+    '/_authenticated/motorcycles/$id/editar-manutencao': {
+      id: '/_authenticated/motorcycles/$id/editar-manutencao'
+      path: '/editar-manutencao'
+      fullPath: '/motorcycles/$id/editar-manutencao'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdEditarManutencaoRouteImport
+      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
+    }
     '/_authenticated/motorcycles/$id/editar': {
       id: '/_authenticated/motorcycles/$id/editar'
       path: '/editar'
@@ -1352,6 +1372,7 @@ interface AuthenticatedMotorcyclesIdRouteChildren {
   AuthenticatedMotorcyclesIdComponentsRoute: typeof AuthenticatedMotorcyclesIdComponentsRoute
   AuthenticatedMotorcyclesIdControlRoute: typeof AuthenticatedMotorcyclesIdControlRoute
   AuthenticatedMotorcyclesIdEditarRoute: typeof AuthenticatedMotorcyclesIdEditarRoute
+  AuthenticatedMotorcyclesIdEditarManutencaoRoute: typeof AuthenticatedMotorcyclesIdEditarManutencaoRoute
   AuthenticatedMotorcyclesIdHealthRoute: typeof AuthenticatedMotorcyclesIdHealthRoute
   AuthenticatedMotorcyclesIdHistoricoManutencaoRoute: typeof AuthenticatedMotorcyclesIdHistoricoManutencaoRoute
   AuthenticatedMotorcyclesIdPassportRoute: typeof AuthenticatedMotorcyclesIdPassportRoute
@@ -1374,6 +1395,8 @@ const AuthenticatedMotorcyclesIdRouteChildren: AuthenticatedMotorcyclesIdRouteCh
       AuthenticatedMotorcyclesIdControlRoute,
     AuthenticatedMotorcyclesIdEditarRoute:
       AuthenticatedMotorcyclesIdEditarRoute,
+    AuthenticatedMotorcyclesIdEditarManutencaoRoute:
+      AuthenticatedMotorcyclesIdEditarManutencaoRoute,
     AuthenticatedMotorcyclesIdHealthRoute:
       AuthenticatedMotorcyclesIdHealthRoute,
     AuthenticatedMotorcyclesIdHistoricoManutencaoRoute:

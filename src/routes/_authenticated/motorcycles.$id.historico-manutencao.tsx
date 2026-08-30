@@ -1,11 +1,21 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, Search, Wrench, X, ChevronDown, ChevronUp } from "lucide-react";
+import { toast } from "sonner";
+import { ArrowLeft, Search, Wrench, X, ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { MAINT_CATEGORY_LABEL, type MaintenanceCategory, brl } from "@/lib/trailbook";
-import { EventActionsMenu } from "@/components/EventActionsMenu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id/historico-manutencao")({
   head: () => ({ meta: [{ title: "Histórico de manutenções — TrailBook" }] }),
@@ -29,6 +39,7 @@ function HistoricoManutencao() {
   const qc = useQueryClient();
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const events = useQuery({
     queryKey: ["maint-history", motoId],
@@ -181,14 +192,27 @@ function HistoricoManutencao() {
                         : ""}
                     </p>
                   </button>
-                  {/* Ações (editar / excluir) via componente existente */}
-                  <EventActionsMenu
-                    event={event as any}
-                    onChanged={() => {
-                      qc.invalidateQueries({ queryKey: ["maint-history", motoId] });
-                      setExpandedId(null);
-                    }}
-                  />
+                  {/* Botões Editar e Excluir — visíveis e acessíveis */}
+                  <button
+                    onClick={() =>
+                      navigate({
+                        to: "/motorcycles/$id/editar-manutencao" as never,
+                        params: { id: motoId } as never,
+                        search: { event_id: event.id } as never,
+                      })
+                    }
+                    className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-primary"
+                    title="Editar"
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => setDeletingId(event.id)}
+                    className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-destructive"
+                    title="Excluir"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
                   <button
                     onClick={() => setExpandedId(isExpanded ? null : event.id)}
                     className="shrink-0 text-muted-foreground"
@@ -241,6 +265,49 @@ function HistoricoManutencao() {
           })}
         </div>
       )}
+
+      {/* Dialog de confirmação de exclusão */}
+      <AlertDialog
+        open={!!deletingId}
+        onOpenChange={(o) => {
+          if (!o) setDeletingId(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir manutenção?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação remove o registro e recalcula o histórico, agenda e saúde da moto. Não pode
+              ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (!deletingId) return;
+                try {
+                  const { error } = await supabase.rpc(
+                    "delete_event_and_recompose" as never,
+                    { _event_id: deletingId } as never,
+                  );
+                  if (error) throw error;
+                  await qc.invalidateQueries();
+                  toast.success("Manutenção excluída.");
+                  setExpandedId(null);
+                } catch (err: any) {
+                  toast.error("Não foi possível excluir", { description: err.message });
+                } finally {
+                  setDeletingId(null);
+                }
+              }}
+            >
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
