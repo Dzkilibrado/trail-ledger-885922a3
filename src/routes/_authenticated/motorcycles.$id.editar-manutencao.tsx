@@ -141,22 +141,12 @@ function EditarManutencao() {
       let km_delta: number | null = null;
 
       if (currentHours !== "" && fresh) {
-        const d = parseFloat(currentHours) - Number((fresh as any).hours_total ?? 0);
-        if (d < 0) {
-          toast.error("Horímetro menor que o atual");
-          setSaving(false);
-          return;
-        }
-        hours_delta = d;
+        // Na edição, delta negativo é permitido — o usuário pode estar
+        // corrigindo um horímetro que foi digitado maior do que deveria
+        hours_delta = parseFloat(currentHours) - Number((fresh as any).hours_total ?? 0);
       }
       if (currentKm !== "" && fresh) {
-        const d = parseFloat(currentKm) - Number((fresh as any).km_total ?? 0);
-        if (d < 0) {
-          toast.error("KM menor que o atual");
-          setSaving(false);
-          return;
-        }
-        km_delta = d;
+        km_delta = parseFloat(currentKm) - Number((fresh as any).km_total ?? 0);
       }
 
       // Monta arrays para o RPC
