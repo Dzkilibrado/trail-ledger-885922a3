@@ -73,7 +73,8 @@ type DictEntry = {
 };
 
 const DICT: DictEntry[] = [
-  // Motor
+  // ---- Motor ----
+  // Óleo com contexto de motor explícito
   {
     pattern: /\b(oleo|óleo|oil)\b.*\b(motor|engine|4t|2t)\b/i,
     name: "Óleo do motor",
@@ -88,6 +89,33 @@ const DICT: DictEntry[] = [
   },
   {
     pattern: /\boleo\s*(motor|4t|2t|sintetico|mineral)\b/i,
+    name: "Óleo do motor",
+    category: "engine",
+    itemKind: "technical",
+  },
+  // Óleo com marca conhecida (ex: "OLEO MOTUL 7100 10W60")
+  {
+    pattern:
+      /\b(oleo|óleo|oil)\b.*\b(motul|castrol|shell|mobil|ipiranga|repsol|yamalube|lubrax)\b/i,
+    name: "Óleo do motor",
+    category: "engine",
+    itemKind: "technical",
+  },
+  {
+    pattern: /\b(motul|castrol|shell\s*advance|mobil)\b.*\b(oleo|óleo|oil|10w|15w|20w|5w)\b/i,
+    name: "Óleo do motor",
+    category: "engine",
+    itemKind: "technical",
+  },
+  // Óleo com viscosidade (ex: "OLEO 10W60", "10W40 LITRO")
+  {
+    pattern: /\b(oleo|óleo|oil)\b.*\b\d+w\d+\b/i,
+    name: "Óleo do motor",
+    category: "engine",
+    itemKind: "technical",
+  },
+  {
+    pattern: /\b\d+w\d+\b.*\b(oleo|óleo|oil|litro)\b/i,
     name: "Óleo do motor",
     category: "engine",
     itemKind: "technical",
@@ -112,8 +140,20 @@ const DICT: DictEntry[] = [
     itemKind: "technical",
   },
   { pattern: /\bcarburador\b/i, name: "Carburador", category: "engine", itemKind: "technical" },
-  // Transmissão
-  { pattern: /\bcorrente\b/i, name: "Corrente", category: "transmission", itemKind: "technical" },
+  {
+    pattern: /\bbomba\b.*\b(combustivel|combustível|gasolina|fuel)\b/i,
+    name: "Bomba de combustível",
+    category: "engine",
+    itemKind: "technical",
+  },
+
+  // ---- Transmissão ----
+  {
+    pattern: /\bcorrente\b/i,
+    name: "Corrente de transmissão",
+    category: "transmission",
+    itemKind: "technical",
+  },
   {
     pattern: /\b(kit\s*(corrente|transm|relac)|kit\s*relação|kit\s*relacao)\b/i,
     name: "Kit transmissão",
@@ -128,18 +168,13 @@ const DICT: DictEntry[] = [
     itemKind: "technical",
   },
   {
-    pattern: /\b(guia|deslizador)\b.*corrente\b/i,
+    pattern: /\b(guia|deslizador)\b.*corrente/i,
     name: "Guia de corrente",
     category: "transmission",
     itemKind: "technical",
   },
-  // Freios
-  {
-    pattern: /\bpastilha\b/i,
-    name: "Pastilhas de freio",
-    category: "brakes",
-    itemKind: "technical",
-  },
+
+  // ---- Freios ----
   {
     pattern: /\bpastilha\b.*diant/i,
     name: "Pastilhas dianteiras",
@@ -149,6 +184,12 @@ const DICT: DictEntry[] = [
   {
     pattern: /\bpastilha\b.*tras/i,
     name: "Pastilhas traseiras",
+    category: "brakes",
+    itemKind: "technical",
+  },
+  {
+    pattern: /\bpastilha\b/i,
+    name: "Pastilhas de freio",
     category: "brakes",
     itemKind: "technical",
   },
@@ -164,15 +205,16 @@ const DICT: DictEntry[] = [
     category: "brakes",
     itemKind: "technical",
   },
-  // Suspensão
+
+  // ---- Suspensão ----
   {
     pattern: /\b(oleo|óleo)\b.*garfo/i,
-    name: "Óleo do garfo",
+    name: "Óleo do garfo dianteiro",
     category: "suspension",
     itemKind: "technical",
   },
   {
-    pattern: /\b(vedac|seal|retentor)\b.*garfo/i,
+    pattern: /\b(vedacao|vedação|seal|retentor)\b.*garfo/i,
     name: "Vedações do garfo",
     category: "suspension",
     itemKind: "technical",
@@ -183,17 +225,16 @@ const DICT: DictEntry[] = [
     category: "suspension",
     itemKind: "technical",
   },
-  // Rodas / Pneus — específico antes do genérico
-  // diant. / dianteiro / DIANT / front
+
+  // ---- Rodas / Pneus ----
   {
-    pattern: /\bpneu\b.{0,30}(diant|front|dian\b)/i,
+    pattern: /\bpneu\b.{0,30}(diant|front)\b/i,
     name: "Pneu dianteiro",
     category: "wheels",
     itemKind: "technical",
   },
-  // tras. / traseiro / TRAS / rear
   {
-    pattern: /\bpneu\b.{0,30}(tras|rear|tr\b)/i,
+    pattern: /\bpneu\b.{0,30}(tras|rear)\b/i,
     name: "Pneu traseiro",
     category: "wheels",
     itemKind: "technical",
@@ -206,7 +247,20 @@ const DICT: DictEntry[] = [
     itemKind: "technical",
   },
   { pattern: /\braio\b/i, name: "Raios", category: "wheels", itemKind: "technical" },
-  // Elétrica
+  {
+    pattern: /\bprotetor\b.*aro\b/i,
+    name: "Protetor de aro",
+    category: "wheels",
+    itemKind: "technical",
+  },
+  {
+    pattern: /\bdesempeno\b.*roda\b/i,
+    name: "Desempeno de roda",
+    category: "wheels",
+    itemKind: "labor",
+  },
+
+  // ---- Elétrica ----
   { pattern: /\bbateria\b/i, name: "Bateria", category: "electrical", itemKind: "technical" },
   {
     pattern: /\bcabo\b.*vela/i,
@@ -214,15 +268,17 @@ const DICT: DictEntry[] = [
     category: "electrical",
     itemKind: "technical",
   },
-  // Arrefecimento
+
+  // ---- Arrefecimento ----
   {
-    pattern: /\b(liquido|líquido)\b.*arrefec/i,
+    pattern: /\b(liquido|líquido|coolant)\b.*arrefec/i,
     name: "Líquido de arrefecimento",
     category: "cooling",
     itemKind: "technical",
   },
   { pattern: /\bradiador\b/i, name: "Radiador", category: "cooling", itemKind: "technical" },
-  // Estrutura
+
+  // ---- Estrutura / Outros ----
   {
     pattern: /\bguidão\b|\bguida[oõ]\b/i,
     name: "Guidão",
@@ -242,7 +298,13 @@ const DICT: DictEntry[] = [
     category: "other",
     itemKind: "technical",
   },
-  // Lubrificantes / consumíveis
+  // Fixadores — parafuso, porca, arruela, rebite (comuns em OS de moto)
+  {
+    pattern: /\b(parafuso|porca|arruela|rebite|fixador)\b/i,
+    name: "Fixadores / parafusos",
+    category: "other",
+    itemKind: "technical",
+  },
   { pattern: /\bgraxa\b/i, name: "Graxa / lubrificante", category: "other", itemKind: "technical" },
   {
     pattern: /\b(wp|wd-40|lubrificante|lubri)\b/i,
@@ -251,13 +313,8 @@ const DICT: DictEntry[] = [
     itemKind: "technical",
   },
   { pattern: /\bpresilha\b/i, name: "Presilha", category: "other", itemKind: "technical" },
-  // Mão de obra — padrões comuns em OS brasileira
-  {
-    pattern: /\b(m\.?o\.?b?\.?|ma[oõ]\s*d[ae]\s*obra|mão\s*de\s*obra|mo\s+de\s+obra)\b/i,
-    name: "Mão de obra",
-    category: "other",
-    itemKind: "labor",
-  },
+
+  // ---- Mão de obra (complemento — LABOR_PRIORITY tem prioridade) ----
   {
     pattern: /\b(balancear|balanceamento|alinhar|alinhamento)\b/i,
     name: "Balanceamento / alinhamento",
@@ -265,18 +322,26 @@ const DICT: DictEntry[] = [
     itemKind: "labor",
   },
   {
-    pattern: /\b(instalac|instalação|montar|montagem|desmontar|desmontagem)\b/i,
+    pattern: /\b(instalac|instalação|montagem|desmontagem)\b/i,
     name: "Serviço de instalação",
     category: "other",
     itemKind: "labor",
   },
   {
-    pattern: /\b(revisao|revisão|servico|serviço)\b/i,
-    name: "Serviço / revisão",
+    pattern: /\bdiagnóstico\b|\bdiagnostico\b/i,
+    name: "Diagnóstico",
     category: "other",
     itemKind: "labor",
   },
-  // Despesas
+  { pattern: /\bregulagem\b/i, name: "Regulagem", category: "other", itemKind: "labor" },
+  {
+    pattern: /\b(corrigir|ajustar|ajuste)\b.*\b(peca|peça|rolamento|freio|roda)\b/i,
+    name: "Correção / ajuste",
+    category: "other",
+    itemKind: "labor",
+  },
+
+  // ---- Despesas ----
   {
     pattern: /\b(desconto|abatimento)\b/i,
     name: "Desconto",
