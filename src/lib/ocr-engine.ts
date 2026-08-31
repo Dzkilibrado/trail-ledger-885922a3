@@ -102,20 +102,21 @@ const DICT: DictEntry[] = [
     itemKind: "technical",
   },
   {
-    pattern: /\b(motul|castrol|shell\s*advance|mobil)\b.*\b(oleo|óleo|oil|10w|15w|20w|5w)\b/i,
+    pattern:
+      /\b(motul|castrol|shell\s*advance|mobil)\b.*\b(oleo|óleo|oil|10w|15w|20w|5w|10h|15h)\b/i,
     name: "Óleo do motor",
     category: "engine",
     itemKind: "technical",
   },
   // Óleo com viscosidade (ex: "OLEO 10W60", "10W40 LITRO")
   {
-    pattern: /\b(oleo|óleo|oil)\b.*\b\d+w\d+\b/i,
+    pattern: /\b(oleo|óleo|oil)\b.*\b\d+[wWhH]\d+\b/i,
     name: "Óleo do motor",
     category: "engine",
     itemKind: "technical",
   },
   {
-    pattern: /\b\d+w\d+\b.*\b(oleo|óleo|oil|litro)\b/i,
+    pattern: /\b\d+[wWhH]\d+\b.*\b(oleo|óleo|oil|litro)\b/i,
     name: "Óleo do motor",
     category: "engine",
     itemKind: "technical",
@@ -464,7 +465,8 @@ const LABOR_PRIORITY: { pattern: RegExp; name: string }[] = [
   // Mão de obra — cobre variações reais de OCR:
   // "MAO DE OBRA", "MAODE OBRA", "MA0 DE OBRA" (zero), "MO DE OBRA"
   {
-    pattern: /\b(ma[o0õ]\s*d[ae]\s*obra|ma[o0õ]de\s*obra|mão\s*de\s*obra|m\.o\.)\b/i,
+    pattern:
+      /\b(ma[o0õd]\s*d[ae]\s*obra|ma[o0õd]de\s*obra|mão\s*de\s*obra|m\.o\.|mao\s+d\s+obra)\b/i,
     name: "Mão de obra",
   },
   // "TROCAR PNEU", "TROCA DE CORRENTE" — serviço explícito de troca
