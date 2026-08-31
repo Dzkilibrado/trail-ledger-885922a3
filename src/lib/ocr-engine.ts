@@ -566,17 +566,22 @@ export async function runOcr(file: File, schedules: any[]): Promise<OcrResult> {
     return { quality, items: [], rawText };
   }
 
-  // Processa linha por linha + pares de linhas consecutivas
-  // (Tesseract frequentemente quebra uma linha de OS em duas)
+  // Processa linha por linha.
+  // Pares de linhas consecutivas só são usados quando a confiança do OCR
+  // é baixa (foto com qualidade ruim), pois o Tesseract pode quebrar uma
+  // linha em duas. Para PDF ou arquivo (confiança alta), pares geram
+  // falsos positivos — o texto já vem estruturado corretamente por linha.
   const lines = rawText
     .split(/\n/)
     .map((l) => l.trim())
     .filter((l) => l.length > 3);
 
-  // Gera candidatos: linhas individuais + linhas concatenadas em pares
+  const usePairs = confidence < 70; // só para OCR de baixa qualidade (foto)
   const candidates: string[] = [...lines];
-  for (let i = 0; i < lines.length - 1; i++) {
-    candidates.push(`${lines[i]} ${lines[i + 1]}`);
+  if (usePairs) {
+    for (let i = 0; i < lines.length - 1; i++) {
+      candidates.push(`${lines[i]} ${lines[i + 1]}`);
+    }
   }
 
   const seen = new Set<string>();
@@ -586,11 +591,9 @@ export async function runOcr(file: File, schedules: any[]): Promise<OcrResult> {
     const item = identifyItem(line, schedules);
     if (!item) continue;
 
-    // Chave de deduplicação: usa o rawDescription (texto original da linha)
-    // para permitir múltiplos itens do mesmo tipo com descrição diferente.
-    // Exemplo: 3 linhas de "MAO DE OBRA ..." com serviços distintos
-    // geram 3 itens separados — o usuário preenche o detalhe de cada um.
-    // Só descarta se o rawDescription for idêntico (linha duplicada no OCR).
+    // Deduplicação pelo texto original da linha:
+    // permite múltiplos itens com mesmo nome normalizado (ex: 3 mãos de obra)
+    // desde que o texto original seja diferente.
     const dedupeKey = item.rawDescription.trim().toLowerCase();
     if (seen.has(dedupeKey)) continue;
     seen.add(dedupeKey);
