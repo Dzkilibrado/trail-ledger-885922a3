@@ -492,12 +492,27 @@ function identifyItem(line: string, schedules: any[]): OcrSuggestedItem | null {
   if (stripped.length < 3) return null;
 
   // 3. Verifica labor com prioridade ANTES do dicionário geral
-  //    Evita que "MAO DE OBRA TROCAR PNEU" vire "Pneu"
   for (const labor of LABOR_PRIORITY) {
     if (labor.pattern.test(line)) {
+      // Tenta extrair o texto após "MAO DE OBRA" para usar como nome do serviço
+      // Ex: "004 500002 MAO DE OBRA BOMBA COMBUSTIVEL" → "Mão de obra — Bomba combustível"
+      const afterMatch = line.match(/\bma[o0õd]\s*d[ae]\s*obra\b\s*(.*)/i);
+      let normalizedName = labor.name;
+      if (afterMatch) {
+        const after = afterMatch[1]
+          .replace(/^\s*\d{5,}\s*/g, "") // remove código de 5+ dígitos do início
+          .replace(/\s+\d{2,}[.,]\d{2}.*$/, "") // remove valores monetários do fim
+          .replace(/[^\w\sáàâãéèêíìîóòôõúùûç\/\-]/gi, " ") // remove chars especiais exceto / e -
+          .replace(/\s+/g, " ")
+          .trim();
+        if (after.length >= 3) {
+          const formatted = after.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
+          normalizedName = `Mão de obra — ${formatted}`;
+        }
+      }
       return {
         rawDescription: line.trim(),
-        normalizedName: labor.name,
+        normalizedName,
         category: "other",
         itemKind: "labor",
         confidence: "high",
