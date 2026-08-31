@@ -83,8 +83,10 @@ function HistoricoManutencao() {
   });
 
   async function getDocUrl(storagePath: string, bucket: string): Promise<string | null> {
-    const { data } = supabase.storage.from(bucket).getPublicUrl(storagePath);
-    return data?.publicUrl ?? null;
+    // URL assinada (bucket privado) com validade de 10 minutos
+    const { data, error } = await supabase.storage.from(bucket).createSignedUrl(storagePath, 600);
+    if (error || !data?.signedUrl) return null;
+    return data.signedUrl;
   }
 
   const events = useQuery({
@@ -335,10 +337,10 @@ function HistoricoManutencao() {
         </div>
       )}
 
-      {/* Visor inline de documento — abre na mesma tela sem sair */}
+      {/* Visor inline de documento */}
       {viewingDocUrl && (
         <div className="fixed inset-0 z-50 flex flex-col bg-background">
-          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3 shrink-0">
             <h2 className="font-semibold text-sm">Documento anexado</h2>
             <button
               onClick={() => setViewingDocUrl(null)}
@@ -349,9 +351,31 @@ function HistoricoManutencao() {
           </div>
           <div className="flex-1 overflow-hidden">
             {viewingDocUrl.match(/\.(jpg|jpeg|png|webp|gif)(\?|$)/i) ? (
+              /* Imagem: exibe inline */
               <img src={viewingDocUrl} alt="Documento" className="h-full w-full object-contain" />
             ) : (
-              <iframe src={viewingDocUrl} className="h-full w-full border-0" title="Documento" />
+              /* PDF: iframe pode falhar em mobile — oferece botão de abrir */
+              <div className="flex h-full flex-col">
+                <iframe
+                  src={viewingDocUrl}
+                  className="flex-1 w-full border-0"
+                  title="Documento"
+                  onError={() => {}}
+                />
+                <div className="shrink-0 border-t border-border p-4 space-y-2">
+                  <p className="text-xs text-center text-muted-foreground">
+                    Se o documento não aparecer acima, use o botão abaixo.
+                  </p>
+                  <a
+                    href={viewingDocUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary text-primary-foreground py-3 text-sm font-semibold"
+                  >
+                    Abrir documento
+                  </a>
+                </div>
+              </div>
             )}
           </div>
         </div>
