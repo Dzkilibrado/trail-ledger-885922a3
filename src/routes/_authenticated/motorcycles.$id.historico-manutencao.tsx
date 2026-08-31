@@ -392,8 +392,8 @@ function HistoricoManutencao() {
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir manutenção?</AlertDialogTitle>
             <AlertDialogDescription>
-              Esta ação remove o registro e recalcula o histórico, agenda e saúde da moto. Não pode
-              ser desfeita.
+              Esta ação remove o registro, recalcula o histórico da moto e exclui permanentemente os
+              documentos anexados (NF, OS, cupom). Não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -403,13 +403,44 @@ function HistoricoManutencao() {
               onClick={async () => {
                 if (!deletingId) return;
                 try {
+                  // 1. Busca documentos vinculados ANTES de deletar o evento
+                  const { data: linkedDocs } = await supabase
+                    .from("event_documents" as never)
+                    .select("document_id")
+                    .eq("event_id", deletingId);
+
+                  // 2. Exclui o evento (event_documents é removido em cascata)
                   const { error } = await supabase.rpc(
                     "delete_event_and_recompose" as never,
                     { _event_id: deletingId } as never,
                   );
                   if (error) throw error;
+
+                  // 3. Remove os documentos vinculados do storage e da tabela
+                  if (linkedDocs && (linkedDocs as any[]).length > 0) {
+                    const docIds = (linkedDocs as any[]).map((r) => r.document_id);
+                    const { data: docs } = await supabase
+                      .from("motorcycle_documents" as never)
+                      .select("id, storage_path, bucket")
+                      .in("id", docIds);
+
+                    if (docs && (docs as any[]).length > 0) {
+                      // Remove arquivos do storage
+                      for (const doc of docs as any[]) {
+                        if (doc.storage_path && doc.bucket) {
+                          await supabase.storage.from(doc.bucket).remove([doc.storage_path]);
+                        }
+                      }
+                      // Remove registros da tabela
+                      await supabase
+                        .from("motorcycle_documents" as never)
+                        .delete()
+                        .in("id", docIds);
+                    }
+                  }
+
                   await qc.invalidateQueries();
-                  toast.success("Manutenção excluída.");
+                  toast.success("Manutenção e documentos vinculados excluídos.");
                   setExpandedId(null);
                 } catch (err: any) {
                   toast.error("Não foi possível excluir", { description: err.message });
