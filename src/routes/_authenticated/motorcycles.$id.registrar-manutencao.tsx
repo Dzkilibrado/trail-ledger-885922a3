@@ -14,6 +14,7 @@ import {
   ArrowLeft,
   Map,
   FileText,
+  Paperclip,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -118,6 +119,7 @@ function RegistrarManutencao() {
   const [currentHours, setCurrentHours] = useState("");
   const [currentKm, setCurrentKm] = useState("");
   const [costAdjustment, setCostAdjustment] = useState("");
+  const [attachedDoc, setAttachedDoc] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   // ---- dados da moto ----
@@ -208,6 +210,7 @@ function RegistrarManutencao() {
         workshops={workshops.data ?? []}
         location={location}
         description={description}
+        attachedDoc={attachedDoc}
         onOccurredAt={setOccurredAt}
         onCurrentHours={setCurrentHours}
         onCurrentKm={setCurrentKm}
@@ -215,6 +218,7 @@ function RegistrarManutencao() {
         onWorkshopId={setWorkshopId}
         onLocation={setLocation}
         onDescription={setDescription}
+        onAttachedDoc={setAttachedDoc}
         onBack={() => setStep("items")}
         onNext={() => setStep("confirm")}
       />
@@ -300,6 +304,32 @@ function RegistrarManutencao() {
 
       if (error) throw error;
 
+      // Salva o documento anexado se houver
+      if (attachedDoc && data?.[0]?.event_id) {
+        try {
+          const { uploadFile } = await import("@/lib/trailbook");
+          const { path } = await uploadFile("documents", attachedDoc, uid);
+          await supabase.from("motorcycle_documents" as never).insert({
+            motorcycle_id: motoId,
+            doc_type: "workshop_receipt",
+            bucket: "documents",
+            storage_path: path,
+            file_name: attachedDoc.name,
+            mime_type: attachedDoc.type || null,
+            size_bytes: attachedDoc.size,
+            created_by: uid,
+            version: 1,
+            is_current: true,
+            is_origin_document: false,
+            notes: `Documento da manutenção`,
+          } as never);
+        } catch {
+          toast.warning("Manutenção salva, mas o documento não foi anexado.", {
+            description: "Você pode anexar depois em Documentos.",
+          });
+        }
+      }
+
       await qc.invalidateQueries();
       toast.success("Manutenção registrada com sucesso!");
       navigate({ to: "/motorcycles/$id/control" as never, params: { id: motoId } as never });
@@ -329,29 +359,84 @@ function RegistrarManutencao() {
         <h2 className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
           Itens ({items.length})
         </h2>
-        {items.map((it) => (
-          <div key={it.localId} className="flex items-center justify-between gap-2 text-sm">
-            <div className="min-w-0">
-              <p className="font-medium truncate">{it.service}</p>
-              <p className="text-xs text-muted-foreground">
-                {CATEGORY_ICON[it.category]} {MAINT_CATEGORY_LABEL[it.category]}
-                {it.itemKind === "labor" && " · Mão de obra"}
-                {it.itemKind === "expense" && " · Despesa"}
-              </p>
-            </div>
-            {it.unitValue ? (
-              <span className="shrink-0 text-sm font-semibold">
-                R$ {((it.qty ?? 1) * it.unitValue).toFixed(2)}
-              </span>
-            ) : null}
-          </div>
-        ))}
-        {costTotal > 0 && (
-          <div className="border-t border-border pt-2 flex justify-between text-sm font-bold">
-            <span>Total</span>
-            <span>R$ {costTotal.toFixed(2)}</span>
+
+        {/* Materiais */}
+        {items.filter((it) => it.itemKind !== "labor" && it.itemKind !== "expense").length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+              Materiais / Peças
+            </p>
+            {items
+              .filter((it) => it.itemKind !== "labor" && it.itemKind !== "expense")
+              .map((it) => (
+                <div key={it.localId} className="flex items-center justify-between gap-2 text-sm">
+                  <div className="min-w-0">
+                    <p className="font-medium truncate">{it.service}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {CATEGORY_ICON[it.category]} {MAINT_CATEGORY_LABEL[it.category]}
+                    </p>
+                  </div>
+                  {it.unitValue ? (
+                    <span className="shrink-0 text-sm font-semibold">
+                      R$ {((it.qty ?? 1) * it.unitValue).toFixed(2)}
+                    </span>
+                  ) : null}
+                </div>
+              ))}
           </div>
         )}
+
+        {/* Serviços */}
+        {items.filter((it) => it.itemKind === "labor").length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground/60">
+              Serviços / Mão de obra
+            </p>
+            {items
+              .filter((it) => it.itemKind === "labor")
+              .map((it) => (
+                <div key={it.localId} className="flex items-center justify-between gap-2 text-sm">
+                  <p className="font-medium truncate min-w-0">{it.service}</p>
+                  {it.unitValue ? (
+                    <span className="shrink-0 text-sm font-semibold">
+                      R$ {((it.qty ?? 1) * it.unitValue).toFixed(2)}
+                    </span>
+                  ) : null}
+                </div>
+              ))}
+          </div>
+        )}
+
+        {/* Totais separados */}
+        {costTotal > 0 &&
+          (() => {
+            const totalMat = items
+              .filter((it) => it.itemKind === "technical")
+              .reduce((s, it) => s + (it.qty ?? 1) * (it.unitValue ?? 0), 0);
+            const totalSvc = items
+              .filter((it) => it.itemKind === "labor")
+              .reduce((s, it) => s + (it.qty ?? 1) * (it.unitValue ?? 0), 0);
+            return (
+              <div className="border-t border-border pt-2 space-y-1">
+                {totalMat > 0 && (
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Total materiais</span>
+                    <span>R$ {totalMat.toFixed(2)}</span>
+                  </div>
+                )}
+                {totalSvc > 0 && (
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Total serviços</span>
+                    <span>R$ {totalSvc.toFixed(2)}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-sm font-bold pt-1 border-t border-border">
+                  <span>Total da OS</span>
+                  <span>R$ {costTotal.toFixed(2)}</span>
+                </div>
+              </div>
+            );
+          })()}
       </div>
 
       <div className="rounded-2xl border border-border bg-card p-4 space-y-2 text-sm">
@@ -1112,6 +1197,7 @@ function DetailsStep({
   workshops,
   location,
   description,
+  attachedDoc,
   onOccurredAt,
   onCurrentHours,
   onCurrentKm,
@@ -1119,6 +1205,7 @@ function DetailsStep({
   onWorkshopId,
   onLocation,
   onDescription,
+  onAttachedDoc,
   onBack,
   onNext,
 }: any) {
@@ -1150,14 +1237,14 @@ function DetailsStep({
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Horímetro atual (h)
+              Horímetro (h)
             </Label>
             <Input
               type="number"
               inputMode="decimal"
               value={currentHours}
               onChange={(e) => onCurrentHours(e.target.value)}
-              placeholder={`Atual: ${moto?.hours_total ?? "—"} h`}
+              placeholder={`${moto?.hours_total ?? "0"} h atual`}
             />
           </div>
           <div className="space-y-1.5">
@@ -1169,22 +1256,56 @@ function DetailsStep({
               inputMode="decimal"
               value={currentKm}
               onChange={(e) => onCurrentKm(e.target.value)}
-              placeholder={`Atual: ${moto?.km_total ?? "—"} km`}
+              placeholder={`${moto?.km_total ?? "0"} km atual`}
             />
           </div>
         </div>
 
         {costItems > 0 && (
-          <div className="space-y-1.5">
+          <div className="space-y-2">
             <Label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Ajuste de custo (desconto negativo, acréscimo positivo)
+              Ajuste de valor
             </Label>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  const v = parseFloat(costAdjustment || "0");
+                  if (v > 0) onCostAdjustment(String(-v));
+                  else if (v === 0) onCostAdjustment("-");
+                }}
+                className={cn(
+                  "rounded-xl border py-2 text-xs font-semibold transition",
+                  parseFloat(costAdjustment || "0") < 0
+                    ? "border-destructive/50 bg-destructive/10 text-destructive"
+                    : "border-border text-muted-foreground hover:border-destructive/40",
+                )}
+              >
+                🏷️ Desconto
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const v = parseFloat(costAdjustment || "0");
+                  if (v < 0) onCostAdjustment(String(-v));
+                  else if (v === 0) onCostAdjustment("");
+                }}
+                className={cn(
+                  "rounded-xl border py-2 text-xs font-semibold transition",
+                  parseFloat(costAdjustment || "0") > 0
+                    ? "border-primary/50 bg-primary/10 text-primary"
+                    : "border-border text-muted-foreground hover:border-primary/40",
+                )}
+              >
+                ➕ Taxa / acréscimo
+              </button>
+            </div>
             <Input
               type="number"
               inputMode="decimal"
               value={costAdjustment}
               onChange={(e) => onCostAdjustment(e.target.value)}
-              placeholder="Ex: -50 (desconto) ou 30 (taxa)"
+              placeholder="Valor (use — para desconto)"
             />
             <p className="text-xs text-muted-foreground">
               Itens: R$ {costItems.toFixed(2)} · Total: R$ {costTotal.toFixed(2)}
@@ -1231,6 +1352,54 @@ function DetailsStep({
             placeholder="Detalhes adicionais sobre a manutenção…"
           />
         </div>
+      </div>
+
+      {/* Anexar documento */}
+      <div className="rounded-2xl border border-dashed border-border bg-card/60 p-4 space-y-2">
+        <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+          Documento da OS (opcional)
+        </Label>
+        {attachedDoc ? (
+          <div className="flex items-center justify-between gap-2 rounded-xl border border-border bg-card p-3">
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium">{attachedDoc.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {(attachedDoc.size / 1024).toFixed(0)} KB · será salvo em Documentos
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => onAttachedDoc(null)}
+              className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        ) : (
+          <label className="flex cursor-pointer items-center gap-2 rounded-xl border border-dashed border-border/60 bg-muted/20 p-3 hover:border-primary/40">
+            <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">
+              Anexar NF, OS ou Cupom — PDF, JPG ou PNG
+            </span>
+            <input
+              type="file"
+              accept="application/pdf,image/*"
+              className="sr-only"
+              onChange={(e) => {
+                const f = e.target.files?.[0];
+                if (f && f.size > 20 * 1024 * 1024) {
+                  toast.error("Arquivo muito grande (máx. 20 MB)");
+                  return;
+                }
+                onAttachedDoc(f ?? null);
+                e.target.value = "";
+              }}
+            />
+          </label>
+        )}
+        <p className="text-[11px] text-muted-foreground/70">
+          Diferente da leitura automática, este arquivo fica guardado em Documentos da moto.
+        </p>
       </div>
 
       <Button onClick={onNext} className="w-full btn-glow text-base" size="lg">

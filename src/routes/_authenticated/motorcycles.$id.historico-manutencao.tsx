@@ -2,7 +2,17 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useState, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { ArrowLeft, Search, Wrench, X, ChevronDown, ChevronUp, Pencil, Trash2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Search,
+  Wrench,
+  X,
+  ChevronDown,
+  ChevronUp,
+  Pencil,
+  Trash2,
+  Eye,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { MAINT_CATEGORY_LABEL, type MaintenanceCategory, brl } from "@/lib/trailbook";
@@ -40,6 +50,31 @@ function HistoricoManutencao() {
   const [search, setSearch] = useState("");
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [viewingDocUrl, setViewingDocUrl] = useState<string | null>(null);
+
+  // Documentos vinculados aos eventos (para ícone de visualização)
+  const docs = useQuery({
+    queryKey: ["maint-docs", motoId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("motorcycle_documents" as never)
+        .select("id, storage_path, bucket, file_name, created_at, notes")
+        .eq("motorcycle_id", motoId)
+        .eq("doc_type", "workshop_receipt" as never)
+        .order("created_at", { ascending: false });
+      return (data ?? []) as any[];
+    },
+    staleTime: 60_000,
+  });
+
+  async function openDoc(storagePath: string, bucket: string) {
+    const { data } = supabase.storage.from(bucket).getPublicUrl(storagePath);
+    if (data?.publicUrl) {
+      window.open(data.publicUrl, "_blank");
+    } else {
+      toast.error("Não foi possível abrir o documento.");
+    }
+  }
 
   const events = useQuery({
     queryKey: ["maint-history", motoId],
@@ -192,7 +227,26 @@ function HistoricoManutencao() {
                         : ""}
                     </p>
                   </button>
-                  {/* Botões Editar e Excluir — visíveis e acessíveis */}
+                  {/* Botão ver documento — mostra se há documento próximo da data do evento */}
+                  {docs.data &&
+                    (() => {
+                      const eventDate = new Date(event.occurred_at).getTime();
+                      const relatedDoc = docs.data.find((d: any) => {
+                        const docDate = new Date(d.created_at).getTime();
+                        return Math.abs(docDate - eventDate) < 24 * 60 * 60 * 1000;
+                      });
+                      if (!relatedDoc) return null;
+                      return (
+                        <button
+                          onClick={() => openDoc(relatedDoc.storage_path, relatedDoc.bucket)}
+                          className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-primary"
+                          title="Ver documento"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </button>
+                      );
+                    })()}
+                  {/* Botão Editar */}
                   <button
                     onClick={() =>
                       navigate({
