@@ -585,9 +585,13 @@ export async function runOcr(file: File, schedules: any[]): Promise<OcrResult> {
   for (const line of candidates) {
     const item = identifyItem(line, schedules);
     if (!item) continue;
-    // Deduplicação apenas para itens com MESMO nome E mesma categoria
-    // (evita descartar "Pneu dianteiro" e "Pneu traseiro" por ambos conterem "Pneu")
-    const dedupeKey = `${item.normalizedName}||${item.category}`;
+
+    // Chave de deduplicação: usa o rawDescription (texto original da linha)
+    // para permitir múltiplos itens do mesmo tipo com descrição diferente.
+    // Exemplo: 3 linhas de "MAO DE OBRA ..." com serviços distintos
+    // geram 3 itens separados — o usuário preenche o detalhe de cada um.
+    // Só descarta se o rawDescription for idêntico (linha duplicada no OCR).
+    const dedupeKey = item.rawDescription.trim().toLowerCase();
     if (seen.has(dedupeKey)) continue;
     seen.add(dedupeKey);
     items.push(item);
