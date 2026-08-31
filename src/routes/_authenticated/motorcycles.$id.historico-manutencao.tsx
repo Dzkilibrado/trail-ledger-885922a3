@@ -246,25 +246,21 @@ function HistoricoManutencao() {
                         : ""}
                     </p>
                   </button>
-                  {/* Botão ver documento — mostra se há documento próximo da data do evento */}
-                  {docs.data &&
-                    (() => {
-                      const eventDate = new Date(event.occurred_at).getTime();
-                      const relatedDoc = docs.data.find((d: any) => {
-                        const docDate = new Date(d.created_at).getTime();
-                        return Math.abs(docDate - eventDate) < 24 * 60 * 60 * 1000;
-                      });
-                      if (!relatedDoc) return null;
-                      return (
-                        <button
-                          onClick={() => openDoc(relatedDoc.storage_path, relatedDoc.bucket)}
-                          className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-muted hover:text-primary"
-                          title="Ver documento"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </button>
-                      );
-                    })()}
+                  {/* Ícone de visualização — aparece quando há documento vinculado */}
+                  {eventDocs.data?.[event.id] && (
+                    <button
+                      onClick={async () => {
+                        const doc = eventDocs.data![event.id];
+                        const url = await getDocUrl(doc.storage_path, doc.bucket);
+                        if (url) setViewingDocUrl(url);
+                        else toast.error("Não foi possível carregar o documento.");
+                      }}
+                      className="shrink-0 rounded-lg p-1.5 text-primary hover:bg-primary/10"
+                      title="Ver documento anexado"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </button>
+                  )}
                   {/* Botão Editar */}
                   <button
                     onClick={() =>
