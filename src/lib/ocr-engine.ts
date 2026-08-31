@@ -586,17 +586,28 @@ export async function runOcr(file: File, schedules: any[]): Promise<OcrResult> {
 
   const seen = new Set<string>();
   const items: OcrSuggestedItem[] = [];
+  // Contador por nome normalizado — garante que múltiplos itens do mesmo
+  // tipo (ex: 4 linhas de "Mão de obra") nunca colidam na deduplicação,
+  // mesmo que o Tesseract leia dois deles com texto quase idêntico
+  const nameCount: Record<string, number> = {};
 
   for (const line of candidates) {
     const item = identifyItem(line, schedules);
     if (!item) continue;
 
-    // Deduplicação pelo texto original da linha:
-    // permite múltiplos itens com mesmo nome normalizado (ex: 3 mãos de obra)
-    // desde que o texto original seja diferente.
-    const dedupeKey = item.rawDescription.trim().toLowerCase();
-    if (seen.has(dedupeKey)) continue;
-    seen.add(dedupeKey);
+    // Chave primária: texto original da linha
+    const rawKey = item.rawDescription.trim().toLowerCase();
+
+    // Se já existe esse rawDescription exato, é duplicata real (mesma linha
+    // lida duas vezes pelo OCR) — descarta. Caso contrário, aceita mesmo
+    // que o nome normalizado já exista (ex: 2ª "Mão de obra" é legítima)
+    if (seen.has(rawKey)) continue;
+    seen.add(rawKey);
+
+    // Incrementa o contador para este nome normalizado
+    const n = item.normalizedName;
+    nameCount[n] = (nameCount[n] ?? 0) + 1;
+
     items.push(item);
   }
 
