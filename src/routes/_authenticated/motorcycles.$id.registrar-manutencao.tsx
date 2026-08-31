@@ -304,8 +304,8 @@ function RegistrarManutencao() {
 
       if (error) throw error;
 
-      // Salva o documento anexado se houver
-      if (attachedDoc && data?.[0]?.event_id) {
+      // Salva o documento anexado se houver (independente do event_id)
+      if (attachedDoc) {
         try {
           const { uploadFile } = await import("@/lib/trailbook");
           const { path } = await uploadFile("documents", attachedDoc, uid);
@@ -321,7 +321,7 @@ function RegistrarManutencao() {
             version: 1,
             is_current: true,
             is_origin_document: false,
-            notes: `Documento da manutenção`,
+            notes: "Documento da manutenção",
           } as never);
         } catch {
           toast.warning("Manutenção salva, mas o documento não foi anexado.", {
