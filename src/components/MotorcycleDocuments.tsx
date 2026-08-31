@@ -125,6 +125,8 @@ export function MotorcycleDocuments({
   const [timeline, setTimeline] = useState<Doc | null>(null);
   const [viewingDoc, setViewingDoc] = useState<Doc | null>(null);
   const [tab, setTab] = useState<"active" | "trash">("active");
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [editingDoc, setEditingDoc] = useState<Doc | null>(null);
   const [filterType, setFilterType] = useState<"all" | DocType>("all");
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<"recent" | "old" | "name" | "type">("recent");
@@ -359,247 +361,157 @@ export function MotorcycleDocuments({
   }
 
   return (
-    <section className="space-y-5">
-      {/* Header */}
-      <div className="flex flex-wrap items-baseline justify-between gap-2">
-        <div className="min-w-0">
-          <h2 className="font-display text-lg font-bold flex items-center gap-2">
-            <FileText className="h-5 w-5 text-primary" /> Central de Documentos
-            <HelpTooltip label="Documentos" text={HELP.documentsVault} />
-          </h2>
-          <p className="text-xs text-muted-foreground">
-            Cofre digital privado da motocicleta. Versionado, auditado e protegido — visível apenas
-            para você.
-          </p>
-        </div>
-        <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-          <ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Cofre seguro
-        </div>
+    <section className="space-y-4">
+      {/* Cabeçalho simples */}
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-lg font-bold">Documentos</h2>
+        <span className="text-xs text-muted-foreground">
+          {dashboard.total} ativo{dashboard.total !== 1 ? "s" : ""}
+        </span>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2">
-        <SingleBadgeChip motorcycleId={motorcycleId} badgeId="origin_proven" />
-        <SingleBadgeChip motorcycleId={motorcycleId} badgeId="documentation_complete" />
-      </div>
-
-      {/* Dashboard */}
-      <div className="surface-elevated rounded-2xl p-4 md:p-5">
-        <div className="grid gap-4 md:grid-cols-[1.2fr_1fr]">
-          <div>
-            <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-              Total de documentos
-            </div>
-            <div className="mt-1 flex items-baseline gap-2">
-              <div className="font-display text-4xl font-black">{dashboard.total}</div>
-              <div className="text-xs text-muted-foreground">ativos</div>
-            </div>
-            <div className="mt-4">
-              {usedDocTypes.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-border p-4 text-center text-xs text-muted-foreground">
-                  Nenhum documento anexado ainda. Toque em <strong>Anexar Documentos</strong> para
-                  começar.
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-                  {usedDocTypes.map((t) => {
-                    const c = dashboard.byType[t.value] ?? 0;
-                    return (
-                      <button
-                        key={t.value}
-                        type="button"
-                        onClick={() => {
-                          if (c === 1) {
-                            const only = active.find((d) => d.doc_type === t.value);
-                            if (only) {
-                              setViewingDoc(only);
-                              return;
-                            }
-                          }
-                          setTab("active");
-                          setFilterType(t.value);
-                        }}
-                        className={cn(
-                          "flex min-w-0 items-center gap-1.5 rounded-xl border px-3 py-2 text-left text-xs transition",
-                          "border-primary/40 bg-primary/5 hover:border-primary/70",
-                          filterType === t.value && "ring-1 ring-primary",
-                        )}
-                      >
-                        <span className="shrink-0">{t.icon}</span>
-                        <span className="min-w-0 flex-1 truncate">{t.label}</span>
-                        <span className="flex shrink-0 items-center gap-1 rounded-full bg-primary/15 px-1.5 py-0.5 font-bold text-primary">
-                          <CheckCircle2 className="h-3 w-3" /> {c > 1 ? c : ""}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+      {/* Barra de progresso de completude */}
+      {dashboard.completeness < 100 && (
+        <div className="rounded-2xl border border-border bg-card p-4 space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Documentação completa</span>
+            <span className="font-bold text-primary">{dashboard.completeness}%</span>
           </div>
-
-          <div className="flex flex-col justify-between gap-4 rounded-xl bg-card p-4">
-            <div>
-              <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                Completude da documentação
-              </div>
-              <div className="mt-1 flex items-baseline gap-2">
-                <div className="font-display text-3xl font-black text-primary">
-                  {dashboard.completeness}%
-                </div>
-                <div className="text-xs text-muted-foreground">recomendados</div>
-              </div>
-              <Progress value={dashboard.completeness} className="mt-2 h-2" />
-              <p className="mt-2 text-xs text-muted-foreground">
-                {dashboard.missing.length === 0
-                  ? "Todos os documentos recomendados estão anexados. 🎉"
-                  : `Faltam ${dashboard.missing.length} documento(s) recomendado(s): ${dashboard.missing.map((t) => DOC_TYPE_LABEL[t]).join(", ")}.`}
-              </p>
-            </div>
-            <div className="text-[11px] text-muted-foreground">
-              {dashboard.last ? (
-                <>
-                  Última atualização:{" "}
-                  <strong className="text-foreground">
-                    {formatDate(dashboard.last.updated_at)}
-                  </strong>
-                  {" · "}
-                  {new Date(dashboard.last.updated_at).toLocaleTimeString("pt-BR", {
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                  {" · por "}
-                  {profiles[dashboard.last.created_by ?? ""] ?? "—"}
-                </>
-              ) : (
-                "Nenhum documento anexado."
-              )}
-            </div>
-            <Button className="btn-glow" onClick={() => setUpload({ files: [] })}>
-              <Upload className="h-4 w-4" /> Anexar Documentos
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* Controles */}
-      <div className="flex flex-wrap items-center gap-2">
-        <Tabs value={tab} onValueChange={(v) => setTab(v as "active" | "trash")}>
-          <TabsList>
-            <TabsTrigger value="active">
-              <Inbox className="mr-1 h-3.5 w-3.5" /> Ativos ({active.length})
-            </TabsTrigger>
-            <TabsTrigger value="trash">
-              <Trash2 className="mr-1 h-3.5 w-3.5" /> Lixeira ({trashed.length})
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-
-        <div className="ml-auto flex flex-wrap items-center gap-2">
-          <div className="relative">
-            <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar por nome / nº / loja"
-              className="h-8 w-52 pl-7 text-xs"
+          <div className="h-2 rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-primary transition-all"
+              style={{ width: `${dashboard.completeness}%` }}
             />
           </div>
-          <Select value={filterType} onValueChange={(v) => setFilterType(v as never)}>
-            <SelectTrigger className="h-8 w-40 text-xs">
-              <Filter className="mr-1 h-3.5 w-3.5" />
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos os tipos</SelectItem>
-              {DOC_TYPES.map((t) => (
-                <SelectItem key={t.value} value={t.value}>
-                  {t.icon} {t.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <Select value={sort} onValueChange={(v) => setSort(v as never)}>
-            <SelectTrigger className="h-8 w-36 text-xs">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="recent">Mais recentes</SelectItem>
-              <SelectItem value="old">Mais antigos</SelectItem>
-              <SelectItem value="name">Nome (A→Z)</SelectItem>
-              <SelectItem value="type">Tipo</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setViewMode((m) => (m === "all" ? "grouped" : "all"))}
+          {dashboard.missing.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Faltam: {dashboard.missing.map((t) => DOC_TYPE_LABEL[t]).join(", ")}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Botão principal de anexar */}
+      {uid && (
+        <Button className="w-full btn-glow" onClick={() => setUpload({ files: [] })}>
+          <Upload className="h-4 w-4" /> Anexar documento
+        </Button>
+      )}
+
+      {/* Filtro por tipo — chips simples */}
+      {usedDocTypes.length > 1 && (
+        <div className="flex flex-wrap gap-1.5">
+          <button
+            onClick={() => setFilterType("all")}
+            className={cn(
+              "rounded-full border px-3 py-1 text-xs font-medium transition",
+              filterType === "all"
+                ? "border-primary bg-primary/10 text-primary"
+                : "border-border text-muted-foreground hover:border-primary/40",
+            )}
           >
-            <Layers className="h-4 w-4" /> {viewMode === "all" ? "Agrupar" : "Todos"}
-          </Button>
-        </div>
-      </div>
-
-      {/* Lista */}
-      {filtered.length === 0 ? (
-        <EmptyState tab={tab} onUpload={() => setUpload({ files: [] })} />
-      ) : viewMode === "all" ? (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((d) => (
-            <DocCard
-              key={d.id}
-              doc={d}
-              authorName={profiles[d.created_by ?? ""] ?? "—"}
-              isTrash={tab === "trash"}
-              linkCount={links.data?.[d.id] ?? 0}
-              onView={() => openFile(d)}
-              onDownload={() => openFile(d, true)}
-              onEdit={() => setEditing(d)}
-              onReplace={() => setReplacing(d)}
-              onRemove={() => softDelete(d)}
-              onRestore={() => restoreDoc(d)}
-              onHardDelete={() => hardDelete(d)}
-              onTimeline={() => setTimeline(d)}
-            />
-          ))}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {Object.entries(grouped).map(([type, list]) => (
-            <div key={type} className="rounded-2xl border border-border bg-card/50 p-3">
-              <div className="mb-2 flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-muted-foreground">
-                <span>{DOC_TYPE_ICON[type as DocType]}</span> {DOC_TYPE_LABEL[type as DocType]} (
-                {list.length})
-              </div>
-              <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                {list.map((d) => (
-                  <DocCard
-                    key={d.id}
-                    doc={d}
-                    authorName={profiles[d.created_by ?? ""] ?? "—"}
-                    isTrash={tab === "trash"}
-                    linkCount={links.data?.[d.id] ?? 0}
-                    onView={() => openFile(d)}
-                    onDownload={() => openFile(d, true)}
-                    onEdit={() => setEditing(d)}
-                    onReplace={() => setReplacing(d)}
-                    onRemove={() => softDelete(d)}
-                    onRestore={() => restoreDoc(d)}
-                    onHardDelete={() => hardDelete(d)}
-                    onTimeline={() => setTimeline(d)}
-                  />
-                ))}
-              </div>
-            </div>
+            Todos
+          </button>
+          {usedDocTypes.map((t) => (
+            <button
+              key={t.value}
+              onClick={() => setFilterType(filterType === t.value ? "all" : t.value)}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-medium transition",
+                filterType === t.value
+                  ? "border-primary bg-primary/10 text-primary"
+                  : "border-border text-muted-foreground hover:border-primary/40",
+              )}
+            >
+              {t.icon} {t.label}
+            </button>
           ))}
         </div>
       )}
 
+      {/* Busca */}
+      {active.length > 3 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            type="text"
+            placeholder="Buscar documento…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="h-9 w-full rounded-xl border border-border bg-card pl-9 pr-3 text-sm focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+      )}
+
+      {/* Lista de documentos */}
+      {filtered.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-border p-10 text-center">
+          <FileText className="mx-auto h-8 w-8 text-muted-foreground/40 mb-2" />
+          <p className="text-sm text-muted-foreground">
+            {active.length === 0
+              ? "Nenhum documento ainda. Toque em Anexar documento para começar."
+              : "Nenhum documento encontrado para este filtro."}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {filtered.map((doc) => (
+            <DocCard
+              key={doc.id}
+              doc={doc}
+              authorName={profiles[doc.created_by ?? ""] ?? "—"}
+              isTrash={!!doc.deleted_at}
+              linkCount={links.data?.[doc.id] ?? 0}
+              onView={() => openFile(doc, false)}
+              onDownload={() => openFile(doc, true)}
+              onEdit={() => setEditing(doc)}
+              onReplace={() => setReplacing(doc)}
+              onRemove={() => softDelete(doc)}
+              onRestore={() => restoreDoc(doc)}
+              onHardDelete={() => hardDelete(doc)}
+              onTimeline={() => setTimeline(doc)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Lixeira — colapsável */}
+      {trashed.length > 0 && (
+        <details className="rounded-2xl border border-border bg-card/60">
+          <summary className="cursor-pointer p-4 text-sm font-semibold text-muted-foreground select-none">
+            🗑 Lixeira ({trashed.length})
+          </summary>
+          <div className="space-y-2 px-4 pb-4">
+            {trashed.map((doc) => (
+              <DocCard
+                key={doc.id}
+                doc={doc}
+                authorName={profiles[doc.created_by ?? ""] ?? "—"}
+                isTrash={true}
+                linkCount={0}
+                onView={() => openFile(doc, false)}
+                onDownload={() => openFile(doc, true)}
+                onEdit={() => {}}
+                onReplace={() => {}}
+                onRemove={() => softDelete(doc)}
+                onRestore={() => restoreDoc(doc)}
+                onHardDelete={() => hardDelete(doc)}
+                onTimeline={() => setTimeline(doc)}
+              />
+            ))}
+          </div>
+        </details>
+      )}
+
+      {/* Visor inline */}
+      {viewingDoc && <ViewerModal doc={viewingDoc} onClose={() => setViewingDoc(null)} />}
+
+      {/* Upload dialog — reutiliza o componente existente */}
       {upload && (
         <UploadDialog
           motorcycleId={motorcycleId}
           initialFiles={upload.files}
-          originMode={upload.originMode ?? false}
-          suggestedOriginType={originSuggestedType}
+          originMode={upload.originMode}
           userId={uid}
           onClose={() => setUpload(null)}
           onDone={() => {
@@ -608,6 +520,8 @@ export function MotorcycleDocuments({
           }}
         />
       )}
+
+      {/* Dialogs de edição/substituição/timeline */}
       {editing && (
         <MetadataDialog
           doc={editing}
@@ -636,30 +550,39 @@ export function MotorcycleDocuments({
           onClose={() => setTimeline(null)}
         />
       )}
-
-      <Sheet open={!!viewingDoc} onOpenChange={(v) => !v && setViewingDoc(null)}>
-        <SheetContent
-          side="bottom"
-          className="h-[100dvh] max-h-[100dvh] w-full max-w-full overflow-hidden p-0 sm:max-w-full [&>button.absolute]:hidden"
-        >
-          {viewingDoc && (
-            <TBDocumentViewer
-              doc={{
-                id: viewingDoc.id,
-                bucket: viewingDoc.bucket,
-                storage_path: viewingDoc.storage_path,
-                file_name: viewingDoc.file_name,
-                mime_type: viewingDoc.mime_type,
-                title: viewingDoc.custom_label ?? DOC_TYPE_LABEL[viewingDoc.doc_type],
-              }}
-              backLabel="Voltar aos documentos"
-              onBack={() => setViewingDoc(null)}
-              onClose={() => setViewingDoc(null)}
-            />
-          )}
-        </SheetContent>
-      </Sheet>
     </section>
+  );
+}
+
+function ViewerModal({ doc, onClose }: { doc: any; onClose: () => void }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    supabase.storage
+      .from(doc.bucket)
+      .createSignedUrl(doc.storage_path, 600)
+      .then(({ data }: any) => setUrl(data?.signedUrl ?? null));
+  }, [doc]);
+  const isImage = /\.(jpg|jpeg|png|webp|gif)$/i.test(doc.file_name ?? "");
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col bg-background">
+      <div className="flex items-center justify-between border-b border-border px-4 py-3 shrink-0">
+        <p className="font-semibold text-sm truncate max-w-[70%]">{doc.file_name ?? "Documento"}</p>
+        <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-muted">
+          <X className="h-5 w-5" />
+        </button>
+      </div>
+      <div className="flex-1 overflow-hidden">
+        {!url ? (
+          <div className="flex h-full items-center justify-center">
+            <div className="h-8 w-8 rounded-full border-4 border-primary border-t-transparent animate-spin" />
+          </div>
+        ) : isImage ? (
+          <img src={url} alt="Documento" className="h-full w-full object-contain" />
+        ) : (
+          <iframe src={url} className="h-full w-full border-0" title="Documento" />
+        )}
+      </div>
+    </div>
   );
 }
 

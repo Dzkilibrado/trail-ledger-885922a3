@@ -56,11 +56,21 @@ function HistoricoManutencao() {
   const eventDocs = useQuery({
     queryKey: ["event-docs-map", motoId],
     queryFn: async () => {
+      // Busca apenas events desta moto, depois cruza com event_documents
+      const { data: evts } = await supabase
+        .from("events")
+        .select("id")
+        .eq("motorcycle_id", motoId)
+        .in("type", ["maintenance", "revision"]);
+
+      if (!evts?.length) return {};
+
+      const eventIds = evts.map((e: any) => e.id);
       const { data } = await supabase
         .from("event_documents" as never)
         .select("event_id, motorcycle_documents(id, storage_path, bucket, file_name)")
-        .order("created_at", { ascending: false });
-      // Monta mapa event_id -> documento
+        .in("event_id", eventIds);
+
       const map: Record<string, any> = {};
       for (const row of (data ?? []) as any[]) {
         if (!map[row.event_id] && row.motorcycle_documents) {
@@ -177,6 +187,14 @@ function HistoricoManutencao() {
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-20 rounded-2xl border border-border bg-card animate-pulse" />
           ))}
+        </div>
+      ) : events.isError ? (
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-6 text-center">
+          <p className="text-sm font-medium text-destructive">Erro ao carregar manutenções</p>
+          <p className="text-xs text-muted-foreground mt-1">{(events.error as any)?.message}</p>
+          <Button variant="outline" size="sm" className="mt-3" onClick={() => events.refetch()}>
+            Tentar novamente
+          </Button>
         </div>
       ) : filtered.length === 0 && !search ? (
         <div className="rounded-2xl border border-dashed border-border p-10 text-center">
