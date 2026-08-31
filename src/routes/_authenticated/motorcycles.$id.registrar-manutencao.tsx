@@ -283,7 +283,7 @@ function RegistrarManutencao() {
         template_item_id: it.templateItemId || null,
       }));
 
-      const { error } = await supabase.rpc(
+      const { data: rpcData, error } = await supabase.rpc(
         "update_maintenance_and_recompose" as never,
         {
           _event_id: null,
@@ -304,25 +304,40 @@ function RegistrarManutencao() {
 
       if (error) throw error;
 
-      // Salva o documento anexado se houver (independente do event_id)
+      const savedEventId = (rpcData as any)?.[0]?.event_id ?? null;
+
+      // Salva e vincula o documento ao evento
       if (attachedDoc) {
         try {
           const { uploadFile } = await import("@/lib/trailbook");
           const { path } = await uploadFile("documents", attachedDoc, uid);
-          await supabase.from("motorcycle_documents" as never).insert({
-            motorcycle_id: motoId,
-            doc_type: "workshop_receipt",
-            bucket: "documents",
-            storage_path: path,
-            file_name: attachedDoc.name,
-            mime_type: attachedDoc.type || null,
-            size_bytes: attachedDoc.size,
-            created_by: uid,
-            version: 1,
-            is_current: true,
-            is_origin_document: false,
-            notes: "Documento da manutenção",
-          } as never);
+          const { data: docData } = await supabase
+            .from("motorcycle_documents" as never)
+            .insert({
+              motorcycle_id: motoId,
+              doc_type: "workshop_receipt",
+              bucket: "documents",
+              storage_path: path,
+              file_name: attachedDoc.name,
+              mime_type: attachedDoc.type || null,
+              size_bytes: attachedDoc.size,
+              created_by: uid,
+              version: 1,
+              is_current: true,
+              is_origin_document: false,
+              notes: "Documento da manutenção",
+            } as never)
+            .select("id")
+            .single();
+
+          // Vincula o documento ao evento via event_documents
+          if (savedEventId && (docData as any)?.id) {
+            await supabase.from("event_documents" as never).insert({
+              event_id: savedEventId,
+              document_id: (docData as any).id,
+              created_by: uid,
+            } as never);
+          }
         } catch {
           toast.warning("Manutenção salva, mas o documento não foi anexado.", {
             description: "Você pode anexar depois em Documentos.",

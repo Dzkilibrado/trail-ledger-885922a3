@@ -52,28 +52,29 @@ function HistoricoManutencao() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [viewingDocUrl, setViewingDocUrl] = useState<string | null>(null);
 
-  // Documentos vinculados aos eventos (para ícone de visualização)
-  const docs = useQuery({
-    queryKey: ["maint-docs", motoId],
+  // Documentos vinculados por evento via event_documents
+  const eventDocs = useQuery({
+    queryKey: ["event-docs-map", motoId],
     queryFn: async () => {
       const { data } = await supabase
-        .from("motorcycle_documents" as never)
-        .select("id, storage_path, bucket, file_name, created_at, notes")
-        .eq("motorcycle_id", motoId)
-        .eq("doc_type", "workshop_receipt" as never)
+        .from("event_documents" as never)
+        .select("event_id, motorcycle_documents(id, storage_path, bucket, file_name)")
         .order("created_at", { ascending: false });
-      return (data ?? []) as any[];
+      // Monta mapa event_id -> documento
+      const map: Record<string, any> = {};
+      for (const row of (data ?? []) as any[]) {
+        if (!map[row.event_id] && row.motorcycle_documents) {
+          map[row.event_id] = row.motorcycle_documents;
+        }
+      }
+      return map;
     },
-    staleTime: 60_000,
+    staleTime: 30_000,
   });
 
-  async function openDoc(storagePath: string, bucket: string) {
+  async function getDocUrl(storagePath: string, bucket: string): Promise<string | null> {
     const { data } = supabase.storage.from(bucket).getPublicUrl(storagePath);
-    if (data?.publicUrl) {
-      window.open(data.publicUrl, "_blank");
-    } else {
-      toast.error("Não foi possível abrir o documento.");
-    }
+    return data?.publicUrl ?? null;
   }
 
   const events = useQuery({
@@ -317,6 +318,28 @@ function HistoricoManutencao() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Visor inline de documento — abre na mesma tela sem sair */}
+      {viewingDocUrl && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-background">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <h2 className="font-semibold text-sm">Documento anexado</h2>
+            <button
+              onClick={() => setViewingDocUrl(null)}
+              className="rounded-lg p-1.5 hover:bg-muted"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="flex-1 overflow-hidden">
+            {viewingDocUrl.match(/\.(jpg|jpeg|png|webp|gif)(\?|$)/i) ? (
+              <img src={viewingDocUrl} alt="Documento" className="h-full w-full object-contain" />
+            ) : (
+              <iframe src={viewingDocUrl} className="h-full w-full border-0" title="Documento" />
+            )}
+          </div>
         </div>
       )}
 
