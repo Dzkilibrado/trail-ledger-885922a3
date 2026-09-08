@@ -97,6 +97,7 @@ function NewMotorcycle() {
   const [originDocFile, setOriginDocFile] = useState<File | null>(null);
   const [mode, setMode] = useState<"edit" | "review">("edit");
   const [draft, setDraft] = useState<z.infer<typeof schema> | null>(null);
+  const [hasPriorUse, setHasPriorUse] = useState<boolean | null>(null); // UI-only, não persiste
   const { plan } = usePlan();
   const years = useMemo(() => yearOptions(), []);
 
@@ -154,19 +155,25 @@ function NewMotorcycle() {
       toast.error("Informe o modelo.");
       return;
     }
-    // Nova → força zeros; Usada → exige leitura conforme controle
-    const isNew = condition === "new";
-    const parsedHours = isNew ? 0 : Number(hoursTotal || 0);
-    const parsedKm = isNew ? 0 : Number(kmTotal || 0);
-    if (!isNew) {
+    // Baseline: independente da condition — moto nova pode ter uso anterior
+    // hasPriorUse é controle de UI; o que persiste são hours_initial/km_initial
+    const hasUse = hasPriorUse === true;
+    const parsedHours = hasUse ? Number(hoursTotal || 0) : 0;
+    const parsedKm = hasUse ? Number(kmTotal || 0) : 0;
+
+    if (hasUse) {
       if ((controlType === "hours" || controlType === "both") && !(parsedHours > 0)) {
-        toast.error("Informe o horímetro atual da moto usada.");
+        toast.error("Informe o horímetro atual da moto.");
         return;
       }
       if ((controlType === "km" || controlType === "both") && !(parsedKm > 0)) {
-        toast.error("Informe o KM atual da moto usada.");
+        toast.error("Informe o KM atual da moto.");
         return;
       }
+    }
+    if (hasPriorUse === null && controlType !== "not_informed") {
+      toast.error("Informe se a moto já possui horas ou km de uso.");
+      return;
     }
     const raw = {
       ...Object.fromEntries(fd),
@@ -232,9 +239,14 @@ function NewMotorcycle() {
           incident_declaration: incidentDeclaration,
           use_profile: useProfile,
           use_profile_note: useProfile === "other" ? useProfileNote.trim() || null : null,
-          // Moto nova: revisão marcada como skipped (não precisa revisar plano);
-          // Moto usada: pending — dispara banner de revisão no dashboard da moto.
-          plan_review_status: draft.condition === "new" ? "skipped" : "pending",
+          // plan_review_status: baseline zerada → skipped; baseline com uso → pending.
+          // Válido para qualquer condition; moto nova com 60h já tem uso anterior.
+          // control_type = not_informed → sem baseline confiável → skipped.
+          plan_review_status:
+            draft.control_type === "not_informed" ||
+            (draft.hours_total === 0 && draft.km_total === 0)
+              ? "skipped"
+              : "pending",
           origin_type: originType || null,
           origin_notes: originNotes.trim() || null,
           origin_set_at: originType ? new Date().toISOString() : null,
@@ -752,15 +764,15 @@ function NewMotorcycle() {
         {/* Estado da moto */}
         <div className="rounded-2xl border border-border/60 bg-background/30 p-4 space-y-3">
           <div>
-            <div className="text-sm font-semibold">Estado da moto</div>
+            <div className="text-sm font-semibold">Como você adquiriu esta moto?</div>
             <div className="text-xs text-muted-foreground">
-              Define a leitura inicial e o fluxo de revisão do plano.
+              Esta informação representa a condição da moto quando foi adquirida.
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
             {(
               [
-                { v: "new", label: "Nova (zero km/h)" },
+                { v: "new", label: "Nova" },
                 { v: "used", label: "Usada / Seminova" },
               ] as const
             ).map((o) => (
@@ -774,44 +786,80 @@ function NewMotorcycle() {
               </button>
             ))}
           </div>
-          {condition === "used" ? (
+
+          {/* Pergunta independente: uso acumulado antes do TrailBook */}
+          {controlType !== "not_informed" && (
             <>
-              <div className="grid gap-4 sm:grid-cols-2">
-                {(controlType === "hours" || controlType === "both") && (
-                  <Field label="Horímetro atual (h)" required>
-                    <Input
-                      type="number"
-                      step="0.1"
-                      value={hoursTotal}
-                      onChange={(e) => setHoursTotal(e.target.value)}
-                    />
-                  </Field>
-                )}
-                {(controlType === "km" || controlType === "both") && (
-                  <Field label="KM atual" required>
-                    <Input
-                      type="number"
-                      step="1"
-                      value={kmTotal}
-                      onChange={(e) => setKmTotal(e.target.value)}
-                    />
-                  </Field>
-                )}
+              <div className="text-sm font-semibold mt-2">
+                A moto já possui horas ou quilômetros de uso?
               </div>
-              <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-200">
-                <div className="flex items-start gap-2">
-                  <Info className="mt-0.5 h-4 w-4 shrink-0" />
-                  <span>
-                    Como esta moto já possui uso anterior, revise o estado atual dos itens de
-                    manutenção antes de ativar os alertas.
-                  </span>
+              <div className="text-xs text-muted-foreground">
+                Informe a leitura atual. O TrailBook usará esse valor como ponto inicial para
+                acompanhar as próximas manutenções.
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHasPriorUse(false);
+                    setHoursTotal("0");
+                    setKmTotal("0");
+                  }}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${hasPriorUse === false ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
+                >
+                  Não — sem uso acumulado
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setHasPriorUse(true)}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${hasPriorUse === true ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
+                >
+                  Sim — já possui uso
+                </button>
+              </div>
+
+              {hasPriorUse === true && (
+                <>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    {(controlType === "hours" || controlType === "both") && (
+                      <Field label="Horímetro atual (h)" required>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={hoursTotal}
+                          onChange={(e) => setHoursTotal(e.target.value)}
+                        />
+                      </Field>
+                    )}
+                    {(controlType === "km" || controlType === "both") && (
+                      <Field label="KM atual" required>
+                        <Input
+                          type="number"
+                          step="1"
+                          value={kmTotal}
+                          onChange={(e) => setKmTotal(e.target.value)}
+                        />
+                      </Field>
+                    )}
+                  </div>
+                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-200">
+                    <div className="flex items-start gap-2">
+                      <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                      <span>
+                        Como esta moto já possui uso anterior, revise o estado atual dos itens de
+                        manutenção antes de ativar os alertas.
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {hasPriorUse === false && (
+                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-emerald-200">
+                  Horímetro e KM começam em zero. O plano de manutenção inicia zerado.
                 </div>
-              </div>
+              )}
             </>
-          ) : (
-            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-emerald-200">
-              Horímetro e KM começam em zero. O plano de manutenção inicia zerado.
-            </div>
           )}
         </div>
 

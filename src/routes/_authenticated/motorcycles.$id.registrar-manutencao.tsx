@@ -15,6 +15,7 @@ import {
   Map,
   FileText,
   Paperclip,
+  ListChecks,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -523,9 +524,9 @@ function ItemsStep({
   onNext: () => void;
   onBack: () => void;
 }) {
-  const [mode, setMode] = useState<"menu" | "search" | "catalog" | "map" | "ocr" | "addItem">(
-    "menu",
-  );
+  const [mode, setMode] = useState<
+    "menu" | "search" | "catalog" | "map" | "ocr" | "addItem" | "generalMaint"
+  >("menu");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<MaintenanceCategory | null>(null);
   const [editingItem, setEditingItem] = useState<Partial<MaintenanceItem> | null>(null);
@@ -538,6 +539,7 @@ function ItemsStep({
   const modCatalogo = useModule("manut_catalogo");
   const modMapa = useModule("manut_mapa");
   const modOcr = useModule("manut_ocr");
+  const modGeral = useModule("manut_geral");
 
   const isActive = (s: string) => s === "active";
   const isMaint = (s: string) => s === "maintenance";
@@ -629,125 +631,141 @@ function ItemsStep({
           </p>
         )}
 
-        {/* Opções de entrada — controladas pelo painel admin */}
-        <div className="grid grid-cols-2 gap-2">
+        {/* Grid simétrico 2×N — todos os cards com mesmo componente e dimensões */}
+        <div className="grid grid-cols-2 gap-3">
+          {/* Buscar */}
           {modBusca.status !== "disabled" && (
-            <button
+            <MenuCard
+              icon={<Search className="h-6 w-6" />}
+              title="Buscar"
+              desc={isMaint(modBusca.status) ? "Em manutenção" : "Encontre rapidamente um item"}
+              disabled={isMaint(modBusca.status)}
               onClick={() => {
                 if (!isMaint(modBusca.status)) {
                   setMode("search");
                   setTimeout(() => searchRef.current?.focus(), 100);
                 }
               }}
-              disabled={isMaint(modBusca.status)}
-              className={cn(
-                "flex flex-col items-center gap-1.5 rounded-2xl border bg-card py-4 transition",
-                isActive(modBusca.status)
-                  ? "border-border hover:border-primary/50"
-                  : "border-amber-500/30 opacity-60",
-              )}
-            >
-              <Search className="h-5 w-5 text-primary" />
-              <span className="text-xs font-semibold">Buscar</span>
-              <span className="text-[10px] text-muted-foreground text-center px-2">
-                {isMaint(modBusca.status) ? "Em manutenção" : "pneu, óleo, corrente…"}
-              </span>
-            </button>
+            />
           )}
+
+          {/* Catálogo */}
           {modCatalogo.status !== "disabled" && (
-            <button
+            <MenuCard
+              icon={<Wrench className="h-6 w-6" />}
+              title="Catálogo"
+              desc={isMaint(modCatalogo.status) ? "Em manutenção" : "Navegue pelas categorias"}
+              disabled={isMaint(modCatalogo.status)}
               onClick={() => {
                 if (!isMaint(modCatalogo.status)) setMode("catalog");
               }}
-              disabled={isMaint(modCatalogo.status)}
-              className={cn(
-                "flex flex-col items-center gap-1.5 rounded-2xl border bg-card py-4 transition",
-                isActive(modCatalogo.status)
-                  ? "border-border hover:border-primary/50"
-                  : "border-amber-500/30 opacity-60",
-              )}
-            >
-              <Wrench className="h-5 w-5 text-primary" />
-              <span className="text-xs font-semibold">Catálogo</span>
-              <span className="text-[10px] text-muted-foreground text-center px-2">
-                {isMaint(modCatalogo.status) ? "Em manutenção" : "por categoria"}
-              </span>
-            </button>
+            />
           )}
+
+          {/* Mapa da moto */}
           {modMapa.status !== "disabled" && (
-            <button
+            <MenuCard
+              icon={<Map className="h-6 w-6" />}
+              title="Mapa da moto"
+              desc={isMaint(modMapa.status) ? "Em manutenção" : "Selecione pela região"}
+              disabled={isMaint(modMapa.status)}
               onClick={() => {
                 if (!isMaint(modMapa.status)) setMode("map");
               }}
-              disabled={isMaint(modMapa.status)}
-              className={cn(
-                "flex flex-col items-center gap-1.5 rounded-2xl border bg-card py-4 transition",
-                isActive(modMapa.status)
-                  ? "border-border hover:border-primary/50"
-                  : "border-amber-500/30 opacity-60",
-              )}
-            >
-              <Map className="h-5 w-5 text-primary" />
-              <span className="text-xs font-semibold">Mapa da moto</span>
-              <span className="text-[10px] text-muted-foreground text-center px-2">
-                {isMaint(modMapa.status) ? "Em manutenção" : "toque na região"}
-              </span>
-            </button>
+            />
           )}
+
+          {/* Ler documento */}
           {modOcr.status !== "disabled" && (
-            <button
+            <MenuCard
+              icon={<FileText className="h-6 w-6" />}
+              title="Ler documento"
+              desc={isMaint(modOcr.status) ? "Em manutenção" : "NF, OS ou cupom"}
+              disabled={isMaint(modOcr.status)}
               onClick={() => {
                 if (!isMaint(modOcr.status)) setMode("ocr");
               }}
-              disabled={isMaint(modOcr.status)}
-              className={cn(
-                "flex flex-col items-center gap-1.5 rounded-2xl border bg-card py-4 transition",
-                isActive(modOcr.status)
-                  ? "border-border hover:border-primary/50"
-                  : "border-amber-500/30 opacity-60",
-              )}
-            >
-              <FileText className="h-5 w-5 text-primary" />
-              <span className="text-xs font-semibold">Ler documento</span>
-              <span className="text-[10px] text-muted-foreground text-center px-2">
-                {isMaint(modOcr.status) ? "Em manutenção" : "NF, OS, cupom"}
-              </span>
-            </button>
+            />
           )}
+
+          {/* Manutenção Geral */}
+          {modGeral.status !== "disabled" && (
+            <MenuCard
+              icon={<ListChecks className="h-6 w-6" />}
+              title="Manutenção Geral"
+              desc={
+                isMaint(modGeral.status) ? "Em manutenção" : "Registrar vários itens de uma vez"
+              }
+              disabled={isMaint(modGeral.status)}
+              onClick={() => {
+                if (!isMaint(modGeral.status)) setMode("generalMaint");
+              }}
+            />
+          )}
+
+          {/* Item livre */}
+          <MenuCard
+            icon={<Plus className="h-6 w-6" />}
+            title="Item livre"
+            desc="Adicionar outro serviço ou despesa"
+            onClick={() => {
+              setEditingItem({});
+              setMode("addItem");
+            }}
+            dashed
+          />
+
+          {/* Histórico — quando ímpar, centralizado na última linha */}
+          <div className="col-span-2 flex justify-center">
+            <button
+              onClick={() =>
+                navigate({
+                  to: "/motorcycles/$id/historico-manutencao" as never,
+                  params: { id: motoId } as never,
+                })
+              }
+              className="flex w-full max-w-[calc(50%-6px)] items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/50 active:scale-[0.98]"
+            >
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
+                <Clock className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-semibold">Histórico</p>
+                <p className="text-[10px] text-muted-foreground">
+                  Consultar manutenções anteriores
+                </p>
+              </div>
+            </button>
+          </div>
         </div>
-
-        <button
-          onClick={() => {
-            setEditingItem({});
-            setMode("addItem");
-          }}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border bg-card/60 py-3 text-sm text-muted-foreground hover:border-primary/50 transition"
-        >
-          <Plus className="h-4 w-4" /> Item livre / outro
-        </button>
-
-        {/* Card de Histórico de Manutenção — mesmo nível das outras opções */}
-        <button
-          onClick={() =>
-            navigate({
-              to: "/motorcycles/$id/historico-manutencao" as never,
-              params: { id: motoId } as never,
-            })
-          }
-          className="flex w-full items-center gap-4 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/50 active:scale-[0.98]"
-        >
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-            <Clock className="h-5 w-5 text-primary" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="font-semibold">Histórico de Manutenção</p>
-            <p className="text-xs text-muted-foreground">
-              Consultar, editar e excluir manutenções anteriores
-            </p>
-          </div>
-          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
-        </button>
       </div>
+    );
+  }
+
+  // ---- manutenção geral ----
+  if (mode === "generalMaint") {
+    return (
+      <GeneralMaintStep
+        motoId={motoId}
+        motoName={motoName}
+        schedules={schedules}
+        onBack={() => setMode("menu")}
+        onConfirm={(selectedItems) => {
+          // Itens selecionados entram no array normal — mesmo fluxo existente
+          const newItems = selectedItems.map((s) => ({
+            localId: crypto.randomUUID(),
+            category: s.category as MaintenanceCategory,
+            service: s.name,
+            itemKind: "technical" as ItemKind,
+            scheduleId: s.id,
+            templateItemId: s.template_item_id ?? undefined,
+            qty: undefined,
+            unitValue: undefined,
+          }));
+          onItemsChange([...items, ...newItems]);
+          setMode("menu");
+        }}
+      />
     );
   }
 
@@ -1421,6 +1439,228 @@ function DetailsStep({
         Revisar e confirmar
         <ChevronRight className="h-4 w-4" />
       </Button>
+    </div>
+  );
+}
+
+// ============================================================
+// MenuCard — card uniforme para o grid do menu de manutenção
+// ============================================================
+function MenuCard({
+  icon,
+  title,
+  desc,
+  onClick,
+  disabled = false,
+  dashed = false,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  desc: string;
+  onClick: () => void;
+  disabled?: boolean;
+  dashed?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className={cn(
+        "flex h-28 w-full flex-col items-center justify-center gap-1.5 rounded-2xl border bg-card px-3 py-4 transition active:scale-[0.97]",
+        dashed
+          ? "border-dashed border-border/60 bg-card/60 text-muted-foreground hover:border-primary/40"
+          : disabled
+            ? "border-amber-500/30 opacity-60 cursor-not-allowed"
+            : "border-border hover:border-primary/50",
+      )}
+    >
+      <span className={cn("", disabled ? "text-muted-foreground" : "text-primary")}>{icon}</span>
+      <span className="text-xs font-semibold leading-tight">{title}</span>
+      <span className="text-[10px] text-muted-foreground text-center leading-tight px-1">
+        {desc}
+      </span>
+    </button>
+  );
+}
+
+// ============================================================
+// GeneralMaintStep — checklist de schedules para Manutenção Geral
+// ============================================================
+function GeneralMaintStep({
+  motoId,
+  motoName,
+  schedules,
+  onBack,
+  onConfirm,
+}: {
+  motoId: string;
+  motoName: string;
+  schedules: any[];
+  onBack: () => void;
+  onConfirm: (items: any[]) => void;
+}) {
+  // Filtrar schedules válidos: excluir not_applicable e ignored
+  // (active, snoozed, done, no_info são incluídos — usuário decide o que foi feito)
+  const eligible = useMemo(
+    () =>
+      schedules.filter(
+        (s: any) => s.status !== "not_applicable" && s.status !== "ignored" && !s.hidden,
+      ),
+    [schedules],
+  );
+
+  // Agrupar por categoria
+  const grouped = useMemo(() => {
+    const map: Record<string, any[]> = {};
+    for (const s of eligible) {
+      const cat = s.category ?? "other";
+      if (!map[cat]) map[cat] = [];
+      map[cat].push(s);
+    }
+    return map;
+  }, [eligible]);
+
+  // Todos selecionados por padrão
+  const [selected, setSelected] = useState<Set<string>>(
+    () => new Set(eligible.map((s: any) => s.id)),
+  );
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const selectedItems = eligible.filter((s: any) => selected.has(s.id));
+  const canContinue = selectedItems.length > 0;
+
+  const catLabels: Record<string, string> = {
+    engine: "Motor",
+    transmission: "Transmissão",
+    brakes: "Freios",
+    suspension: "Suspensão",
+    wheels: "Rodas",
+    electrical: "Elétrica",
+    cooling: "Arrefecimento",
+    other: "Outros",
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-xl space-y-4 pb-24">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <button onClick={onBack} className="rounded-lg p-1.5 hover:bg-muted">
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <div className="flex-1 min-w-0">
+          <h1 className="font-display text-xl font-bold">Manutenção Geral</h1>
+          <p className="text-sm text-muted-foreground">{motoName}</p>
+        </div>
+      </div>
+
+      {/* Aviso semântico — item marcado = manutenção realizada */}
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground space-y-1">
+        <p className="font-semibold text-foreground">
+          Os itens marcados serão registrados como manutenção realizada nesta data.
+        </p>
+        <p>
+          Desmarque os componentes que <strong>não</strong> fizeram parte desta manutenção.
+        </p>
+      </div>
+
+      {/* Selecionar / limpar todos */}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={() => setSelected(new Set(eligible.map((s: any) => s.id)))}
+          className="flex-1 rounded-xl border border-border bg-card py-2 text-xs font-medium text-muted-foreground hover:border-primary/40 transition"
+        >
+          Selecionar todos
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelected(new Set())}
+          className="flex-1 rounded-xl border border-border bg-card py-2 text-xs font-medium text-muted-foreground hover:border-destructive/40 transition"
+        >
+          Limpar todos
+        </button>
+      </div>
+
+      {/* Checklist por categoria */}
+      {Object.entries(grouped).map(([cat, items]) => (
+        <div key={cat} className="space-y-1">
+          <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground px-1">
+            {catLabels[cat] ?? cat}
+          </p>
+          {items.map((s: any) => {
+            const checked = selected.has(s.id);
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => toggle(s.id)}
+                className={cn(
+                  "flex w-full items-center gap-3 rounded-xl border px-4 py-3 text-left transition active:scale-[0.98]",
+                  checked
+                    ? "border-primary bg-primary/10"
+                    : "border-border bg-card hover:border-primary/40",
+                )}
+              >
+                <span
+                  className={cn(
+                    "flex h-5 w-5 shrink-0 items-center justify-center rounded border",
+                    checked
+                      ? "border-primary bg-primary text-primary-foreground"
+                      : "border-muted-foreground/40",
+                  )}
+                >
+                  {checked && <Check className="h-3 w-3" />}
+                </span>
+                <span
+                  className={cn(
+                    "text-sm font-medium",
+                    checked ? "text-foreground" : "text-muted-foreground",
+                  )}
+                >
+                  {s.name}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      ))}
+
+      {eligible.length === 0 && (
+        <div className="rounded-2xl border border-dashed border-border p-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            Nenhum componente ativo encontrado no plano desta moto.
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Configure o plano de manutenção antes de usar esta opção.
+          </p>
+        </div>
+      )}
+
+      {/* Botão continuar */}
+      {canContinue && (
+        <Button
+          onClick={() => onConfirm(selectedItems)}
+          className="w-full btn-glow text-base"
+          size="lg"
+        >
+          Continuar com {selectedItems.length} item{selectedItems.length > 1 ? "s" : ""}
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+      )}
+      {!canContinue && eligible.length > 0 && (
+        <p className="text-center text-xs text-muted-foreground">
+          Selecione ao menos um componente para continuar.
+        </p>
+      )}
     </div>
   );
 }
