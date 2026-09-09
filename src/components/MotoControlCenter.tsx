@@ -364,20 +364,20 @@ export function MotoControlCenter({
             )}
             {isOwner &&
               (m as any).condition === "used" &&
-              (m as any).plan_review_status === "pending" &&
+              (m as any).plan_review_status === "reviewed" &&
               !isArchived && (
-                <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-3 text-xs">
+                <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-xs">
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
-                      <div className="font-semibold text-amber-200">
-                        Você comprou uma moto usada?
+                      <div className="font-semibold text-foreground">
+                        Revisão inicial — opcional
                       </div>
-                      <p className="mt-1 text-amber-100/80">
-                        Vamos entender rapidamente o estado de cada componente. Uma pergunta por
-                        vez.
+                      <p className="mt-1 text-muted-foreground">
+                        Para motos usadas, é recomendável registrar o estado inicial de cada
+                        componente. Isso melhora a precisão dos alertas de manutenção.
                       </p>
                     </div>
-                    <Button size="sm" className="btn-glow" onClick={() => setReviewOpen(true)}>
+                    <Button size="sm" variant="outline" onClick={() => setReviewOpen(true)}>
                       <Wand2 className="h-4 w-4" /> Iniciar revisão
                     </Button>
                   </div>

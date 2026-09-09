@@ -14,7 +14,11 @@ export const USE_PROFILES: { value: UseProfile; label: string; hint: string }[] 
   { value: "severe", label: "Uso severo", hint: "Trilhas técnicas, longas, sem pausa." },
   { value: "motocross", label: "Motocross", hint: "Pista, saltos e alta rotação." },
   { value: "competition", label: "Competição", hint: "Provas, treinos intensos." },
-  { value: "sand_mud", label: "Areia / lama intensa", hint: "Alto desgaste de transmissão e freios." },
+  {
+    value: "sand_mud",
+    label: "Areia / lama intensa",
+    hint: "Alto desgaste de transmissão e freios.",
+  },
   { value: "other", label: "Outro", hint: "Descreva no campo ao lado." },
 ];
 
@@ -47,7 +51,7 @@ export const SEVERITY_LABEL: Record<PlanSeverity, string> = {
 
 export interface ProposedSchedule {
   key: string;
-  name: string;               // "Corrente — Lubrificar"
+  name: string; // "Corrente — Lubrificar"
   category: PlanItem["category"];
   action: PlanAction;
   severity: PlanSeverity;
@@ -107,4 +111,59 @@ export function proposeSchedules(items: PlanItem[], profile: UseProfile): Propos
       sort_order: it.sort_order,
     };
   });
+}
+// ============================================================
+// applyPlan — fonte única de verdade para gravar o plano
+// Usada pelo wizard de cadastro E pela rota /plan existente.
+// NÃO altera fórmulas, templates, multiplicadores ou RPCs.
+// ============================================================
+export async function applyPlan(
+  supabase: import("@supabase/supabase-js").SupabaseClient,
+  motorcycleId: string,
+  rows: ProposedSchedule[],
+  profile: string,
+  profileNote: string,
+): Promise<void> {
+  const active = rows.filter((r) => r.keep && r.item_name.trim());
+  if (active.length === 0) throw new Error("Nenhum item selecionado para o plano.");
+  for (const r of active) {
+    if (!r.interval_hours && !r.interval_km && !r.interval_days) {
+      throw new Error(`Informe pelo menos um intervalo para "${r.item_name}".`);
+    }
+  }
+
+  // 1. Grava perfil de uso e marca plano como revisado
+  const { error: motoErr } = await supabase
+    .from("motorcycles")
+    .update({
+      use_profile: profile,
+      use_profile_note: profile === "other" ? profileNote.trim() || null : null,
+      plan_review_status: "reviewed",
+    } as never)
+    .eq("id", motorcycleId);
+  if (motoErr) throw motoErr;
+
+  // 2. Verifica schedules já existentes para evitar duplicidade em retentativa
+  const { data: existing } = await supabase
+    .from("maintenance_schedules")
+    .select("id")
+    .eq("motorcycle_id", motorcycleId)
+    .limit(1);
+  if (existing && existing.length > 0) {
+    // Plano já foi criado (retentativa segura) — não duplica
+    return;
+  }
+
+  // 3. Insere os schedules
+  const payload = active.map((r) => ({
+    motorcycle_id: motorcycleId,
+    name: r.name,
+    category: r.category,
+    interval_hours: r.interval_hours,
+    interval_km: r.interval_km,
+    interval_days: r.interval_days,
+    template_item_id: r.key.startsWith("custom-") ? null : r.key,
+  }));
+  const { error } = await supabase.from("maintenance_schedules").insert(payload as never);
+  if (error) throw error;
 }

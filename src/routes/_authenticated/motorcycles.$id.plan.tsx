@@ -24,6 +24,7 @@ import {
   USE_PROFILES,
   ACTION_LABEL,
   SEVERITY_LABEL,
+  applyPlan,
   type ProposedSchedule,
   type UseProfile,
   type PlanAction,
@@ -128,40 +129,9 @@ function PlanWizard() {
 
   async function confirmPlan() {
     if (!moto.data) return;
-    const active = rows.filter((r) => r.keep && r.item_name.trim());
-    if (active.length === 0) return toast.error("Nenhum item selecionado.");
-    for (const r of active) {
-      if (!r.interval_hours && !r.interval_km && !r.interval_days) {
-        return toast.error(`Informe pelo menos um intervalo para "${r.item_name}".`);
-      }
-    }
     setSaving(true);
     try {
-      // Grava perfil de uso na moto
-      const { error: motoErr } = await supabase
-        .from("motorcycles")
-        .update({
-          use_profile: profile,
-          use_profile_note: profile === "other" ? profileNote.trim() || null : null,
-          // Após confirmar o plano, a revisão passa a "reviewed" — silencia o banner.
-          plan_review_status: "reviewed",
-        } as never)
-        .eq("id", id);
-      if (motoErr) throw motoErr;
-
-      const payload = active.map((r) => ({
-        motorcycle_id: id,
-        name: r.name,
-        category: r.category,
-        interval_hours: r.interval_hours,
-        interval_km: r.interval_km,
-        interval_days: r.interval_days,
-        // Vínculo estruturado ao item do catálogo. Rows customizadas
-        // (key === "custom-*") não têm origem no template.
-        template_item_id: r.key.startsWith("custom-") ? null : r.key,
-      }));
-      const { error } = await supabase.from("maintenance_schedules").insert(payload as never);
-      if (error) throw error;
+      await applyPlan(supabase, id, rows, profile, profileNote);
       toast.success("Plano de manutenção aplicado.");
       qc.invalidateQueries({ queryKey: ["motorcycle", id] });
       nav({ to: "/motorcycles/$id", params: { id } });
@@ -396,9 +366,9 @@ function PlanWizard() {
 
 // ============================================================
 // PlanItemRow — item compacto dentro do accordion
-// Apresenta: componente + ação + intervalo + edição inline
+// Exportado para reutilização no wizard de cadastro
 // ============================================================
-function PlanItemRow({
+export function PlanItemRow({
   row,
   globalIndex,
   intervalSummary,

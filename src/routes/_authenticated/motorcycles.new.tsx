@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { BRANDS, uploadFile } from "@/lib/trailbook";
+import { BRANDS, uploadFile, MAINT_CATEGORY_LABEL } from "@/lib/trailbook";
 import {
   MODELS_BY_BRAND,
   DISPLACEMENTS,
@@ -28,14 +28,39 @@ import {
   useCatalogEngines,
   useCatalogModelDefaults,
 } from "@/lib/motorcycle-catalog";
-import { USE_PROFILES, type UseProfile } from "@/lib/plan-templates";
+
+import {
+  USE_PROFILES,
+  fetchDefaultTemplate,
+  fetchTemplateItems,
+  proposeSchedules,
+  applyPlan,
+  ACTION_LABEL,
+  SEVERITY_LABEL,
+  type UseProfile,
+  type ProposedSchedule,
+  type PlanAction,
+  type PlanSeverity,
+} from "@/lib/plan-templates";
 import { PhotoPicker } from "@/components/PhotoPicker";
 import { PageHeader } from "@/components/PageHeader";
 import { toast } from "sonner";
 import { usePlan } from "@/hooks/usePlan";
 import { canCreateMotorcycle } from "@/lib/plans";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Crown, ShieldAlert, CheckCircle2, Pencil, Info, Paperclip, X } from "lucide-react";
+import {
+  Crown,
+  ShieldAlert,
+  CheckCircle2,
+  Pencil,
+  Info,
+  Paperclip,
+  X,
+  ChevronDown,
+  Plus,
+  Trash2,
+} from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { ORIGIN_OPTIONS, type OriginType } from "@/lib/motorcycle-origin";
 import { DOC_TYPE_LABEL } from "@/lib/motorcycle-documents";
 import {
@@ -363,178 +388,259 @@ function NewMotorcycle() {
   const finalModelLabel = model === OTHER ? customModel : model;
   const finalDispLabel = displacement === OTHER ? customDisplacement : displacement;
 
-  if (mode === "review" && draft) {
+  // ─── WIZARD STATE ────────────────────────────────────────────────────────
+  const [wizStep, setWizStep] = useState<1 | 2 | 3 | 4>(1);
+  const [wizPlanMode, setWizPlanMode] = useState<"suggested" | "custom">("suggested");
+  const [wizPlanRows, setWizPlanRows] = useState<ProposedSchedule[]>([]);
+  const [wizPlanLoaded, setWizPlanLoaded] = useState(false);
+  const [wizDocAnswer, setWizDocAnswer] = useState<"yes" | "no" | null>(null);
+  const [wizDocUpload, setWizDocUpload] = useState<boolean | null>(null);
+  const [planProfile, setPlanProfile] = useState<UseProfile>("normal");
+  const [planProfileNote, setPlanProfileNote] = useState("");
+  const [planOpenCats, setPlanOpenCats] = useState<Set<string>>(() => new Set());
+  const [saving, setSaving] = useState(false);
+  const [savedMotoId, setSavedMotoId] = useState<string | null>(null);
+  const [successScreen, setSuccessScreen] = useState(false);
+  const [planError, setPlanError] = useState<string | null>(null);
+  const [docUploadError, setDocUploadError] = useState(false);
+
+  const STEPS = ["Sua moto", "Uso", "Plano", "Revisar"] as const;
+
+  // Carrega plano sugerido ao entrar no step 3
+  useEffect(() => {
+    if (wizStep !== 3 || wizPlanLoaded) return;
+    (async () => {
+      const tmpl = await fetchDefaultTemplate(brand || undefined, model || undefined);
+      if (!tmpl) {
+        setWizPlanLoaded(true);
+        return;
+      }
+      const items = await fetchTemplateItems(tmpl.id);
+      setWizPlanRows(proposeSchedules(items, planProfile));
+      setWizPlanLoaded(true);
+    })();
+  }, [wizStep]);
+
+  function reapplyWizProfile(p: UseProfile) {
+    setPlanProfile(p);
+    (async () => {
+      const tmpl = await fetchDefaultTemplate(brand || undefined, model || undefined);
+      if (!tmpl) return;
+      const items = await fetchTemplateItems(tmpl.id);
+      setWizPlanRows(proposeSchedules(items, p));
+    })();
+  }
+
+  function updatePlanRow(i: number, patch: Partial<ProposedSchedule>) {
+    setWizPlanRows((prev) => prev.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
+  }
+  function removePlanRow(i: number) {
+    setWizPlanRows((prev) => prev.filter((_, idx) => idx !== i));
+  }
+  const activeCount = wizPlanRows.filter((r) => r.keep).length;
+
+  async function finalizarCadastro() {
+    if (saving) return;
+    setSaving(true);
+    setPlanError(null);
+    setDocUploadError(false);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const uid = user?.id ?? "";
+      let motoId = savedMotoId;
+
+      // 1. Cria a moto (apenas se ainda não foi criada)
+      if (!motoId) {
+        if (blocked) {
+          toast.error("Limite do plano atingido.");
+          setSaving(false);
+          return;
+        }
+        const hasUse = hasPriorUse === true;
+        const parsedHours = hasUse ? Number(hoursTotal || 0) : 0;
+        const parsedKm = hasUse ? Number(kmTotal || 0) : 0;
+        const b = brand === OTHER ? customBrand.trim() : brand;
+        const m = model === OTHER ? customModel.trim() : model;
+        const payload: Record<string, unknown> = {
+          owner_id: uid,
+          brand: b,
+          model: m,
+          displacement: displacement === OTHER ? customDisplacement.trim() : displacement || null,
+          year_make: yearMake ? parseInt(yearMake) : null,
+          year_model: yearModel ? parseInt(yearModel) : null,
+          control_type: controlType,
+          condition,
+          hours_initial: parsedHours,
+          km_initial: parsedKm,
+          hours_total: parsedHours,
+          km_total: parsedKm,
+          use_profile: planProfile,
+          use_profile_note: planProfile === "other" ? planProfileNote.trim() || null : null,
+          incident_declaration: incident === "no" ? INCIDENT_DECLARATION_TEXT : null,
+          has_incident: incident === "yes",
+          incident_unknown: incident === "unknown",
+          notes: notes || null,
+          plan_review_status:
+            controlType === "not_informed" || (parsedHours === 0 && parsedKm === 0)
+              ? "skipped"
+              : "pending",
+        };
+        const { data: motoData, error: motoErr } = await supabase
+          .from("motorcycles")
+          .insert(payload as never)
+          .select("id")
+          .single();
+        if (motoErr) throw new Error(motoErr.message);
+        motoId = motoData.id;
+        setSavedMotoId(motoId);
+
+        // Foto (opcional — falha não bloqueia)
+        if (photo) {
+          try {
+            const up = await uploadFile("motorcycle-photos", photo, uid);
+            await supabase.from("motorcycle_photos").insert({
+              motorcycle_id: motoId,
+              storage_path: up.path,
+              bucket: "motorcycle-photos",
+              is_main: true,
+            } as never);
+            await supabase
+              .from("motorcycles")
+              .update({ main_photo_url: up.path } as never)
+              .eq("id", motoId);
+          } catch {
+            /* foto é opcional */
+          }
+        }
+      }
+
+      // 2. Cria plano — CRÍTICO — não navega se falhar
+      try {
+        await applyPlan(supabase, motoId!, wizPlanRows, planProfile, planProfileNote);
+      } catch (e: any) {
+        setPlanError(e.message ?? "Falha ao criar o plano de manutenção.");
+        setSaving(false);
+        return;
+      }
+
+      // 3. Documento opcional
+      if (originDocFile && wizDocUpload === true) {
+        try {
+          const up = await uploadFile("documents", originDocFile, uid);
+          await supabase.from("motorcycle_documents" as never).insert({
+            motorcycle_id: motoId,
+            doc_type: originType || "other",
+            bucket: "documents",
+            storage_path: up.path,
+            file_name: originDocFile.name,
+            mime_type: originDocFile.type || null,
+            size_bytes: originDocFile.size,
+            created_by: uid,
+            version: 1,
+            is_current: true,
+            is_origin_document: true,
+          } as never);
+        } catch {
+          setDocUploadError(true);
+        }
+      }
+
+      setSuccessScreen(true);
+    } catch (err: any) {
+      toast.error(err.message ?? "Erro ao cadastrar. Tente novamente.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const finalBrand = brand === OTHER ? customBrand : brand;
+  const finalModel = model === OTHER ? customModel : model;
+
+  // Tela de sucesso
+  if (successScreen && savedMotoId) {
     return (
-      <div className="mx-auto max-w-3xl space-y-6">
-        <PageHeader
-          title="Revisar e confirmar"
-          crumbs={[{ label: "Motos", to: "/motorcycles" }, { label: "Nova" }, { label: "Revisão" }]}
-          description="Confira as informações antes de salvar. Você pode voltar para editar qualquer seção."
-        />
-        <div className="surface-elevated space-y-4 rounded-2xl p-6">
-          <ReviewSection title="Dados da motocicleta" onEdit={() => setMode("edit")}>
-            <Kv k="Marca" v={brand} />
-            <Kv k="Modelo" v={finalModelLabel} />
-            <Kv k="Apelido" v={draft.nickname || "—"} />
-            <Kv k="Cilindrada" v={finalDispLabel ? `${finalDispLabel} cc` : "—"} />
-            <Kv k="Ano fabricação" v={draft.year_make ? String(draft.year_make) : "—"} />
-            <Kv k="Ano modelo" v={draft.year_model ? String(draft.year_model) : "—"} />
-            <Kv
-              k="Tipo de moto"
-              v={
-                (catTypes.data ?? []).find((t) => t.code === motoType)?.label ??
-                MOTO_TYPES.find((t) => t.value === motoType)?.label ??
-                motoType ??
-                "—"
-              }
-            />
-            <Kv k="Estado" v={draft.condition === "new" ? "Nova" : "Usada / Seminova"} />
-            <Kv k="Controle" v={CONTROL_TYPES.find((c) => c.value === controlType)?.label ?? "—"} />
-            <Kv k="Chassi" v={draft.chassis || "—"} />
-            <Kv k="Nº motor" v={draft.engine_number || "—"} />
-            <Kv k="Placa" v={draft.plate || "—"} />
-            <Kv k="RENAVAM" v={draft.renavam || "—"} />
-            <Kv k="Horas" v={`${draft.hours_total ?? 0} h`} />
-            <Kv k="Km" v={`${draft.km_total ?? 0} km`} />
-          </ReviewSection>
-
-          <ReviewSection title="Foto principal" onEdit={() => setMode("edit")}>
-            {photo ? (
-              <div className="flex items-center gap-3 text-sm">
-                <img
-                  src={URL.createObjectURL(photo)}
-                  alt=""
-                  className="h-20 w-20 rounded-lg object-cover"
-                />
-                <div>
-                  <div className="font-medium">{photo.name}</div>
-                  <div className="text-xs text-muted-foreground">
-                    Será definida como foto principal.
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Nenhuma foto selecionada. Você poderá adicionar depois em{" "}
-                <strong>Fotos da moto</strong>.
-              </p>
-            )}
-          </ReviewSection>
-
-          <ReviewSection title="Perfil de uso e plano" onEdit={() => setMode("edit")}>
-            <Kv k="Perfil" v={USE_PROFILES.find((p) => p.value === useProfile)?.label ?? "—"} />
-            {useProfile === "other" && <Kv k="Descrição" v={useProfileNote || "—"} />}
-            <Kv k="Plano de manutenção" v="Sugerido automaticamente no próximo passo" />
-          </ReviewSection>
-
-          <ReviewSection title="Declaração de sinistro" onEdit={() => setMode("edit")}>
-            <Kv
-              k="Histórico"
-              v={
-                incident === "no"
-                  ? "Sem histórico"
-                  : incident === "yes"
-                    ? "Com histórico relatado"
-                    : "Não informado"
-              }
-            />
-            {incident === "no" && (
-              <p className="mt-2 rounded-lg border border-border bg-background/40 p-3 text-[11px] text-muted-foreground">
-                <em>{INCIDENT_DECLARATION_TEXT}</em>
-              </p>
-            )}
-          </ReviewSection>
-
-          <ReviewSection title="Origem da motocicleta" onEdit={() => setMode("edit")}>
-            <Kv
-              k="Como foi adquirida"
-              v={ORIGIN_OPTIONS.find((o) => o.value === originType)?.label ?? "—"}
-            />
-            {originNotes.trim() && (
-              <p className="col-span-full mt-2 whitespace-pre-wrap rounded-lg border border-border bg-background/40 p-3 text-[11px] text-muted-foreground">
-                {originNotes}
-              </p>
-            )}
-            <p className="col-span-full mt-2 text-[11px] text-muted-foreground">
-              Você poderá anexar o documento (Nota Fiscal ou Recibo) depois em{" "}
-              <strong>Documentação da moto</strong>. Motos sem documento aparecem como pendência no
-              Dashboard, sem bloquear o uso.
-            </p>
-          </ReviewSection>
-
-          <ReviewSection title="Observações" onEdit={() => setMode("edit")}>
-            {notes.trim() ? (
-              <p className="whitespace-pre-wrap text-sm">{notes}</p>
-            ) : (
-              <p className="text-sm text-muted-foreground">Nenhuma observação.</p>
-            )}
-          </ReviewSection>
-
-          <div className="rounded-xl border border-border bg-background/40 p-3 text-xs text-muted-foreground">
-            <strong className="text-foreground">Documentos e acessórios</strong> não são registrados
-            no cadastro — depois de confirmar, você adiciona pelo módulo{" "}
-            <strong>Documentação</strong> e por <strong>Registrar atividade → Acessório</strong>.
+      <div className="mx-auto max-w-xl space-y-6 pb-24 pt-8 text-center px-4">
+        <div className="flex flex-col items-center gap-3">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/10 text-3xl">
+            🏍️
           </div>
-
-          <div className="flex flex-wrap justify-end gap-2 pt-2">
-            <Button type="button" variant="outline" onClick={() => setMode("edit")}>
-              <Pencil className="h-4 w-4" /> Voltar e editar
-            </Button>
-            <Button type="button" className="btn-glow" onClick={confirmAndSave} disabled={loading}>
-              <CheckCircle2 className="h-4 w-4" /> {loading ? "Salvando…" : "Confirmar e salvar"}
-            </Button>
-          </div>
+          <h1 className="font-display text-2xl font-bold">Sua moto está pronta!</h1>
+          <p className="text-sm text-muted-foreground">
+            {[finalBrand, finalModel].filter(Boolean).join(" ")} cadastrada com sucesso.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            O plano de manutenção foi configurado. O TrailBook está pronto para acompanhar sua moto.
+          </p>
+          {docUploadError && (
+            <div className="w-full rounded-xl border border-amber-500/40 bg-amber-500/5 p-3 text-xs text-amber-200 text-left">
+              ⚠ O documento não foi salvo. Você pode anexá-lo depois em{" "}
+              <strong>Documentação da moto</strong>.
+            </div>
+          )}
+        </div>
+        <div className="flex flex-col gap-3">
+          <Button
+            className="w-full btn-glow text-base"
+            size="lg"
+            onClick={() =>
+              navigate({ to: "/motorcycles/$id", params: { id: savedMotoId } } as never)
+            }
+          >
+            Ir para minha moto
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={() =>
+              navigate({
+                to: "/motorcycles/$id/registrar-manutencao",
+                params: { id: savedMotoId },
+              } as never)
+            }
+          >
+            Registrar atividade
+          </Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <PageHeader
-        title="Nova motocicleta"
-        crumbs={[{ label: "Motos", to: "/motorcycles" }, { label: "Nova" }]}
-        description="Preencha os dados e revise antes de salvar. Nada é gravado até você confirmar."
-      />
-      {blocked && (
-        <div className="surface-elevated flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/40 bg-primary/5 p-4 text-sm">
-          <div className="flex items-center gap-2">
-            <Crown className="h-4 w-4 text-primary" />
-            <span>
-              Plano <strong>{plan.label}</strong> permite até {plan.limits.motorcycles} moto(s).
-              Faça upgrade para continuar.
-            </span>
-          </div>
-          <Link to="/plans">
-            <Button size="sm" className="btn-glow">
-              Ver planos
-            </Button>
-          </Link>
-        </div>
-      )}
-      <form onSubmit={goReview} className="surface-elevated space-y-5 rounded-2xl p-6">
-        {/* Identificação — fluxo guiado pelo Catálogo Mestre */}
-        <div className="rounded-2xl border border-border/60 bg-background/30 p-4 space-y-4">
-          <div>
-            <div className="text-sm font-semibold">Identificação da moto</div>
-            <div className="text-xs text-muted-foreground">
-              Selecione tipo, marca e modelo. Os campos seguintes são filtrados automaticamente. Use{" "}
-              <em>Outro</em> quando não encontrar.
-            </div>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="Tipo da moto" required>
-              <Select
-                value={motoType}
-                onValueChange={(v) => {
-                  setMotoType(v);
-                  setModel("");
-                  setModelId(null);
-                  setDisplacement("");
-                }}
+    <div className="mx-auto w-full max-w-xl space-y-0 pb-32">
+      {/* Stepper compacto */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm pt-4 pb-3 px-1">
+        <div className="flex gap-1">
+          {STEPS.map((label, idx) => (
+            <div key={label} className="flex flex-1 flex-col items-center gap-0.5">
+              <div
+                className={`h-1.5 w-full rounded-full transition-colors ${wizStep > idx ? "bg-primary" : wizStep === idx + 1 ? "bg-primary/70" : "bg-border"}`}
+              />
+              <span
+                className={`text-[10px] leading-tight ${wizStep === idx + 1 ? "text-primary font-semibold" : "text-muted-foreground"}`}
               >
+                {label}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ───────────────── STEP 1 — SUA MOTO ──────────────────── */}
+      {wizStep === 1 && (
+        <div className="space-y-4 pt-2 px-1">
+          <PageHeader
+            title="Sua moto"
+            crumbs={[{ label: "Motos", to: "/motorcycles" }, { label: "Adicionar" }]}
+            description="Informe os dados básicos da motocicleta."
+          />
+
+          <div className="surface-elevated rounded-2xl p-4 space-y-4">
+            <Field label="Tipo da moto" required>
+              <Select value={motoType} onValueChange={setMotoType}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
+                  <SelectValue placeholder="Selecione…" />
                 </SelectTrigger>
                 <SelectContent>
                   {(catTypes.data ?? []).map((t) => (
@@ -542,35 +648,30 @@ function NewMotorcycle() {
                       {t.label}
                     </SelectItem>
                   ))}
-                  {/* fallback offline */}
-                  {(catTypes.data ?? []).length === 0 &&
-                    MOTO_TYPES.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>
-                        {t.label}
-                      </SelectItem>
-                    ))}
+                  {MOTO_TYPES.filter(
+                    (t) => !(catTypes.data ?? []).some((ct) => ct.code === t.value),
+                  ).map((t) => (
+                    <SelectItem key={t.value} value={t.value}>
+                      {t.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </Field>
+
             <Field label="Marca" required>
               <Select
                 value={brand}
                 onValueChange={(v) => {
-                  if (v === OTHER) {
-                    setBrand(OTHER);
-                    setBrandId(null);
-                  } else {
-                    setBrand(v);
-                    const found = (catBrands.data ?? []).find((b) => b.name === v);
-                    setBrandId(found?.id ?? null);
-                  }
+                  setBrand(v);
+                  setBrandId(catBrands.data?.find((b) => b.name === v)?.id ?? null);
                   setModel("");
                   setModelId(null);
                   setDisplacement("");
                 }}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
+                  <SelectValue placeholder="Selecione…" />
                 </SelectTrigger>
                 <SelectContent>
                   {(catBrands.data ?? []).map((b) => (
@@ -578,52 +679,39 @@ function NewMotorcycle() {
                       {b.name}
                     </SelectItem>
                   ))}
-                  {(catBrands.data ?? []).length === 0 &&
-                    BRANDS.map((b) => (
+                  {BRANDS.filter((b) => !(catBrands.data ?? []).some((cb) => cb.name === b)).map(
+                    (b) => (
                       <SelectItem key={b} value={b}>
                         {b}
                       </SelectItem>
-                    ))}
-                  <SelectItem value={OTHER}>Outra marca…</SelectItem>
+                    ),
+                  )}
+                  <SelectItem value={OTHER}>Outra…</SelectItem>
                 </SelectContent>
               </Select>
               {brand === OTHER && (
                 <Input
                   className="mt-2"
-                  placeholder="Informe a marca"
                   value={customBrand}
                   onChange={(e) => setCustomBrand(e.target.value)}
+                  placeholder="Digite a marca"
                 />
               )}
             </Field>
+
             <Field label="Modelo" required>
-              {brandId && motoType ? (
+              {brand && brand !== OTHER ? (
                 <>
                   <Select
                     value={model}
                     onValueChange={(v) => {
-                      if (v === OTHER) {
-                        setModel(OTHER);
-                        setModelId(null);
-                        setDisplacement("");
-                        return;
-                      }
                       setModel(v);
-                      const found = (catModels.data ?? []).find((m) => m.name === v);
+                      const found = catModels.data?.find((m) => m.name === v);
                       setModelId(found?.id ?? null);
-                      setDisplacement("");
                     }}
                   >
                     <SelectTrigger>
-                      <SelectValue
-                        placeholder={
-                          catModels.isLoading
-                            ? "Carregando…"
-                            : (catModels.data ?? []).length === 0
-                              ? "Nenhum modelo — use Outro"
-                              : "Selecione"
-                        }
-                      />
+                      <SelectValue placeholder="Selecione…" />
                     </SelectTrigger>
                     <SelectContent>
                       {(catModels.data ?? []).map((m) => (
@@ -631,198 +719,354 @@ function NewMotorcycle() {
                           {m.name}
                         </SelectItem>
                       ))}
-                      <SelectItem value={OTHER}>Outro modelo…</SelectItem>
+                      <SelectItem value={OTHER}>Outro…</SelectItem>
                     </SelectContent>
                   </Select>
                   {model === OTHER && (
                     <Input
                       className="mt-2"
-                      placeholder="Informe o modelo"
                       value={customModel}
                       onChange={(e) => setCustomModel(e.target.value)}
-                    />
-                  )}
-                </>
-              ) : showModelFallback ? (
-                <>
-                  <Select
-                    value={model}
-                    onValueChange={(v) => {
-                      setModel(v);
-                      setModelId(null);
-                    }}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {legacyModels.map((m) => (
-                        <SelectItem key={m} value={m}>
-                          {m}
-                        </SelectItem>
-                      ))}
-                      <SelectItem value={OTHER}>Outro modelo…</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {model === OTHER && (
-                    <Input
-                      className="mt-2"
-                      placeholder="Informe o modelo"
-                      value={customModel}
-                      onChange={(e) => setCustomModel(e.target.value)}
+                      placeholder="Digite o modelo"
                     />
                   )}
                 </>
               ) : (
                 <Input
-                  placeholder={
-                    motoType && brand ? "ex: CRF 250F" : "Selecione tipo e marca primeiro"
-                  }
-                  disabled={!brand || !motoType}
-                  value={customModel}
+                  value={model === OTHER ? customModel : model}
                   onChange={(e) => {
-                    setCustomModel(e.target.value);
                     setModel(OTHER);
+                    setCustomModel(e.target.value);
                   }}
+                  placeholder="Digite o modelo"
                 />
               )}
             </Field>
-            <Field label="Cilindrada (cc)">
-              {modelId && (catEngines.data ?? []).length > 0 ? (
+
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Cilindrada (cc)">
                 <Select value={displacement} onValueChange={setDisplacement}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
+                    <SelectValue placeholder="Ex: 250" />
                   </SelectTrigger>
                   <SelectContent>
-                    {(catEngines.data ?? []).map((d) => (
-                      <SelectItem key={d} value={String(d)}>
-                        {d} cc
-                      </SelectItem>
-                    ))}
-                    <SelectItem value={OTHER}>Outra…</SelectItem>
-                  </SelectContent>
-                </Select>
-              ) : (
-                <Select value={displacement} onValueChange={setDisplacement}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {DISPLACEMENTS.map((d) => (
+                    {[
+                      "50",
+                      "125",
+                      "150",
+                      "160",
+                      "190",
+                      "230",
+                      "250",
+                      "300",
+                      "350",
+                      "400",
+                      "450",
+                      "500",
+                      "600",
+                      "650",
+                      "700",
+                      "750",
+                      "800",
+                      "900",
+                      "1000",
+                      "1100",
+                      "1200",
+                    ].map((d) => (
                       <SelectItem key={d} value={d}>
                         {d} cc
                       </SelectItem>
                     ))}
-                    <SelectItem value={OTHER}>Outra…</SelectItem>
+                    <SelectItem value={OTHER}>Outro…</SelectItem>
                   </SelectContent>
                 </Select>
-              )}
-              {displacement === OTHER && (
-                <Input
-                  className="mt-2"
-                  type="number"
-                  placeholder="Informe a cilindrada em cc"
-                  value={customDisplacement}
-                  onChange={(e) => setCustomDisplacement(e.target.value)}
-                />
-              )}
+                {displacement === OTHER && (
+                  <Input
+                    className="mt-2"
+                    type="number"
+                    value={customDisplacement}
+                    onChange={(e) => setCustomDisplacement(e.target.value)}
+                    placeholder="Ex: 300"
+                  />
+                )}
+              </Field>
+              <Field label="Ano">
+                <Select value={yearMake} onValueChange={setYearMake}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {years.map((y) => (
+                      <SelectItem key={y} value={String(y)}>
+                        {y}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </Field>
+            </div>
+
+            <Field label="Apelido (opcional)">
+              <Input name="nickname" placeholder="Ex: A vermelhinha" />
             </Field>
-            <Field label="Ano de fabricação">
-              <Select value={yearMake} onValueChange={setYearMake}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((y) => (
-                    <SelectItem key={y} value={String(y)}>
-                      {y}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Ano modelo">
-              <Select value={yearModel} onValueChange={setYearModel}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {years.map((y) => (
-                    <SelectItem key={y} value={String(y)}>
-                      {y}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
-            <Field label="Apelido">
-              <Input name="nickname" placeholder="ex: A vermelhinha" />
-            </Field>
+          </div>
+
+          {/* Foto */}
+          <div className="surface-elevated rounded-2xl p-4 space-y-2">
+            <p className="text-sm font-semibold">Foto da moto</p>
+            <p className="text-xs text-muted-foreground">Opcional. Aparece no perfil da moto.</p>
+            <PhotoPicker
+              value={photo}
+              onChange={setPhoto}
+              label="Selecionar foto"
+              hint="JPG ou PNG."
+            />
+          </div>
+
+          {/* Documento */}
+          <div className="surface-elevated rounded-2xl p-4 space-y-3">
+            <p className="text-sm font-semibold">Documento da moto</p>
+            <p className="text-xs text-muted-foreground">
+              Nota Fiscal, recibo ou comprovante de origem — opcional.
+            </p>
+            {wizDocAnswer === null && (
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setWizDocAnswer("yes")}
+                >
+                  Estou com o documento
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setWizDocAnswer("no");
+                    setWizDocUpload(false);
+                  }}
+                >
+                  Não estou
+                </Button>
+              </div>
+            )}
+            {wizDocAnswer === "no" && (
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-xs text-muted-foreground">
+                  Sem problema. Adicione depois em <strong>Documentação da moto</strong>.
+                </p>
+                <button
+                  type="button"
+                  className="text-xs underline text-muted-foreground"
+                  onClick={() => {
+                    setWizDocAnswer(null);
+                    setWizDocUpload(null);
+                  }}
+                >
+                  Alterar
+                </button>
+              </div>
+            )}
+            {wizDocAnswer === "yes" && wizDocUpload === null && (
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  className="flex-1 btn-glow"
+                  onClick={() => setWizDocUpload(true)}
+                >
+                  Anexar agora
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setWizDocUpload(false)}
+                >
+                  Adicionar depois
+                </Button>
+              </div>
+            )}
+            {wizDocAnswer === "yes" && wizDocUpload === false && (
+              <p className="text-xs text-muted-foreground">
+                📌 Adicione depois em <strong>Documentação da moto</strong>.
+                <button
+                  type="button"
+                  className="ml-2 underline"
+                  onClick={() => setWizDocUpload(null)}
+                >
+                  Alterar
+                </button>
+              </p>
+            )}
+            {wizDocAnswer === "yes" && wizDocUpload === true && (
+              <div className="space-y-2">
+                <Select
+                  value={originType || "invoice"}
+                  onValueChange={(v) => setOriginType(v as never)}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ORIGIN_OPTIONS.map((o) => (
+                      <SelectItem key={o.value} value={o.value}>
+                        {o.emoji} {o.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!originDocFile ? (
+                  <label className="flex cursor-pointer flex-col items-center gap-1 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-4 text-center hover:border-primary/70">
+                    <Paperclip className="h-6 w-6 text-primary/60" />
+                    <span className="text-xs text-muted-foreground">
+                      Toque para selecionar — PDF, JPG ou PNG (máx. 20 MB)
+                    </span>
+                    <input
+                      type="file"
+                      accept="application/pdf,image/*"
+                      className="sr-only"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (f && f.size > 20 * 1024 * 1024) {
+                          toast.error("Arquivo muito grande (máx. 20 MB)");
+                          return;
+                        }
+                        setOriginDocFile(f ?? null);
+                      }}
+                    />
+                  </label>
+                ) : (
+                  <div className="flex items-center justify-between gap-2 rounded-xl border border-border bg-card p-3">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{originDocFile.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {(originDocFile.size / 1024).toFixed(0)} KB
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setOriginDocFile(null)}
+                      className="shrink-0 rounded p-1 hover:bg-muted"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="fixed bottom-0 left-0 right-0 z-30 flex gap-2 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
+            <Button
+              variant="outline"
+              className="flex-none"
+              onClick={() => navigate({ to: "/motorcycles" })}
+            >
+              Cancelar
+            </Button>
+            <Button
+              className="flex-1 btn-glow"
+              onClick={() => {
+                if (!motoType) {
+                  toast.error("Selecione o tipo da moto.");
+                  return;
+                }
+                if (!(brand === OTHER ? customBrand.trim() : brand)) {
+                  toast.error("Informe a marca.");
+                  return;
+                }
+                if (!(model === OTHER ? customModel.trim() : model)) {
+                  toast.error("Informe o modelo.");
+                  return;
+                }
+                setWizStep(2);
+                window.scrollTo({ top: 0 });
+              }}
+            >
+              Continuar →
+            </Button>
           </div>
         </div>
+      )}
 
-        {/* Estado da moto */}
-        <div className="rounded-2xl border border-border/60 bg-background/30 p-4 space-y-3">
-          <div>
-            <div className="text-sm font-semibold">Como você adquiriu esta moto?</div>
-            <div className="text-xs text-muted-foreground">
-              Esta informação representa a condição da moto quando foi adquirida.
+      {/* ───────────────── STEP 2 — USO E PERFIL ──────────────── */}
+      {wizStep === 2 && (
+        <div className="space-y-4 pt-2 px-1">
+          <PageHeader
+            title="Uso e perfil"
+            crumbs={[{ label: "Motos", to: "/motorcycles" }, { label: "Adicionar" }]}
+            description="Como você utiliza esta moto?"
+          />
+
+          <div className="surface-elevated rounded-2xl p-4 space-y-4">
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">Como você adquiriu esta moto?</p>
+              <div className="flex gap-2">
+                {(
+                  [
+                    { v: "new", label: "Nova" },
+                    { v: "used", label: "Usada / Seminova" },
+                  ] as const
+                ).map((o) => (
+                  <Button
+                    key={o.v}
+                    type="button"
+                    variant={condition === o.v ? "default" : "outline"}
+                    className="flex-1"
+                    onClick={() => setCondition(o.v)}
+                  >
+                    {o.label}
+                  </Button>
+                ))}
+              </div>
             </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {(
-              [
-                { v: "new", label: "Nova" },
-                { v: "used", label: "Usada / Seminova" },
-              ] as const
-            ).map((o) => (
-              <button
-                key={o.v}
-                type="button"
-                onClick={() => setCondition(o.v)}
-                className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${condition === o.v ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
-              >
-                {o.label}
-              </button>
-            ))}
-          </div>
 
-          {/* Pergunta independente: uso acumulado antes do TrailBook */}
-          {controlType !== "not_informed" && (
-            <>
-              <div className="text-sm font-semibold mt-2">
-                A moto já possui horas ou quilômetros de uso?
-              </div>
-              <div className="text-xs text-muted-foreground">
-                Informe a leitura atual. O TrailBook usará esse valor como ponto inicial para
-                acompanhar as próximas manutenções.
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setHasPriorUse(false);
-                    setHoursTotal("0");
-                    setKmTotal("0");
-                  }}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${hasPriorUse === false ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
-                >
-                  Não — sem uso acumulado
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setHasPriorUse(true)}
-                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${hasPriorUse === true ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
-                >
-                  Sim — já possui uso
-                </button>
-              </div>
+            <Field label="Tipo de controle">
+              <Select value={controlType} onValueChange={setControlType}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CONTROL_TYPES.map((c) => (
+                    <SelectItem key={c.value} value={c.value}>
+                      {c.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Field>
 
-              {hasPriorUse === true && (
-                <>
-                  <div className="grid gap-4 sm:grid-cols-2">
+            {controlType !== "not_informed" && (
+              <div className="space-y-2">
+                <p className="text-sm font-semibold">A moto já possui horas ou km de uso?</p>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={hasPriorUse === false ? "default" : "outline"}
+                    className="flex-1"
+                    onClick={() => {
+                      setHasPriorUse(false);
+                      setHoursTotal("0");
+                      setKmTotal("0");
+                    }}
+                  >
+                    Não
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={hasPriorUse === true ? "default" : "outline"}
+                    className="flex-1"
+                    onClick={() => setHasPriorUse(true)}
+                  >
+                    Sim
+                  </Button>
+                </div>
+                {hasPriorUse === true && (
+                  <div className="grid grid-cols-2 gap-3 pt-1">
                     {(controlType === "hours" || controlType === "both") && (
-                      <Field label="Horímetro atual (h)" required>
+                      <Field label="Horímetro (h)" required>
                         <Input
                           type="number"
                           step="0.1"
@@ -842,140 +1086,16 @@ function NewMotorcycle() {
                       </Field>
                     )}
                   </div>
-                  <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-200">
-                    <div className="flex items-start gap-2">
-                      <Info className="mt-0.5 h-4 w-4 shrink-0" />
-                      <span>
-                        Como esta moto já possui uso anterior, revise o estado atual dos itens de
-                        manutenção antes de ativar os alertas.
-                      </span>
-                    </div>
-                  </div>
-                </>
-              )}
-
-              {hasPriorUse === false && (
-                <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 text-xs text-emerald-200">
-                  Horímetro e KM começam em zero. O plano de manutenção inicia zerado.
-                </div>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Tipo de controle (sugerido pelo catálogo quando disponível) */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Tipo de controle">
-            <Select value={controlType} onValueChange={setControlType}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {CONTROL_TYPES.map((c) => (
-                  <SelectItem key={c.value} value={c.value}>
-                    {c.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {suggested && (
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Sugestão do catálogo aplicada. Você pode alterar se preferir.
-              </p>
+                )}
+              </div>
             )}
-          </Field>
-        </div>
 
-        {/* Dados opcionais */}
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Field label="Chassi">
-            <Input name="chassis" />
-          </Field>
-          <Field label="Nº motor">
-            <Input name="engine_number" />
-          </Field>
-          <Field label="Placa">
-            <Input name="plate" />
-          </Field>
-          <Field label="RENAVAM">
-            <Input name="renavam" />
-          </Field>
-        </div>
-
-        <Field label="Foto principal">
-          <PhotoPicker
-            value={photo}
-            onChange={setPhoto}
-            label="Selecionar foto principal"
-            hint="JPG ou PNG. Aparece no certificado público."
-          />
-        </Field>
-
-        <Field label="Observações iniciais">
-          <Textarea
-            rows={3}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Notas gerais sobre a moto no momento do cadastro (opcional)."
-          />
-        </Field>
-
-        {/* Declaração de sinistro */}
-        <div className="rounded-2xl border border-amber-500/30 bg-amber-500/5 p-4">
-          <div className="flex items-start gap-2">
-            <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0 text-amber-400" />
-            <div className="space-y-3">
-              <div>
-                <div className="text-sm font-semibold">Histórico de sinistro</div>
-                <div className="text-xs text-muted-foreground">
-                  A moto já sofreu sinistro relevante (queda grave, batida, submersão, danos
-                  estruturais)?
-                </div>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {(
-                  [
-                    { v: "no", label: "Não" },
-                    { v: "yes", label: "Sim" },
-                    { v: "unknown", label: "Não informado" },
-                  ] as const
-                ).map((o) => (
-                  <button
-                    key={o.v}
-                    type="button"
-                    onClick={() => setIncident(o.v)}
-                    className={`rounded-full border px-3 py-1.5 text-xs font-medium transition ${incident === o.v ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:border-primary/40"}`}
-                  >
-                    {o.label}
-                  </button>
-                ))}
-              </div>
-              {incident === "no" && (
-                <p className="rounded-lg border border-border bg-background/40 p-3 text-[11px] text-muted-foreground">
-                  Ao cadastrar, você aceita: <em>"{INCIDENT_DECLARATION_TEXT}"</em>
-                </p>
-              )}
-              {incident === "yes" && (
-                <p className="text-[11px] text-amber-300">
-                  Após criar a moto, registre cada ocorrência usando{" "}
-                  <strong>Registrar atividade → Sinistro</strong> para compor o histórico.
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Perfil de uso */}
-        <div className="rounded-2xl border border-primary/30 bg-primary/5 p-4 space-y-3">
-          <div>
-            <div className="text-sm font-semibold">Perfil de uso</div>
-            <div className="text-xs text-muted-foreground">
-              Ajusta os intervalos sugeridos do plano de manutenção.
-            </div>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Tipo de uso">
-              <Select value={useProfile} onValueChange={(v) => setUseProfile(v as UseProfile)}>
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">Perfil de uso</p>
+              <p className="text-xs text-muted-foreground">
+                Ajusta os intervalos de manutenção para o seu estilo de pilotagem.
+              </p>
+              <Select value={planProfile} onValueChange={(v) => reapplyWizProfile(v as UseProfile)}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -987,196 +1107,603 @@ function NewMotorcycle() {
                   ))}
                 </SelectContent>
               </Select>
-            </Field>
-            {useProfile === "other" && (
-              <Field label="Descreva o uso" required>
+              {planProfile === "other" && (
                 <Input
-                  value={useProfileNote}
-                  onChange={(e) => setUseProfileNote(e.target.value)}
-                  placeholder="ex: uso comercial em fazenda"
+                  value={planProfileNote}
+                  onChange={(e) => setPlanProfileNote(e.target.value)}
+                  placeholder="Ex: uso comercial em fazenda"
                 />
-              </Field>
-            )}
-          </div>
-          <div className="space-y-1.5 rounded-lg border border-primary/20 bg-primary/5 p-3">
-            <div className="text-xs font-semibold text-primary">Plano de manutenção</div>
-            <p className="text-[11px] text-muted-foreground">
-              No próximo passo, sugerimos automaticamente os itens e prazos de manutenção
-              recomendados para essa moto — é só revisar e confirmar.
-            </p>
-          </div>
-        </div>
-
-        {/* Origem da motocicleta */}
-        <div className="rounded-2xl border border-border/60 bg-background/30 p-4 space-y-3">
-          <div>
-            <div className="text-sm font-semibold">Como esta motocicleta foi adquirida?</div>
-            <div className="text-xs text-muted-foreground">
-              Passa a compor o histórico de propriedade. Você poderá anexar Nota Fiscal ou Recibo
-              depois — nada bloqueia o cadastro.
+              )}
+              <p className="text-[11px] text-muted-foreground">
+                {USE_PROFILES.find((p) => p.value === planProfile)?.hint}
+              </p>
             </div>
           </div>
-          <div className="grid gap-2 sm:grid-cols-2">
-            {ORIGIN_OPTIONS.map((o) => {
-              const active = originType === o.value;
-              return (
-                <button
-                  key={o.value}
-                  type="button"
-                  onClick={() => setOriginType(o.value)}
-                  className={`rounded-xl border p-3 text-left transition ${
-                    active
-                      ? "border-primary bg-primary/10"
-                      : "border-border hover:border-primary/40"
-                  }`}
-                >
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-base">{o.emoji}</span>
-                    <span className="text-sm font-semibold">{o.label}</span>
-                  </div>
-                  <p
-                    className={`mt-1 text-[11px] ${active ? "text-primary/80" : "text-muted-foreground"}`}
-                  >
-                    {o.description}
-                  </p>
-                </button>
-              );
-            })}
-          </div>
-          {(originType === "other" || originType === "private") && (
-            <Field label="Observações da origem (opcional)">
-              <Textarea
-                rows={2}
-                value={originNotes}
-                onChange={(e) => setOriginNotes(e.target.value)}
-                placeholder={
-                  originType === "other"
-                    ? "Ex.: herdada de familiar, doação, permuta, etc."
-                    : "Ex.: comprada de um amigo — recibo em papel será digitalizado depois."
-                }
-              />
-            </Field>
-          )}
 
-          {/* Upload opcional do documento de origem */}
-          {originType && originType !== "trailbook_transfer" && (
-            <div className="rounded-xl border border-dashed border-border bg-muted/20 p-4 space-y-3">
-              {wantsDocUpload === null ? (
-                <>
-                  <div className="flex items-start gap-2">
-                    <Paperclip className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
-                    <div>
-                      <p className="text-sm font-medium">
-                        Está com o documento da moto em mãos agora?
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {originType === "zero_km" && "Nota Fiscal da concessionária, por exemplo."}
-                        {originType === "private" && "Recibo de Compra e Venda ou Nota Fiscal."}
-                        {originType === "dealer" && "Nota Fiscal ou Recibo da loja."}
-                        {originType === "other" && "Qualquer comprovante da origem da moto."} Não é
-                        obrigatório — você pode anexar depois.
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button type="button" size="sm" onClick={() => setWantsDocUpload(true)}>
-                      Sim, quero anexar agora
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setWantsDocUpload(false)}
-                    >
-                      Não, faço depois
-                    </Button>
-                  </div>
-                </>
-              ) : wantsDocUpload === false ? (
-                <div className="flex items-center justify-between gap-2 text-xs text-muted-foreground">
-                  <span>
-                    📌 Lembrete: anexe o documento depois em{" "}
-                    <strong>Central da moto → Documentos</strong>.
+          <div className="fixed bottom-0 left-0 right-0 z-30 flex gap-2 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
+            <Button
+              variant="outline"
+              className="flex-none"
+              onClick={() => {
+                setWizStep(1);
+                window.scrollTo({ top: 0 });
+              }}
+            >
+              ← Voltar
+            </Button>
+            <Button
+              className="flex-1 btn-glow"
+              onClick={() => {
+                if (controlType !== "not_informed" && hasPriorUse === null) {
+                  toast.error("Informe se a moto já possui uso acumulado.");
+                  return;
+                }
+                if (hasPriorUse === true) {
+                  if ((controlType === "hours" || controlType === "both") && !Number(hoursTotal)) {
+                    toast.error("Informe o horímetro atual.");
+                    return;
+                  }
+                  if ((controlType === "km" || controlType === "both") && !Number(kmTotal)) {
+                    toast.error("Informe o KM atual.");
+                    return;
+                  }
+                }
+                setWizPlanLoaded(false);
+                setWizStep(3);
+                window.scrollTo({ top: 0 });
+              }}
+            >
+              Continuar →
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ───────────────── STEP 3 — PLANO ─────────────────────── */}
+      {wizStep === 3 && (
+        <div className="space-y-4 pt-2 px-1">
+          <PageHeader
+            title="Plano de manutenção"
+            crumbs={[{ label: "Motos", to: "/motorcycles" }, { label: "Adicionar" }]}
+            description="Preparamos uma sugestão inicial. Você pode aceitar ou personalizar."
+          />
+
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => setWizPlanMode("suggested")}
+              className={`w-full rounded-2xl border p-4 text-left transition ${wizPlanMode === "suggested" ? "border-primary bg-primary/10" : "border-border bg-card hover:border-primary/40"}`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-semibold text-sm">Plano sugerido pelo TrailBook</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Recomendado — intervalos ajustados para o perfil{" "}
+                    <strong>{USE_PROFILES.find((p) => p.value === planProfile)?.label}</strong>.
+                  </p>
+                </div>
+                {wizPlanMode === "suggested" && (
+                  <span className="shrink-0 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                    ✓ Selecionado
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setWantsDocUpload(null)}
-                    className="underline hover:text-foreground"
-                  >
-                    Mudei de ideia
-                  </button>
+                )}
+              </div>
+              {!wizPlanLoaded ? (
+                <div className="mt-3 space-y-1.5">
+                  {[1, 2, 3, 4].map((n) => (
+                    <div key={n} className="h-4 rounded bg-muted/60 animate-pulse" />
+                  ))}
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <p className="text-xs font-medium text-primary flex items-center gap-1.5">
-                    <Paperclip className="h-3.5 w-3.5" /> Selecione o arquivo
-                  </p>
-                  {!originDocFile ? (
-                    <label className="flex cursor-pointer flex-col items-center gap-1 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-4 text-center hover:border-primary/70">
-                      <Paperclip className="h-6 w-6 text-primary/60" />
-                      <span className="text-xs text-muted-foreground">
-                        Toque para selecionar — PDF, JPG ou PNG (máx. 20 MB)
-                      </span>
-                      <input
-                        type="file"
-                        accept="application/pdf,image/*"
-                        className="sr-only"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (f && f.size > 20 * 1024 * 1024) {
-                            toast.error("Arquivo muito grande", {
-                              description: "Máximo permitido: 20 MB.",
-                            });
-                            return;
-                          }
-                          setOriginDocFile(f ?? null);
-                        }}
-                      />
-                    </label>
-                  ) : (
-                    <div className="flex items-center justify-between gap-2 rounded-lg border border-border bg-card p-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{originDocFile.name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {(originDocFile.size / 1024).toFixed(0)} KB · será salvo ao confirmar o
-                          cadastro
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() => setOriginDocFile(null)}
-                        className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
-                        aria-label="Remover arquivo"
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
+                <div className="mt-3 space-y-1">
+                  {(Object.entries(MAINT_CATEGORY_LABEL) as [string, string][]).map(
+                    ([cat, label]) => {
+                      const count = wizPlanRows.filter((r) => r.category === cat && r.keep).length;
+                      if (!count) return null;
+                      return (
+                        <div
+                          key={cat}
+                          className="flex justify-between text-xs text-muted-foreground"
+                        >
+                          <span>{label}</span>
+                          <span>
+                            {count} {count === 1 ? "item" : "itens"}
+                          </span>
+                        </div>
+                      );
+                    },
                   )}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setWantsDocUpload(null);
-                      setOriginDocFile(null);
-                    }}
-                    className="text-xs text-muted-foreground underline hover:text-foreground"
-                  >
-                    Cancelar e fazer depois
-                  </button>
                 </div>
+              )}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setWizPlanMode("custom")}
+              className={`w-full rounded-2xl border p-4 text-left transition ${wizPlanMode === "custom" ? "border-primary bg-primary/10" : "border-border bg-card hover:border-primary/40"}`}
+            >
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <p className="font-semibold text-sm">Personalizar</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Ajuste itens, intervalos e severidade.
+                  </p>
+                </div>
+                {wizPlanMode === "custom" && (
+                  <span className="shrink-0 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold text-primary-foreground">
+                    ✓ Selecionado
+                  </span>
+                )}
+              </div>
+            </button>
+          </div>
+
+          {wizPlanMode === "custom" && wizPlanLoaded && (
+            <WizardPlanEditor
+              rows={wizPlanRows}
+              openCats={planOpenCats}
+              onToggleCat={(cat) =>
+                setPlanOpenCats((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(cat)) next.delete(cat);
+                  else next.add(cat);
+                  return next;
+                })
+              }
+              onUpdate={updatePlanRow}
+              onRemove={removePlanRow}
+              onAdd={() =>
+                setWizPlanRows((prev) => [
+                  ...prev,
+                  {
+                    key: `custom-${Date.now()}`,
+                    item_name: "",
+                    name: "",
+                    category: "other",
+                    action: "inspect",
+                    severity: "medium",
+                    interval_hours: null,
+                    interval_km: null,
+                    interval_days: null,
+                    sort_order: 999,
+                    keep: true,
+                    notes: null,
+                  },
+                ])
+              }
+            />
+          )}
+
+          <div className="fixed bottom-0 left-0 right-0 z-30 flex gap-2 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
+            <Button
+              variant="outline"
+              className="flex-none"
+              onClick={() => {
+                setWizStep(2);
+                window.scrollTo({ top: 0 });
+              }}
+            >
+              ← Voltar
+            </Button>
+            <Button
+              className="flex-1 btn-glow"
+              disabled={!wizPlanLoaded}
+              onClick={() => {
+                setWizStep(4);
+                window.scrollTo({ top: 0 });
+              }}
+            >
+              Continuar →
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ───────────────── STEP 4 — REVISAR ───────────────────── */}
+      {wizStep === 4 && (
+        <div className="space-y-4 pt-2 px-1">
+          <PageHeader
+            title="Revisar"
+            crumbs={[{ label: "Motos", to: "/motorcycles" }, { label: "Adicionar" }]}
+            description="Confira os dados antes de finalizar."
+          />
+
+          <div className="space-y-3">
+            <SummaryCard
+              title="Moto"
+              onEdit={() => {
+                setWizStep(1);
+                window.scrollTo({ top: 0 });
+              }}
+            >
+              <p className="text-sm font-medium">
+                {[finalBrand, finalModel].filter(Boolean).join(" ")}
+              </p>
+              {yearMake && <p className="text-xs text-muted-foreground">Ano {yearMake}</p>}
+              {displacement && (
+                <p className="text-xs text-muted-foreground">
+                  {displacement === OTHER ? customDisplacement : displacement} cc
+                </p>
+              )}
+            </SummaryCard>
+
+            <SummaryCard
+              title="Foto"
+              onEdit={() => {
+                setWizStep(1);
+                window.scrollTo({ top: 0 });
+              }}
+            >
+              {photo ? (
+                <p className="text-xs text-emerald-400">✓ Foto selecionada</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Sem foto — adicionar depois em Editar dados
+                </p>
+              )}
+            </SummaryCard>
+
+            <SummaryCard
+              title="Documento"
+              onEdit={() => {
+                setWizStep(1);
+                window.scrollTo({ top: 0 });
+              }}
+            >
+              {originDocFile && wizDocUpload === true ? (
+                <p className="text-xs text-emerald-400">✓ {originDocFile.name}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Sem documento — adicionar depois em Documentação
+                </p>
+              )}
+            </SummaryCard>
+
+            <SummaryCard
+              title="Uso"
+              onEdit={() => {
+                setWizStep(2);
+                window.scrollTo({ top: 0 });
+              }}
+            >
+              <p className="text-sm font-medium">
+                {condition === "new" ? "Nova" : "Usada / Seminova"}
+              </p>
+              {hasPriorUse === true && (
+                <p className="text-xs text-muted-foreground">
+                  {(controlType === "hours" || controlType === "both") && `${hoursTotal} h`}
+                  {controlType === "both" && " · "}
+                  {(controlType === "km" || controlType === "both") && `${kmTotal} km`}
+                </p>
+              )}
+            </SummaryCard>
+
+            <SummaryCard
+              title="Perfil"
+              onEdit={() => {
+                setWizStep(2);
+                window.scrollTo({ top: 0 });
+              }}
+            >
+              <p className="text-sm font-medium">
+                {USE_PROFILES.find((p) => p.value === planProfile)?.label}
+              </p>
+            </SummaryCard>
+
+            <SummaryCard
+              title="Plano de manutenção"
+              onEdit={() => {
+                setWizStep(3);
+                window.scrollTo({ top: 0 });
+              }}
+            >
+              <p className="text-sm font-medium">
+                {wizPlanMode === "suggested" ? "Plano sugerido TrailBook" : "Plano personalizado"}
+              </p>
+              <p className="text-xs text-muted-foreground">{activeCount} itens selecionados</p>
+            </SummaryCard>
+          </div>
+
+          {planError && (
+            <div className="rounded-xl border border-destructive/40 bg-destructive/5 p-3 text-xs text-destructive">
+              <p className="font-semibold">Falha ao criar o plano de manutenção</p>
+              <p className="mt-0.5">{planError}</p>
+              {savedMotoId && (
+                <p className="mt-1 text-muted-foreground">
+                  A moto foi criada. Toque em "Finalizar cadastro" para tentar novamente sem criar
+                  duplicata.
+                </p>
               )}
             </div>
           )}
-        </div>
 
-        <div className="flex flex-wrap gap-3">
-          <Button type="submit" className="btn-glow" disabled={loading || blocked}>
-            Revisar e confirmar
-          </Button>
-          <Button type="button" variant="outline" onClick={() => navigate({ to: "/motorcycles" })}>
-            Cancelar
+          <div className="fixed bottom-0 left-0 right-0 z-30 flex gap-2 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
+            <Button
+              variant="outline"
+              className="flex-none"
+              disabled={saving}
+              onClick={() => {
+                setWizStep(3);
+                window.scrollTo({ top: 0 });
+              }}
+            >
+              ← Voltar
+            </Button>
+            <Button
+              className="flex-1 btn-glow"
+              size="lg"
+              disabled={saving}
+              onClick={finalizarCadastro}
+            >
+              {saving ? "Finalizando…" : "Finalizar cadastro"}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── PlanItemRow (reutilizado do plan.tsx) ───────────────────────────────────
+function PlanItemRow({
+  row,
+  globalIndex,
+  intervalSummary,
+  onUpdate,
+  onRemove,
+}: {
+  row: ProposedSchedule;
+  globalIndex: number;
+  intervalSummary: string;
+  onUpdate: (patch: Partial<ProposedSchedule>) => void;
+  onRemove: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  return (
+    <div className={`px-4 py-3 transition ${!row.keep ? "opacity-40" : ""}`}>
+      <div className="flex items-start gap-3">
+        <Checkbox
+          checked={row.keep}
+          onCheckedChange={(v) => onUpdate({ keep: !!v })}
+          aria-label={`${row.item_name}`}
+          className="mt-0.5 shrink-0"
+        />
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium leading-tight">{row.item_name}</p>
+          <p className="text-xs text-primary/80 font-medium">{ACTION_LABEL[row.action]}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{intervalSummary}</p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setEditing((v) => !v)}
+          aria-label="Editar item"
+          className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition"
+        >
+          <Pencil className="h-3.5 w-3.5" />
+        </button>
+      </div>
+      {editing && (
+        <div className="mt-3 space-y-3 rounded-xl border border-border/60 bg-muted/20 p-3">
+          <div className="space-y-1">
+            <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">
+              Componente
+            </Label>
+            <Input
+              value={row.item_name}
+              onChange={(e) =>
+                onUpdate({
+                  item_name: e.target.value,
+                  name: `${e.target.value} — ${ACTION_LABEL[row.action]}`,
+                })
+              }
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">
+              Ação
+            </Label>
+            <Select
+              value={row.action}
+              onValueChange={(v) =>
+                onUpdate({
+                  action: v as PlanAction,
+                  name: `${row.item_name} — ${ACTION_LABEL[v as PlanAction]}`,
+                })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(ACTION_LABEL).map(([v, l]) => (
+                  <SelectItem key={v} value={v}>
+                    {l}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="space-y-1">
+              <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                Horas
+              </Label>
+              <Input
+                type="number"
+                step="0.1"
+                value={row.interval_hours ?? ""}
+                onChange={(e) =>
+                  onUpdate({ interval_hours: e.target.value ? Number(e.target.value) : null })
+                }
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                KM
+              </Label>
+              <Input
+                type="number"
+                value={row.interval_km ?? ""}
+                onChange={(e) =>
+                  onUpdate({ interval_km: e.target.value ? Number(e.target.value) : null })
+                }
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                Dias
+              </Label>
+              <Input
+                type="number"
+                value={row.interval_days ?? ""}
+                onChange={(e) =>
+                  onUpdate({ interval_days: e.target.value ? Number(e.target.value) : null })
+                }
+              />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">
+              Severidade
+            </Label>
+            <Select
+              value={row.severity}
+              onValueChange={(v) => onUpdate({ severity: v as PlanSeverity })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(SEVERITY_LABEL).map(([v, l]) => (
+                  <SelectItem key={v} value={v}>
+                    {l}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-destructive hover:text-destructive"
+            onClick={() => {
+              onRemove();
+              setEditing(false);
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5 mr-1" /> Remover este item
           </Button>
         </div>
-      </form>
+      )}
+    </div>
+  );
+}
+
+// ─── SummaryCard ─────────────────────────────────────────────────────────────
+function SummaryCard({
+  title,
+  onEdit,
+  children,
+}: {
+  title: string;
+  onEdit: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3 rounded-2xl border border-border bg-card p-4">
+      <div className="min-w-0 space-y-0.5">
+        <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          {title}
+        </p>
+        {children}
+      </div>
+      <Button variant="outline" size="sm" className="shrink-0" onClick={onEdit}>
+        Editar
+      </Button>
+    </div>
+  );
+}
+
+// ─── WizardPlanEditor ────────────────────────────────────────────────────────
+function WizardPlanEditor({
+  rows,
+  openCats,
+  onToggleCat,
+  onUpdate,
+  onRemove,
+  onAdd,
+}: {
+  rows: ProposedSchedule[];
+  openCats: Set<string>;
+  onToggleCat: (cat: string) => void;
+  onUpdate: (i: number, patch: Partial<ProposedSchedule>) => void;
+  onRemove: (i: number) => void;
+  onAdd: () => void;
+}) {
+  const indexed = rows.map((r, i) => ({ r, i }));
+  const grouped = (Object.keys(MAINT_CATEGORY_LABEL) as string[])
+    .map((cat) => ({
+      cat,
+      label: (MAINT_CATEGORY_LABEL as Record<string, string>)[cat],
+      items: indexed.filter(({ r }) => r.category === cat),
+    }))
+    .filter(({ items }) => items.length > 0);
+
+  function intervalSummary(r: ProposedSchedule) {
+    const parts: string[] = [];
+    if (r.interval_hours) parts.push(`${r.interval_hours} h`);
+    if (r.interval_km) parts.push(`${r.interval_km} km`);
+    if (r.interval_days) parts.push(`${r.interval_days} dias`);
+    return parts.length ? `A cada ${parts.join(" · ")}` : "Sem intervalo";
+  }
+
+  return (
+    <div className="space-y-2">
+      {grouped.map(({ cat, label, items }) => {
+        const open = openCats.has(cat);
+        const activeInCat = items.filter(({ r }) => r.keep).length;
+        return (
+          <div key={cat} className="rounded-2xl border border-border bg-card overflow-hidden">
+            <button
+              type="button"
+              aria-expanded={open}
+              onClick={() => onToggleCat(cat)}
+              className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left hover:bg-muted/30 transition"
+            >
+              <span className="font-semibold text-sm">{label}</span>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs text-muted-foreground">
+                  {activeInCat}/{items.length}
+                </span>
+                <ChevronDown
+                  className={`h-4 w-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+                />
+              </div>
+            </button>
+            {open && (
+              <div className="border-t border-border divide-y divide-border/60">
+                {items.map(({ r, i }) => (
+                  <PlanItemRow
+                    key={r.key}
+                    row={r}
+                    globalIndex={i}
+                    intervalSummary={intervalSummary(r)}
+                    onUpdate={(patch: Partial<ProposedSchedule>) => onUpdate(i, patch)}
+                    onRemove={() => onRemove(i)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+      <button
+        type="button"
+        onClick={onAdd}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border border-dashed border-border/60 bg-card/60 py-3 text-sm text-muted-foreground hover:border-primary/40 transition"
+      >
+        <Plus className="h-4 w-4" /> Adicionar item personalizado
+      </button>
     </div>
   );
 }

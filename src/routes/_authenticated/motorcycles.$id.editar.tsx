@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TBLoadingState } from "@/design-system";
 import { BRANDS } from "@/lib/trailbook";
+import { MotorcyclePhotos } from "@/components/MotorcyclePhotos";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id/editar")({
   head: () => ({ meta: [{ title: "Editar dados da moto — TrailBook" }] }),
@@ -118,7 +119,11 @@ function EditMotorcyclePage() {
     }
     await qc.invalidateQueries();
     toast.success("Dados da moto atualizados.");
-    navigate({ to: "/motorcycles/$id/control", params: { id }, search: { action: undefined, tab: undefined } });
+    navigate({
+      to: "/motorcycles/$id/control",
+      params: { id },
+      search: { action: undefined, tab: undefined },
+    });
   }
 
   if (moto.isLoading) return <TBLoadingState label="Carregando dados da moto…" />;
@@ -208,6 +213,19 @@ function EditMotorcyclePage() {
         <div className="rounded-xl border border-dashed border-border p-4">
           <p className="mb-3 text-xs text-muted-foreground">
             Identificação — o <strong>chassi</strong> é o único campo exigido para emitir laudos.
+          </p>
+        </div>
+
+        <div className="space-y-3 rounded-2xl border border-border bg-card p-4">
+          <div className="text-sm font-semibold">Foto da moto</div>
+          <p className="text-xs text-muted-foreground">
+            Toque em uma foto para defini-la como principal ou removê-la.
+          </p>
+          <MotorcyclePhotos motorcycleId={id} />
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-xs text-muted-foreground px-1">
             Placa e Renavam ficam em branco normalmente em motos de trilha/motocross.
           </p>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
