@@ -61,6 +61,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
+import { PlanItemRow } from "@/components/PlanItemRow";
 import { ORIGIN_OPTIONS, type OriginType } from "@/lib/motorcycle-origin";
 import { DOC_TYPE_LABEL } from "@/lib/motorcycle-documents";
 import {
@@ -496,20 +497,26 @@ function NewMotorcycle() {
         motoId = motoData.id;
         setSavedMotoId(motoId);
 
-        // Foto (opcional — falha não bloqueia)
+        // Foto — skip se já existe (retentativa segura)
         if (photo) {
           try {
-            const up = await uploadFile("motorcycle-photos", photo, uid);
-            await supabase.from("motorcycle_photos").insert({
-              motorcycle_id: motoId,
-              storage_path: up.path,
-              bucket: "motorcycle-photos",
-              is_main: true,
-            } as never);
-            await supabase
-              .from("motorcycles")
-              .update({ main_photo_url: up.path } as never)
-              .eq("id", motoId);
+            const { count: photoCount } = await supabase
+              .from("motorcycle_photos")
+              .select("id", { count: "exact", head: true })
+              .eq("motorcycle_id", motoId);
+            if (!photoCount || photoCount === 0) {
+              const up = await uploadFile("motorcycle-photos", photo, uid);
+              await supabase.from("motorcycle_photos").insert({
+                motorcycle_id: motoId,
+                storage_path: up.path,
+                bucket: "motorcycle-photos",
+                is_main: true,
+              } as never);
+              await supabase
+                .from("motorcycles")
+                .update({ main_photo_url: up.path } as never)
+                .eq("id", motoId);
+            }
           } catch {
             /* foto é opcional */
           }
@@ -526,22 +533,30 @@ function NewMotorcycle() {
       }
 
       // 3. Documento opcional
+      // Documento — skip se já existe (retentativa segura)
       if (originDocFile && wizDocUpload === true) {
         try {
-          const up = await uploadFile("documents", originDocFile, uid);
-          await supabase.from("motorcycle_documents" as never).insert({
-            motorcycle_id: motoId,
-            doc_type: originType || "other",
-            bucket: "documents",
-            storage_path: up.path,
-            file_name: originDocFile.name,
-            mime_type: originDocFile.type || null,
-            size_bytes: originDocFile.size,
-            created_by: uid,
-            version: 1,
-            is_current: true,
-            is_origin_document: true,
-          } as never);
+          const { count: docCount } = await supabase
+            .from("motorcycle_documents" as never)
+            .select("id", { count: "exact", head: true })
+            .eq("motorcycle_id", motoId)
+            .eq("is_origin_document", true as never);
+          if (!docCount || docCount === 0) {
+            const up = await uploadFile("documents", originDocFile, uid);
+            await supabase.from("motorcycle_documents" as never).insert({
+              motorcycle_id: motoId,
+              doc_type: originType || "other",
+              bucket: "documents",
+              storage_path: up.path,
+              file_name: originDocFile.name,
+              mime_type: originDocFile.type || null,
+              size_bytes: originDocFile.size,
+              created_by: uid,
+              version: 1,
+              is_current: true,
+              is_origin_document: true,
+            } as never);
+          }
         } catch {
           setDocUploadError(true);
         }
@@ -1438,161 +1453,6 @@ function NewMotorcycle() {
               {saving ? "Finalizando…" : "Finalizar cadastro"}
             </Button>
           </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── PlanItemRow (reutilizado do plan.tsx) ───────────────────────────────────
-function PlanItemRow({
-  row,
-  globalIndex,
-  intervalSummary,
-  onUpdate,
-  onRemove,
-}: {
-  row: ProposedSchedule;
-  globalIndex: number;
-  intervalSummary: string;
-  onUpdate: (patch: Partial<ProposedSchedule>) => void;
-  onRemove: () => void;
-}) {
-  const [editing, setEditing] = useState(false);
-  return (
-    <div className={`px-4 py-3 transition ${!row.keep ? "opacity-40" : ""}`}>
-      <div className="flex items-start gap-3">
-        <Checkbox
-          checked={row.keep}
-          onCheckedChange={(v) => onUpdate({ keep: !!v })}
-          aria-label={`${row.item_name}`}
-          className="mt-0.5 shrink-0"
-        />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium leading-tight">{row.item_name}</p>
-          <p className="text-xs text-primary/80 font-medium">{ACTION_LABEL[row.action]}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{intervalSummary}</p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setEditing((v) => !v)}
-          aria-label="Editar item"
-          className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-muted transition"
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </button>
-      </div>
-      {editing && (
-        <div className="mt-3 space-y-3 rounded-xl border border-border/60 bg-muted/20 p-3">
-          <div className="space-y-1">
-            <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">
-              Componente
-            </Label>
-            <Input
-              value={row.item_name}
-              onChange={(e) =>
-                onUpdate({
-                  item_name: e.target.value,
-                  name: `${e.target.value} — ${ACTION_LABEL[row.action]}`,
-                })
-              }
-            />
-          </div>
-          <div className="space-y-1">
-            <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">
-              Ação
-            </Label>
-            <Select
-              value={row.action}
-              onValueChange={(v) =>
-                onUpdate({
-                  action: v as PlanAction,
-                  name: `${row.item_name} — ${ACTION_LABEL[v as PlanAction]}`,
-                })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(ACTION_LABEL).map(([v, l]) => (
-                  <SelectItem key={v} value={v}>
-                    {l}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            <div className="space-y-1">
-              <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                Horas
-              </Label>
-              <Input
-                type="number"
-                step="0.1"
-                value={row.interval_hours ?? ""}
-                onChange={(e) =>
-                  onUpdate({ interval_hours: e.target.value ? Number(e.target.value) : null })
-                }
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                KM
-              </Label>
-              <Input
-                type="number"
-                value={row.interval_km ?? ""}
-                onChange={(e) =>
-                  onUpdate({ interval_km: e.target.value ? Number(e.target.value) : null })
-                }
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                Dias
-              </Label>
-              <Input
-                type="number"
-                value={row.interval_days ?? ""}
-                onChange={(e) =>
-                  onUpdate({ interval_days: e.target.value ? Number(e.target.value) : null })
-                }
-              />
-            </div>
-          </div>
-          <div className="space-y-1">
-            <Label className="text-[10px] uppercase tracking-widest text-muted-foreground">
-              Severidade
-            </Label>
-            <Select
-              value={row.severity}
-              onValueChange={(v) => onUpdate({ severity: v as PlanSeverity })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(SEVERITY_LABEL).map(([v, l]) => (
-                  <SelectItem key={v} value={v}>
-                    {l}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full text-destructive hover:text-destructive"
-            onClick={() => {
-              onRemove();
-              setEditing(false);
-            }}
-          >
-            <Trash2 className="h-3.5 w-3.5 mr-1" /> Remover este item
-          </Button>
         </div>
       )}
     </div>

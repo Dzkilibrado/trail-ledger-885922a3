@@ -364,7 +364,7 @@ export function MotoControlCenter({
             )}
             {isOwner &&
               (m as any).condition === "used" &&
-              (m as any).plan_review_status === "reviewed" &&
+              !(m as any).initial_review_done_at &&
               !isArchived && (
                 <div className="rounded-xl border border-border/60 bg-card/60 p-3 text-xs">
                   <div className="flex flex-wrap items-start justify-between gap-3">
