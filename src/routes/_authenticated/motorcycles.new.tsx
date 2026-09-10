@@ -63,7 +63,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { PlanItemRow } from "@/components/PlanItemRow";
 import { ORIGIN_OPTIONS, type OriginType } from "@/lib/motorcycle-origin";
-import { DOC_TYPE_LABEL } from "@/lib/motorcycle-documents";
+import { DOC_TYPE_LABEL, DOC_TYPES, type DocType } from "@/lib/motorcycle-documents";
 import {
   invalidateMotorcycleState,
   setStoredActiveMotorcycleId,
@@ -118,6 +118,7 @@ function NewMotorcycle() {
   const [notes, setNotes] = useState("");
   const [nickname, setNickname] = useState("");
   const [originType, setOriginType] = useState<OriginType | "">("");
+  const [docType, setDocType] = useState<DocType>("invoice"); // tipo do documento anexado no cadastro
   const [originNotes, setOriginNotes] = useState("");
   // Upload opcional do documento de origem durante o cadastro
   const [wantsDocUpload, setWantsDocUpload] = useState<boolean | null>(null);
@@ -544,7 +545,7 @@ function NewMotorcycle() {
             const up = await uploadFile("documents", originDocFile, uid);
             await supabase.from("motorcycle_documents" as never).insert({
               motorcycle_id: motoId,
-              doc_type: originType || "other",
+              doc_type: docType,
               bucket: "documents",
               storage_path: up.path,
               file_name: originDocFile.name,
@@ -921,21 +922,33 @@ function NewMotorcycle() {
             )}
             {wizDocAnswer === "yes" && wizDocUpload === true && (
               <div className="space-y-2">
-                <Select
-                  value={originType || "invoice"}
-                  onValueChange={(v) => setOriginType(v as never)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ORIGIN_OPTIONS.map((o) => (
-                      <SelectItem key={o.value} value={o.value}>
-                        {o.emoji} {o.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground">Tipo do documento</label>
+                  <Select
+                    value={docType}
+                    onValueChange={(v) => setDocType(v as DocType)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {DOC_TYPES.filter((d) =>
+                        ["invoice", "bill_of_sale", "contract", "import", "other"].includes(d.value)
+                      ).map((d) => (
+                        <SelectItem key={d.value} value={d.value}>
+                          {d.icon} {d.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <p className="text-[10px] text-muted-foreground">
+                    {docType === "invoice" && "Nota Fiscal emitida pela loja ou concessionária."}
+                    {docType === "bill_of_sale" && "Recibo ou contrato de compra e venda entre particulares."}
+                    {docType === "contract" && "Contrato de compra e venda formalizado."}
+                    {docType === "import" && "Documento de importação da motocicleta."}
+                    {docType === "other" && "Outro documento comprobatório de origem."}
+                  </p>
+                </div>
                 {!originDocFile ? (
                   <label className="flex cursor-pointer flex-col items-center gap-1 rounded-xl border border-dashed border-primary/40 bg-primary/5 p-4 text-center hover:border-primary/70">
                     <Paperclip className="h-6 w-6 text-primary/60" />
