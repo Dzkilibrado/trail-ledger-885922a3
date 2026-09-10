@@ -34,12 +34,17 @@ import {
   BadgeCheck,
   Copy,
   FileText,
+  FolderOpen,
   QrCode,
   Share2,
   ShieldAlert,
   Sparkles,
+  ChevronDown,
+  ChevronRight,
+  Clock,
+  Wrench,
+  FileCheck2,
 } from "lucide-react";
-import { FolderOpen } from "lucide-react";
 import { PresentDocumentsSheet } from "@/components/documents/PresentDocumentsSheet";
 import { toast } from "sonner";
 import { ReceiptsSummaryRow } from "@/components/receipts/ReceiptsHistorySheet";
@@ -49,6 +54,8 @@ import { BadgeSection } from "@/components/badges/BadgeSection";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";
 import { SCORE_TIER_STYLE as TIER_STYLE } from "@/lib/ui/status-styles";
+import { buildEvaluation, stateFromRideAnswer, EVALUATION_LABEL, RIDE_VERDICT, EVALUATION_DOT } from "@/lib/ui/evaluation";
+import { computeActionPlan, computeRideAnswer, computeComponentViews } from "@/lib/til";
 import { computeReviewState } from "@/lib/review-state";
 import { ReviewStateBadge } from "@/components/review-state/ReviewStateBadge";
 
@@ -79,6 +86,8 @@ function Passport() {
   const { id } = Route.useParams();
   const [filter, setFilter] = useState<string>("all");
   const [presentOpen, setPresentOpen] = useState(false);
+  const [diagOpen, setDiagOpen] = useState(false);
+  const [healthOpen, setHealthOpen] = useState(false);
 
   const moto = useQuery({
     queryKey: ["motorcycle", id],
@@ -217,8 +226,49 @@ function Passport() {
     criticalPending,
   });
 
+  // Cálculo de rideAnswer e actionPlan para Diagnóstico resumido
+  // statuses já calculado acima via priorityList — reutiliza sem recalcular
+  const components = computeComponentViews(
+    schedules.data ?? [],
+    statuses,
+    events.data ?? [],
+    {},
+    {},
+    {
+      usage: {
+        hours: m ? Number((m as any).hours_total ?? 0) : null,
+        km: m ? Number((m as any).km_total ?? 0) : null,
+      },
+    },
+  );
+  const actionPlan = computeActionPlan(components);
+  const rideAnswer = computeRideAnswer({ components, actionPlan });
+  const evalState = stateFromRideAnswer(rideAnswer);
+  const evalView = buildEvaluation(rideAnswer);
+
+  // Top-3 cuidados mais relevantes
+  const top3 = actionPlan.slice(0, 3);
+
+
+  // Labels para o selo em português
+  const TIER_LABEL_PT: Record<string, string> = {
+    none: "Sem selo",
+    bronze: "Bronze",
+    silver: "Prata",
+    gold: "Ouro",
+    platinum: "Platina",
+    diamond: "Diamante",
+  };
+
   if (moto.isLoading) {
-    return <div className="surface-elevated h-64 animate-pulse rounded-2xl" />;
+    return (
+      <div className="space-y-4 px-1">
+        <div className="h-10 w-48 animate-pulse rounded-xl bg-muted" />
+        <div className="h-40 animate-pulse rounded-2xl bg-muted" />
+        <div className="h-28 animate-pulse rounded-2xl bg-muted" />
+        <div className="h-28 animate-pulse rounded-2xl bg-muted" />
+      </div>
+    );
   }
   if (!m) {
     return (
@@ -229,8 +279,14 @@ function Passport() {
     );
   }
 
+  const activeDocs = (documents.data ?? []).filter((d) => !d.deleted_at);
+  const hasNF = activeDocs.some((d) => d.doc_type === "invoice");
+  const hasRecibo = activeDocs.some((d) => d.doc_type === "bill_of_sale");
+  const otherDocs = activeDocs.filter((d) => d.doc_type !== "invoice" && d.doc_type !== "bill_of_sale");
+
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-xl space-y-3 pb-10">
+      {/* CABEÇALHO */}
       <PageHeader
         title="Passaporte Digital"
         crumbs={[
@@ -238,25 +294,6 @@ function Passport() {
           { label: m.nickname || m.model, to: `/motorcycles/${m.id}` },
           { label: "Passaporte" },
         ]}
-        actions={
-          <div className="flex flex-wrap items-center gap-2">
-            <HelpTooltip label="Passaporte Digital" text={HELP.passport} side="bottom" />
-            <Button variant="outline" asChild>
-              <Link to="/motorcycles/$id" params={{ id: m.id }}>
-                <ArrowLeft className="h-4 w-4" /> Voltar à moto
-              </Link>
-            </Button>
-            <Button variant="secondary" onClick={() => setPresentOpen(true)}>
-              <FolderOpen className="h-4 w-4" /> Apresentar documentos
-            </Button>
-            <HelpTooltip label="Certificado Digital" text={HELP.passportShare} side="bottom" />
-            <Button asChild className="btn-glow">
-              <Link to="/motorcycles/$id/certificate" params={{ id: m.id }}>
-                <Share2 className="h-4 w-4" /> Certificado Digital
-              </Link>
-            </Button>
-          </div>
-        }
       />
 
       <PresentDocumentsSheet
@@ -266,249 +303,229 @@ function Passport() {
         motorcycleLabel={m.nickname || m.model}
       />
 
-      {/* Hero */}
+      {/* ── 1. IDENTIFICAÇÃO ─────────────────────────────── */}
       <div className="surface-elevated overflow-hidden rounded-2xl">
-        <div className="grid md:grid-cols-[280px_1fr]">
-          <StoragePhoto path={m.main_photo_url} className="h-56 w-full md:h-full" />
-          <div className="space-y-4 p-6">
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <div className="text-xs uppercase tracking-widest text-muted-foreground">
-                  {m.brand} · {m.year_model || m.year_make || ""}
-                </div>
-                <h1 className="font-display text-3xl font-bold">{m.nickname || m.model}</h1>
-                <div className="mt-1 text-sm text-muted-foreground">
-                  {m.model}
-                  {m.displacement ? ` · ${m.displacement}cc` : ""}
-                  {m.plate ? ` · ${m.plate}` : ""}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigator.clipboard.writeText((m as any).trailbook_id ?? "");
-                    toast.success("TrailBook ID copiado");
-                  }}
-                  className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/5 px-3 py-1 font-mono text-[11px] font-bold tracking-wider text-primary hover:bg-primary/10"
-                >
-                  <Copy className="h-3 w-3" /> {(m as any).trailbook_id}
-                </button>
-              </div>
-              <div className="flex flex-col items-end gap-2">
-                <EvaluationPill state={stateFromScore(conservation.score)} />
-                <div
-                  className={`rounded-full px-3 py-1 text-xs font-bold uppercase tracking-widest ${TIER_STYLE[tier]}`}
-                >
-                  <BadgeCheck className="mr-1 inline h-3.5 w-3.5" />
-                  {CERTIFIED_TIER_LABEL[tier]}
-                </div>
-              </div>
-            </div>
-            <div className="grid grid-cols-4 gap-3">
-              <MetricBox label="Km total" value={Number(m.km_total ?? 0).toFixed(0)} />
-              <MetricBox label="Horímetro" value={`${Number(m.hours_total ?? 0).toFixed(1)} h`} />
-              <MetricBox label="Eventos" value={String((events.data ?? []).length)} />
-              <MetricBox
-                label="Documentos"
-                value={String((documents.data ?? []).filter((d) => !d.deleted_at).length)}
-              />
-            </div>
+        <div className="flex gap-3 p-4">
+          {m.main_photo_url && (
+            <StoragePhoto
+              path={m.main_photo_url}
+              className="h-20 w-20 shrink-0 rounded-xl object-cover"
+            />
+          )}
+          <div className="min-w-0 flex-1">
             <p className="text-xs text-muted-foreground">
-              <Sparkles className="mr-1 inline h-3 w-3 text-primary" />
-              Documento vivo — cada evento registrado no TrailBook atualiza este passaporte
-              automaticamente (Single Source of Truth).
+              {m.brand} · {m.year_model || m.year_make || "—"}
             </p>
+            <h1 className="font-display text-xl font-bold leading-tight">
+              {m.nickname || m.model}
+            </h1>
+            {m.nickname && <p className="text-sm text-muted-foreground">{m.model}</p>}
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+              {Number(m.hours_total ?? 0) > 0 && (
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3 w-3" /> {Number(m.hours_total).toFixed(1)} h
+                </span>
+              )}
+              {Number(m.km_total ?? 0) > 0 && (
+                <span>{Number(m.km_total).toLocaleString("pt-BR")} km</span>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText((m as any).trailbook_id ?? "");
+                  toast.success("TrailBook ID copiado");
+                }}
+                className="flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2 py-0.5 font-mono text-[10px] font-bold text-primary hover:bg-primary/10"
+              >
+                <Copy className="h-2.5 w-2.5" /> {(m as any).trailbook_id}
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Status oficial do acompanhamento — transparência de UX, não afeta selos. */}
-      {(() => {
-        const rs = computeReviewState({ moto: m as any, schedules: schedules.data ?? [] });
-        return (
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span className="uppercase tracking-widest">Status do acompanhamento:</span>
-            <ReviewStateBadge snapshot={rs} />
-          </div>
-        );
-      })()}
-
-      {/* Selos de Qualidade do Histórico — evidências reais transformadas em confiança pública. */}
-      <BadgeSection motorcycleId={m.id} variant="full" />
-
-      {/* Pendências e Selo TrailBook Certified */}
-      <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
-        <div className="surface-elevated rounded-2xl p-5">
-          <h2 className="mb-3 flex items-center gap-2 font-display font-bold">
-            <ShieldAlert className="h-4 w-4 text-amber-400" /> Pendências
-            <HelpTooltip label="Pendências" text={HELP.pending} />
-          </h2>
-          {pending.length === 0 ? (
-            <div className="text-sm text-muted-foreground">
-              Nenhuma pendência. Excelente cuidado!
+      {/* ── 2. SELO DE CONSERVAÇÃO ───────────────────────── */}
+      {tier !== "none" && (
+        <div className="surface-elevated rounded-2xl p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                Selo de Conservação TrailBook
+              </p>
+              <div className={`mt-1 inline-flex items-center gap-1.5 rounded-lg px-3 py-1 text-sm font-semibold ${TIER_STYLE[tier]}`}>
+                <BadgeCheck className="h-4 w-4" />
+                {TIER_LABEL_PT[tier] ?? tier}
+              </div>
             </div>
-          ) : (
-            <ul className="space-y-2">
-              {pending.map((p) => (
-                <li
-                  key={p.key}
-                  className="flex items-start gap-3 rounded-xl border border-border/60 p-3 text-sm"
-                >
-                  <Badge
-                    variant="outline"
-                    className={
-                      p.severity === "critical"
-                        ? "border-destructive/50 text-destructive"
-                        : p.severity === "warn"
-                          ? "border-amber-500/50 text-amber-400"
-                          : "border-muted-foreground/40 text-muted-foreground"
-                    }
-                  >
-                    {p.severity === "critical"
-                      ? "Crítico"
-                      : p.severity === "warn"
-                        ? "Atenção"
-                        : "Info"}
-                  </Badge>
-                  <div className="flex-1">
-                    <div className="font-medium">{p.label}</div>
-                    {p.hint && <div className="text-xs text-muted-foreground">{p.hint}</div>}
-                  </div>
-                </li>
-              ))}
+            <HelpTooltip
+              label="Sobre este selo"
+              text="Este selo é calculado a partir do histórico, manutenção e evidências registradas no TrailBook. Não representa inspeção física ou certificação externa."
+              side="left"
+            />
+          </div>
+          {reasons.length > 0 && (
+            <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground">
+              {reasons.map((r, i) => <li key={i}>• {r}</li>)}
             </ul>
           )}
         </div>
+      )}
 
-        <div className="surface-elevated rounded-2xl p-5">
-          <h2 className="mb-3 flex items-center gap-2 font-display font-bold">
-            <BadgeCheck className="h-4 w-4 text-primary" /> Selo TrailBook Certified
-            <HelpTooltip label="Verificado pelo TrailBook" text={HELP.badgeVerified} />
-          </h2>
-          <div
-            className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-bold ${TIER_STYLE[tier]}`}
-          >
-            {CERTIFIED_TIER_LABEL[tier]}
+      {/* ── 3. DIAGNÓSTICO RESUMIDO ──────────────────────── */}
+      <div className="surface-elevated rounded-2xl overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setDiagOpen((v) => !v)}
+          className="flex w-full items-center justify-between gap-3 p-4 text-left hover:bg-muted/20 transition"
+          aria-expanded={diagOpen}
+        >
+          <div className="flex items-center gap-3">
+            <span className={`h-3 w-3 shrink-0 rounded-full ${EVALUATION_DOT[evalState]}`} />
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Diagnóstico</p>
+              <p className="font-semibold text-sm">{EVALUATION_LABEL[evalState]}</p>
+              <p className="text-xs text-muted-foreground">{RIDE_VERDICT[evalState]}</p>
+            </div>
           </div>
-          <ul className="mt-3 space-y-1 text-xs text-muted-foreground">
-            <li>• Cálculo automático — nunca informado manualmente.</li>
-            {reasons.map((r, i) => (
-              <li key={i}>• {r}</li>
+          <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${diagOpen ? "rotate-180" : ""}`} />
+        </button>
+        {diagOpen && (
+          <div className="border-t border-border/60 px-4 py-3 space-y-2 text-sm">
+            {evalView.findings.map((f, i) => (
+              <p key={i} className="text-muted-foreground text-xs">{f}</p>
             ))}
-            <li>
-              • Fase 2 (planejada): incorporar TrailBook Score e histórico de sinistros/recalls.
-            </li>
-          </ul>
-        </div>
+            <p className="text-xs text-muted-foreground pt-1 border-t border-border/40">
+              {evalView.recommendation}
+            </p>
+          </div>
+        )}
       </div>
 
-      {/* Resumo do Histórico de Propriedade */}
-      <section className="space-y-3">
-        <h2 className="flex items-center gap-2 font-display text-lg font-bold">
-          Histórico de propriedade
-          <HelpTooltip label="Histórico Completo" text={HELP.historyFull} />
-        </h2>
-        <ReceiptsSummaryRow
-          motoId={m.id}
-          isOwner={!!currentUserId && (m as any).owner_id === currentUserId}
-          count={(receipts.data ?? []).length}
-        />
-      </section>
-
-      {/* Painel de saúde por categoria */}
-      <section className="space-y-3">
-        <h2 className="flex items-center gap-2 font-display text-lg font-bold">
-          Painel de saúde
-          <HelpTooltip label="Saúde da moto" text={HELP.healthMoto} />
-        </h2>
-        <HealthPanel items={health} />
-      </section>
-
-      {/* Timeline consolidada */}
-      <section className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="flex items-center gap-2 font-display text-lg font-bold">
-            Linha do tempo
-            <HelpTooltip label="Linha do tempo" text={HELP.timeline} />
-          </h2>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">
-              {filteredTimeline.length} de {timeline.length}
-            </span>
-            <Select value={filter} onValueChange={setFilter}>
-              <SelectTrigger className="w-52">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos os eventos</SelectItem>
-                {Object.entries(KIND_LABEL).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>
-                    {v}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-        <div className="surface-elevated overflow-hidden rounded-2xl">
-          {filteredTimeline.length === 0 ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">
-              Sem registros neste filtro.
+      {/* ── 4. PRÓXIMOS CUIDADOS (top 3) ─────────────────── */}
+      {top3.length > 0 && (
+        <div className="surface-elevated rounded-2xl p-4 space-y-2">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Próximos cuidados
+          </p>
+          {top3.map((item, i) => (
+            <div key={i} className="flex items-center gap-3 rounded-xl border border-border/60 bg-card px-3 py-2">
+              <Wrench className="h-4 w-4 shrink-0 text-primary/70" />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium truncate">{item.title}</p>
+                {item.dueEstimateLabel && (
+                  <p className="text-xs text-muted-foreground">{item.dueEstimateLabel}</p>
+                )}
+              </div>
             </div>
-          ) : (
-            <ol className="divide-y divide-border/50">
-              {filteredTimeline.map((t) => (
-                <li key={t.id} className="flex items-start gap-3 p-4 hover:bg-muted/20">
-                  <div className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+          ))}
+          <Button variant="ghost" size="sm" className="w-full mt-1" asChild>
+            <Link to="/motorcycles/$id/registrar-manutencao" params={{ id: m.id }}>
+              <ChevronRight className="h-4 w-4" /> Ver manutenção completa
+            </Link>
+          </Button>
+        </div>
+      )}
+
+      {/* ── 5. DOCUMENTAÇÃO RESUMIDA ─────────────────────── */}
+      <div className="surface-elevated rounded-2xl p-4 space-y-2">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Documentação
+        </p>
+        <div className="space-y-1 text-sm">
+          <div className="flex items-center gap-2">
+            <FileCheck2 className={`h-4 w-4 shrink-0 ${hasNF ? "text-emerald-500" : "text-muted-foreground/40"}`} />
+            <span className={hasNF ? "text-foreground" : "text-muted-foreground"}>
+              Nota Fiscal {!hasNF && <span className="text-xs">(não anexada)</span>}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <FileCheck2 className={`h-4 w-4 shrink-0 ${hasRecibo ? "text-emerald-500" : "text-muted-foreground/40"}`} />
+            <span className={hasRecibo ? "text-foreground" : "text-muted-foreground"}>
+              Recibo de Compra e Venda {!hasRecibo && <span className="text-xs">(não anexado)</span>}
+            </span>
+          </div>
+          {otherDocs.length > 0 && (
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 shrink-0 text-muted-foreground/60" />
+              <span className="text-muted-foreground text-xs">+ {otherDocs.length} outro{otherDocs.length > 1 ? "s" : ""} documento{otherDocs.length > 1 ? "s" : ""}</span>
+            </div>
+          )}
+        </div>
+        <Button variant="outline" size="sm" className="w-full mt-1" onClick={() => setPresentOpen(true)}>
+          <FolderOpen className="h-4 w-4" /> Apresentar documentos
+        </Button>
+      </div>
+
+      {/* ── 6. SAÚDE (colapsada) ─────────────────────────── */}
+      <div className="surface-elevated rounded-2xl overflow-hidden">
+        <button
+          type="button"
+          onClick={() => setHealthOpen((v) => !v)}
+          className="flex w-full items-center justify-between gap-3 p-4 text-left hover:bg-muted/20 transition"
+          aria-expanded={healthOpen}
+        >
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+            Painel de saúde
+          </p>
+          <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${healthOpen ? "rotate-180" : ""}`} />
+        </button>
+        {healthOpen && (
+          <div className="border-t border-border/60 px-4 pb-4 pt-3">
+            <HealthPanel items={health} />
+          </div>
+        )}
+      </div>
+
+      {/* ── 7. HISTÓRICO RECENTE (3 eventos) ────────────── */}
+      <div className="surface-elevated rounded-2xl overflow-hidden">
+        <p className="px-4 pt-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Histórico recente
+        </p>
+        {timeline.length === 0 ? (
+          <p className="px-4 pb-4 text-sm text-muted-foreground">Nenhum evento registrado.</p>
+        ) : (
+          <>
+            <ol className="divide-y divide-border/50 mt-2">
+              {timeline.slice(0, 3).map((t) => (
+                <li key={t.id} className="flex items-center gap-3 px-4 py-2.5">
+                  <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
                     {t.source === "events" ? (
                       <EventTypeIcon type={t.kind as any} className="h-4 w-4" />
-                    ) : t.source === "motorcycle_documents" ? (
-                      <FileText className="h-4 w-4" />
-                    ) : t.source === "certificates" ? (
-                      <QrCode className="h-4 w-4" />
                     ) : (
-                      <Sparkles className="h-4 w-4" />
+                      <FileText className="h-4 w-4" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex flex-wrap items-baseline justify-between gap-2">
-                      <div className="min-w-0">
-                        <span className="mr-2 text-xs uppercase tracking-widest text-muted-foreground">
-                          {KIND_LABEL[t.kind] ?? EVENT_TYPE_LABEL[t.kind as never] ?? t.kind}
-                        </span>
-                        <span className="font-medium">{t.title}</span>
-                      </div>
-                      <span className="text-xs text-muted-foreground">
-                        {formatDate(t.occurredAt)}
-                      </span>
-                    </div>
-                    <div className="mt-0.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
-                      {t.workshopName && <span>🔧 {t.workshopName}</span>}
-                      {t.odometerKm != null && (
-                        <span>{t.odometerKm.toLocaleString("pt-BR")} km</span>
-                      )}
-                      {t.cost != null && t.cost > 0 && (
-                        <span className="text-primary">{brl(t.cost)}</span>
-                      )}
-                    </div>
-                    {t.description && (
-                      <div className="mt-1 line-clamp-2 text-xs text-muted-foreground">
-                        {t.description}
-                      </div>
-                    )}
+                    <p className="text-sm font-medium truncate">{t.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(t.occurredAt)}
+                      {t.odometerKm != null && ` · ${t.odometerKm.toLocaleString("pt-BR")} km`}
+                    </p>
                   </div>
                 </li>
               ))}
             </ol>
-          )}
-        </div>
-      </section>
+            <div className="px-4 pb-3 pt-1">
+              <Button variant="ghost" size="sm" className="w-full" asChild>
+                <Link to="/motorcycles/$id/historico-manutencao" params={{ id: m.id }}>
+                  <ChevronRight className="h-4 w-4" /> Ver histórico completo
+                </Link>
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
 
-      <div className="surface-elevated rounded-2xl border border-dashed border-border p-4 text-xs text-muted-foreground">
-        <strong className="text-foreground">Compartilhamento ativo:</strong> use o botão acima para
-        gerar um link público com audiência definida (comprador, oficina, seguradora, despachante,
-        familiar), QR Code pronto para impressão, data de expiração opcional e revogação a qualquer
-        momento. Cada abertura fica registrada no log de acessos do certificado. Próximos passos
-        previstos: TrailBook Score próprio, módulo de valorização e resumos por IA.
+      {/* ── 8. AÇÕES PRINCIPAIS ──────────────────────────── */}
+      <div className="flex flex-col gap-2">
+        <Button className="w-full btn-glow" asChild>
+          <Link to="/motorcycles/$id/certificate" params={{ id: m.id }}>
+            <Share2 className="h-4 w-4" /> Certificado Digital
+          </Link>
+        </Button>
+        <Button variant="outline" className="w-full" onClick={() => setPresentOpen(true)}>
+          <FolderOpen className="h-4 w-4" /> Apresentar documentos
+        </Button>
       </div>
     </div>
   );
