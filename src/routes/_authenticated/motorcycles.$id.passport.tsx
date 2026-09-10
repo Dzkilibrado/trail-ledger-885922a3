@@ -1,21 +1,11 @@
-import { EvaluationPill } from "@/components/health/EvaluationPill";
-import { stateFromScore } from "@/lib/ui/evaluation";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { StoragePhoto } from "@/components/StoragePhoto";
 import { HealthPanel } from "@/components/HealthPanel";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { EventTypeIcon } from "@/components/EventTypeIcon";
 import { brl, EVENT_TYPE_LABEL, formatDate } from "@/lib/trailbook";
 import { computeConservation, categoryHealth, docsHealth, historyHealth } from "@/lib/conservation";
@@ -24,13 +14,11 @@ import {
   buildTimeline,
   derivePending,
   computeCertifiedTier,
-  CERTIFIED_TIER_LABEL,
   type PassportEntry,
   type PassportEntryKind,
 } from "@/lib/passport";
 import {
   AlertTriangle,
-  ArrowLeft,
   BadgeCheck,
   Copy,
   FileText,
@@ -44,47 +32,30 @@ import {
   Clock,
   Wrench,
   FileCheck2,
+  Info,
 } from "lucide-react";
 import { PresentDocumentsSheet } from "@/components/documents/PresentDocumentsSheet";
 import { toast } from "sonner";
-import { ReceiptsSummaryRow } from "@/components/receipts/ReceiptsHistorySheet";
-import { useReceiptsForMoto } from "@/hooks/useActiveNegotiation";
-import { useEffect } from "react";
-import { BadgeSection } from "@/components/badges/BadgeSection";
 import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";
 import { SCORE_TIER_STYLE as TIER_STYLE } from "@/lib/ui/status-styles";
-import { buildEvaluation, stateFromRideAnswer, EVALUATION_LABEL, RIDE_VERDICT, EVALUATION_DOT } from "@/lib/ui/evaluation";
+import {
+  buildEvaluation,
+  stateFromRideAnswer,
+  EVALUATION_LABEL,
+  RIDE_VERDICT,
+  EVALUATION_DOT,
+} from "@/lib/ui/evaluation";
 import { computeActionPlan, computeRideAnswer, computeComponentViews } from "@/lib/til";
-import { computeReviewState } from "@/lib/review-state";
-import { ReviewStateBadge } from "@/components/review-state/ReviewStateBadge";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id/passport")({
   head: () => ({ meta: [{ title: "Passaporte Digital — TrailBook" }] }),
   component: Passport,
 });
 
-const KIND_LABEL: Record<PassportEntryKind, string> = {
-  creation: "Cadastro",
-  purchase: "Compra",
-  sale: "Venda",
-  ownership_transfer: "Troca de proprietário",
-  maintenance: "Manutenção",
-  revision: "Revisão",
-  usage: "Uso",
-  incident: "Sinistro",
-  recall: "Recall",
-  warranty: "Garantia",
-  accessory: "Acessório",
-  note: "Observação",
-  document: "Documento",
-  photo: "Foto",
-  certificate: "Certificado emitido",
-};
 
 function Passport() {
   const { id } = Route.useParams();
-  const [filter, setFilter] = useState<string>("all");
   const [presentOpen, setPresentOpen] = useState(false);
   const [diagOpen, setDiagOpen] = useState(false);
   const [healthOpen, setHealthOpen] = useState(false);
@@ -161,7 +132,6 @@ function Passport() {
     queryKey: ["workshops", "byId"],
     queryFn: async () => (await supabase.from("workshops_public").select("id, name")).data ?? [],
   });
-  const receipts = useReceiptsForMoto(id);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setCurrentUserId(data.session?.user.id ?? null));
@@ -187,7 +157,6 @@ function Passport() {
     });
   }, [moto.data, events.data, documents.data, ownership.data, certificates.data, workshopsById]);
 
-  const filteredTimeline = filter === "all" ? timeline : timeline.filter((t) => t.kind === filter);
 
   const m = moto.data;
   const statuses =
@@ -345,31 +314,68 @@ function Passport() {
       </div>
 
       {/* ── 2. SELO DE CONSERVAÇÃO ───────────────────────── */}
-      {tier !== "none" && (
-        <div className="surface-elevated rounded-2xl p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                Selo de Conservação TrailBook
-              </p>
+      {/* Sempre exibido — tier=none informa o que falta para atingir Bronze */}
+      <div className="surface-elevated rounded-2xl p-4 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Selo de Conservação TrailBook
+            </p>
+            {tier === "none" ? (
+              <p className="mt-1 text-sm text-muted-foreground">Sem selo atribuído</p>
+            ) : (
               <div className={`mt-1 inline-flex items-center gap-1.5 rounded-lg px-3 py-1 text-sm font-semibold ${TIER_STYLE[tier]}`}>
                 <BadgeCheck className="h-4 w-4" />
                 {TIER_LABEL_PT[tier] ?? tier}
               </div>
-            </div>
-            <HelpTooltip
-              label="Sobre este selo"
-              text="Este selo é calculado a partir do histórico, manutenção e evidências registradas no TrailBook. Não representa inspeção física ou certificação externa."
-              side="left"
-            />
+            )}
           </div>
-          {reasons.length > 0 && (
-            <ul className="mt-2 space-y-0.5 text-xs text-muted-foreground">
-              {reasons.map((r, i) => <li key={i}>• {r}</li>)}
-            </ul>
-          )}
+          <HelpTooltip
+            label="Sobre este selo"
+            text="Este selo é calculado a partir do histórico, manutenção e evidências registradas no TrailBook. Não representa inspeção física ou certificação externa."
+            side="left"
+          />
         </div>
-      )}
+
+        {/* Reasons: o que falta ou o que impede um nível mais alto */}
+        {reasons.length > 0 && (
+          <ul className="space-y-0.5 text-xs text-muted-foreground">
+            {reasons.map((r, i) => <li key={i} className="flex items-start gap-1.5"><Info className="h-3 w-3 shrink-0 mt-0.5 text-amber-400" />{r}</li>)}
+          </ul>
+        )}
+
+        {/* Pendências críticas integradas */}
+        {pending.length > 0 && (
+          <div className="border-t border-border/50 pt-3 space-y-1.5">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+              <ShieldAlert className="h-3 w-3 text-amber-400" /> Pendências
+            </p>
+            {pending.map((p) => (
+              <div key={p.key} className="flex items-start gap-2 text-xs">
+                <span className={
+                  p.severity === "critical"
+                    ? "font-bold text-destructive"
+                    : p.severity === "warn"
+                    ? "text-amber-400"
+                    : "text-muted-foreground"
+                }>
+                  {p.severity === "critical" ? "⚠" : p.severity === "warn" ? "•" : "·"}
+                </span>
+                <div>
+                  <span className="text-foreground">{p.label}</span>
+                  {p.hint && <span className="ml-1 text-muted-foreground">— {p.hint}</span>}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Disclaimer */}
+        <p className="text-[10px] text-muted-foreground border-t border-border/40 pt-2 leading-relaxed">
+          Esta apresentação organiza informações registradas no TrailBook e não substitui documentos
+          oficiais exigidos pela legislação.
+        </p>
+      </div>
 
       {/* ── 3. DIAGNÓSTICO RESUMIDO ──────────────────────── */}
       <div className="surface-elevated rounded-2xl overflow-hidden">
@@ -419,8 +425,8 @@ function Passport() {
             </div>
           ))}
           <Button variant="ghost" size="sm" className="w-full mt-1" asChild>
-            <Link to="/motorcycles/$id/registrar-manutencao" params={{ id: m.id }}>
-              <ChevronRight className="h-4 w-4" /> Ver manutenção completa
+            <Link to="/motorcycles/$id/plan" params={{ id: m.id }}>
+              <ChevronRight className="h-4 w-4" /> Ver plano de manutenção
             </Link>
           </Button>
         </div>
@@ -476,45 +482,59 @@ function Passport() {
         )}
       </div>
 
-      {/* ── 7. HISTÓRICO RECENTE (3 eventos) ────────────── */}
-      <div className="surface-elevated rounded-2xl overflow-hidden">
-        <p className="px-4 pt-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-          Histórico recente
-        </p>
-        {timeline.length === 0 ? (
-          <p className="px-4 pb-4 text-sm text-muted-foreground">Nenhum evento registrado.</p>
-        ) : (
-          <>
-            <ol className="divide-y divide-border/50 mt-2">
-              {timeline.slice(0, 3).map((t) => (
-                <li key={t.id} className="flex items-center gap-3 px-4 py-2.5">
-                  <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-                    {t.source === "events" ? (
-                      <EventTypeIcon type={t.kind as any} className="h-4 w-4" />
-                    ) : (
-                      <FileText className="h-4 w-4" />
-                    )}
+      {/* ── 7. HISTÓRICO (3 recentes + expandir inline) ──── */}
+      {(() => {
+        const [showAll, setShowAll] = useState(false);
+        const visibleTimeline = showAll ? timeline : timeline.slice(0, 3);
+        return (
+          <div className="surface-elevated rounded-2xl overflow-hidden">
+            <p className="px-4 pt-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+              Histórico
+            </p>
+            {timeline.length === 0 ? (
+              <p className="px-4 pb-4 pt-2 text-sm text-muted-foreground">Nenhum evento registrado.</p>
+            ) : (
+              <>
+                <ol className="divide-y divide-border/50 mt-2">
+                  {visibleTimeline.map((t) => (
+                    <li key={t.id} className="flex items-center gap-3 px-4 py-2.5">
+                      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                        {t.source === "events" ? (
+                          <EventTypeIcon type={t.kind as any} className="h-4 w-4" />
+                        ) : (
+                          <FileText className="h-4 w-4" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium truncate">{t.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDate(t.occurredAt)}
+                          {t.odometerKm != null && ` · ${t.odometerKm.toLocaleString("pt-BR")} km`}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+                {timeline.length > 3 && (
+                  <div className="px-4 pb-3 pt-1">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => setShowAll((v) => !v)}
+                    >
+                      <ChevronDown className={`h-4 w-4 mr-1 transition-transform ${showAll ? "rotate-180" : ""}`} />
+                      {showAll
+                        ? "Ver menos"
+                        : `Ver todos os ${timeline.length} eventos`}
+                    </Button>
                   </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">{t.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(t.occurredAt)}
-                      {t.odometerKm != null && ` · ${t.odometerKm.toLocaleString("pt-BR")} km`}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </ol>
-            <div className="px-4 pb-3 pt-1">
-              <Button variant="ghost" size="sm" className="w-full" asChild>
-                <Link to="/motorcycles/$id/historico-manutencao" params={{ id: m.id }}>
-                  <ChevronRight className="h-4 w-4" /> Ver histórico completo
-                </Link>
-              </Button>
-            </div>
-          </>
-        )}
-      </div>
+                )}
+              </>
+            )}
+          </div>
+        );
+      })()}
 
       {/* ── 8. AÇÕES PRINCIPAIS ──────────────────────────── */}
       <div className="flex flex-col gap-2">
