@@ -623,7 +623,7 @@ function NewMotorcycle() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-xl space-y-0 pb-32">
+    <div className="mx-auto w-full max-w-xl space-y-0 pb-[140px]">
       {/* Stepper compacto */}
       <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm pt-4 pb-3 px-1">
         <div className="flex gap-1">
@@ -973,7 +973,7 @@ function NewMotorcycle() {
             )}
           </div>
 
-          <div className="fixed bottom-0 left-0 right-0 z-30 flex gap-2 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
+          <div className="fixed bottom-0 left-0 right-0 z-50 flex gap-2 border-t border-border bg-background/95 px-4 py-3 pb-safe backdrop-blur-sm">
             <Button
               variant="outline"
               className="flex-none"
@@ -1135,7 +1135,7 @@ function NewMotorcycle() {
             </div>
           </div>
 
-          <div className="fixed bottom-0 left-0 right-0 z-30 flex gap-2 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
+          <div className="fixed bottom-0 left-0 right-0 z-50 flex gap-2 border-t border-border bg-background/95 px-4 py-3 pb-safe backdrop-blur-sm">
             <Button
               variant="outline"
               className="flex-none"
@@ -1289,7 +1289,7 @@ function NewMotorcycle() {
             />
           )}
 
-          <div className="fixed bottom-0 left-0 right-0 z-30 flex gap-2 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
+          <div className="fixed bottom-0 left-0 right-0 z-50 flex gap-2 border-t border-border bg-background/95 px-4 py-3 pb-safe backdrop-blur-sm">
             <Button
               variant="outline"
               className="flex-none"
@@ -1432,7 +1432,7 @@ function NewMotorcycle() {
             </div>
           )}
 
-          <div className="fixed bottom-0 left-0 right-0 z-30 flex gap-2 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm">
+          <div className="fixed bottom-0 left-0 right-0 z-50 flex gap-2 border-t border-border bg-background/95 px-4 py-3 pb-safe backdrop-blur-sm">
             <Button
               variant="outline"
               className="flex-none"

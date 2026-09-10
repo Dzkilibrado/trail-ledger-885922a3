@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { TBLoadingState } from "@/design-system";
 import { BRANDS } from "@/lib/trailbook";
-import { MotorcyclePhotos } from "@/components/MotorcyclePhotos";
+import { PhotoReplace } from "@/components/PhotoReplace";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id/editar")({
   head: () => ({ meta: [{ title: "Editar dados da moto — TrailBook" }] }),
@@ -221,7 +221,7 @@ function EditMotorcyclePage() {
           <p className="text-xs text-muted-foreground">
             Toque em uma foto para defini-la como principal ou removê-la.
           </p>
-          <MotorcyclePhotos motorcycleId={id} />
+          <PhotoReplace motorcycleId={id} />
         </div>
 
         <div className="space-y-2">
