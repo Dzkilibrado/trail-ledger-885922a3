@@ -20,6 +20,8 @@ export interface CertPdfInput {
   photoDataUrl: string | null;
   attachmentsCount: number;
   workshopsCount: number;
+  /** Seções liberadas pelo proprietário — respeitar ao gerar o PDF */
+  allowedSections?: string[];
 }
 
 export interface CertPdfOutput {
@@ -27,8 +29,19 @@ export interface CertPdfOutput {
   fileName: string;
 }
 
+
+// Traduz score 0-100 para estado textual sem número
+function stateLabel(score: number): string {
+  if (score >= 80) return "Muito bom";
+  if (score >= 60) return "Bom";
+  if (score >= 40) return "Regular";
+  if (score >= 20) return "Atenção";
+  return "Crítico";
+}
+
 export async function generateCertificatePdf(input: CertPdfInput): Promise<CertPdfOutput> {
-  const { moto, events, conservation, health, upcoming, publicUrl, photoDataUrl, attachmentsCount, workshopsCount } = input;
+  const { moto, events, conservation, health, upcoming, publicUrl, photoDataUrl, attachmentsCount, workshopsCount, allowedSections = [] } = input;
+  const showSection = (k: string) => allowedSections.length === 0 || allowedSections.includes(k);
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
@@ -47,13 +60,13 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
   doc.setFont("helvetica", "normal");
   doc.setFontSize(9);
   doc.setTextColor(200, 200, 210);
-  doc.text("Prontuário digital · Certificado oficial", M, 56);
+  doc.text("Prontuário digital", M, 56);
   doc.setFontSize(8);
   doc.text(`Emitido em ${formatDate(new Date().toISOString())}`, W - M, 38, { align: "right" });
   doc.setTextColor(...ORANGE);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("TRAILBOOK CERTIFIED", W - M, 56, { align: "right" });
+  doc.text("Certificado Digital", W - M, 56, { align: "right" });
 
   y = 110;
 
@@ -89,7 +102,7 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
   const stats = [
     ["Horas", `${Number(moto.hours_total ?? 0).toFixed(1)} h`],
     ["Quilometragem", `${Number(moto.km_total ?? 0).toFixed(0)} km`],
-    ["Conservação", `${conservation.score} (${conservation.grade})`],
+    ["Conservação", stateLabel(conservation.score)],
     ["Eventos", String(events.length)],
   ];
   let sx = tx;
@@ -116,10 +129,10 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
   y += 10;
   section(doc, "Índice de Conservação", M, y, W - M * 2);
   y += 18;
-  doc.setFontSize(28); doc.setFont("helvetica", "bold"); doc.setTextColor(...ORANGE);
-  doc.text(`${conservation.score}`, M, y + 22);
-  doc.setFontSize(11); doc.setTextColor(...DARK);
-  doc.text(`Nota ${conservation.grade}`, M + 55, y + 22);
+  doc.setFontSize(14); doc.setFont("helvetica", "bold"); doc.setTextColor(...ORANGE);
+  doc.text(stateLabel(conservation.score), M, y + 22);
+  doc.setFontSize(9); doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
+  doc.text("Avaliação automática com base no prontuário registrado no TrailBook.", M, y + 36);
   doc.setFontSize(8); doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
   let fy = y;
   for (const f of conservation.factors.slice(0, 6)) {
@@ -142,7 +155,8 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
     doc.setTextColor(...DARK); doc.setFont("helvetica", "bold"); doc.setFontSize(9);
     doc.text(h.label, cx + 10, cy + 14);
     doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...MUTED);
-    doc.text(`${h.score}/100`, cx + 10, cy + 26);
+    const hLabel = h.status === "good" ? "Regular" : h.status === "warn" ? "Atenção" : "Crítico";
+    doc.text(hLabel, cx + 10, cy + 26);
     doc.text(h.reason.slice(0, 30), cx + 10, cy + 38);
     cx += cellW;
     if ((i + 1) % 4 === 0) { cx = M; cy += 52; }
@@ -169,7 +183,8 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
   section(doc, "Histórico de eventos", M, y, W - M * 2);
   y += 16;
   doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(...MUTED);
-  doc.text("DATA", M, y); doc.text("TIPO", M + 70, y); doc.text("DESCRIÇÃO", M + 160, y); doc.text("CUSTO", W - M - 40, y);
+  doc.text("DATA", M, y); doc.text("TIPO", M + 70, y); doc.text("DESCRIÇÃO", M + 160, y);
+  if (showSection("costs")) doc.text("CUSTO", W - M - 40, y);
   y += 6; doc.setDrawColor(...LINE); doc.line(M, y, W - M, y); y += 10;
   doc.setFont("helvetica", "normal"); doc.setTextColor(...DARK); doc.setFontSize(9);
   for (const e of events) {
@@ -178,7 +193,7 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
     doc.text(EVENT_TYPE_LABEL[e.type] ?? e.type, M + 70, y);
     const desc = (e.title || e.description || "").slice(0, 60);
     doc.text(desc, M + 160, y);
-    doc.text(brl(e.cost != null ? Number(e.cost) : null), W - M, y, { align: "right" });
+    if (showSection("costs")) doc.text(brl(e.cost != null ? Number(e.cost) : null), W - M, y, { align: "right" });
     y += 13;
   }
 

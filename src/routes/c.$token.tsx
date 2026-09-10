@@ -286,6 +286,7 @@ function PublicCert() {
         photoDataUrl,
         attachmentsCount: certData.attachments.length,
         workshopsCount: certData.workshops.length,
+        allowedSections: (data?.certificate.allowed_sections ?? []) as string[],
       });
       stage = "salvando arquivo";
       const result = await saveFile({
@@ -383,8 +384,8 @@ function PublicCert() {
                   <Bike className="h-16 w-16 opacity-40" />
                 </div>
               )}
-              <div className="absolute left-4 top-4 flex items-center gap-1 rounded-full bg-primary px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-primary-foreground btn-glow">
-                <ShieldCheck className="h-3 w-3" /> TrailBook Certified
+              <div className="absolute left-4 top-4 flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-semibold text-white/90 backdrop-blur-sm">
+                <ShieldCheck className="h-3 w-3 text-primary" /> Prontuário verificado · TrailBook
               </div>
             </div>
             <div className="flex flex-col justify-between p-6 md:p-8">
@@ -437,22 +438,20 @@ function PublicCert() {
           {show("conservation") ? (
             <div className="surface-elevated rounded-3xl p-6">
               <div className="flex items-center justify-between">
-                <h2 className="font-display text-lg font-bold">Avaliação TrailBook</h2>
+                <h2 className="font-display text-lg font-bold">Estado de Conservação</h2>
                 <span className="text-xs text-muted-foreground">
                   Avaliação automática TrailBook
                 </span>
               </div>
-              <div className="mt-4 flex items-center gap-6">
-                <div className="space-y-2">
-                  <EvaluationPill state={stateFromScore(computed.conservation.score)} />
-                  <p className="max-w-md text-sm text-muted-foreground">
-                    O TrailBook avaliou esta motocicleta utilizando todas as informações registradas
-                    até a emissão deste certificado.
-                  </p>
-                  <p className="max-w-md text-sm">
-                    {RIDE_VERDICT[stateFromScore(computed.conservation.score)]}
-                  </p>
-                </div>
+              <div className="mt-4 space-y-3">
+                <EvaluationPill state={stateFromScore(computed.conservation.score)} />
+                <p className="max-w-md text-sm text-muted-foreground">
+                  Com base no histórico de manutenções, evidências registradas e dados do prontuário
+                  desta motocicleta, o TrailBook atribuiu o estado de conservação acima.
+                </p>
+                <p className="max-w-md text-sm">
+                  {RIDE_VERDICT[stateFromScore(computed.conservation.score)]}
+                </p>
               </div>
             </div>
           ) : (
