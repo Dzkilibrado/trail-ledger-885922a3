@@ -222,6 +222,9 @@ function Passport() {
   // Top-3 cuidados mais relevantes
   const top3 = actionPlan.slice(0, 3);
 
+  // Timeline: visível inicialmente (3) ou completa (showAll)
+  const visibleTimeline = showAll ? timeline : timeline.slice(0, 3);
+
 
   // Labels para o selo em português
   const TIER_LABEL_PT: Record<string, string> = {
@@ -496,57 +499,50 @@ function Passport() {
       </div>
 
       {/* ── 7. HISTÓRICO (3 recentes + expandir inline) ──── */}
-      {(() => {
-        const visibleTimeline = showAll ? timeline : timeline.slice(0, 3);
-        return (
-          <div className="surface-elevated rounded-2xl overflow-hidden">
-            <p className="px-4 pt-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Histórico
-            </p>
-            {timeline.length === 0 ? (
-              <p className="px-4 pb-4 pt-2 text-sm text-muted-foreground">Nenhum evento registrado.</p>
-            ) : (
-              <>
-                <ol className="divide-y divide-border/50 mt-2">
-                  {visibleTimeline.map((t) => (
-                    <li key={t.id} className="flex items-center gap-3 px-4 py-2.5">
-                      <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
-                        {t.source === "events" ? (
-                          <EventTypeIcon type={t.kind as any} className="h-4 w-4" />
-                        ) : (
-                          <FileText className="h-4 w-4" />
-                        )}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium truncate">{t.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {formatDate(t.occurredAt)}
-                          {t.odometerKm != null && ` · ${t.odometerKm.toLocaleString("pt-BR")} km`}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
-                </ol>
-                {timeline.length > 3 && (
-                  <div className="px-4 pb-3 pt-1">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full"
-                      onClick={() => setShowAll((v) => !v)}
-                    >
-                      <ChevronDown className={`h-4 w-4 mr-1 transition-transform ${showAll ? "rotate-180" : ""}`} />
-                      {showAll
-                        ? "Ver menos"
-                        : `Ver todos os ${timeline.length} eventos`}
-                    </Button>
+      <div className="surface-elevated rounded-2xl overflow-hidden">
+        <p className="px-4 pt-4 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+          Histórico
+        </p>
+        {timeline.length === 0 ? (
+          <p className="px-4 pb-4 pt-2 text-sm text-muted-foreground">Nenhum evento registrado.</p>
+        ) : (
+          <>
+            <ol className="divide-y divide-border/50 mt-2">
+              {visibleTimeline.map((t) => (
+                <li key={t.id} className="flex items-center gap-3 px-4 py-2.5">
+                  <div className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary">
+                    {t.source === "events" ? (
+                      <EventTypeIcon type={t.kind as any} className="h-4 w-4" />
+                    ) : (
+                      <FileText className="h-4 w-4" />
+                    )}
                   </div>
-                )}
-              </>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{t.title}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {formatDate(t.occurredAt)}
+                      {t.odometerKm != null && ` · ${t.odometerKm.toLocaleString("pt-BR")} km`}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ol>
+            {timeline.length > 3 && (
+              <div className="px-4 pb-3 pt-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setShowAll((v) => !v)}
+                >
+                  <ChevronDown className={`h-4 w-4 mr-1 transition-transform ${showAll ? "rotate-180" : ""}`} />
+                  {showAll ? "Ver menos" : `Ver todos os ${timeline.length} eventos`}
+                </Button>
+              </div>
             )}
-          </div>
-        );
-      })()}
+          </>
+        )}
+      </div>
 
       {/* ── 8. AÇÕES PRINCIPAIS ──────────────────────────── */}
       <div className="flex flex-col gap-2">
