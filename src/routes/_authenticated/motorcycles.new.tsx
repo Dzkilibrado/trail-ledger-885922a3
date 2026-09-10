@@ -116,6 +116,7 @@ function NewMotorcycle() {
   const [useProfile, setUseProfile] = useState<UseProfile>("normal");
   const [useProfileNote, setUseProfileNote] = useState("");
   const [notes, setNotes] = useState("");
+  const [nickname, setNickname] = useState("");
   const [originType, setOriginType] = useState<OriginType | "">("");
   const [originNotes, setOriginNotes] = useState("");
   // Upload opcional do documento de origem durante o cadastro
@@ -480,9 +481,7 @@ function NewMotorcycle() {
           use_profile: planProfile,
           use_profile_note: planProfile === "other" ? planProfileNote.trim() || null : null,
           incident_declaration: incident === "no" ? INCIDENT_DECLARATION_TEXT : null,
-          has_incident: incident === "yes",
-          incident_unknown: incident === "unknown",
-          notes: notes || null,
+          nickname: nickname.trim() || null,
           plan_review_status:
             controlType === "not_informed" || (parsedHours === 0 && parsedKm === 0)
               ? "skipped"
@@ -822,7 +821,12 @@ function NewMotorcycle() {
             </div>
 
             <Field label="Apelido (opcional)">
-              <Input name="nickname" placeholder="Ex: A vermelhinha" />
+              <Input
+                name="nickname"
+                placeholder="Ex: A vermelhinha"
+                value={nickname}
+                onChange={(e) => setNickname(e.target.value)}
+              />
             </Field>
           </div>
 
