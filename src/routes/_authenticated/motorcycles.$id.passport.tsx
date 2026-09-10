@@ -59,6 +59,7 @@ function Passport() {
   const [presentOpen, setPresentOpen] = useState(false);
   const [diagOpen, setDiagOpen] = useState(false);
   const [healthOpen, setHealthOpen] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   const moto = useQuery({
     queryKey: ["motorcycle", id],
@@ -484,7 +485,6 @@ function Passport() {
 
       {/* ── 7. HISTÓRICO (3 recentes + expandir inline) ──── */}
       {(() => {
-        const [showAll, setShowAll] = useState(false);
         const visibleTimeline = showAll ? timeline : timeline.slice(0, 3);
         return (
           <div className="surface-elevated rounded-2xl overflow-hidden">
