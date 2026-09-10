@@ -60,6 +60,7 @@ function Passport() {
   const [diagOpen, setDiagOpen] = useState(false);
   const [healthOpen, setHealthOpen] = useState(false);
   const [showAll, setShowAll] = useState(false);
+  const [showAllPending, setShowAllPending] = useState(false);
 
   const moto = useQuery({
     queryKey: ["motorcycle", id],
@@ -177,7 +178,9 @@ function Passport() {
     docsHealth({ plate: !!m?.plate, renavam: !!m?.renavam, chassis: !!m?.chassis }),
     historyHealth(events.data ?? []),
   ];
-  const hasInvoice = (documents.data ?? []).some((d) => d.doc_type === "invoice" && !d.deleted_at);
+  const hasInvoice = (documents.data ?? []).some(
+    (d) => d.doc_type === "invoice" && !d.deleted_at && d.is_current,
+  );
   const overdueSchedules = statuses.filter((s) => s.status === "overdue").length;
   const pending = m
     ? derivePending({
@@ -249,7 +252,7 @@ function Passport() {
     );
   }
 
-  const activeDocs = (documents.data ?? []).filter((d) => !d.deleted_at);
+  const activeDocs = (documents.data ?? []).filter((d) => !d.deleted_at && d.is_current);
   const hasNF = activeDocs.some((d) => d.doc_type === "invoice");
   const hasRecibo = activeDocs.some((d) => d.doc_type === "bill_of_sale");
   const otherDocs = activeDocs.filter((d) => d.doc_type !== "invoice" && d.doc_type !== "bill_of_sale");
@@ -323,7 +326,7 @@ function Passport() {
               Selo de Conservação TrailBook
             </p>
             {tier === "none" ? (
-              <p className="mt-1 text-sm text-muted-foreground">Sem selo atribuído</p>
+              <p className="mt-1 text-sm text-muted-foreground">Ainda não disponível</p>
             ) : (
               <div className={`mt-1 inline-flex items-center gap-1.5 rounded-lg px-3 py-1 text-sm font-semibold ${TIER_STYLE[tier]}`}>
                 <BadgeCheck className="h-4 w-4" />
@@ -333,7 +336,7 @@ function Passport() {
           </div>
           <HelpTooltip
             label="Sobre este selo"
-            text="Este selo é calculado a partir do histórico, manutenção e evidências registradas no TrailBook. Não representa inspeção física ou certificação externa."
+            text="Calculado automaticamente com base no histórico, manutenção e evidências registradas no TrailBook. Não representa inspeção física ou certificação externa."
             side="left"
           />
         </div>
@@ -341,41 +344,14 @@ function Passport() {
         {/* Reasons: o que falta ou o que impede um nível mais alto */}
         {reasons.length > 0 && (
           <ul className="space-y-0.5 text-xs text-muted-foreground">
-            {reasons.map((r, i) => <li key={i} className="flex items-start gap-1.5"><Info className="h-3 w-3 shrink-0 mt-0.5 text-amber-400" />{r}</li>)}
+            {reasons.map((r, i) => (
+              <li key={i} className="flex items-start gap-1.5">
+                <Info className="h-3 w-3 shrink-0 mt-0.5 text-amber-400" />
+                {r}
+              </li>
+            ))}
           </ul>
         )}
-
-        {/* Pendências críticas integradas */}
-        {pending.length > 0 && (
-          <div className="border-t border-border/50 pt-3 space-y-1.5">
-            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
-              <ShieldAlert className="h-3 w-3 text-amber-400" /> Pendências
-            </p>
-            {pending.map((p) => (
-              <div key={p.key} className="flex items-start gap-2 text-xs">
-                <span className={
-                  p.severity === "critical"
-                    ? "font-bold text-destructive"
-                    : p.severity === "warn"
-                    ? "text-amber-400"
-                    : "text-muted-foreground"
-                }>
-                  {p.severity === "critical" ? "⚠" : p.severity === "warn" ? "•" : "·"}
-                </span>
-                <div>
-                  <span className="text-foreground">{p.label}</span>
-                  {p.hint && <span className="ml-1 text-muted-foreground">— {p.hint}</span>}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Disclaimer */}
-        <p className="text-[10px] text-muted-foreground border-t border-border/40 pt-2 leading-relaxed">
-          Esta apresentação organiza informações registradas no TrailBook e não substitui documentos
-          oficiais exigidos pela legislação.
-        </p>
       </div>
 
       {/* ── 3. DIAGNÓSTICO RESUMIDO ──────────────────────── */}
@@ -397,13 +373,49 @@ function Passport() {
           <ChevronDown className={`h-4 w-4 shrink-0 text-muted-foreground transition-transform ${diagOpen ? "rotate-180" : ""}`} />
         </button>
         {diagOpen && (
-          <div className="border-t border-border/60 px-4 py-3 space-y-2 text-sm">
-            {evalView.findings.map((f, i) => (
-              <p key={i} className="text-muted-foreground text-xs">{f}</p>
-            ))}
+          <div className="border-t border-border/60 px-4 py-3 space-y-3 text-sm">
+            {/* Achados */}
+            <div className="space-y-1">
+              {evalView.findings.map((f, i) => (
+                <p key={i} className="text-muted-foreground text-xs">{f}</p>
+              ))}
+            </div>
+            {/* Recomendação */}
             <p className="text-xs text-muted-foreground pt-1 border-t border-border/40">
               {evalView.recommendation}
             </p>
+            {/* Pendências — máx 3 inicialmente, "Ver todas" se houver mais */}
+            {pending.length > 0 && (
+              <div className="pt-1 border-t border-border/40 space-y-1.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1">
+                  <ShieldAlert className="h-3 w-3 text-amber-400" /> Pendências
+                </p>
+                {(showAllPending ? pending : pending.slice(0, 3)).map((p) => (
+                  <div key={p.key} className="flex items-start gap-2 text-xs">
+                    <span className={
+                      p.severity === "critical" ? "font-bold text-destructive"
+                      : p.severity === "warn" ? "text-amber-400"
+                      : "text-muted-foreground"
+                    }>
+                      {p.severity === "critical" ? "⚠" : "•"}
+                    </span>
+                    <div>
+                      <span className="text-foreground">{p.label}</span>
+                      {p.hint && <span className="ml-1 text-muted-foreground">— {p.hint}</span>}
+                    </div>
+                  </div>
+                ))}
+                {pending.length > 3 && (
+                  <button
+                    type="button"
+                    className="text-xs text-primary underline"
+                    onClick={() => setShowAllPending((v) => !v)}
+                  >
+                    {showAllPending ? "Ver menos" : `Ver todas (${pending.length})`}
+                  </button>
+                )}
+              </div>
+            )}
           </div>
         )}
       </div>
