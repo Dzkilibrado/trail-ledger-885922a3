@@ -216,7 +216,7 @@ export function MotoControlCenter({
   }
   async function deleteMoto() {
     if (!m) return;
-    const { error } = await supabase.from("motorcycles").delete().eq("id", m.id);
+    const { error } = await (supabase as any).rpc("delete_motorcycle_permanently", { _moto_id: m.id });
     if (error) {
       toast.error("Não foi possível excluir a moto", { description: error.message });
       return;
@@ -659,13 +659,17 @@ export function MotoControlCenter({
                               preservado — você pode restaurá-la a qualquer momento.
                             </p>
                             <p>
-                              Ao excluir, <strong>{m.nickname || m.model}</strong> e{" "}
-                              <strong>tudo que está associado a ela</strong> — manutenções,
-                              documentos, atividades, certificados, fotos e registros — será apagado
-                              permanentemente do sistema.{" "}
+                              Ao excluir, <strong>{m.nickname || m.model}</strong> e seus{" "}
+                              <strong>dados operacionais</strong> — manutenções, documentos,
+                              fotos, atividades e agenda — serão apagados permanentemente.{" "}
                               <span className="font-semibold text-destructive">
                                 Esta ação não pode ser desfeita.
                               </span>
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Laudos de Saúde TrailBook já emitidos são preservados como
+                              evidência histórica e continuam verificáveis pelos seus códigos
+                              públicos, mesmo após a exclusão da moto.
                             </p>
                             <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-300">
                               Se a moto foi vendida ou está parada, considere{" "}
