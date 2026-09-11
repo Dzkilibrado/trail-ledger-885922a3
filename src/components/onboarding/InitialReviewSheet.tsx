@@ -265,100 +265,54 @@ export function InitialReviewSheet({
 
   // ── Revisão geral — step 2: registrar serviços físicos confirmados ─────────
 
-  async function confirmServices() {
+
+  // ── Ponto único de chamada à RPC atômica ───────────────────────────────────
+  async function callCompleteRpc(
+    mode: string,
+    confirmedServiceIds: string[] = [],
+    inspectedIds?: string[],
+    unconfirmedIds?: string[],
+  ) {
     setSaving(true);
-    const now = new Date().toISOString();
-    const patch = {
-      status: "active",
-      last_done_at: now,
-      last_done_hours: motoHours,
-      last_done_km: motoKm,
-    };
+    const resolvedInspected  = inspectedIds  ?? inspectionItems.map((s) => s.id);
+    const resolvedUnconfirmed = unconfirmedIds ?? physicalItems
+      .filter((s) => !confirmedServices.has(s.id) && !confirmedServiceIds.includes(s.id))
+      .map((s) => s.id);
 
-    if (confirmedServices.size > 0) {
-      const { error } = await supabase
-        .from("maintenance_schedules")
-        .update(patch as never)
-        .in("id", [...confirmedServices]);
-      if (error) {
-        setSaving(false);
-        toast.error("Não foi possível registrar os serviços.", { description: error.message });
-        return;
-      }
-    }
-
-    setReviewSummary({
-      inspections: inspectionItems.length,
-      services: confirmedServices.size,
+    const { data, error } = await (supabase as any).rpc("complete_initial_review", {
+      _motorcycle_id:         motoId,
+      _inspected_ids:         resolvedInspected,
+      _confirmed_service_ids: confirmedServiceIds,
+      _unconfirmed_ids:       resolvedUnconfirmed,
+      _mode:                  mode,
     });
 
-    await finishAfterServices();
-  }
+    if (error) {
+      setSaving(false);
+      toast.error("Não foi possível confirmar a revisão", { description: error.message });
+      return;
+    }
 
-  async function finishAfterServices() {
-    setSaving(true);
-
-    // Idempotência: verificar se a revisão já foi concluída (evita dupla submissão)
-    const { data: motoCheck } = await supabase
-      .from("motorcycles")
-      .select("initial_review_done_at")
-      .eq("id", motoId)
-      .single();
-    if ((motoCheck as any)?.initial_review_done_at) {
-      // Revisão já concluída — não duplicar
+    const result = data as { ok: boolean; reason?: string; event_id?: string };
+    if (!result.ok && result.reason === "already_reviewed") {
+      // Idempotência: revisão já concluída
       setSaving(false);
       setShowServiceStep(false);
       await qc.invalidateQueries();
       setSuccessOpen(true);
       return;
     }
-
-    const now = new Date().toISOString();
-
-    // Criar evento de revisão inicial para rastreabilidade
-    // type=revision, hours_delta=NULL, km_delta=NULL → não altera odômetro
-    const { data: eventData } = await supabase.auth.getSession();
-    const userId = eventData.session?.user.id;
-    if (userId) {
-      await supabase.from("events").insert({
-        motorcycle_id: motoId,
-        created_by: userId,
-        type: "revision",
-        title: "Revisão inicial",
-        occurred_at: now,
-        hours_at_event: motoHours,
-        km_at_event: motoKm,
-        hours_delta: null,
-        km_delta: null,
-        metadata: {
-          review_type: "initial",
-          mode: showServiceStep ? "quick_review" : "per_item",
-          inspected_schedule_ids: inspectionItems.map((s) => s.id),
-          confirmed_service_schedule_ids: [...confirmedServices],
-          unconfirmed_schedule_ids: physicalItems
-            .filter((s) => !confirmedServices.has(s.id))
-            .map((s) => s.id),
-        },
-      } as never);
-    }
-
-    // Marcar revisão como concluída na moto
-    const { error } = await supabase
-      .from("motorcycles")
-      .update({
-        initial_review_done_at: now,
-        plan_review_status: "reviewed",
-      } as never)
-      .eq("id", motoId);
-    if (error) {
+    if (!result.ok) {
       setSaving(false);
-      toast.error("Não foi possível confirmar a revisão", { description: error.message });
+      toast.error("Não foi possível concluir a revisão.");
       return;
     }
+
+    // Sucesso
     try {
       await recomposeTimeline(motoId);
     } catch {
-      /* defensivo */
+      /* recomposição defensiva */
     }
     setSaving(false);
     setShowServiceStep(false);
@@ -368,80 +322,34 @@ export function InitialReviewSheet({
     setForceInterview(false);
   }
 
+  async function confirmServices() {
+    setSaving(true);
+    setReviewSummary({
+      inspections: inspectionItems.length,
+      services: confirmedServices.size,
+    });
+    await callCompleteRpc("quick_review", [...confirmedServices]);
+  }
+
+  // finishAfterServices substituído por callCompleteRpc — mantido por compatibilidade
+  async function finishAfterServices() {
+    await callCompleteRpc("quick_review", [...confirmedServices]);
+  }
+
   // ── Conclusão via entrevista (caminho item a item) ─────────────────────────
 
   async function finish() {
-    setSaving(true);
-
-    // Idempotência: verificar se a revisão já foi concluída
-    const { data: motoCheck } = await supabase
-      .from("motorcycles")
-      .select("initial_review_done_at")
-      .eq("id", motoId)
-      .single();
-    if ((motoCheck as any)?.initial_review_done_at) {
-      setSaving(false);
-      await qc.invalidateQueries();
-      setSuccessOpen(true);
-      return;
-    }
-
-    const now = new Date().toISOString();
-
-    // Criar evento de revisão para rastreabilidade (type=revision, sem delta de odômetro)
-    const { data: sessionData } = await supabase.auth.getSession();
-    const userId = sessionData.session?.user.id;
-    if (userId) {
-      await supabase.from("events").insert({
-        motorcycle_id: motoId,
-        created_by: userId,
-        type: "revision",
-        title: "Revisão inicial",
-        occurred_at: now,
-        hours_at_event: motoHours,
-        km_at_event: motoKm,
-        hours_delta: null,
-        km_delta: null,
-        metadata: {
-          review_type: "initial",
-          mode: "per_item",
-          inspected_schedule_ids: items
-            .filter((s) => s.kind === "inspection" &&
-              (s.last_done_hours != null || s.last_done_at != null))
-            .map((s) => s.id),
-          confirmed_service_schedule_ids: items
-            .filter((s) => s.kind === "physical" &&
-              (s.last_done_hours != null || s.last_done_at != null))
-            .map((s) => s.id),
-          unconfirmed_schedule_ids: items
-            .filter((s) => !s.last_done_at && s.last_done_hours == null)
-            .map((s) => s.id),
-        },
-      } as never);
-    }
-
-    const { error } = await supabase
-      .from("motorcycles")
-      .update({
-        initial_review_done_at: now,
-        plan_review_status: "reviewed",
-      } as never)
-      .eq("id", motoId);
-    if (error) {
-      setSaving(false);
-      toast.error("Não foi possível confirmar a revisão", { description: error.message });
-      return;
-    }
-    try {
-      await recomposeTimeline(motoId);
-    } catch {
-      /* defensivo */
-    }
-    setSaving(false);
-    await qc.invalidateQueries();
-    setSuccessOpen(true);
-    setStep(0);
-    setForceInterview(false);
+    // Caminho item a item: monta grupos a partir dos dados locais
+    const inspectedIds = items
+      .filter((s) => s.kind === "inspection" && (s.last_done_hours != null || s.last_done_at != null))
+      .map((s) => s.id);
+    const confirmedIds = items
+      .filter((s) => s.kind !== "inspection" && (s.last_done_hours != null || s.last_done_at != null))
+      .map((s) => s.id);
+    const unconfirmedIds = items
+      .filter((s) => !s.last_done_at && s.last_done_hours == null)
+      .map((s) => s.id);
+    await callCompleteRpc("per_item", confirmedIds, inspectedIds, unconfirmedIds);
   }
 
   // ──────────────────────────────────────────────────────────────────────────
