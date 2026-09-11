@@ -56,13 +56,13 @@ function stateLabel(score: number): string {
   return "Necessita ação";
 }
 
-/** Frase descritiva alinhada ao estado oficial do TrailBook 4.0. */
+/** Frase descritiva coerente com o estado oficial do TrailBook 4.0. */
 function conservationSentence(score: number): string {
   if (score <= 0) return "Ainda não existem informações suficientes para avaliar esta motocicleta.";
-  if (score >= 85) return "Os registros indicam acompanhamento consistente desta motocicleta.";
-  if (score >= 70) return "Os registros atuais indicam acompanhamento adequado da motocicleta.";
-  if (score >= 50) return "A motocicleta possui registros parciais. Recomenda-se programar uma revisão.";
-  return "Poucos registros encontrados. Priorize a correção dos itens indicados.";
+  if (score >= 85) return "Os registros indicam acompanhamento consistente e satisfatório.";
+  if (score >= 70) return "Os registros indicam bom acompanhamento, porém existem pontos que merecem atenção.";
+  if (score >= 50) return "Foram identificados pontos que requerem atenção. Recomenda-se programar uma revisão.";
+  return "Os registros indicam necessidade de ação imediata em um ou mais pontos críticos.";
 }
 
 /** Símbolo de status sem peso numérico. */
@@ -287,7 +287,7 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
 
   // ── ESTADO DE CONSERVAÇÃO ───────────────────────────────────────────────────
   if (showSection("conservation")) {
-    renderSectionTitle(doc, cur, "Estado de Conservação");
+    renderSectionTitle(doc, cur, "Avaliação da Motocicleta");
 
     // Estado textual em destaque
     doc.setFont("helvetica", "bold");
