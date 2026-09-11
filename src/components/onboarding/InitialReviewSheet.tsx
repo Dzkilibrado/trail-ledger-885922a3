@@ -17,10 +17,56 @@ import { MAINT_CATEGORY_LABEL } from "@/lib/trailbook";
 import { recomposeTimeline } from "@/lib/activity-recalc";
 import { TBDialog } from "@/design-system/overlays/TBDialog";
 import { reviewStateMessage } from "@/lib/review-state";
+import { ACTION_LABEL, type PlanAction } from "@/lib/plan-templates";
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Constantes de classificação por ação
+// ──────────────────────────────────────────────────────────────────────────────
+
+/** Ações que representam inspeção/verificação — podem receber baseline
+ *  automaticamente quando o usuário confirma "Revisei a moto inteira". */
+const INSPECTION_ACTIONS = new Set<PlanAction>(["inspect", "check_level"]);
+
+/** Ações físicas — NUNCA recebem baseline sem confirmação explícita. */
+const PHYSICAL_ACTIONS = new Set<PlanAction>(["lubricate", "adjust", "clean", "replace"]);
+
+function classifyAction(action: PlanAction | null | undefined): "inspection" | "physical" | "unknown" {
+  if (!action) return "unknown";
+  if (INSPECTION_ACTIONS.has(action)) return "inspection";
+  if (PHYSICAL_ACTIONS.has(action)) return "physical";
+  return "unknown";
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Tipos
+// ──────────────────────────────────────────────────────────────────────────────
+
+interface ScheduleWithAction {
+  id: string;
+  name: string;
+  category: string;
+  status: string;
+  last_done_at: string | null;
+  last_done_hours: number | null;
+  last_done_km: number | null;
+  template_item_id: string | null;
+  /** Ação obtida via JOIN com maintenance_plan_items */
+  action?: PlanAction | null;
+  /** Classificação derivada */
+  kind?: "inspection" | "physical" | "unknown";
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+// Componente principal
+// ──────────────────────────────────────────────────────────────────────────────
 
 /**
  * InitialReviewSheet — "Você comprou uma moto usada?" no formato entrevista.
- * Um componente por vez. Sem obrigação de preencher.
+ *
+ * REGRAS DE SEMÂNTICA:
+ * - Ações inspect/check_level → podem receber baseline automático na revisão geral
+ * - Ações lubricate/adjust/clean/replace → NUNCA recebem baseline sem confirmação
+ * - Schedules sem template_item_id → tratados como "unknown" (sem baseline auto)
  */
 export function InitialReviewSheet({
   motoId,
@@ -39,56 +85,90 @@ export function InitialReviewSheet({
   const [step, setStep] = useState(0);
   const [saving, setSaving] = useState(false);
   const [successOpen, setSuccessOpen] = useState(false);
-  /**
-   * Quando `true`, o usuário optou por rever manualmente os componentes
-   * mesmo estando no cenário "pronta para concluir". Isso oculta a tela
-   * de confirmação e volta ao modo entrevista.
-   */
   const [forceInterview, setForceInterview] = useState(false);
   const [informDate, setInformDate] = useState("");
   const [informHours, setInformHours] = useState("");
   const [informKm, setInformKm] = useState("");
 
+  // Segundo passo após "Revisei a moto inteira": quais serviços físicos foram realizados
+  const [showServiceStep, setShowServiceStep] = useState(false);
+  const [confirmedServices, setConfirmedServices] = useState<Set<string>>(new Set());
+
+  // Resultado da revisão geral para o dialog de sucesso
+  const [reviewSummary, setReviewSummary] = useState<{
+    inspections: number;
+    services: number;
+  } | null>(null);
+
+  // ── Dados ──────────────────────────────────────────────────────────────────
+
   const schedules = useQuery({
     queryKey: ["schedules-initial-review", motoId],
     queryFn: async () => {
-      const { data } = await supabase
+      // Busca schedules com template_item_id para JOIN via maintenance_plan_items
+      const { data: sched } = await supabase
         .from("maintenance_schedules")
-        .select("id, name, category, status, last_done_at, last_done_hours, last_done_km")
+        .select(
+          "id, name, category, status, last_done_at, last_done_hours, last_done_km, template_item_id",
+        )
         .eq("motorcycle_id", motoId)
         .order("category");
-      return data ?? [];
+      if (!sched) return [];
+
+      // Busca as ações dos templates para os schedules que têm template_item_id
+      const templateIds = [...new Set(sched.map((s) => s.template_item_id).filter(Boolean))] as string[];
+      let actionMap: Record<string, PlanAction> = {};
+      if (templateIds.length > 0) {
+        const { data: planItems } = await supabase
+          .from("maintenance_plan_items")
+          .select("id, action")
+          .in("id", templateIds);
+        if (planItems) {
+          actionMap = Object.fromEntries(planItems.map((p) => [p.id, p.action as PlanAction]));
+        }
+      }
+
+      return sched.map((s): ScheduleWithAction => {
+        const action = s.template_item_id ? (actionMap[s.template_item_id] ?? null) : null;
+        return { ...s, action, kind: classifyAction(action) };
+      });
     },
     enabled: open,
   });
 
   const items = useMemo(
-    () => (schedules.data ?? []).filter((s: any) => s.status !== "not_applicable"),
+    () => (schedules.data ?? []).filter((s) => s.status !== "not_applicable"),
     [schedules.data],
   );
   const total = items.length;
   const current = items[step];
 
-  /**
-   * Mesma regra do `computeReviewState`: um schedule é considerado
-   * confirmado quando possui `last_done_at`, `last_done_hours` ou
-   * `last_done_km`. Se todos os relevantes estiverem confirmados e o
-   * marcador oficial ainda for nulo, entramos no cenário "pronta para
-   * concluir".
-   */
+  // Schedules classificados por tipo
+  const inspectionItems = useMemo(
+    () => items.filter((s) => s.kind === "inspection"),
+    [items],
+  );
+  const physicalItems = useMemo(
+    () => items.filter((s) => s.kind === "physical" || s.kind === "unknown"),
+    [items],
+  );
+
   const readyToComplete = useMemo(() => {
     if (total === 0) return false;
     return items.every(
-      (s: any) => !!(s.last_done_at || s.last_done_hours != null || s.last_done_km != null),
+      (s) => !!(s.last_done_at || s.last_done_hours != null || s.last_done_km != null),
     );
   }, [items, total]);
+
   const confirmedCount = useMemo(
     () =>
       items.filter(
-        (s: any) => !!(s.last_done_at || s.last_done_hours != null || s.last_done_km != null),
+        (s) => !!(s.last_done_at || s.last_done_hours != null || s.last_done_km != null),
       ).length,
     [items],
   );
+
+  // ── Helpers ────────────────────────────────────────────────────────────────
 
   function reset() {
     setInformDate("");
@@ -108,7 +188,7 @@ export function InitialReviewSheet({
   async function saveInform() {
     if (!current) return;
     setSaving(true);
-    const patch: Record<string, unknown> = {
+    const patch = {
       status: "active",
       last_done_at: informDate ? new Date(informDate).toISOString() : new Date().toISOString(),
       last_done_hours: informHours ? Number(informHours) : motoHours,
@@ -147,6 +227,103 @@ export function InitialReviewSheet({
     await next();
   }
 
+  // ── Revisão geral — step 1: registrar inspeções ────────────────────────────
+
+  async function startMarkAllRevised() {
+    setSaving(true);
+
+    // SOMENTE ações de inspeção/verificação recebem baseline automático
+    const inspectionIds = inspectionItems.map((s) => s.id);
+    const now = new Date().toISOString();
+    const patch = {
+      status: "active",
+      last_done_at: now,
+      last_done_hours: motoHours,
+      last_done_km: motoKm,
+    };
+
+    if (inspectionIds.length > 0) {
+      const { error } = await supabase
+        .from("maintenance_schedules")
+        .update(patch as never)
+        .in("id", inspectionIds);
+      if (error) {
+        setSaving(false);
+        toast.error("Não foi possível registrar as inspeções.", { description: error.message });
+        return;
+      }
+    }
+
+    // Refresca os dados locais
+    await schedules.refetch();
+    setSaving(false);
+
+    // Pergunta se serviços físicos também foram realizados
+    setConfirmedServices(new Set());
+    setShowServiceStep(true);
+  }
+
+  // ── Revisão geral — step 2: registrar serviços físicos confirmados ─────────
+
+  async function confirmServices() {
+    setSaving(true);
+    const now = new Date().toISOString();
+    const patch = {
+      status: "active",
+      last_done_at: now,
+      last_done_hours: motoHours,
+      last_done_km: motoKm,
+    };
+
+    if (confirmedServices.size > 0) {
+      const { error } = await supabase
+        .from("maintenance_schedules")
+        .update(patch as never)
+        .in("id", [...confirmedServices]);
+      if (error) {
+        setSaving(false);
+        toast.error("Não foi possível registrar os serviços.", { description: error.message });
+        return;
+      }
+    }
+
+    setReviewSummary({
+      inspections: inspectionItems.length,
+      services: confirmedServices.size,
+    });
+
+    await finishAfterServices();
+  }
+
+  async function finishAfterServices() {
+    setSaving(true);
+    const { error } = await supabase
+      .from("motorcycles")
+      .update({
+        initial_review_done_at: new Date().toISOString(),
+        plan_review_status: "reviewed",
+      } as never)
+      .eq("id", motoId);
+    if (error) {
+      setSaving(false);
+      toast.error("Não foi possível confirmar a revisão", { description: error.message });
+      return;
+    }
+    try {
+      await recomposeTimeline(motoId);
+    } catch {
+      /* defensivo */
+    }
+    setSaving(false);
+    setShowServiceStep(false);
+    await qc.invalidateQueries();
+    setSuccessOpen(true);
+    setStep(0);
+    setForceInterview(false);
+  }
+
+  // ── Conclusão via entrevista (caminho item a item) ─────────────────────────
+
   async function finish() {
     setSaving(true);
     const { error } = await supabase
@@ -158,60 +335,24 @@ export function InitialReviewSheet({
       .eq("id", motoId);
     if (error) {
       setSaving(false);
-      toast.error("Não foi possível confirmar a revisão", {
-        description: error.message || "Tente novamente em instantes.",
-      });
+      toast.error("Não foi possível confirmar a revisão", { description: error.message });
       return;
     }
     try {
       await recomposeTimeline(motoId);
     } catch {
-      /* recomposição defensiva */
+      /* defensivo */
     }
     setSaving(false);
-    // Sucesso após sincronia (ADR 0011): esperamos a invalidação antes de
-    // abrir o dialog de sucesso, para garantir que o resto da UI já reflita
-    // o novo estado "fully_reviewed".
     await qc.invalidateQueries();
     setSuccessOpen(true);
     setStep(0);
     setForceInterview(false);
   }
 
-  /**
-   * Atalho para o cenário "revisei a moto inteira agora": marca TODOS os
-   * componentes ainda pendentes como revisados no horímetro/KM atuais e
-   * conclui a revisão inicial em um único passo. Necessário para manter a
-   * sincronia entre o que o usuário informa e o que Dashboard/Manutenção
-   * exibem — sem isso, componentes ficam com last_done nulo e a tela de
-   * Manutenção computa vencimentos a partir da baseline.
-   */
-  async function markAllRevisedNow() {
-    setSaving(true);
-    const ids = items
-      .filter((s: any) => s.status !== "not_applicable")
-      .map((s: any) => s.id as string);
-    if (ids.length > 0) {
-      const patch = {
-        status: "active",
-        last_done_at: new Date().toISOString(),
-        last_done_hours: motoHours,
-        last_done_km: motoKm,
-      };
-      const { error } = await supabase
-        .from("maintenance_schedules")
-        .update(patch as never)
-        .in("id", ids);
-      if (error) {
-        setSaving(false);
-        toast.error("Não foi possível confirmar a revisão", {
-          description: error.message || "Tente novamente em instantes.",
-        });
-        return;
-      }
-    }
-    await finish();
-  }
+  // ──────────────────────────────────────────────────────────────────────────
+  // Render
+  // ──────────────────────────────────────────────────────────────────────────
 
   return (
     <>
@@ -220,7 +361,81 @@ export function InitialReviewSheet({
           side="bottom"
           className="max-h-[92vh] overflow-y-auto sm:max-w-lg sm:mx-auto sm:rounded-t-3xl"
         >
-          {readyToComplete && !forceInterview ? (
+          {/* ── Etapa 2: serviços físicos realizados ── */}
+          {showServiceStep ? (
+            <>
+              <SheetHeader className="text-left">
+                <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
+                  Revisão inicial · Serviços realizados
+                </div>
+                <SheetTitle className="font-display text-xl">
+                  Algum serviço também foi realizado?
+                </SheetTitle>
+                <SheetDescription>
+                  As inspeções já foram registradas. Marque abaixo somente os serviços que
+                  efetivamente foram realizados durante esta revisão.
+                </SheetDescription>
+              </SheetHeader>
+
+              <div className="mt-6 space-y-3">
+                {physicalItems.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    Nenhum serviço físico pendente encontrado.
+                  </p>
+                ) : (
+                  physicalItems.map((s) => (
+                    <label
+                      key={s.id}
+                      className="flex cursor-pointer items-center gap-3 rounded-2xl border border-border bg-card p-3"
+                    >
+                      <input
+                        type="checkbox"
+                        className="h-4 w-4 rounded border-border"
+                        checked={confirmedServices.has(s.id)}
+                        onChange={(e) => {
+                          setConfirmedServices((prev) => {
+                            const next = new Set(prev);
+                            if (e.target.checked) next.add(s.id);
+                            else next.delete(s.id);
+                            return next;
+                          });
+                        }}
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-medium">{s.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {MAINT_CATEGORY_LABEL[s.category as keyof typeof MAINT_CATEGORY_LABEL]}
+                          {s.action && (
+                            <span className="ml-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                              {ACTION_LABEL[s.action as keyof typeof ACTION_LABEL]}
+                            </span>
+                          )}
+                        </p>
+                      </div>
+                    </label>
+                  ))
+                )}
+
+                <div className="flex flex-col-reverse gap-2 pt-2 sm:flex-row sm:justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => { setConfirmedServices(new Set()); confirmServices(); }}
+                    disabled={saving}
+                  >
+                    Não, apenas revisei
+                  </Button>
+                  <Button
+                    className="btn-glow"
+                    onClick={confirmServices}
+                    disabled={saving || confirmedServices.size === 0}
+                  >
+                    Registrar {confirmedServices.size > 0 ? `${confirmedServices.size} serviço(s)` : "serviços"}
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : readyToComplete && !forceInterview ? (
+            /* ── Conclusão da entrevista ── */
             <>
               <SheetHeader className="text-left">
                 <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
@@ -248,9 +463,7 @@ export function InitialReviewSheet({
                     </div>
                     <div>
                       <dt className="text-xs text-muted-foreground">Confirmados</dt>
-                      <dd className="font-medium">
-                        {confirmedCount} de {total}
-                      </dd>
+                      <dd className="font-medium">{confirmedCount} de {total}</dd>
                     </div>
                     <div>
                       <dt className="text-xs text-muted-foreground">Horímetro atual</dt>
@@ -272,11 +485,7 @@ export function InitialReviewSheet({
                 </div>
 
                 <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-                  <Button
-                    variant="outline"
-                    onClick={() => setForceInterview(true)}
-                    disabled={saving}
-                  >
+                  <Button variant="outline" onClick={() => setForceInterview(true)} disabled={saving}>
                     Voltar e revisar
                   </Button>
                   <Button className="btn-glow" onClick={finish} disabled={saving}>
@@ -286,6 +495,7 @@ export function InitialReviewSheet({
               </div>
             </>
           ) : (
+            /* ── Entrevista item a item ── */
             <>
               <SheetHeader className="text-left">
                 <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
@@ -313,15 +523,14 @@ export function InitialReviewSheet({
                 </div>
               ) : (
                 <div className="mt-6 space-y-4">
-                  {/* Atalho oficial: quem revisou a moto inteira agora conclui em 1 toque. */}
+                  {/* Atalho: revisão geral */}
                   <button
                     type="button"
-                    onClick={markAllRevisedNow}
+                    onClick={startMarkAllRevised}
                     disabled={saving}
                     className="w-full rounded-2xl border border-primary/40 bg-primary/10 p-3 text-left text-sm font-medium text-primary transition-colors hover:bg-primary/15 disabled:opacity-50"
                   >
-                    Já revisei a moto inteira agora ({motoHours.toFixed(1)} h · {motoKm.toFixed(0)}{" "}
-                    km)
+                    Já revisei a moto inteira agora ({motoHours.toFixed(1)} h · {motoKm.toFixed(0)} km)
                   </button>
 
                   {/* Progress */}
@@ -343,13 +552,14 @@ export function InitialReviewSheet({
                       </div>
                       <div className="min-w-0">
                         <div className="text-[11px] uppercase tracking-widest text-muted-foreground">
-                          {
-                            MAINT_CATEGORY_LABEL[
-                              (current as any).category as keyof typeof MAINT_CATEGORY_LABEL
-                            ]
-                          }
+                          {MAINT_CATEGORY_LABEL[(current as any).category as keyof typeof MAINT_CATEGORY_LABEL]}
                         </div>
                         <div className="truncate font-medium">{(current as any).name}</div>
+                        {(current as ScheduleWithAction).kind === "physical" && (
+                          <div className="mt-0.5 text-[10px] text-amber-400 font-medium">
+                            ⚠ Serviço físico — requer confirmação específica
+                          </div>
+                        )}
                       </div>
                     </div>
                     <p className="mt-4 text-sm">
@@ -428,6 +638,8 @@ export function InitialReviewSheet({
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Dialog de sucesso */}
       <TBDialog
         open={successOpen}
         onOpenChange={(v) => {
@@ -435,7 +647,11 @@ export function InitialReviewSheet({
           if (!v) onOpenChange(false);
         }}
         title="Revisão registrada"
-        description={`${reviewStateMessage("fully_reviewed")} Os próximos vencimentos serão calculados a partir desta leitura: ${motoHours.toFixed(1)} h${motoKm > 0 ? ` · ${motoKm.toFixed(0)} km` : ""}. Assim que a moto acumular uso, os itens aparecerão na Agenda e em Próximos Cuidados.`}
+        description={
+          reviewSummary
+            ? `Revisão registrada em ${motoHours.toFixed(1)} h. Inspeções: ${reviewSummary.inspections}. Serviços realizados: ${reviewSummary.services}. ${reviewStateMessage("fully_reviewed")} Os próximos vencimentos serão calculados a partir desta leitura.`
+            : `${reviewStateMessage("fully_reviewed")} Os próximos vencimentos serão calculados a partir de ${motoHours.toFixed(1)} h.`
+        }
         footer={
           <Button
             className="btn-glow w-full sm:w-auto"
