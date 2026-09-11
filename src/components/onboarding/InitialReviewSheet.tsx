@@ -297,10 +297,56 @@ export function InitialReviewSheet({
 
   async function finishAfterServices() {
     setSaving(true);
+
+    // Idempotência: verificar se a revisão já foi concluída (evita dupla submissão)
+    const { data: motoCheck } = await supabase
+      .from("motorcycles")
+      .select("initial_review_done_at")
+      .eq("id", motoId)
+      .single();
+    if ((motoCheck as any)?.initial_review_done_at) {
+      // Revisão já concluída — não duplicar
+      setSaving(false);
+      setShowServiceStep(false);
+      await qc.invalidateQueries();
+      setSuccessOpen(true);
+      return;
+    }
+
+    const now = new Date().toISOString();
+
+    // Criar evento de revisão inicial para rastreabilidade
+    // type=revision, hours_delta=NULL, km_delta=NULL → não altera odômetro
+    const { data: eventData } = await supabase.auth.getSession();
+    const userId = eventData.session?.user.id;
+    if (userId) {
+      await supabase.from("events").insert({
+        motorcycle_id: motoId,
+        created_by: userId,
+        type: "revision",
+        title: "Revisão inicial",
+        occurred_at: now,
+        hours_at_event: motoHours,
+        km_at_event: motoKm,
+        hours_delta: null,
+        km_delta: null,
+        metadata: {
+          review_type: "initial",
+          mode: showServiceStep ? "quick_review" : "per_item",
+          inspected_schedule_ids: inspectionItems.map((s) => s.id),
+          confirmed_service_schedule_ids: [...confirmedServices],
+          unconfirmed_schedule_ids: physicalItems
+            .filter((s) => !confirmedServices.has(s.id))
+            .map((s) => s.id),
+        },
+      } as never);
+    }
+
+    // Marcar revisão como concluída na moto
     const { error } = await supabase
       .from("motorcycles")
       .update({
-        initial_review_done_at: new Date().toISOString(),
+        initial_review_done_at: now,
         plan_review_status: "reviewed",
       } as never)
       .eq("id", motoId);
@@ -326,10 +372,58 @@ export function InitialReviewSheet({
 
   async function finish() {
     setSaving(true);
+
+    // Idempotência: verificar se a revisão já foi concluída
+    const { data: motoCheck } = await supabase
+      .from("motorcycles")
+      .select("initial_review_done_at")
+      .eq("id", motoId)
+      .single();
+    if ((motoCheck as any)?.initial_review_done_at) {
+      setSaving(false);
+      await qc.invalidateQueries();
+      setSuccessOpen(true);
+      return;
+    }
+
+    const now = new Date().toISOString();
+
+    // Criar evento de revisão para rastreabilidade (type=revision, sem delta de odômetro)
+    const { data: sessionData } = await supabase.auth.getSession();
+    const userId = sessionData.session?.user.id;
+    if (userId) {
+      await supabase.from("events").insert({
+        motorcycle_id: motoId,
+        created_by: userId,
+        type: "revision",
+        title: "Revisão inicial",
+        occurred_at: now,
+        hours_at_event: motoHours,
+        km_at_event: motoKm,
+        hours_delta: null,
+        km_delta: null,
+        metadata: {
+          review_type: "initial",
+          mode: "per_item",
+          inspected_schedule_ids: items
+            .filter((s) => s.kind === "inspection" &&
+              (s.last_done_hours != null || s.last_done_at != null))
+            .map((s) => s.id),
+          confirmed_service_schedule_ids: items
+            .filter((s) => s.kind === "physical" &&
+              (s.last_done_hours != null || s.last_done_at != null))
+            .map((s) => s.id),
+          unconfirmed_schedule_ids: items
+            .filter((s) => !s.last_done_at && s.last_done_hours == null)
+            .map((s) => s.id),
+        },
+      } as never);
+    }
+
     const { error } = await supabase
       .from("motorcycles")
       .update({
-        initial_review_done_at: new Date().toISOString(),
+        initial_review_done_at: now,
         plan_review_status: "reviewed",
       } as never)
       .eq("id", motoId);
