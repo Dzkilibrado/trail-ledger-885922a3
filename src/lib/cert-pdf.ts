@@ -1,15 +1,29 @@
 import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import QRCode from "qrcode";
-import { brl, formatDate, EVENT_TYPE_LABEL, MAINT_CATEGORY_LABEL, type EventRow, type Motorcycle } from "./trailbook";
+import {
+  brl,
+  formatDate,
+  EVENT_TYPE_LABEL,
+  MAINT_CATEGORY_LABEL,
+  type EventRow,
+  type Motorcycle,
+} from "./trailbook";
 import type { ConservationResult, CategoryHealth } from "./conservation";
 import type { ScheduleStatus } from "./maintenance-engine";
 import { sanitizeFileName } from "./save-file";
 
+// ─── Paleta ──────────────────────────────────────────────────────────────────
 const ORANGE: [number, number, number] = [234, 88, 12];
 const DARK: [number, number, number] = [17, 17, 19];
 const MUTED: [number, number, number] = [120, 120, 130];
 const LINE: [number, number, number] = [225, 225, 230];
+const GREEN: [number, number, number] = [16, 185, 129];
+const YELLOW: [number, number, number] = [234, 179, 8];
+const RED: [number, number, number] = [239, 68, 68];
+const LIGHT_BG: [number, number, number] = [248, 248, 250];
 
+// ─── Tipos ───────────────────────────────────────────────────────────────────
 export interface CertPdfInput {
   moto: Motorcycle;
   events: EventRow[];
@@ -22,6 +36,8 @@ export interface CertPdfInput {
   workshopsCount: number;
   /** Seções liberadas pelo proprietário — respeitar ao gerar o PDF */
   allowedSections?: string[];
+  /** Documentos de origem válidos (doc_type=invoice, is_current=true, deleted_at IS NULL) */
+  hasValidInvoice?: boolean;
 }
 
 export interface CertPdfOutput {
@@ -29,8 +45,9 @@ export interface CertPdfOutput {
   fileName: string;
 }
 
+// ─── Helpers ─────────────────────────────────────────────────────────────────
 
-// Traduz score 0-100 para estado textual sem número
+/** Traduz score 0–100 para estado textual — nunca exibe o número. */
 function stateLabel(score: number): string {
   if (score >= 80) return "Muito bom";
   if (score >= 60) return "Bom";
@@ -39,20 +56,141 @@ function stateLabel(score: number): string {
   return "Crítico";
 }
 
-export async function generateCertificatePdf(input: CertPdfInput): Promise<CertPdfOutput> {
-  const { moto, events, conservation, health, upcoming, publicUrl, photoDataUrl, attachmentsCount, workshopsCount, allowedSections = [] } = input;
-  const showSection = (k: string) => allowedSections.length === 0 || allowedSections.includes(k);
-  const doc = new jsPDF({ unit: "pt", format: "a4" });
+/** Frase descritiva do estado de conservação em linguagem profissional. */
+function conservationSentence(score: number): string {
+  if (score >= 80) return "Os registros indicam acompanhamento consistente desta motocicleta.";
+  if (score >= 60) return "Os registros atuais indicam acompanhamento adequado da motocicleta.";
+  if (score >= 40) return "A motocicleta possui registros parciais. Alguns itens merecem atenção.";
+  if (score >= 20) return "Os registros disponíveis indicam necessidade de acompanhamento mais frequente.";
+  return "Poucos registros encontrados. Recomenda-se revisão e atualização do prontuário.";
+}
+
+/** Símbolo de status sem peso numérico. */
+function factorSymbol(f: { delta: number }): string {
+  return f.delta >= 0 ? "✓" : "⚠";
+}
+
+/** Rótulo textual para o status da manutenção. */
+function upcomingTag(status: string): string {
+  if (status === "overdue") return "Vencida";
+  if (status === "due") return "Devida";
+  return "Em breve";
+}
+
+/** Status textual da saúde por categoria. */
+function healthLabel(status: string): string {
+  if (status === "good") return "Regular";
+  if (status === "warn") return "Atenção";
+  return "Crítico";
+}
+
+/** Cor RGB para o status de saúde. */
+function healthColor(status: string): [number, number, number] {
+  if (status === "good") return GREEN;
+  if (status === "warn") return YELLOW;
+  return RED;
+}
+
+// ─── Constantes de layout ────────────────────────────────────────────────────
+const PAGE_MARGIN = 40;
+const PAGE_TOP = PAGE_MARGIN;
+const SECTION_GAP = 18;   // espaço entre seções
+const HEADER_H = 83;      // altura do cabeçalho da página
+const FOOTER_H = 50;      // área reservada para o rodapé
+
+// ─── Cursor vertical ─────────────────────────────────────────────────────────
+class Cursor {
+  constructor(
+    private doc: jsPDF,
+    public y: number,
+    private margin: number,
+  ) {}
+
+  get W() { return this.doc.internal.pageSize.getWidth(); }
+  get H() { return this.doc.internal.pageSize.getHeight(); }
+  get contentW() { return this.W - this.margin * 2; }
+
+  /** Avança o cursor e quebra página se necessário. */
+  advance(delta: number, minRemaining = FOOTER_H + 20) {
+    this.y += delta;
+    if (this.y > this.H - minRemaining) {
+      this.doc.addPage();
+      this.y = PAGE_TOP;
+    }
+  }
+
+  /** Garante que há pelo menos `needed` pts disponíveis antes de renderizar um bloco. */
+  ensureSpace(needed: number) {
+    if (this.y + needed > this.H - FOOTER_H) {
+      this.doc.addPage();
+      this.y = PAGE_TOP;
+    }
+  }
+}
+
+// ─── Seção de título ─────────────────────────────────────────────────────────
+function renderSectionTitle(doc: jsPDF, cur: Cursor, title: string) {
+  cur.ensureSpace(30);
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(11);
+  doc.setTextColor(...DARK);
+  doc.text(title, PAGE_MARGIN, cur.y);
+  cur.y += 4;
+  doc.setDrawColor(...LINE);
+  doc.line(PAGE_MARGIN, cur.y, PAGE_MARGIN + cur.contentW, cur.y);
+  cur.y += SECTION_GAP;
+}
+
+// ─── Rodapé em todas as páginas ───────────────────────────────────────────────
+function renderFooters(doc: jsPDF, publicUrl: string, workshopsCount: number, attachmentsCount: number) {
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();
-  const M = 40;
-  let y = 0;
+  const pages = doc.getNumberOfPages();
+  for (let p = 1; p <= pages; p++) {
+    doc.setPage(p);
+    doc.setDrawColor(...LINE);
+    doc.line(PAGE_MARGIN, H - 36, W - PAGE_MARGIN, H - 36);
+    doc.setFontSize(7);
+    doc.setTextColor(...MUTED);
+    doc.setFont("helvetica", "normal");
+    doc.text(`TrailBook · ${publicUrl}`, PAGE_MARGIN, H - 22);
+    doc.text(
+      `${attachmentsCount} evidência(s) · ${workshopsCount} oficina(s) · Pág. ${p}/${pages}`,
+      W - PAGE_MARGIN,
+      H - 22,
+      { align: "right" },
+    );
+  }
+}
 
-  // Header bar
+// ─── Função principal ─────────────────────────────────────────────────────────
+export async function generateCertificatePdf(input: CertPdfInput): Promise<CertPdfOutput> {
+  const {
+    moto,
+    events,
+    conservation,
+    health,
+    upcoming,
+    publicUrl,
+    photoDataUrl,
+    attachmentsCount,
+    workshopsCount,
+    allowedSections = [],
+    hasValidInvoice = false,
+  } = input;
+
+  const showSection = (k: string) =>
+    allowedSections.length === 0 || allowedSections.includes(k);
+
+  const doc = new jsPDF({ unit: "pt", format: "a4" });
+  const W = doc.internal.pageSize.getWidth();
+  const M = PAGE_MARGIN;
+
+  // ── Cabeçalho fixo ──────────────────────────────────────────────────────────
   doc.setFillColor(...DARK);
-  doc.rect(0, 0, W, 80, "F");
+  doc.rect(0, 0, W, HEADER_H - 3, "F");
   doc.setFillColor(...ORANGE);
-  doc.rect(0, 80, W, 3, "F");
+  doc.rect(0, HEADER_H - 3, W, 3, "F");
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(20);
@@ -68,150 +206,352 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
   doc.setFontSize(9);
   doc.text("Certificado Digital", W - M, 56, { align: "right" });
 
-  y = 110;
+  const cur = new Cursor(doc, HEADER_H + 16, M);
 
-  // Photo + title
+  // ── QR Code (canto superior direito, ao lado do título) ─────────────────────
+  const qrSize = 90;
+  const qrX = W - M - qrSize;
+  const qrY = cur.y;
+  try {
+    const qrDataUrl = await QRCode.toDataURL(publicUrl, {
+      margin: 0,
+      width: 256,
+      color: { dark: "#111113", light: "#FFFFFF" },
+    });
+    doc.addImage(qrDataUrl, "PNG", qrX, qrY, qrSize, qrSize);
+    doc.setFontSize(7);
+    doc.setTextColor(...MUTED);
+    doc.setFont("helvetica", "normal");
+    doc.text("Escaneie para consultar o certificado", qrX + qrSize / 2, qrY + qrSize + 8, {
+      align: "center",
+      maxWidth: qrSize + 10,
+    });
+  } catch { /* QR opcional */ }
+
+  // ── Foto + dados da moto ────────────────────────────────────────────────────
+  const photoW = 145;
+  const photoH = 100;
+  const textX = M + photoW + 14;
+  const textMaxW = qrX - textX - 10;
+
   if (photoDataUrl) {
     try {
-      // photoDataUrl chega normalizado como JPEG pelo helper prepareCertPhotoDataUrl.
-      // O parâmetro `format` do jsPDF é obrigatório quando passamos coordenadas numéricas —
-      // omiti-lo faz o jsPDF interpretar `x` como formato e lançar exceção.
-      doc.addImage(photoDataUrl, "JPEG", M, y, 160, 110);
-    } catch (err) {
-      console.error("[cert-pdf] addImage falhou, seguindo com placeholder", err);
-      doc.setFillColor(245, 245, 248); doc.rect(M, y, 160, 110, "F");
+      doc.addImage(photoDataUrl, "JPEG", M, cur.y, photoW, photoH);
+    } catch {
+      doc.setFillColor(...LIGHT_BG);
+      doc.rect(M, cur.y, photoW, photoH, "F");
     }
   } else {
-    doc.setFillColor(245, 245, 248); doc.rect(M, y, 160, 110, "F");
+    doc.setFillColor(...LIGHT_BG);
+    doc.rect(M, cur.y, photoW, photoH, "F");
   }
-  const tx = M + 175;
+
   doc.setTextColor(...DARK);
   doc.setFont("helvetica", "bold");
-  doc.setFontSize(18);
-  doc.text(moto.nickname || `${moto.brand} ${moto.model}`, tx, y + 18);
+  doc.setFontSize(16);
+  const motoName = moto.nickname || `${moto.brand} ${moto.model}`;
+  const nameLines = doc.splitTextToSize(motoName, textMaxW) as string[];
+  doc.text(nameLines, textX, cur.y + 16);
+  const nameLinesH = nameLines.length * 18;
+
   doc.setFont("helvetica", "normal");
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setTextColor(...MUTED);
-  doc.text(`${moto.brand} ${moto.model} · ${moto.year_model ?? "—"}`, tx, y + 36);
-  if (moto.plate || moto.chassis) {
-    doc.setFontSize(9);
-    doc.text(`Placa: ${moto.plate || "—"}   Chassi: ${moto.chassis || "—"}`, tx, y + 52);
-  }
+  doc.text(`${moto.brand} ${moto.model} · ${moto.year_model ?? moto.year_make ?? "—"}`, textX, cur.y + nameLinesH + 6);
 
-  // Quick stats
-  const stats = [
+  // Quick stats (abaixo do nome, dentro da área de texto)
+  const statsY = cur.y + nameLinesH + 22;
+  const statItems = [
     ["Horas", `${Number(moto.hours_total ?? 0).toFixed(1)} h`],
-    ["Quilometragem", `${Number(moto.km_total ?? 0).toFixed(0)} km`],
+    ["KM", `${Number(moto.km_total ?? 0).toLocaleString("pt-BR")} km`],
     ["Conservação", stateLabel(conservation.score)],
-    ["Eventos", String(events.length)],
   ];
-  let sx = tx;
-  const sy = y + 70;
-  for (const [k, v] of stats) {
-    doc.setFillColor(248, 248, 250); doc.rect(sx, sy, 80, 40, "F");
-    doc.setTextColor(...MUTED); doc.setFontSize(7); doc.setFont("helvetica", "normal");
-    doc.text(k.toUpperCase(), sx + 6, sy + 12);
-    doc.setTextColor(...DARK); doc.setFontSize(12); doc.setFont("helvetica", "bold");
-    doc.text(v, sx + 6, sy + 30);
-    sx += 86;
+  let sx = textX;
+  for (const [label, value] of statItems) {
+    const sw = 86;
+    doc.setFillColor(...LIGHT_BG);
+    doc.rect(sx, statsY, sw, 34, "F");
+    doc.setTextColor(...MUTED);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.text(label.toUpperCase(), sx + 6, statsY + 11);
+    doc.setTextColor(...DARK);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    const valueLines = doc.splitTextToSize(value, sw - 10) as string[];
+    doc.text(valueLines[0], sx + 6, statsY + 26);
+    sx += sw + 4;
   }
 
-  y += 130;
+  cur.y += Math.max(photoH, nameLinesH + 60) + SECTION_GAP;
 
-  // QR Code
-  const qrDataUrl = await QRCode.toDataURL(publicUrl, { margin: 0, width: 256, color: { dark: "#111113", light: "#FFFFFF" } });
-  const qrSize = 90;
-  doc.addImage(qrDataUrl, "PNG", W - M - qrSize, y - 100, qrSize, qrSize);
-  doc.setFontSize(7); doc.setTextColor(...MUTED);
-  doc.text("Escaneie para validar", W - M - qrSize / 2, y - 5, { align: "center" });
+  // ── ESTADO DE CONSERVAÇÃO ───────────────────────────────────────────────────
+  if (showSection("conservation")) {
+    renderSectionTitle(doc, cur, "Estado de Conservação");
 
-  // Conservation breakdown
-  y += 10;
-  section(doc, "Índice de Conservação", M, y, W - M * 2);
-  y += 18;
-  doc.setFontSize(14); doc.setFont("helvetica", "bold"); doc.setTextColor(...ORANGE);
-  doc.text(stateLabel(conservation.score), M, y + 22);
-  doc.setFontSize(9); doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
-  doc.text("Avaliação automática com base no prontuário registrado no TrailBook.", M, y + 36);
-  doc.setFontSize(8); doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
-  let fy = y;
-  for (const f of conservation.factors.slice(0, 6)) {
-    const sign = f.delta >= 0 ? "+" : "";
-    doc.text(`${sign}${f.delta}  ·  ${f.label}${f.detail ? "  (" + f.detail + ")" : ""}`, M + 120, fy + 10);
-    fy += 11;
-  }
-  y += 70;
+    // Estado textual em destaque
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(14);
+    doc.setTextColor(...ORANGE);
+    doc.text(stateLabel(conservation.score), M, cur.y);
+    cur.y += 16;
 
-  // Health panel
-  section(doc, "Painel de saúde", M, y, W - M * 2);
-  y += 18;
-  const cellW = (W - M * 2) / 4;
-  let cx = M, cy = y;
-  for (let i = 0; i < health.length; i++) {
-    const h = health[i];
-    const color: [number, number, number] = h.status === "good" ? [16, 185, 129] : h.status === "warn" ? [234, 179, 8] : [239, 68, 68];
-    doc.setDrawColor(...LINE); doc.rect(cx + 2, cy, cellW - 4, 46);
-    doc.setFillColor(...color); doc.rect(cx + 2, cy, 3, 46, "F");
-    doc.setTextColor(...DARK); doc.setFont("helvetica", "bold"); doc.setFontSize(9);
-    doc.text(h.label, cx + 10, cy + 14);
-    doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(...MUTED);
-    const hLabel = h.status === "good" ? "Regular" : h.status === "warn" ? "Atenção" : "Crítico";
-    doc.text(hLabel, cx + 10, cy + 26);
-    doc.text(h.reason.slice(0, 30), cx + 10, cy + 38);
-    cx += cellW;
-    if ((i + 1) % 4 === 0) { cx = M; cy += 52; }
-  }
-  y = cy + (health.length % 4 === 0 ? 0 : 52) + 10;
+    // Frase descritiva
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(9);
+    doc.setTextColor(...MUTED);
+    const sentence = conservationSentence(conservation.score);
+    const sentLines = doc.splitTextToSize(sentence, cur.contentW) as string[];
+    doc.text(sentLines, M, cur.y);
+    cur.y += sentLines.length * 12 + 10;
 
-  // Upcoming maintenance
-  if (upcoming.length > 0) {
-    section(doc, "Próximas manutenções críticas", M, y, W - M * 2);
-    y += 18;
-    doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(...DARK);
-    for (const u of upcoming.slice(0, 5)) {
-      const tag = u.status === "overdue" ? "VENCIDA" : u.status === "due" ? "DEVIDA" : "EM BREVE";
-      const eta = u.estimatedDueDate ? formatDate(u.estimatedDueDate.toISOString()) : "—";
-      doc.text(`• ${u.label}`, M, y);
-      doc.setTextColor(...MUTED); doc.text(`${tag} · ${MAINT_CATEGORY_LABEL[u.category]} · est. ${eta}`, M + 200, y);
+    // Fatores — sem pesos numéricos
+    const factorItems = conservation.factors
+      .slice(0, 5)
+      .filter((f) => f.label && f.label.trim())
+      .map((f) => [factorSymbol(f), f.label + (f.detail ? ` — ${f.detail}` : "")]);
+
+    if (factorItems.length > 0) {
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(8);
       doc.setTextColor(...DARK);
-      y += 14;
+      doc.text("O QUE ENCONTRAMOS", M, cur.y);
+      cur.y += 10;
+
+      for (const [sym, label] of factorItems) {
+        cur.ensureSpace(14);
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        const isPositive = sym === "✓";
+        doc.setTextColor(isPositive ? GREEN[0] : YELLOW[0], isPositive ? GREEN[1] : YELLOW[1], isPositive ? GREEN[2] : YELLOW[2]);
+        doc.text(sym, M, cur.y);
+        doc.setTextColor(...DARK);
+        const labelLines = doc.splitTextToSize(label, cur.contentW - 16) as string[];
+        doc.text(labelLines, M + 14, cur.y);
+        cur.y += labelLines.length * 12;
+      }
     }
-    y += 6;
+    cur.y += SECTION_GAP;
   }
 
-  // History (last events) — paginate
-  section(doc, "Histórico de eventos", M, y, W - M * 2);
-  y += 16;
-  doc.setFontSize(8); doc.setFont("helvetica", "bold"); doc.setTextColor(...MUTED);
-  doc.text("DATA", M, y); doc.text("TIPO", M + 70, y); doc.text("DESCRIÇÃO", M + 160, y);
-  if (showSection("costs")) doc.text("CUSTO", W - M - 40, y);
-  y += 6; doc.setDrawColor(...LINE); doc.line(M, y, W - M, y); y += 10;
-  doc.setFont("helvetica", "normal"); doc.setTextColor(...DARK); doc.setFontSize(9);
-  for (const e of events) {
-    if (y > H - 60) { doc.addPage(); y = M; }
-    doc.text(formatDate(e.occurred_at), M, y);
-    doc.text(EVENT_TYPE_LABEL[e.type] ?? e.type, M + 70, y);
-    const desc = (e.title || e.description || "").slice(0, 60);
-    doc.text(desc, M + 160, y);
-    if (showSection("costs")) doc.text(brl(e.cost != null ? Number(e.cost) : null), W - M, y, { align: "right" });
-    y += 13;
+  // ── DOCUMENTAÇÃO ────────────────────────────────────────────────────────────
+  if (showSection("invoices") || showSection("documents")) {
+    renderSectionTitle(doc, cur, "Documentação");
+
+    const docItems: Array<[boolean, string]> = [];
+    docItems.push([hasValidInvoice, "Nota Fiscal"]);
+    if (attachmentsCount > 0) {
+      docItems.push([true, `${attachmentsCount} evidência(s) anexada(s)`]);
+    }
+    if (workshopsCount > 0) {
+      docItems.push([true, `${workshopsCount} oficina(s) registrada(s)`]);
+    }
+
+    for (const [present, label] of docItems) {
+      cur.ensureSpace(14);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(
+        present ? GREEN[0] : MUTED[0],
+        present ? GREEN[1] : MUTED[1],
+        present ? GREEN[2] : MUTED[2],
+      );
+      doc.text(present ? "✓" : "—", M, cur.y);
+      doc.setTextColor(...DARK);
+      doc.text(label, M + 14, cur.y);
+      cur.y += 14;
+    }
+
+    if (!hasValidInvoice) {
+      cur.y += 4;
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(8);
+      doc.setTextColor(...MUTED);
+      doc.text("Nota Fiscal não cadastrada neste prontuário.", M + 14, cur.y);
+      cur.y += 12;
+    }
+
+    cur.y += SECTION_GAP;
   }
 
-  // Footer on every page
-  const pages = doc.getNumberOfPages();
-  for (let p = 1; p <= pages; p++) {
-    doc.setPage(p);
-    doc.setDrawColor(...LINE); doc.line(M, H - 36, W - M, H - 36);
-    doc.setFontSize(8); doc.setTextColor(...MUTED); doc.setFont("helvetica", "normal");
-    doc.text(`TrailBook · ${publicUrl}`, M, H - 22);
-    doc.text(`${attachmentsCount} evidência(s) · ${workshopsCount} oficina(s) registrada(s) · Página ${p}/${pages}`, W - M, H - 22, { align: "right" });
+  // ── PAINEL DE SAÚDE ─────────────────────────────────────────────────────────
+  if (showSection("health") && health.length > 0) {
+    renderSectionTitle(doc, cur, "Painel de Saúde");
+
+    const rows = health.map((h) => [
+      h.label,
+      healthLabel(h.status),
+      doc.splitTextToSize(h.reason || "", 180).join(" "),
+    ]);
+
+    autoTable(doc, {
+      startY: cur.y,
+      head: [["Área", "Estado", "Observação"]],
+      body: rows,
+      margin: { left: M, right: M },
+      styles: { fontSize: 8, cellPadding: 5, textColor: DARK },
+      headStyles: {
+        fillColor: DARK,
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        fontSize: 8,
+      },
+      columnStyles: {
+        0: { cellWidth: 100, fontStyle: "bold" },
+        1: { cellWidth: 70 },
+        2: { cellWidth: "auto" },
+      },
+      didParseCell: (data) => {
+        if (data.section === "body" && data.column.index === 1) {
+          const status = health[data.row.index]?.status ?? "good";
+          const [r, g, b] = healthColor(status);
+          data.cell.styles.textColor = [r, g, b];
+          data.cell.styles.fontStyle = "bold";
+        }
+      },
+    });
+
+    cur.y = (doc as any).lastAutoTable.finalY + SECTION_GAP;
   }
 
+  // ── PRÓXIMAS MANUTENÇÕES ─────────────────────────────────────────────────────
+  if (showSection("upcoming") && upcoming.length > 0) {
+    renderSectionTitle(doc, cur, "Próximas Manutenções");
+
+    const upcomingSlice = upcoming.slice(0, 5);
+    const rows = upcomingSlice.map((u) => [
+      doc.splitTextToSize(u.label, 140).join(" "),
+      MAINT_CATEGORY_LABEL[u.category] ?? u.category,
+      upcomingTag(u.status),
+      u.estimatedDueDate ? formatDate(u.estimatedDueDate.toISOString()) : "—",
+    ]);
+
+    autoTable(doc, {
+      startY: cur.y,
+      head: [["Item", "Área", "Status", "Previsão"]],
+      body: rows,
+      margin: { left: M, right: M },
+      styles: { fontSize: 8, cellPadding: 5, textColor: DARK },
+      headStyles: {
+        fillColor: DARK,
+        textColor: [255, 255, 255],
+        fontStyle: "bold",
+        fontSize: 8,
+      },
+      columnStyles: {
+        0: { cellWidth: "auto" },
+        1: { cellWidth: 80 },
+        2: { cellWidth: 60, fontStyle: "bold" },
+        3: { cellWidth: 70 },
+      },
+      didParseCell: (data) => {
+        if (data.section === "body" && data.column.index === 2) {
+          const status = upcomingSlice[data.row.index]?.status ?? "";
+          const color: [number, number, number] =
+            status === "overdue" ? RED : status === "due" ? YELLOW : MUTED;
+          data.cell.styles.textColor = color;
+        }
+      },
+    });
+
+    cur.y = (doc as any).lastAutoTable.finalY;
+
+    if (upcoming.length > 5) {
+      cur.y += 8;
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(8);
+      doc.setTextColor(...MUTED);
+      doc.text(
+        `+ ${upcoming.length - 5} outros cuidados disponíveis no TrailBook.`,
+        M,
+        cur.y,
+      );
+      cur.y += 10;
+    }
+
+    cur.y += SECTION_GAP;
+  }
+
+  // ── HISTÓRICO DE EVENTOS ─────────────────────────────────────────────────────
+  if (showSection("history")) {
+    renderSectionTitle(doc, cur, "Histórico de Eventos");
+
+    if (events.length === 0) {
+      doc.setFont("helvetica", "italic");
+      doc.setFontSize(9);
+      doc.setTextColor(...MUTED);
+      doc.text(
+        "Ainda não há eventos registrados no histórico desta motocicleta.",
+        M,
+        cur.y,
+      );
+      cur.y += 20;
+    } else {
+      const cols = showSection("costs")
+        ? ["Data", "Evento", "Resumo", "Leitura", "Custo"]
+        : ["Data", "Evento", "Resumo", "Leitura"];
+
+      const rows = events.map((e) => {
+        const reading = e.hours_at_event != null
+          ? `${Number(e.hours_at_event).toFixed(1)} h`
+          : e.km_at_event != null
+          ? `${Number(e.km_at_event).toLocaleString("pt-BR")} km`
+          : "—";
+        const title = (e.title || e.description || "").slice(0, 80);
+        const base = [
+          formatDate(e.occurred_at),
+          EVENT_TYPE_LABEL[e.type] ?? e.type,
+          doc.splitTextToSize(title, 160).join(" "),
+          reading,
+        ];
+        if (showSection("costs")) base.push(brl(e.cost != null ? Number(e.cost) : null));
+        return base;
+      });
+
+      autoTable(doc, {
+        startY: cur.y,
+        head: [cols],
+        body: rows,
+        margin: { left: M, right: M },
+        styles: { fontSize: 7.5, cellPadding: 4, textColor: DARK },
+        headStyles: {
+          fillColor: DARK,
+          textColor: [255, 255, 255],
+          fontStyle: "bold",
+          fontSize: 7.5,
+        },
+        columnStyles: showSection("costs")
+          ? {
+              0: { cellWidth: 55 },
+              1: { cellWidth: 70 },
+              2: { cellWidth: "auto" },
+              3: { cellWidth: 55 },
+              4: { cellWidth: 55, halign: "right" },
+            }
+          : {
+              0: { cellWidth: 55 },
+              1: { cellWidth: 80 },
+              2: { cellWidth: "auto" },
+              3: { cellWidth: 60 },
+            },
+        pageBreak: "auto",
+      });
+
+      cur.y = (doc as any).lastAutoTable.finalY + SECTION_GAP;
+    }
+  }
+
+  // ── Rodapés ──────────────────────────────────────────────────────────────────
+  renderFooters(doc, publicUrl, workshopsCount, attachmentsCount);
+
+  // ── Gera o arquivo ────────────────────────────────────────────────────────────
   const brandPart = sanitizeFileName(moto.brand || "", "");
   const modelPart = sanitizeFileName(moto.model || moto.nickname || "", "");
   const tbid = ((moto as unknown as { trailbook_id?: string }).trailbook_id || "").toString();
   const idPart = sanitizeFileName(tbid, "");
-  const parts = ["TrailBook", "Certificado", brandPart, modelPart, idPart].filter((p) => p && p.trim().length > 0);
+  const parts = ["TrailBook", "Certificado", brandPart, modelPart, idPart].filter(
+    (p) => p && p.trim().length > 0,
+  );
   const fallback = "TrailBook-Certificado-Motocicleta";
   const baseName = parts.length > 2 ? parts.join("-") : fallback;
   const fileName = `${sanitizeFileName(baseName, fallback)}.pdf`;
@@ -219,18 +559,15 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
   return { blob, fileName };
 }
 
-function section(doc: jsPDF, title: string, x: number, y: number, w: number) {
-  doc.setDrawColor(...LINE); doc.line(x, y + 14, x + w, y + 14);
-  doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.setTextColor(...DARK);
-  doc.text(title, x, y + 10);
-}
-
 /**
  * Normaliza a foto principal para JPEG via canvas, preservando proporção
  * e limitando a resolução. Retorna null em qualquer falha (HEIC, CORS, etc.)
  * para que o PDF continue sendo gerado com placeholder.
  */
-export async function prepareCertPhotoDataUrl(sourceUrl: string, maxSide = 1200): Promise<string | null> {
+export async function prepareCertPhotoDataUrl(
+  sourceUrl: string,
+  maxSide = 1200,
+): Promise<string | null> {
   try {
     const res = await fetch(sourceUrl, { mode: "cors", credentials: "omit" });
     if (!res.ok) return null;
@@ -239,8 +576,14 @@ export async function prepareCertPhotoDataUrl(sourceUrl: string, maxSide = 1200)
       const url = URL.createObjectURL(blob);
       const el = new Image();
       el.crossOrigin = "anonymous";
-      el.onload = () => { URL.revokeObjectURL(url); resolve(el); };
-      el.onerror = (e) => { URL.revokeObjectURL(url); reject(e); };
+      el.onload = () => {
+        URL.revokeObjectURL(url);
+        resolve(el);
+      };
+      el.onerror = (e) => {
+        URL.revokeObjectURL(url);
+        reject(e);
+      };
       el.src = url;
     });
     const w = img.naturalWidth || img.width;
@@ -250,10 +593,10 @@ export async function prepareCertPhotoDataUrl(sourceUrl: string, maxSide = 1200)
     const tw = Math.max(1, Math.round(w * scale));
     const th = Math.max(1, Math.round(h * scale));
     const canvas = document.createElement("canvas");
-    canvas.width = tw; canvas.height = th;
+    canvas.width = tw;
+    canvas.height = th;
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
-    // fundo neutro para tratar transparência (PNG/WEBP)
     ctx.fillStyle = "#FFFFFF";
     ctx.fillRect(0, 0, tw, th);
     ctx.drawImage(img, 0, 0, tw, th);

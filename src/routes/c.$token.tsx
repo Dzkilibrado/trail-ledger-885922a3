@@ -287,6 +287,7 @@ function PublicCert() {
         attachmentsCount: certData.attachments.length,
         workshopsCount: certData.workshops.length,
         allowedSections: (data?.certificate.allowed_sections ?? []) as string[],
+        hasValidInvoice: !!data?.documents_presence?.invoice,
       });
       stage = "salvando arquivo";
       const result = await saveFile({
