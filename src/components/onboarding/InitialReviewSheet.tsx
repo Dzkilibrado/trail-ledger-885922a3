@@ -14,7 +14,6 @@ import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { ComponentIcon } from "@/components/components/componentIcon";
 import { MAINT_CATEGORY_LABEL } from "@/lib/trailbook";
-import { recomposeTimeline } from "@/lib/activity-recalc";
 import { TBDialog } from "@/design-system/overlays/TBDialog";
 import { reviewStateMessage } from "@/lib/review-state";
 import { ACTION_LABEL, type PlanAction } from "@/lib/plan-templates";
@@ -308,12 +307,8 @@ export function InitialReviewSheet({
       return;
     }
 
-    // Sucesso
-    try {
-      await recomposeTimeline(motoId);
-    } catch {
-      /* recomposição defensiva */
-    }
+    // Sucesso — RPC já atualizou schedules, criou evento e marcou initial_review_done_at.
+    // Não chamar recomposeTimeline: hours_delta/km_delta = NULL, sem impacto no odômetro.
     setSaving(false);
     setShowServiceStep(false);
     await qc.invalidateQueries();
