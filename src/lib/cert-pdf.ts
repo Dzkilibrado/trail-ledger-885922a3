@@ -47,22 +47,22 @@ export interface CertPdfOutput {
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-/** Traduz score 0–100 para estado textual — nunca exibe o número. */
+/** Traduz score 0–100 para estado oficial TrailBook 4.0 — nunca exibe o número. */
 function stateLabel(score: number): string {
-  if (score >= 80) return "Muito bom";
-  if (score >= 60) return "Bom";
-  if (score >= 40) return "Regular";
-  if (score >= 20) return "Atenção";
-  return "Crítico";
+  if (score <= 0) return "Sem dados suficientes";
+  if (score >= 85) return "Saudável";
+  if (score >= 70) return "Atenção";
+  if (score >= 50) return "Revisão recomendada";
+  return "Necessita ação";
 }
 
-/** Frase descritiva do estado de conservação em linguagem profissional. */
+/** Frase descritiva alinhada ao estado oficial do TrailBook 4.0. */
 function conservationSentence(score: number): string {
-  if (score >= 80) return "Os registros indicam acompanhamento consistente desta motocicleta.";
-  if (score >= 60) return "Os registros atuais indicam acompanhamento adequado da motocicleta.";
-  if (score >= 40) return "A motocicleta possui registros parciais. Alguns itens merecem atenção.";
-  if (score >= 20) return "Os registros disponíveis indicam necessidade de acompanhamento mais frequente.";
-  return "Poucos registros encontrados. Recomenda-se revisão e atualização do prontuário.";
+  if (score <= 0) return "Ainda não existem informações suficientes para avaliar esta motocicleta.";
+  if (score >= 85) return "Os registros indicam acompanhamento consistente desta motocicleta.";
+  if (score >= 70) return "Os registros atuais indicam acompanhamento adequado da motocicleta.";
+  if (score >= 50) return "A motocicleta possui registros parciais. Recomenda-se programar uma revisão.";
+  return "Poucos registros encontrados. Priorize a correção dos itens indicados.";
 }
 
 /** Símbolo de status sem peso numérico. */
@@ -77,11 +77,11 @@ function upcomingTag(status: string): string {
   return "Em breve";
 }
 
-/** Status textual da saúde por categoria. */
+/** Estado oficial de saúde por categoria (TrailBook 4.0). */
 function healthLabel(status: string): string {
-  if (status === "good") return "Regular";
+  if (status === "good") return "Saudável";
   if (status === "warn") return "Atenção";
-  return "Crítico";
+  return "Necessita ação";
 }
 
 /** Cor RGB para o status de saúde. */
@@ -94,7 +94,7 @@ function healthColor(status: string): [number, number, number] {
 // ─── Constantes de layout ────────────────────────────────────────────────────
 const PAGE_MARGIN = 40;
 const PAGE_TOP = PAGE_MARGIN;
-const SECTION_GAP = 18;   // espaço entre seções
+const SECTION_GAP = 14;   // espaço entre seções
 const HEADER_H = 83;      // altura do cabeçalho da página
 const FOOTER_H = 50;      // área reservada para o rodapé
 
@@ -338,14 +338,10 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
   if (showSection("invoices") || showSection("documents")) {
     renderSectionTitle(doc, cur, "Documentação");
 
-    const docItems: Array<[boolean, string]> = [];
-    docItems.push([hasValidInvoice, "Nota Fiscal"]);
-    if (attachmentsCount > 0) {
-      docItems.push([true, `${attachmentsCount} evidência(s) anexada(s)`]);
-    }
-    if (workshopsCount > 0) {
-      docItems.push([true, `${workshopsCount} oficina(s) registrada(s)`]);
-    }
+    // Somente informações documentais — sem evidências ou oficinas neste bloco
+    const docItems: Array<[boolean, string]> = [
+      [hasValidInvoice, "Nota Fiscal"],
+    ];
 
     for (const [present, label] of docItems) {
       cur.ensureSpace(14);
@@ -358,17 +354,8 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
       );
       doc.text(present ? "✓" : "—", M, cur.y);
       doc.setTextColor(...DARK);
-      doc.text(label, M + 14, cur.y);
+      doc.text(present ? "Nota Fiscal cadastrada" : "Nota Fiscal não cadastrada", M + 14, cur.y);
       cur.y += 14;
-    }
-
-    if (!hasValidInvoice) {
-      cur.y += 4;
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(8);
-      doc.setTextColor(...MUTED);
-      doc.text("Nota Fiscal não cadastrada neste prontuário.", M + 14, cur.y);
-      cur.y += 12;
     }
 
     cur.y += SECTION_GAP;
@@ -376,6 +363,9 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
 
   // ── PAINEL DE SAÚDE ─────────────────────────────────────────────────────────
   if (showSection("health") && health.length > 0) {
+    // Previne linha órfã: garante espaço para título + cabeçalho + mínimo 2 linhas
+    const healthMinHeight = 30 + 22 + Math.min(health.length, 2) * 22;
+    cur.ensureSpace(healthMinHeight);
     renderSectionTitle(doc, cur, "Painel de Saúde");
 
     const rows = health.map((h) => [
@@ -416,6 +406,9 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
 
   // ── PRÓXIMAS MANUTENÇÕES ─────────────────────────────────────────────────────
   if (showSection("upcoming") && upcoming.length > 0) {
+    // Previne linha órfã: garante espaço para título + cabeçalho + mínimo 2 linhas
+    const upcomingMinHeight = 30 + 22 + Math.min(upcoming.length, 2) * 22;
+    cur.ensureSpace(upcomingMinHeight);
     renderSectionTitle(doc, cur, "Próximas Manutenções");
 
     const upcomingSlice = upcoming.slice(0, 5);
@@ -474,6 +467,9 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
 
   // ── HISTÓRICO DE EVENTOS ─────────────────────────────────────────────────────
   if (showSection("history")) {
+    // Previne linha órfã: garante espaço para título + cabeçalho + mínimo 2 linhas
+    const histMinHeight = 30 + 22 + (events.length > 0 ? 2 * 18 : 20);
+    cur.ensureSpace(histMinHeight);
     renderSectionTitle(doc, cur, "Histórico de Eventos");
 
     if (events.length === 0) {
