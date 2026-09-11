@@ -112,7 +112,7 @@ export function CertificateSettingsDialog({ motorcycleId, existing, trigger, onS
     if (!qrDataUrl || !publicUrl) return;
     const w = window.open("", "_blank", "width=480,height=640");
     if (!w) return;
-    w.document.write(`<html><head><title>QR Code · TrailBook</title><style>body{font-family:system-ui;text-align:center;padding:32px}img{width:320px;height:320px}code{display:block;margin-top:16px;font-size:12px;word-break:break-all;color:#444}</style></head><body><h2>Passaporte Digital — TrailBook</h2><img src="${qrDataUrl}"/><code>${publicUrl}</code><script>window.onload=()=>setTimeout(()=>window.print(),200)</script></body></html>`);
+    w.document.write(`<html><head><title>QR Code · TrailBook</title><style>body{font-family:system-ui;text-align:center;padding:32px}img{width:320px;height:320px}code{display:block;margin-top:16px;font-size:12px;word-break:break-all;color:#444}</style></head><body><h2>Certificado Digital — TrailBook</h2><img src="${qrDataUrl}"/><code>${publicUrl}</code><script>window.onload=()=>setTimeout(()=>window.print(),200)</script></body></html>`);
     w.document.close();
   }
 
@@ -230,8 +230,13 @@ export function CertificateSettingsDialog({ motorcycleId, existing, trigger, onS
             )}
           </div>
           <div className="mt-2 text-xs text-muted-foreground">
-            {sections.size === 0 ? "Nenhuma seção marcada — o certificado ficará praticamente vazio." :
-              `${sections.size} de ${CERT_SECTIONS.length} seções serão exibidas.`}
+            {sections.size === 0
+              ? "Nenhuma seção marcada — o certificado ficará praticamente vazio."
+              : (() => {
+                  const active = CERT_SECTIONS.filter((s) => sections.has(s.key)).map((s) => s.label);
+                  return `Será exibido: ${active.join(", ")}.`;
+                })()
+            }
           </div>
           {publicUrl ? (
             <div className="mt-3 flex flex-col items-stretch gap-3 sm:grid sm:grid-cols-[120px_minmax(0,1fr)]">

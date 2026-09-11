@@ -59,12 +59,12 @@ export const AUDIENCE_LABEL: Record<CertAudience, string> = {
 };
 
 export const AUDIENCE_DESCRIPTION: Record<CertAudience, string> = {
-  buyer: "Foco em confiança: identidade, histórico, saúde, nota fiscal e proprietários anteriores.",
-  workshop: "Foco técnico: identidade, saúde, plano e histórico completo de manutenções.",
-  insurer: "Foco em cobertura: identidade, histórico, documentos, custos e proprietários.",
-  dispatcher: "Foco documental: identidade e documentos da moto.",
-  family: "Visão resumida — identidade, saúde e histórico principal.",
-  custom: "Seleção manual das seções — o usuário decide.",
+  buyer:      "Mostra dados da moto, uso acumulado, estado de conservação, saúde, próximas manutenções, histórico, fotos, oficinas registradas, nota fiscal e proprietários anteriores.",
+  workshop:   "Mostra dados da moto, uso acumulado, estado de conservação, saúde, próximas manutenções, histórico completo de eventos e fotos de evidência.",
+  insurer:    "Mostra dados da moto, uso acumulado, estado de conservação, histórico de eventos, fotos, oficinas, custos, nota fiscal, documentos e proprietários anteriores.",
+  dispatcher: "Mostra apenas dados básicos da moto e documentos anexados.",
+  family:     "Mostra dados da moto, uso acumulado, estado de conservação, saúde, próximas manutenções e histórico principal.",
+  custom:     "Seções selecionadas manualmente. Ajuste os controles abaixo conforme necessário.",
 };
 
 export const AUDIENCE_PRESETS: Record<Exclude<CertAudience, "custom">, CertSectionKey[]> = {
