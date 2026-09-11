@@ -226,38 +226,11 @@ export function InitialReviewSheet({
     await next();
   }
 
-  // ── Revisão geral — step 1: registrar inspeções ────────────────────────────
+  // ── Revisão geral — step 1: mostrar lista de serviços físicos ─────────────
+  // Não faz UPDATE aqui — a RPC complete_initial_review faz tudo atomicamente.
 
   async function startMarkAllRevised() {
-    setSaving(true);
-
-    // SOMENTE ações de inspeção/verificação recebem baseline automático
-    const inspectionIds = inspectionItems.map((s) => s.id);
-    const now = new Date().toISOString();
-    const patch = {
-      status: "active",
-      last_done_at: now,
-      last_done_hours: motoHours,
-      last_done_km: motoKm,
-    };
-
-    if (inspectionIds.length > 0) {
-      const { error } = await supabase
-        .from("maintenance_schedules")
-        .update(patch as never)
-        .in("id", inspectionIds);
-      if (error) {
-        setSaving(false);
-        toast.error("Não foi possível registrar as inspeções.", { description: error.message });
-        return;
-      }
-    }
-
-    // Refresca os dados locais
-    await schedules.refetch();
-    setSaving(false);
-
-    // Pergunta se serviços físicos também foram realizados
+    // Apenas avança para o Step 2 (seleção de serviços físicos)
     setConfirmedServices(new Set());
     setShowServiceStep(true);
   }
