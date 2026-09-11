@@ -34,7 +34,7 @@ import { computeConservation, categoryHealth, docsHealth, historyHealth } from "
 import { generateCertificatePdf } from "@/lib/cert-pdf";
 import { prepareCertPhotoDataUrl } from "@/lib/cert-pdf";
 import { saveFile } from "@/lib/save-file";
-import { isAllowed, type CertSectionKey } from "@/lib/cert-sections";
+import { isAllowed, type CertSectionKey, AUDIENCE_BANNER } from "@/lib/cert-sections";
 import { EvaluationPill } from "@/components/health/EvaluationPill";
 import { stateFromScore, RIDE_VERDICT } from "@/lib/ui/evaluation";
 import { OwnershipTimeline } from "@/components/OwnershipTimeline";
@@ -225,6 +225,10 @@ function PublicCert() {
   const certComputed = computed;
   const allowed = data.certificate.allowed_sections ?? [];
   const show = (k: CertSectionKey) => isAllowed(allowed, k);
+  const certAudience = (data.certificate as any).audience as import("@/lib/cert-sections").CertAudience | null;
+  const certBanner = certAudience
+    ? (AUDIENCE_BANNER[certAudience] ?? "Certificado Digital")
+    : "Certificado Digital";
   const upcoming = computed.statuses.filter((s) => s.status !== "ok").slice(0, 6);
   const lastMaint = data.events
     .filter((e) => e.type === "maintenance" || e.type === "revision")
@@ -288,6 +292,7 @@ function PublicCert() {
         workshopsCount: certData.workshops.length,
         allowedSections: (data?.certificate.allowed_sections ?? []) as string[],
         hasValidInvoice: !!data?.documents_presence?.invoice,
+        audienceBanner: certBanner,
       });
       stage = "salvando arquivo";
       const result = await saveFile({
@@ -343,7 +348,7 @@ function PublicCert() {
             <div className="min-w-0 truncate font-display text-sm font-bold leading-none">
               TrailBook{" "}
               <span className="ml-1 text-[10px] font-normal uppercase tracking-widest text-muted-foreground">
-                Prontuário digital
+                {certBanner}
               </span>
             </div>
           </div>

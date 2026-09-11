@@ -59,20 +59,70 @@ export const AUDIENCE_LABEL: Record<CertAudience, string> = {
 };
 
 export const AUDIENCE_DESCRIPTION: Record<CertAudience, string> = {
-  buyer:      "Mostra dados da moto, uso acumulado, estado de conservação, saúde, próximas manutenções, histórico, fotos, oficinas registradas, nota fiscal e proprietários anteriores.",
-  workshop:   "Mostra dados da moto, uso acumulado, estado de conservação, saúde, próximas manutenções, histórico completo de eventos e fotos de evidência.",
-  insurer:    "Mostra dados da moto, uso acumulado, estado de conservação, histórico de eventos, fotos, oficinas, custos, nota fiscal, documentos e proprietários anteriores.",
-  dispatcher: "Mostra apenas dados básicos da moto e documentos anexados.",
-  family:     "Mostra dados da moto, uso acumulado, estado de conservação, saúde, próximas manutenções e histórico principal.",
+  buyer:      "Prioriza origem e documentação, proprietários anteriores, estado atual e histórico de manutenção — tudo que ajuda a avaliar a procedência da moto.",
+  workshop:   "Foco técnico: situação atual, próximos serviços, saúde por categoria e histórico de manutenção. Sem informações de propriedade ou financeiras.",
+  insurer:    "Dados completos para análise de risco: conservação, histórico, documentos, custos, propriedade e evidências.",
+  dispatcher: "Apenas identificação, foto e documentação — Nota Fiscal, outros documentos e histórico de proprietários.",
+  family:     "Visão simplificada: identificação, estado geral, saúde e manutenções importantes. Sem custos ou documentos sensíveis.",
   custom:     "Seções selecionadas manualmente. Ajuste os controles abaixo conforme necessário.",
 };
 
 export const AUDIENCE_PRESETS: Record<Exclude<CertAudience, "custom">, CertSectionKey[]> = {
-  buyer: ["basic", "photo", "usage", "conservation", "health", "upcoming", "history", "photos", "workshop", "invoices", "owners"],
-  workshop: ["basic", "photo", "usage", "conservation", "health", "upcoming", "history", "photos", "workshop"],
-  insurer: ["basic", "photo", "usage", "conservation", "health", "history", "photos", "workshop", "costs", "invoices", "documents", "owners"],
-  dispatcher: ["basic", "photo", "documents"],
-  family: ["basic", "photo", "usage", "conservation", "health", "upcoming", "history"],
+  buyer:      ["basic", "photo", "usage", "conservation", "health", "upcoming", "history", "photos", "workshop", "invoices", "owners"],
+  workshop:   ["basic", "usage", "conservation", "upcoming", "health", "history", "photos", "workshop"],
+  insurer:    ["basic", "photo", "usage", "conservation", "history", "owners", "invoices", "documents", "costs", "workshop", "photos"],
+  dispatcher: ["basic", "photo", "invoices", "documents", "owners"],
+  family:     ["basic", "photo", "usage", "conservation", "health", "upcoming", "history"],
+};
+
+/**
+ * Ordem de exibição das seções por audiência.
+ * Diferente de AUDIENCE_PRESETS (que define o QUE é exibido),
+ * AUDIENCE_SECTION_ORDER define a SEQUÊNCIA de renderização.
+ * Seções não listadas aqui aparecem no final na ordem padrão.
+ */
+export const AUDIENCE_SECTION_ORDER: Record<Exclude<CertAudience, "custom">, CertSectionKey[]> = {
+  buyer:      ["basic", "photo", "usage", "invoices", "owners", "conservation", "history", "upcoming", "health", "photos", "workshop"],
+  workshop:   ["basic", "usage", "conservation", "upcoming", "health", "history", "photos", "workshop"],
+  insurer:    ["basic", "photo", "usage", "conservation", "history", "owners", "invoices", "documents", "costs", "workshop", "photos"],
+  dispatcher: ["basic", "photo", "invoices", "documents", "owners"],
+  family:     ["basic", "photo", "usage", "conservation", "health", "upcoming", "history"],
+};
+
+/** Título/banner por audiência — exibido na página pública e PDF. */
+export const AUDIENCE_BANNER: Record<CertAudience, string> = {
+  buyer:      "Certificado para Comprador",
+  workshop:   "Resumo para Oficina",
+  insurer:    "Documentação para Seguradora",
+  dispatcher: "Documentação para Despachante",
+  family:     "Resumo para Familiar",
+  custom:     "Certificado Digital",
+};
+
+/**
+ * O que cada audiência mostra e não mostra — para o preview da configuração.
+ */
+export const AUDIENCE_SHOWS: Record<Exclude<CertAudience, "custom">, { shows: string[]; hides: string[] }> = {
+  buyer: {
+    shows: ["Identificação da moto", "Horas/km", "Nota fiscal", "Proprietários anteriores", "Estado de conservação", "Histórico de manutenção", "Fotos", "Oficinas"],
+    hides: ["Custos", "Documentos CRLV/outros"],
+  },
+  workshop: {
+    shows: ["Identificação da moto", "Horas/km atuais", "Situação atual", "Próximas manutenções", "Painel de saúde", "Histórico de serviços", "Fotos de evidência"],
+    hides: ["Custos", "Nota fiscal", "Proprietários", "Documentos pessoais"],
+  },
+  insurer: {
+    shows: ["Identificação", "Horas/km", "Conservação", "Histórico", "Proprietários", "Nota fiscal", "Documentos", "Custos", "Oficinas", "Fotos"],
+    hides: ["Próximas manutenções (foco em histórico)"],
+  },
+  dispatcher: {
+    shows: ["Identificação da moto", "Foto", "Nota fiscal", "Documentos", "Proprietários"],
+    hides: ["Horas/km", "Conservação", "Manutenção", "Histórico", "Custos"],
+  },
+  family: {
+    shows: ["Identificação da moto", "Foto", "Horas/km", "Estado geral", "Saúde", "Próximas manutenções", "Histórico principal"],
+    hides: ["Custos", "Nota fiscal", "Proprietários", "Fotos de evidência", "Oficinas"],
+  },
 };
 
 export function isAllowed(allowed: unknown, key: CertSectionKey): boolean {

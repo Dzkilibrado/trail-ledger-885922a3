@@ -14,7 +14,7 @@ import QRCode from "qrcode";
 import {
   CERT_SECTIONS, DEFAULT_SECTIONS, type CertSectionKey, type CertStatus,
   STATUS_LABEL, STATUS_TONE, effectiveStatus,
-  AUDIENCE_PRESETS, AUDIENCE_LABEL, AUDIENCE_DESCRIPTION, type CertAudience,
+  AUDIENCE_PRESETS, AUDIENCE_LABEL, AUDIENCE_DESCRIPTION, AUDIENCE_SHOWS, type CertAudience,
 } from "@/lib/cert-sections";
 
 type CertRow = {
@@ -160,6 +160,24 @@ export function CertificateSettingsDialog({ motorcycleId, existing, trigger, onS
             ))}
           </div>
           <p className="text-[11px] text-muted-foreground">{AUDIENCE_DESCRIPTION[audience]}</p>
+          {audience !== "custom" && AUDIENCE_SHOWS[audience] && (
+            <div className="mt-2 rounded-lg border border-border bg-muted/30 p-3 text-[10px] space-y-2">
+              <div className="space-y-0.5">
+                <p className="font-semibold text-foreground uppercase tracking-wide">Será exibido:</p>
+                {AUDIENCE_SHOWS[audience].shows.map((s) => (
+                  <p key={s} className="text-emerald-600 dark:text-emerald-400">✓ {s}</p>
+                ))}
+              </div>
+              {AUDIENCE_SHOWS[audience].hides.length > 0 && (
+                <div className="space-y-0.5 border-t border-border/50 pt-2">
+                  <p className="font-semibold text-muted-foreground uppercase tracking-wide">Não será exibido:</p>
+                  {AUDIENCE_SHOWS[audience].hides.map((s) => (
+                    <p key={s} className="text-muted-foreground">— {s}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Status + expiração */}

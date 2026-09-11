@@ -38,6 +38,8 @@ export interface CertPdfInput {
   allowedSections?: string[];
   /** Documentos de origem válidos (doc_type=invoice, is_current=true, deleted_at IS NULL) */
   hasValidInvoice?: boolean;
+  /** Banner de audiência para o cabeçalho do PDF */
+  audienceBanner?: string;
 }
 
 export interface CertPdfOutput {
@@ -177,6 +179,7 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
     workshopsCount,
     allowedSections = [],
     hasValidInvoice = false,
+    audienceBanner = "Certificado Digital",
   } = input;
 
   const showSection = (k: string) =>
@@ -204,7 +207,7 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
   doc.setTextColor(...ORANGE);
   doc.setFont("helvetica", "bold");
   doc.setFontSize(9);
-  doc.text("Certificado Digital", W - M, 56, { align: "right" });
+  doc.text(audienceBanner, W - M, 56, { align: "right" });
 
   const cur = new Cursor(doc, HEADER_H + 16, M);
 
