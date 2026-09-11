@@ -434,8 +434,8 @@ export function InitialReviewSheet({
           setSuccessOpen(v);
           if (!v) onOpenChange(false);
         }}
-        title="Revisão inicial concluída"
-        description={reviewStateMessage("fully_reviewed")}
+        title="Revisão registrada"
+        description={`${reviewStateMessage("fully_reviewed")} Os próximos vencimentos serão calculados a partir desta leitura: ${motoHours.toFixed(1)} h${motoKm > 0 ? ` · ${motoKm.toFixed(0)} km` : ""}. Assim que a moto acumular uso, os itens aparecerão na Agenda e em Próximos Cuidados.`}
         footer={
           <Button
             className="btn-glow w-full sm:w-auto"
