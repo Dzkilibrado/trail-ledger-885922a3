@@ -203,17 +203,13 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
     : DEFAULT_PDF_ORDER;
   const sectionOrder = rawOrder.filter((k: string) => showSection(k));
 
-  /** Filtra fatores de conservação que mencionam documentação:
-   *  - Quando invoices/documents NÃO está autorizado: oculta para evitar vazamento
-   *  - Quando invoices/documents ESTÁ autorizado: a seção Documentação já exibe a info
-   *    então também oculta aqui para evitar duplicação */
+  /** Filtra fatores internos de conservação que não devem ser exibidos publicamente.
+   *
+   *  Em produção, conservation.factors NUNCA contém fator de NF fiscal.
+   *  docs_* = placa/Renavam/chassi (identificação da moto); evidence = comprovantes de serviço.
+   *  Apenas o fator "base" (score numérico interno) é sempre omitido. */
   const shouldShowConservationFactor = (factorKey: string): boolean => {
-    const docFactorKeys = ["docs_full", "docs_missing", "docs_partial", "evidence"];
-    if (docFactorKeys.includes(factorKey)) {
-      // Ocultar sempre: ou porque não está autorizado (vazamento) ou porque já está na seção própria (duplicação)
-      return false;
-    }
-    return true;
+    return factorKey !== "base";
   };
 
   const doc = new jsPDF({ unit: "pt", format: "a4" });
@@ -330,22 +326,33 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
 
     renderSectionTitle(doc, cur, consTitle);
 
-    // Para oficina: resumo rápido de urgência no topo
+    // Para oficina: resumo rápido de urgência no topo — status reais: "overdue","due","soon","ok"
     if (audience === "workshop") {
       const overdueCount = upcoming.filter((u) => u.status === "overdue").length;
       const dueCount = upcoming.filter((u) => u.status === "due").length;
-      if (overdueCount > 0 || dueCount > 0) {
+      const soonCount = upcoming.filter((u) => u.status === "soon").length;
+      if (overdueCount > 0 || dueCount > 0 || soonCount > 0) {
         cur.ensureSpace(40);
-        doc.setFillColor(239, 68, 68, 0.08);
         if (overdueCount > 0) {
+          const label = overdueCount === 1
+            ? "1 manutenção necessita ação imediata."
+            : `${overdueCount} manutenções necessitam ação imediata.`;
           doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...RED);
-          doc.text(`${overdueCount} item(s) vencido(s) — verificar imediatamente`, M, cur.y);
-          cur.y += 14;
+          doc.text(label, M, cur.y); cur.y += 14;
         }
         if (dueCount > 0) {
+          const label = dueCount === 1
+            ? "1 manutenção está no limite do prazo."
+            : `${dueCount} manutenções estão no limite do prazo.`;
           doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...YELLOW);
-          doc.text(`${dueCount} item(s) devido(s) — próximos da manutenção`, M, cur.y);
-          cur.y += 14;
+          doc.text(label, M, cur.y); cur.y += 14;
+        }
+        if (soonCount > 0 && overdueCount === 0 && dueCount === 0) {
+          const label = soonCount === 1
+            ? "1 manutenção está próxima do prazo."
+            : `${soonCount} manutenções estão próximas do prazo.`;
+          doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...MUTED);
+          doc.text(label, M, cur.y); cur.y += 14;
         }
         cur.y += 4;
       } else {
@@ -513,13 +520,24 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
     const histMinHeight = 30 + 22 + (events.length > 0 ? 2 * 18 : 20);
     cur.ensureSpace(histMinHeight);
 
-    // Para Oficina: "Últimos Serviços" com foco em manutenções
+    // Para Oficina: "Últimos Serviços" com foco em manutenções reais
     const histTitle = audience === "workshop" ? "Últimos Serviços" : "Histórico de Eventos";
     renderSectionTitle(doc, cur, histTitle);
 
-    // Para oficina: filtrar apenas eventos de manutenção e revisão
+    // Para oficina: filtrar apenas serviços realizados.
+    // maintenance → sempre incluído.
+    // revision → incluído somente quando tem confirmed_service_schedule_ids (serviços físicos confirmados).
+    // revision somente com inspeções NÃO é serviço realizado.
+    const isServiceEvent = (e: EventRow): boolean => {
+      if (e.type === "maintenance") return true;
+      if (e.type === "revision") {
+        const confirmed: string[] = ((e as any).metadata?.confirmed_service_schedule_ids) ?? [];
+        return confirmed.length > 0;
+      }
+      return false;
+    };
     const displayEvents = audience === "workshop"
-      ? events.filter((e) => e.type === "maintenance" || e.type === "revision").slice(0, 5)
+      ? events.filter(isServiceEvent).slice(0, 5)
       : events;
 
     if (displayEvents.length === 0) {

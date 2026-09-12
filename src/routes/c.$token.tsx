@@ -34,7 +34,7 @@ import { computeConservation, categoryHealth, docsHealth, historyHealth } from "
 import { generateCertificatePdf } from "@/lib/cert-pdf";
 import { prepareCertPhotoDataUrl } from "@/lib/cert-pdf";
 import { saveFile } from "@/lib/save-file";
-import { isAllowed, type CertSectionKey, AUDIENCE_BANNER } from "@/lib/cert-sections";
+import { isAllowed, type CertSectionKey, AUDIENCE_BANNER, AUDIENCE_SECTION_ORDER } from "@/lib/cert-sections";
 import { EvaluationPill } from "@/components/health/EvaluationPill";
 import { stateFromScore, RIDE_VERDICT } from "@/lib/ui/evaluation";
 import { OwnershipTimeline } from "@/components/OwnershipTimeline";
@@ -229,10 +229,34 @@ function PublicCert() {
   const certBanner = certAudience
     ? (AUDIENCE_BANNER[certAudience] ?? "Certificado Digital")
     : "Certificado Digital";
+
+  /** Ordem de seções para a página pública — respeita AUDIENCE_SECTION_ORDER */
+  const DEFAULT_PAGE_ORDER: CertSectionKey[] = [
+    "photo", "basic", "usage", "conservation", "health", "upcoming", "history",
+    "photos", "documents", "workshop", "invoices", "owners",
+  ];
+  const pageSectionOrder: CertSectionKey[] = certAudience && certAudience !== "custom"
+    ? (AUDIENCE_SECTION_ORDER[certAudience] ?? DEFAULT_PAGE_ORDER)
+    : DEFAULT_PAGE_ORDER;
+
+  /** Helper: verifica se uma seção está na ordem E autorizada */
+  const inOrder = (k: CertSectionKey) => pageSectionOrder.includes(k) && show(k);
+
   const upcoming = computed.statuses.filter((s) => s.status !== "ok").slice(0, 6);
-  const lastMaint = data.events
-    .filter((e) => e.type === "maintenance" || e.type === "revision")
-    .slice(0, 6);
+
+  /** Últimos serviços: maintenance sempre; revision somente com serviços físicos confirmados */
+  const isServiceEvent = (e: typeof data.events[0]) => {
+    if (e.type === "maintenance") return true;
+    if (e.type === "revision") {
+      const confirmed: string[] = ((e as any).metadata?.confirmed_service_schedule_ids) ?? [];
+      return confirmed.length > 0;
+    }
+    return false;
+  };
+  const lastMaint = certAudience === "workshop"
+    ? data.events.filter(isServiceEvent).slice(0, 6)
+    : data.events.filter((e) => e.type === "maintenance" || e.type === "revision").slice(0, 6);
+
   const photosCount = data.attachments.filter((a) => a.kind === "photo").length;
   const invoicesCount = data.attachments.filter((a) => a.kind === "invoice").length;
   const documentsCount = data.attachments.filter((a) => a.kind === "document").length;
@@ -442,10 +466,10 @@ function PublicCert() {
 
         {/* Conservation + QR */}
         <section className="mt-6 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-          {show("conservation") ? (
+          {inOrder("conservation") ? (
             <div className="surface-elevated rounded-3xl p-6">
               <div className="flex items-center justify-between">
-                <h2 className="font-display text-lg font-bold">Estado de Conservação</h2>
+                <h2 className="font-display text-lg font-bold">{certAudience === "workshop" ? "Situação Atual" : "Estado de Conservação"}</h2>
                 <span className="text-xs text-muted-foreground">
                   Avaliação automática TrailBook
                 </span>
@@ -488,7 +512,7 @@ function PublicCert() {
         </section>
 
         {/* Health */}
-        {show("health") ? (
+        {inOrder("health") ? (
           <section className="mt-6 surface-elevated rounded-3xl p-6">
             <h2 className="font-display text-lg font-bold">Saúde da motocicleta</h2>
             <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -527,11 +551,11 @@ function PublicCert() {
         ) : null}
 
         {/* Upcoming + Last maintenance */}
-        {show("upcoming") || show("history") ? (
+        {inOrder("upcoming") || inOrder("history") ? (
           <section className="mt-6 grid gap-6 lg:grid-cols-2">
-            {show("upcoming") ? (
+            {inOrder("upcoming") ? (
               <div className="surface-elevated rounded-3xl p-6">
-                <h2 className="font-display text-lg font-bold">Próximas manutenções críticas</h2>
+                <h2 className="font-display text-lg font-bold">{certAudience === "workshop" ? "Próximos Serviços" : "Próximas manutenções críticas"}</h2>
                 {upcoming.length === 0 ? (
                   <p className="mt-4 text-sm text-muted-foreground">Nenhuma manutenção pendente.</p>
                 ) : (
@@ -575,9 +599,9 @@ function PublicCert() {
                 )}
               </div>
             ) : null}
-            {show("history") ? (
+            {inOrder("history") ? (
               <div className="surface-elevated rounded-3xl p-6">
-                <h2 className="font-display text-lg font-bold">Últimas manutenções</h2>
+                <h2 className="font-display text-lg font-bold">{certAudience === "workshop" ? "Últimos Serviços" : "Últimas manutenções"}</h2>
                 {lastMaint.length === 0 ? (
                   <p className="mt-4 text-sm text-muted-foreground">
                     Nenhuma manutenção registrada.
@@ -646,7 +670,7 @@ function PublicCert() {
           </section>
         ) : null}
 
-        {show("owners") ? (
+        {inOrder("owners") ? (
           <section className="mt-6 surface-elevated rounded-3xl p-6">
             <h2 className="font-display text-lg font-bold">Histórico de proprietários</h2>
             <p className="mt-1 text-xs text-muted-foreground">
