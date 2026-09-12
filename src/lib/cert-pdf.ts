@@ -12,6 +12,7 @@ import {
 import type { ConservationResult, CategoryHealth } from "./conservation";
 import type { ScheduleStatus } from "./maintenance-engine";
 import { sanitizeFileName } from "./save-file";
+import { AUDIENCE_SECTION_ORDER, type CertAudience } from "./cert-sections";
 
 // ─── Paleta ──────────────────────────────────────────────────────────────────
 const ORANGE: [number, number, number] = [234, 88, 12];
@@ -40,6 +41,8 @@ export interface CertPdfInput {
   hasValidInvoice?: boolean;
   /** Banner de audiência para o cabeçalho do PDF */
   audienceBanner?: string;
+  /** Audiência — usada para determinar a ordem das seções */
+  audience?: CertAudience;
 }
 
 export interface CertPdfOutput {
@@ -180,10 +183,38 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
     allowedSections = [],
     hasValidInvoice = false,
     audienceBanner = "Certificado Digital",
+    audience,
   } = input;
 
   const showSection = (k: string) =>
     allowedSections.length === 0 || allowedSections.includes(k);
+
+  /**
+   * Ordem de seções a renderizar. Se a audiência tem uma ordem definida
+   * em AUDIENCE_SECTION_ORDER, usa ela. Caso contrário, usa a ordem padrão.
+   * Filtra apenas seções autorizadas por allowedSections.
+   */
+  const DEFAULT_PDF_ORDER = [
+    "conservation", "invoices", "documents", "owners",
+    "upcoming", "health", "history",
+  ];
+  const rawOrder = audience && audience !== "custom" && AUDIENCE_SECTION_ORDER[audience]
+    ? AUDIENCE_SECTION_ORDER[audience]
+    : DEFAULT_PDF_ORDER;
+  const sectionOrder = rawOrder.filter((k: string) => showSection(k));
+
+  /** Filtra fatores de conservação que mencionam documentação:
+   *  - Quando invoices/documents NÃO está autorizado: oculta para evitar vazamento
+   *  - Quando invoices/documents ESTÁ autorizado: a seção Documentação já exibe a info
+   *    então também oculta aqui para evitar duplicação */
+  const shouldShowConservationFactor = (factorKey: string): boolean => {
+    const docFactorKeys = ["docs_full", "docs_missing", "docs_partial", "evidence"];
+    if (docFactorKeys.includes(factorKey)) {
+      // Ocultar sempre: ou porque não está autorizado (vazamento) ou porque já está na seção própria (duplicação)
+      return false;
+    }
+    return true;
+  };
 
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const W = doc.internal.pageSize.getWidth();
@@ -288,9 +319,41 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
 
   cur.y += Math.max(photoH, nameLinesH + 60) + SECTION_GAP;
 
-  // ── ESTADO DE CONSERVAÇÃO ───────────────────────────────────────────────────
-  if (showSection("conservation")) {
-    renderSectionTitle(doc, cur, "Avaliação da Motocicleta");
+  // ── RENDERIZADORES DE SEÇÃO (usados pelo loop de ordem dinâmica) ─────────────
+
+  function renderConservation() {
+    if (!showSection("conservation")) return;
+    // Título diferente para oficina
+    const consTitle = audience === "workshop" ? "Situação Atual" : "Avaliação da Motocicleta";
+    // Pontos de atenção: label diferente para oficina
+    const findingsLabel = audience === "workshop" ? "PONTOS DE ATENÇÃO" : "O QUE ENCONTRAMOS";
+
+    renderSectionTitle(doc, cur, consTitle);
+
+    // Para oficina: resumo rápido de urgência no topo
+    if (audience === "workshop") {
+      const overdueCount = upcoming.filter((u) => u.status === "overdue").length;
+      const dueCount = upcoming.filter((u) => u.status === "due").length;
+      if (overdueCount > 0 || dueCount > 0) {
+        cur.ensureSpace(40);
+        doc.setFillColor(239, 68, 68, 0.08);
+        if (overdueCount > 0) {
+          doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...RED);
+          doc.text(`${overdueCount} item(s) vencido(s) — verificar imediatamente`, M, cur.y);
+          cur.y += 14;
+        }
+        if (dueCount > 0) {
+          doc.setFont("helvetica", "bold"); doc.setFontSize(9); doc.setTextColor(...YELLOW);
+          doc.text(`${dueCount} item(s) devido(s) — próximos da manutenção`, M, cur.y);
+          cur.y += 14;
+        }
+        cur.y += 4;
+      } else {
+        doc.setFont("helvetica", "italic"); doc.setFontSize(9); doc.setTextColor(...MUTED);
+        doc.text("Nenhuma manutenção imediata identificada.", M, cur.y);
+        cur.y += 14;
+      }
+    }
 
     // Estado textual em destaque
     doc.setFont("helvetica", "bold");
@@ -299,26 +362,29 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
     doc.text(stateLabel(conservation.score), M, cur.y);
     cur.y += 16;
 
-    // Frase descritiva
-    doc.setFont("helvetica", "normal");
-    doc.setFontSize(9);
-    doc.setTextColor(...MUTED);
-    const sentence = conservationSentence(conservation.score);
-    const sentLines = doc.splitTextToSize(sentence, cur.contentW) as string[];
-    doc.text(sentLines, M, cur.y);
-    cur.y += sentLines.length * 12 + 10;
+    // Frase descritiva (apenas para não-oficina)
+    if (audience !== "workshop") {
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(...MUTED);
+      const sentence = conservationSentence(conservation.score);
+      const sentLines = doc.splitTextToSize(sentence, cur.contentW) as string[];
+      doc.text(sentLines, M, cur.y);
+      cur.y += sentLines.length * 12 + 10;
+    }
 
-    // Fatores — sem pesos numéricos
+    // Fatores — filtrados por allowed_sections para evitar vazamento documental
     const factorItems = conservation.factors
       .slice(0, 5)
-      .filter((f) => f.label && f.label.trim())
+      .filter((f) => f.label && f.label.trim() && shouldShowConservationFactor(f.key))
       .map((f) => [factorSymbol(f), f.label + (f.detail ? ` — ${f.detail}` : "")]);
 
     if (factorItems.length > 0) {
+      cur.ensureSpace(14 + factorItems.length * 12);
       doc.setFont("helvetica", "bold");
       doc.setFontSize(8);
       doc.setTextColor(...DARK);
-      doc.text("O QUE ENCONTRAMOS", M, cur.y);
+      doc.text(findingsLabel, M, cur.y);
       cur.y += 10;
 
       for (const [sym, label] of factorItems) {
@@ -337,36 +403,40 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
     cur.y += SECTION_GAP;
   }
 
-  // ── DOCUMENTAÇÃO ────────────────────────────────────────────────────────────
-  if (showSection("invoices") || showSection("documents")) {
+  function renderDocumentation() {
+    if (!showSection("invoices") && !showSection("documents")) return;
     renderSectionTitle(doc, cur, "Documentação");
 
-    // Somente informações documentais — sem evidências ou oficinas neste bloco
-    const docItems: Array<[boolean, string]> = [
-      [hasValidInvoice, "Nota Fiscal"],
-    ];
-
-    for (const [present, label] of docItems) {
+    if (showSection("invoices")) {
       cur.ensureSpace(14);
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      doc.setTextColor(
-        present ? GREEN[0] : MUTED[0],
-        present ? GREEN[1] : MUTED[1],
-        present ? GREEN[2] : MUTED[2],
-      );
-      doc.text(present ? "✓" : "—", M, cur.y);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+      doc.setTextColor(hasValidInvoice ? GREEN[0] : MUTED[0], hasValidInvoice ? GREEN[1] : MUTED[1], hasValidInvoice ? GREEN[2] : MUTED[2]);
+      doc.text(hasValidInvoice ? "✓" : "—", M, cur.y);
       doc.setTextColor(...DARK);
-      doc.text(present ? "Nota Fiscal cadastrada" : "Nota Fiscal não cadastrada", M + 14, cur.y);
+      doc.text(hasValidInvoice ? "Nota Fiscal cadastrada" : "Nota Fiscal não cadastrada", M + 14, cur.y);
       cur.y += 14;
     }
-
+    if (showSection("documents")) {
+      cur.ensureSpace(14);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(9);
+      doc.setTextColor(...MUTED); doc.text("—", M, cur.y);
+      doc.setTextColor(...DARK);
+      doc.text("CRLV e outros documentos — consultar no TrailBook", M + 14, cur.y);
+      cur.y += 14;
+    }
     cur.y += SECTION_GAP;
   }
 
-  // ── PAINEL DE SAÚDE ─────────────────────────────────────────────────────────
-  if (showSection("health") && health.length > 0) {
-    // Previne linha órfã: garante espaço para título + cabeçalho + mínimo 2 linhas
+  function renderOwners() {
+    if (!showSection("owners")) return;
+    renderSectionTitle(doc, cur, "Histórico de Proprietários");
+    doc.setFont("helvetica", "normal"); doc.setFontSize(9); doc.setTextColor(...DARK);
+    doc.text("Consultar histórico de proprietários no TrailBook.", M, cur.y);
+    cur.y += SECTION_GAP * 2;
+  }
+
+  function renderHealth() {
+    if (!showSection("health") || health.length === 0) return;
     const healthMinHeight = 30 + 22 + Math.min(health.length, 2) * 22;
     cur.ensureSpace(healthMinHeight);
     renderSectionTitle(doc, cur, "Painel de Saúde");
@@ -383,17 +453,8 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
       body: rows,
       margin: { left: M, right: M },
       styles: { fontSize: 8, cellPadding: 5, textColor: DARK },
-      headStyles: {
-        fillColor: DARK,
-        textColor: [255, 255, 255],
-        fontStyle: "bold",
-        fontSize: 8,
-      },
-      columnStyles: {
-        0: { cellWidth: 100, fontStyle: "bold" },
-        1: { cellWidth: 70 },
-        2: { cellWidth: "auto" },
-      },
+      headStyles: { fillColor: DARK, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8 },
+      columnStyles: { 0: { cellWidth: 100, fontStyle: "bold" }, 1: { cellWidth: 70 }, 2: { cellWidth: "auto" } },
       didParseCell: (data) => {
         if (data.section === "body" && data.column.index === 1) {
           const status = health[data.row.index]?.status ?? "good";
@@ -403,16 +464,15 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
         }
       },
     });
-
     cur.y = (doc as any).lastAutoTable.finalY + SECTION_GAP;
   }
 
-  // ── PRÓXIMAS MANUTENÇÕES ─────────────────────────────────────────────────────
-  if (showSection("upcoming") && upcoming.length > 0) {
-    // Previne linha órfã: garante espaço para título + cabeçalho + mínimo 2 linhas
+  function renderUpcoming() {
+    if (!showSection("upcoming") || upcoming.length === 0) return;
     const upcomingMinHeight = 30 + 22 + Math.min(upcoming.length, 2) * 22;
     cur.ensureSpace(upcomingMinHeight);
-    renderSectionTitle(doc, cur, "Próximas Manutenções");
+    const upTitle = audience === "workshop" ? "Próximos Serviços" : "Próximas Manutenções";
+    renderSectionTitle(doc, cur, upTitle);
 
     const upcomingSlice = upcoming.slice(0, 5);
     const rows = upcomingSlice.map((u) => [
@@ -428,69 +488,53 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
       body: rows,
       margin: { left: M, right: M },
       styles: { fontSize: 8, cellPadding: 5, textColor: DARK },
-      headStyles: {
-        fillColor: DARK,
-        textColor: [255, 255, 255],
-        fontStyle: "bold",
-        fontSize: 8,
-      },
-      columnStyles: {
-        0: { cellWidth: "auto" },
-        1: { cellWidth: 80 },
-        2: { cellWidth: 60, fontStyle: "bold" },
-        3: { cellWidth: 70 },
-      },
+      headStyles: { fillColor: DARK, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 8 },
+      columnStyles: { 0: { cellWidth: "auto" }, 1: { cellWidth: 80 }, 2: { cellWidth: 60, fontStyle: "bold" }, 3: { cellWidth: 70 } },
       didParseCell: (data) => {
         if (data.section === "body" && data.column.index === 2) {
           const status = upcomingSlice[data.row.index]?.status ?? "";
-          const color: [number, number, number] =
-            status === "overdue" ? RED : status === "due" ? YELLOW : MUTED;
+          const color: [number, number, number] = status === "overdue" ? RED : status === "due" ? YELLOW : MUTED;
           data.cell.styles.textColor = color;
         }
       },
     });
-
     cur.y = (doc as any).lastAutoTable.finalY;
-
     if (upcoming.length > 5) {
       cur.y += 8;
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(8);
-      doc.setTextColor(...MUTED);
-      doc.text(
-        `+ ${upcoming.length - 5} outros cuidados disponíveis no TrailBook.`,
-        M,
-        cur.y,
-      );
+      doc.setFont("helvetica", "italic"); doc.setFontSize(8); doc.setTextColor(...MUTED);
+      doc.text(`+ ${upcoming.length - 5} outros cuidados disponíveis no TrailBook.`, M, cur.y);
       cur.y += 10;
     }
-
     cur.y += SECTION_GAP;
   }
 
-  // ── HISTÓRICO DE EVENTOS ─────────────────────────────────────────────────────
-  if (showSection("history")) {
-    // Previne linha órfã: garante espaço para título + cabeçalho + mínimo 2 linhas
+  function renderHistory() {
+    if (!showSection("history")) return;
     const histMinHeight = 30 + 22 + (events.length > 0 ? 2 * 18 : 20);
     cur.ensureSpace(histMinHeight);
-    renderSectionTitle(doc, cur, "Histórico de Eventos");
 
-    if (events.length === 0) {
-      doc.setFont("helvetica", "italic");
-      doc.setFontSize(9);
-      doc.setTextColor(...MUTED);
-      doc.text(
-        "Ainda não há eventos registrados no histórico desta motocicleta.",
-        M,
-        cur.y,
-      );
+    // Para Oficina: "Últimos Serviços" com foco em manutenções
+    const histTitle = audience === "workshop" ? "Últimos Serviços" : "Histórico de Eventos";
+    renderSectionTitle(doc, cur, histTitle);
+
+    // Para oficina: filtrar apenas eventos de manutenção e revisão
+    const displayEvents = audience === "workshop"
+      ? events.filter((e) => e.type === "maintenance" || e.type === "revision").slice(0, 5)
+      : events;
+
+    if (displayEvents.length === 0) {
+      doc.setFont("helvetica", "italic"); doc.setFontSize(9); doc.setTextColor(...MUTED);
+      const emptyMsg = audience === "workshop"
+        ? "Ainda não há serviços registrados no TrailBook."
+        : "Ainda não há eventos registrados no histórico desta motocicleta.";
+      doc.text(emptyMsg, M, cur.y);
       cur.y += 20;
     } else {
       const cols = showSection("costs")
         ? ["Data", "Evento", "Resumo", "Leitura", "Custo"]
         : ["Data", "Evento", "Resumo", "Leitura"];
 
-      const rows = events.map((e) => {
+      const rows = displayEvents.map((e) => {
         const reading = e.hours_at_event != null
           ? `${Number(e.hours_at_event).toFixed(1)} h`
           : e.km_at_event != null
@@ -513,32 +557,38 @@ export async function generateCertificatePdf(input: CertPdfInput): Promise<CertP
         body: rows,
         margin: { left: M, right: M },
         styles: { fontSize: 7.5, cellPadding: 4, textColor: DARK },
-        headStyles: {
-          fillColor: DARK,
-          textColor: [255, 255, 255],
-          fontStyle: "bold",
-          fontSize: 7.5,
-        },
+        headStyles: { fillColor: DARK, textColor: [255, 255, 255], fontStyle: "bold", fontSize: 7.5 },
         columnStyles: showSection("costs")
-          ? {
-              0: { cellWidth: 55 },
-              1: { cellWidth: 70 },
-              2: { cellWidth: "auto" },
-              3: { cellWidth: 55 },
-              4: { cellWidth: 55, halign: "right" },
-            }
-          : {
-              0: { cellWidth: 55 },
-              1: { cellWidth: 80 },
-              2: { cellWidth: "auto" },
-              3: { cellWidth: 60 },
-            },
+          ? { 0: { cellWidth: 55 }, 1: { cellWidth: 70 }, 2: { cellWidth: "auto" }, 3: { cellWidth: 55 }, 4: { cellWidth: 55, halign: "right" } }
+          : { 0: { cellWidth: 55 }, 1: { cellWidth: 80 }, 2: { cellWidth: "auto" }, 3: { cellWidth: 60 } },
         pageBreak: "auto",
       });
-
       cur.y = (doc as any).lastAutoTable.finalY + SECTION_GAP;
     }
   }
+
+  // ── LOOP DE RENDERIZAÇÃO — ordem dinâmica por audiência ─────────────────────
+  const sectionRenderers: Record<string, () => void> = {
+    conservation: renderConservation,
+    invoices:     renderDocumentation,
+    documents:    renderDocumentation,
+    owners:       renderOwners,
+    upcoming:     renderUpcoming,
+    health:       renderHealth,
+    history:      renderHistory,
+  };
+
+  const rendered = new Set<string>();
+  for (const key of sectionOrder) {
+    // invoices e documents mapeiam para o mesmo renderizador — renderizar só uma vez
+    const renderKey = (key === "documents") ? "invoices" : key;
+    if (rendered.has(renderKey)) continue;
+    rendered.add(renderKey);
+    sectionRenderers[renderKey]?.();
+  }
+
+    // ── PAINEL DE SAÚDE (mantido para compatibilidade — renderizado via loop acima) ─
+  // (renderHealth já foi chamado via sectionOrder loop acima)
 
   // ── Rodapés ──────────────────────────────────────────────────────────────────
   renderFooters(doc, publicUrl, workshopsCount, attachmentsCount);

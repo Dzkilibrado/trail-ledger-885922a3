@@ -293,6 +293,7 @@ function PublicCert() {
         allowedSections: (data?.certificate.allowed_sections ?? []) as string[],
         hasValidInvoice: !!data?.documents_presence?.invoice,
         audienceBanner: certBanner,
+        audience: certAudience ?? undefined,
       });
       stage = "salvando arquivo";
       const result = await saveFile({
