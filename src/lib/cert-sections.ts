@@ -47,7 +47,7 @@ export const DEFAULT_SECTIONS: CertSectionKey[] = CERT_SECTIONS.filter((s) => s.
  * ao DEFAULT_SECTIONS; sensíveis só entram onde faz sentido para aquela
  * audiência. "custom" preserva a seleção manual do usuário.
  */
-export type CertAudience = "buyer" | "workshop" | "insurer" | "dispatcher" | "family" | "custom";
+export type CertAudience = "buyer" | "workshop" | "insurer" | "dispatcher" | "family" | "custom" | "inspection";
 
 export const AUDIENCE_LABEL: Record<CertAudience, string> = {
   buyer: "Comprador",
@@ -56,6 +56,7 @@ export const AUDIENCE_LABEL: Record<CertAudience, string> = {
   dispatcher: "Despachante",
   family: "Familiar",
   custom: "Personalizado",
+  inspection: "Fiscalização",
 };
 
 export const AUDIENCE_DESCRIPTION: Record<CertAudience, string> = {
@@ -65,6 +66,7 @@ export const AUDIENCE_DESCRIPTION: Record<CertAudience, string> = {
   dispatcher: "Apenas identificação, foto e documentação — Nota Fiscal, outros documentos e histórico de proprietários.",
   family:     "Visão simplificada: identificação, estado geral, saúde e manutenções importantes. Sem custos ou documentos sensíveis.",
   custom:     "Seções selecionadas manualmente. Ajuste os controles abaixo conforme necessário.",
+  inspection: "Modo Fiscalização: identificação da moto, proprietário atual e documento de origem para apresentação presencial.",
 };
 
 export const AUDIENCE_PRESETS: Record<Exclude<CertAudience, "custom">, CertSectionKey[]> = {
@@ -73,6 +75,9 @@ export const AUDIENCE_PRESETS: Record<Exclude<CertAudience, "custom">, CertSecti
   insurer:    ["basic", "photo", "usage", "conservation", "history", "owners", "invoices", "documents", "costs", "workshop", "photos"],
   dispatcher: ["basic", "photo", "invoices", "documents", "owners"],
   family:     ["basic", "photo", "usage", "conservation", "health", "upcoming", "history"],
+  /** Modo Fiscalização: apenas identificação básica + foto + uso + documentação de origem.
+   *  NÃO inclui "owners" — o nome do proprietário vem de data.owner diretamente no payload. */
+  inspection: ["basic", "photo", "usage", "invoices"],
 };
 
 /**
@@ -87,6 +92,8 @@ export const AUDIENCE_SECTION_ORDER: Record<Exclude<CertAudience, "custom">, Cer
   insurer:    ["basic", "photo", "usage", "conservation", "history", "owners", "invoices", "documents", "costs", "workshop", "photos"],
   dispatcher: ["basic", "photo", "invoices", "documents", "owners"],
   family:     ["basic", "photo", "usage", "conservation", "health", "upcoming", "history"],
+  /** Modo Fiscalização: foto + básico + uso + documentação de origem */
+  inspection: ["basic", "photo", "usage", "invoices"],
 };
 
 /** Título/banner por audiência — exibido na página pública e PDF. */
@@ -97,12 +104,14 @@ export const AUDIENCE_BANNER: Record<CertAudience, string> = {
   dispatcher: "Documentação para Despachante",
   family:     "Resumo para Familiar",
   custom:     "Certificado Digital",
+  inspection: "Apresentação da Motocicleta",
 };
 
 /**
  * O que cada audiência mostra e não mostra — para o preview da configuração.
  */
-export const AUDIENCE_SHOWS: Record<Exclude<CertAudience, "custom">, { shows: string[]; hides: string[] }> = {
+/** Inspection não aparece no CertificateSettingsDialog — é criado pelo Modo Fiscalização */
+export const AUDIENCE_SHOWS: Record<Exclude<CertAudience, "custom" | "inspection">, { shows: string[]; hides: string[] }> = {
   buyer: {
     shows: ["Identificação da moto", "Horas/km", "Nota fiscal", "Proprietários anteriores", "Estado de conservação", "Histórico de manutenção", "Fotos", "Oficinas"],
     hides: ["Custos", "Documentos CRLV/outros"],
