@@ -26,8 +26,15 @@ export interface OcrQualityResult {
 }
 
 export interface OcrSuggestedItem {
+  /** Descrição completa preservada do documento (sem qty/valor/artefatos OCR).
+   *  Este é o campo exibido ao usuário como texto editável principal. */
   rawDescription: string;
+  /** Texto limpo do documento para exibição e edição — NUNCA substituído pelo DICT.
+   *  Ex: "RETENTOR GARFO COM GUARDA PO" (não "Vedações do garfo") */
   normalizedName: string;
+  /** Sugestão de classificação auxiliar do DICT — não exibida como descrição principal.
+   *  Ex: "Vedação/retentor do garfo". Pode ser null quando não há match no DICT. */
+  classificationHint?: string;
   category: MaintenanceCategory;
   itemKind: "technical" | "labor" | "expense";
   /** Quantidade extraída — null quando não identificada (NÃO assume 1) */
@@ -296,6 +303,48 @@ function isStructurallyTableLine(line: string): boolean {
   return /[A-Za-zÀ-ÿ]{3,}/.test(line);
 }
 
+/**
+ * Extrai a descrição limpa do documento a partir da linha OCR.
+ * Remove apenas elementos estruturais: qty inicial, valor monetário,
+ * "RS"/"R$" soltos, e corrige junções óbvias de palavras.
+ * NUNCA substitui o conteúdo semântico pelo catálogo.
+ */
+function extractCleanDescription(line: string, qty: number | null): string {
+  let desc = line.trim();
+
+  // Remover qty do início: "2 RETENTOR..." → "RETENTOR..."
+  if (qty !== null) {
+    desc = desc.replace(/^\s*\d{1,3}\s*\.?\s+/, "").trim();
+  }
+
+  // Remover valor monetário do final: "R$ 750,00" ou "RS 360,00"
+  desc = desc.replace(/\s+r?s?\$?\s*[\d.]+,\d{2}\s*$/i, "").trim();
+
+  // Remover "RS" ou "R$" soltos que sobraram (artefato OCR)
+  desc = desc.replace(/\s+R[S$]\s*$/i, "").trim();
+
+  // Correções de junção óbvias (apenas padrões fortes conhecidos do domínio)
+  const joins: [RegExp, string][] = [
+    [/\bKITTRANSMISS(AO|ÃO)\b/i, "KIT TRANSMISSÃO"],
+    [/\bANELVEDA(CAO|ÇÃO)\b/i, "ANEL VEDAÇÃO"],
+    [/\bPARANELVEDA/i, "PAR ANEL VEDAÇÃO"],
+    [/\bDESCARBONIZANTECAR/i, "DESCARBONIZANTE CAR"],
+    [/\bMDOTROCA\b/i, "MDO TROCA"],
+    [/\bMDOREVIS/i, "MDO REVIS"],
+    [/\bADITIVORADIADOR\b/i, "ADITIVO RADIADOR"],
+    [/\bARBA[ÇC]ADEIRAS\b/i, "ABRAÇADEIRAS"],
+    [/\bABRA[ÇC]ADEIRAS\b/i, "ABRAÇADEIRAS"],
+  ];
+  for (const [pattern, replacement] of joins) {
+    desc = desc.replace(pattern, replacement);
+  }
+
+  // Normalizar espaços múltiplos
+  desc = desc.replace(/\s+/g, " ").trim();
+
+  return desc;
+}
+
 function identifyItem(line: string, schedules: any[]): OcrSuggestedItem | null {
   // 1. Filtros de exclusão
   if (IGNORE_PATTERNS.some((p) => p.test(line))) return null;
@@ -313,33 +362,17 @@ function identifyItem(line: string, schedules: any[]): OcrSuggestedItem | null {
     ? line.replace(/^\s*\d{1,3}\s*\.?\s+/, "").trim()
     : line.trim();
 
-  // 5. Verificar LABOR_PRIORITY
+  // 5. Descrição limpa do documento (exibição principal — nunca substituída pelo DICT)
+  const cleanDesc = extractCleanDescription(line, qty);
+  if (cleanDesc.length < 2) return null;
+
+  // 6. Verificar LABOR_PRIORITY
   for (const labor of LABOR_PRIORITY) {
     if (labor.pattern.test(line)) {
-      // Extrair descrição após "MDO"/"MO"/"MAO DE OBRA"
-      let normalizedName = labor.name;
-      // Usar lineWithoutLeadingQty para o extract: quando a linha começa com
-      // "1    MDO ...", o match na linha original falha (começa com dígito).
-      const mdo = lineWithoutLeadingQty.match(/^(?:mdo|m\.?o\.?)\s+(.*)/i);
-      const maoDeObra = lineWithoutLeadingQty.match(/\bma[o0õd]\s*d[ae]\s*obra\b\s*(.*)/i);
-      const revisao = lineWithoutLeadingQty.match(/\brevisão?\s+geral\b/i);
-      const after = mdo?.[1] ?? maoDeObra?.[1] ?? null;
-      if (revisao) {
-        normalizedName = "Revisão geral";
-      } else if (after) {
-        const fmt = after
-          .replace(/\s+\d{2,}[.,]\d{2}.*$/, "")  // remove valor do fim
-          .replace(/[^\w\sáàâãéèêíìîóòôõúùûç\/\-]/gi, " ")
-          .replace(/\s+/g, " ")
-          .trim();
-        if (fmt.length >= 3) {
-          const capitalized = fmt.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
-          normalizedName = `Mão de obra — ${capitalized}`;
-        }
-      }
       return {
         rawDescription: line.trim(),
-        normalizedName,
+        normalizedName: cleanDesc,        // descrição completa do documento
+        classificationHint: labor.name,  // hint auxiliar ("Mão de obra")
         category: "other",
         itemKind: "labor",
         qty: qty ?? undefined,
@@ -349,7 +382,7 @@ function identifyItem(line: string, schedules: any[]): OcrSuggestedItem | null {
     }
   }
 
-  // 6. Verificar dicionário de peças
+  // 7. Verificar dicionário de peças — usado apenas para classificação, NÃO para descrição
   for (const entry of DICT) {
     if (entry.pattern.test(lineWithoutLeadingQty)) {
       const matched = schedules.find(
@@ -359,7 +392,8 @@ function identifyItem(line: string, schedules: any[]): OcrSuggestedItem | null {
       );
       return {
         rawDescription: line.trim(),
-        normalizedName: entry.name,
+        normalizedName: cleanDesc,         // descrição completa do documento
+        classificationHint: entry.name,   // hint auxiliar ("Retentor", "Bateria"…)
         category: entry.category,
         itemKind: entry.itemKind,
         qty: qty ?? undefined,
@@ -371,35 +405,20 @@ function identifyItem(line: string, schedules: any[]): OcrSuggestedItem | null {
     }
   }
 
-  // 7. FALLBACK: linha não reconhecida pelo dicionário, mas estruturalmente válida
-  //    Preservar com confidence=low — NÃO descartar
+  // 8. FALLBACK: linha estruturalmente válida, não reconhecida pelo DICT
   if (!isStructurallyTableLine(line)) return null;
-
-  // Normalizar o texto como nome (capitalize, sem qty/valor)
-  const rawForName = lineWithoutLeadingQty
-    .replace(/\s+r?\$?\s*[\d.]+,\d{2}\s*$/i, "") // remove valor do fim
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (rawForName.length < 3) return null;
-
-  const normalized = rawForName
-    .toLowerCase()
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .substring(0, 80);
+  if (cleanDesc.length < 3) return null;
 
   // Linhas de fallback: auto-selecionadas SOMENTE se têm qty ou valor identificado.
-  // Linhas sem qty e sem valor (ex: nomes de empresa, títulos) ficam desmarcadas (low).
   const autoSelect = qty !== null || totalValue !== null;
 
   return {
     rawDescription: line.trim(),
-    normalizedName: normalized,
+    normalizedName: cleanDesc,
     category: "other",
     itemKind: "technical",
     qty: qty ?? undefined,
     totalValue: totalValue ?? undefined,
-    // confidence low, mas marcado na UI conforme autoSelect
     confidence: autoSelect ? "medium" : "low",
   };
 }
