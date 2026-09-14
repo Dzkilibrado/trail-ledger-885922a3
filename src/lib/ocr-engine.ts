@@ -114,8 +114,9 @@ const IGNORE_PATTERNS = [
 
 const LABOR_PRIORITY: { pattern: RegExp; name: string }[] = [
   // MDO / M.O. — abreviações comuns em OS de oficina
+  // Cobre tanto "MDO TROCA" (com espaço) quanto "MDOTROCA" (fundido pelo OCR1)
   {
-    pattern: /\b(mdo|m\.?o\.?)\s+/i,
+    pattern: /\b(mdo|m\.?o\.?)(?:\s+|troca|revis|instal|ajust|regul)/i,
     name: "Mão de obra",
   },
   // Variações de "mão de obra" escritas por extenso
@@ -228,8 +229,9 @@ const DICT: DictEntry[] = [
  * Retorna null quando não há confiança.
  */
 function extractQty(line: string): number | null {
-  // Quantidade no início da linha: "2 DESC..." ou "2. DESC..."
-  const leadingQty = line.match(/^\s*(\d{1,3})\s*\.?\s+[A-Za-zÀ-ÿ]/);
+  // Quantidade no início da linha, opcionalmente seguida de separador (—, -, :, |)
+  // Padrões: "2 DESC", "2 — DESC", "2 - DESC", "2. DESC", "2: DESC"
+  const leadingQty = line.match(/^\s*(\d{1,3})\s*(?:[.\-—:|]\s*)?[A-Za-zÀ-ÿ]/);
   if (leadingQty) {
     const q = parseInt(leadingQty[1], 10);
     if (q >= 1 && q <= 999) return q;
@@ -333,9 +335,11 @@ function isStructurallyTableLine(line: string): boolean {
 function extractCleanDescription(line: string, qty: number | null): string {
   let desc = line.trim();
 
-  // Remover qty do início: "2 RETENTOR..." → "RETENTOR..."
+  // Remover qty do início e separador opcional (—, -, :, |)
+  // "2 RETENTOR..." → "RETENTOR..."
+  // "2 — OLEO..." → "OLEO..."
   if (qty !== null) {
-    desc = desc.replace(/^\s*\d{1,3}\s*\.?\s+/, "").trim();
+    desc = desc.replace(/^\s*\d{1,3}\s*(?:[.\-—:|]\s*)?/, "").trim();
   }
 
   // Remover valor monetário do final: "R$ 750,00" ou "RS 360,00"
@@ -344,10 +348,10 @@ function extractCleanDescription(line: string, qty: number | null): string {
   // Remover "RS" ou "R$" soltos que sobraram (artefato OCR)
   desc = desc.replace(/\s+R[S$]\s*$/i, "").trim();
 
-  // Correções de junção óbvias (apenas padrões fortes conhecidos do domínio)
+  // Correções de junção óbvias (apenas padrões fortes e inequívocos do domínio)
   const joins: [RegExp, string][] = [
     [/\bKITTRANSMISS(AO|ÃO)\b/i, "KIT TRANSMISSÃO"],
-    [/\bANELVEDA(CAO|ÇÃO)\b/i, "ANEL VEDAÇÃO"],
+    [/\bANELVEDA(CAO|GAO|ÇÃO|GÃO)\b/i, "ANEL VEDAÇÃO"],   // cobre ANELVEDAGAO (erro G→Ç)
     [/\bPARANELVEDA/i, "PAR ANEL VEDAÇÃO"],
     [/\bDESCARBONIZANTECAR/i, "DESCARBONIZANTE CAR"],
     [/\bMDOTROCA\b/i, "MDO TROCA"],
@@ -355,6 +359,9 @@ function extractCleanDescription(line: string, qty: number | null): string {
     [/\bADITIVORADIADOR\b/i, "ADITIVO RADIADOR"],
     [/\bARBA[ÇC]ADEIRAS\b/i, "ABRAÇADEIRAS"],
     [/\bABRA[ÇC]ADEIRAS\b/i, "ABRAÇADEIRAS"],
+    [/\bOLEOSUSPENS/i, "OLEO SUSPENS"],          // OLEOSUSPENSÃO → OLEO SUSPENSÃO
+    [/\bOLEOMOTOR/i, "OLEO MOTOR"],              // junção análoga frequente
+    [/\bFLUIDOFREIO/i, "FLUIDO FREIO"],          // junção análoga
   ];
   for (const [pattern, replacement] of joins) {
     desc = desc.replace(pattern, replacement);
@@ -366,11 +373,74 @@ function extractCleanDescription(line: string, qty: number | null): string {
   return desc;
 }
 
+/**
+ * Detecta se uma linha é metadado/cabeçalho do documento — não um item/serviço.
+ * Aplica sinais combinados: padrões típicos de cabeçalho, ausência de qty+valor,
+ * palavras administrativas, símbolos isolados.
+ * Princípio conservador: retorna true somente quando o sinal é forte o suficiente.
+ */
+function isDocumentMetadata(line: string): boolean {
+  const t = line.trim();
+
+  // Linhas muito curtas sem letras suficientes (artefatos OCR como "(o", ">", "Ses")
+  const letters = t.replace(/[^A-Za-zÀ-ÿ]/g, "");
+  if (letters.length < 3) return true;
+
+  // Linha com 1 única palavra de ≤5 letras, sem número inicial, sem valor monetário
+  // → artefato OCR ou palavra isolada sem contexto de item (ex: "Ses", ">", "E")
+  const words = t.trim().split(/\s+/);
+  const hasLeadingNum = /^\d+/.test(t.trim());
+  const hasMonetaryVal = /r\$|rs\s*\d|,\d{2}/.test(t.toLowerCase());
+  if (words.length === 1 && letters.length <= 5 && !hasLeadingNum && !hasMonetaryVal) return true;
+
+  // Palavras de cabeçalho de coluna de tabela — linha que SÓ tem esses termos
+  if (/^(qtd\.?|qtde\.?|quant\.?|descrição|descricao|item|valor|total|vl\s*unit|vl\s*total|un\.?)(\s*(qtd|desc|item|valor|total|un|r\$|vl)\.?)*\s*$/i.test(t)) return true;
+
+  // Número do orçamento / OS — linha que contém orçamento/OS seguido de número
+  if (/(orcamento|orçamento|ordem\s*de\s*servi[çc]o|o\.?\s*s\.?)/i.test(t)) return true;
+
+  // Linha com CNPJ, CPF, IE, inscrição estadual
+  if (/(cnpj|cpf|ie:|inscri[çc]|i\.e\.)/i.test(t)) return true;
+
+  // Linha de contato
+  if (/(fone|telefone|tel\.|celular|whatsapp|e-mail|email|site|www\.)/i.test(t)) return true;
+
+  // Linha de endereço
+  if (/^\s*(rua|av\.|avenida|alameda|travessa|estrada)/i.test(t)) return true;
+
+  // Linha de total / rodapé financeiro
+  if (/^\s*(valor\s+total|total\s+geral|subtotal|desconto|acrescimo|troco)/i.test(t)) return true;
+
+  // Linha que é APENAS valor monetário
+  if (/^\s*r\$\s*[\d.,]+\s*$/i.test(t)) return true;
+
+  // Data isolada
+  if (/^\s*\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4}\s*$/.test(t)) return true;
+
+  // Linha com "cliente:", "data:", "placa:" etc
+  if (/^\s*(cliente|data|emissão|emissao|validade|vencimento|placa|veiculo|modelo|responsavel)\s*:/i.test(t)) return true;
+
+  // Linha de separador
+  if (/^\s*[-=*_]{3,}\s*$/.test(t)) return true;
+
+  // Linha típica de cabeçalho de empresa: texto curto (≤5 palavras) SEM quantidade e SEM valor monetário
+  // E que contém padrões de nome comercial como siglas com colchetes, texto em caps isolado
+  // Excluir: linhas com número no início (provavelmente qty) ou com R$ (valor)
+  const hasLeadingNumber = /^\s*\d+\s/.test(t);
+  const hasMonetary = /r\$|rs\s*\d|,\d{2}/.test(t.toLowerCase());
+  const wordCount = t.split(/\s+/).filter(w => w.length > 0).length;
+  // Linha curta sem qty e sem valor em contexto de cabeçalho (ex: "MOTOFIRE RACING [MOTOFIRE|")
+  if (!hasLeadingNumber && !hasMonetary && wordCount <= 4 && /[\[\|]/.test(t)) return true;
+
+  return false;
+}
+
 function identifyItem(line: string, schedules: any[], rawLine?: string): OcrSuggestedItem | null {
   // rawLine: linha OCR1 original (antes da correção OCR2), usada para rawDescription.
   // Quando não fornecida (ex: fallback textual), usa a própria linha como rawDescription.
   const rawDescLine = (rawLine ?? line).trim();
-  // 1. Filtros de exclusão
+  // 1. Filtros de exclusão — metadados de documento e IGNORE_PATTERNS
+  if (isDocumentMetadata(line)) return null;
   if (IGNORE_PATTERNS.some((p) => p.test(line))) return null;
 
   // 2. Ignora linhas muito curtas ou só números/símbolos
