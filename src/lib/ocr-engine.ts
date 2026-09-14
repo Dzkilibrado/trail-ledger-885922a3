@@ -751,6 +751,27 @@ async function runTesseract(src: string | File): Promise<{ text: string; rawText
     if (isSuspiciousToken(token.word, conf)) entry.hasSuspicious = true;
   }
 
+  // ── Feature flag: segunda passada OCR ────────────────────────────────────
+  // DESABILITADA temporariamente. O OCR2 estava corrompendo o texto OCR1
+  // ao usar coordenadas de crop incorretas no browser (escala de canvas ≠ imagem).
+  // O OCR1 produz resultado melhor sem a segunda passada.
+  //
+  // Para reativar quando a escala do canvas for corrigida:
+  //   mudar ENABLE_OCR_SECOND_PASS para true
+  //
+  // O código do OCR2 (retryToken, PSM7/PSM13, crop, posCorrections) está
+  // preservado integralmente abaixo e continua compilando.
+  const ENABLE_OCR_SECOND_PASS = false;
+
+  if (!ENABLE_OCR_SECOND_PASS) {
+    // Registrar no diagnóstico que OCR2 estava desabilitado
+    (runTesseract as any)._diagPage = {
+      ...(runTesseract as any)._diagPage,
+      secondPassEnabled: false,
+    };
+    return { text: data.text, rawText: data.text, confidence: data.confidence };
+  }
+
   // Verificar se há linhas com tokens suspeitos
   const linesWithSuspicious = [...lineMap.values()].filter((l) => l.hasSuspicious);
   if (linesWithSuspicious.length === 0) {
