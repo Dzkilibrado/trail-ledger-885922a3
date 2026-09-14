@@ -20,6 +20,9 @@ import {
   Archive,
   UserX,
   FlaskConical,
+  Cpu,
+  Copy,
+  Check,
 } from "lucide-react";
 import { formatDate } from "@/lib/trailbook";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +43,8 @@ import {
 } from "@/components/ui/accordion";
 import { AccessDenied } from "./admin";
 import { cn } from "@/lib/utils";
+import { APP_VERSION, BUILD_ID, BUILD_AT } from "@/lib/version/build-info";
+import { useState, useCallback } from "react";
 
 export const Route = createFileRoute("/_authenticated/admin/")({
   head: () => ({ meta: [{ title: "Painel administrativo — TrailBook" }] }),
@@ -340,6 +345,85 @@ function AdminHome() {
           </AccordionContent>
         </AccordionItem>
       </Accordion>
+
+      {/* ── Card de versão do sistema ─────────────────────────────────── */}
+      <SystemVersionCard />
+    </div>
+  );
+}
+
+// ── Card de versão do sistema ──────────────────────────────────────────────
+// Fonte dos valores: injetados no bundle pelo Vite em tempo de build (vite.config.ts).
+// APP_VERSION  → package.json version (ex: "1.6.11")
+// BUILD_ID     → YYYYMMDD-HHmmss-{shortSha} (gerado uma vez por build)
+// BUILD_AT     → ISO 8601 timestamp do momento da build
+// Os valores refletem a publicação ativa — nunca a hora de abertura da página.
+function SystemVersionCard() {
+  const [copied, setCopied] = useState(false);
+
+  // Extrair shortSha do BUILD_ID (último segmento após o último "-")
+  const shortSha = BUILD_ID.split("-").slice(-1)[0] ?? BUILD_ID;
+
+  // Data de publicação: BUILD_AT é ISO 8601 gerado pelo Vite no momento do build
+  const publishedAt = (() => {
+    try {
+      const d = new Date(BUILD_AT);
+      if (isNaN(d.getTime()) || d.getTime() === 0) return null;
+      return d.toLocaleString("pt-BR", {
+        day: "2-digit", month: "2-digit", year: "numeric",
+        hour: "2-digit", minute: "2-digit",
+        timeZone: "America/Sao_Paulo",
+      });
+    } catch {
+      return null;
+    }
+  })();
+
+  const copyInfo = useCallback(async () => {
+    const lines = [
+      `TrailBook v${APP_VERSION}`,
+      `Build: ${shortSha}`,
+      publishedAt ? `Publicado: ${publishedAt}` : null,
+    ].filter(Boolean).join("\n");
+    try {
+      await navigator.clipboard.writeText(lines);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* silencioso */ }
+  }, [publishedAt, shortSha]);
+
+  return (
+    <div className="rounded-xl border border-border bg-card px-4 py-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <Cpu className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground leading-none mb-1">
+              Versão do sistema
+            </p>
+            <p className="text-sm font-mono font-semibold text-foreground">
+              v{APP_VERSION}
+            </p>
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground font-mono">
+              {shortSha && shortSha !== "dev" && (
+                <span>Build {shortSha}</span>
+              )}
+              {publishedAt && (
+                <span>Publicado em {publishedAt}</span>
+              )}
+            </div>
+          </div>
+        </div>
+        <button
+          onClick={copyInfo}
+          title="Copiar informações de versão"
+          className="shrink-0 rounded-md p-1.5 text-muted-foreground transition hover:bg-muted hover:text-foreground"
+        >
+          {copied
+            ? <Check className="h-3.5 w-3.5" />
+            : <Copy className="h-3.5 w-3.5" />}
+        </button>
+      </div>
     </div>
   );
 }
