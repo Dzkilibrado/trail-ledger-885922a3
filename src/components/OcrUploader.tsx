@@ -141,8 +141,11 @@ export function OcrUploader({
         category: it.category,
         itemKind: it.itemKind,
         qty: it.qty,
-        unitValue:
-          it.unitValue ?? (it.totalValue && it.qty ? it.totalValue / it.qty : it.totalValue),
+        // unitValue: NUNCA calculado automaticamente (totalValue / qty).
+        // Se o documento não informou unitValue explicitamente, permanece undefined.
+        // totalValue é registrado diretamente quando reconhecido.
+        unitValue: it.unitValue,
+        totalValue: it.totalValue,
         scheduleId: it.scheduleId,
         templateItemId: it.templateItemId,
       }));

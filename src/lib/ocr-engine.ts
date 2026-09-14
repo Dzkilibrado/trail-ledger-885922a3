@@ -69,8 +69,10 @@ const IGNORE_PATTERNS = [
   // Textos de rodapé/mensagem
   /\b(obrigado|volte\s*sempre|nao\s*e\s*valido|nao\s*comprova|consumidor)\b/i,
   // Identificadores de documento (cabeçalho)
-  /\b(orcamento|orçamento)\s*n[°º.]\s*\d/i,
+  // Identificadores de documento (orçamento, OS, data com label)
+  /\b(orcamento|orçamento)\b/i,
   /\b(ordem\s*de\s*servi[çc]o|o\.?\s*s\.?\s*n[°º.])\s*\d/i,
+  /^\s*(data|emiss[aã]o|validade|vencimento)\s*:/i,
   // Linhas de coluna de tabela (cabeçalho de tabela)
   /^(qtd\.?\s+desc|item\s+cod|descri[çc]ao\s+vr|qtd\s+un\s+|un\.\s+valor)/i,
   /^\s*(qtd\.?|un\.?|vr\.?\s*unit|vr\.?\s*total|item\s+cod|descricao|descri[çc]ao)\s*$/i,
@@ -316,9 +318,11 @@ function identifyItem(line: string, schedules: any[]): OcrSuggestedItem | null {
     if (labor.pattern.test(line)) {
       // Extrair descrição após "MDO"/"MO"/"MAO DE OBRA"
       let normalizedName = labor.name;
-      const mdo = line.match(/^(?:mdo|m\.?o\.?)\s+(.*)/i);
-      const maoDeObra = line.match(/\bma[o0õd]\s*d[ae]\s*obra\b\s*(.*)/i);
-      const revisao = line.match(/\brevisão?\s+geral\b/i);
+      // Usar lineWithoutLeadingQty para o extract: quando a linha começa com
+      // "1    MDO ...", o match na linha original falha (começa com dígito).
+      const mdo = lineWithoutLeadingQty.match(/^(?:mdo|m\.?o\.?)\s+(.*)/i);
+      const maoDeObra = lineWithoutLeadingQty.match(/\bma[o0õd]\s*d[ae]\s*obra\b\s*(.*)/i);
+      const revisao = lineWithoutLeadingQty.match(/\brevisão?\s+geral\b/i);
       const after = mdo?.[1] ?? maoDeObra?.[1] ?? null;
       if (revisao) {
         normalizedName = "Revisão geral";
@@ -384,9 +388,9 @@ function identifyItem(line: string, schedules: any[]): OcrSuggestedItem | null {
     .replace(/\b\w/g, (c) => c.toUpperCase())
     .substring(0, 80);
 
-  // Linhas de fallback ficam SELECIONADAS se tiverem aparência clara de item de tabela
-  // (qty identificada OU valor identificado OU texto descritivo suficientemente longo)
-  const autoSelect = qty !== null || totalValue !== null || rawForName.length >= 6;
+  // Linhas de fallback: auto-selecionadas SOMENTE se têm qty ou valor identificado.
+  // Linhas sem qty e sem valor (ex: nomes de empresa, títulos) ficam desmarcadas (low).
+  const autoSelect = qty !== null || totalValue !== null;
 
   return {
     rawDescription: line.trim(),

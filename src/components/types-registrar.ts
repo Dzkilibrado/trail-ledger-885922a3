@@ -13,4 +13,7 @@ export interface MaintenanceItem {
   brand?: string;
   qty?: number;
   unitValue?: number;
+  /** Valor total da linha — preenchido quando o documento informa explicitamente.
+   *  Nunca calculado automaticamente a partir de qty × unitValue. */
+  totalValue?: number;
 }
