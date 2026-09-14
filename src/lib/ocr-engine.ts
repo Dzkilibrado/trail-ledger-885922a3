@@ -356,7 +356,10 @@ function extractCleanDescription(line: string, qty: number | null): string {
   return desc;
 }
 
-function identifyItem(line: string, schedules: any[]): OcrSuggestedItem | null {
+function identifyItem(line: string, schedules: any[], rawLine?: string): OcrSuggestedItem | null {
+  // rawLine: linha OCR1 original (antes da correção OCR2), usada para rawDescription.
+  // Quando não fornecida (ex: fallback textual), usa a própria linha como rawDescription.
+  const rawDescLine = (rawLine ?? line).trim();
   // 1. Filtros de exclusão
   if (IGNORE_PATTERNS.some((p) => p.test(line))) return null;
 
@@ -381,7 +384,7 @@ function identifyItem(line: string, schedules: any[]): OcrSuggestedItem | null {
   for (const labor of LABOR_PRIORITY) {
     if (labor.pattern.test(line)) {
       return {
-        rawDescription: line.trim(),
+        rawDescription: rawDescLine,      // OCR1 original, antes de OCR2
         normalizedName: cleanDesc,        // descrição completa do documento
         classificationHint: labor.name,  // hint auxiliar ("Mão de obra")
         category: "other",
@@ -402,7 +405,7 @@ function identifyItem(line: string, schedules: any[]): OcrSuggestedItem | null {
           entry.name.toLowerCase().includes(s.name.toLowerCase().split(" ")[0]),
       );
       return {
-        rawDescription: line.trim(),
+        rawDescription: rawDescLine,      // OCR1 original, antes de OCR2
         normalizedName: cleanDesc,         // descrição completa do documento
         classificationHint: entry.name,   // hint auxiliar ("Retentor", "Bateria"…)
         category: entry.category,
@@ -424,7 +427,7 @@ function identifyItem(line: string, schedules: any[]): OcrSuggestedItem | null {
   const autoSelect = qty !== null || totalValue !== null;
 
   return {
-    rawDescription: line.trim(),
+    rawDescription: rawDescLine,      // OCR1 original, antes de OCR2
     normalizedName: cleanDesc,
     category: "other",
     itemKind: "technical",
@@ -559,6 +562,7 @@ function isSuspiciousToken(word: string, conf: number): boolean {
  * Substitui o token original SOMENTE se conf2 > conf1 + 5 pontos.
  */
 async function retryToken(
+  worker2: Awaited<ReturnType<typeof createTesseractWorker>>,
   imageDataUrl: string,
   token: TesseractToken,
   imgWidth: number,
@@ -591,9 +595,6 @@ async function retryToken(
   ctx.drawImage(img, x0, y0, x1 - x0, y1 - y0, 0, 0, cw, ch);
   const cropDataUrl = cropCanvas.toDataURL("image/png");
 
-  // Worker secundário — separado do principal para evitar condição de corrida
-  const worker2 = await createTesseractWorker();
-
   try {
     // PSM 7: single text line — bom para linhas com conteúdo misto
     await (worker2 as any).setParameters({ tessedit_pageseg_mode: "7" });
@@ -624,12 +625,12 @@ async function retryToken(
       return { text: bestText, conf: bestConf, replaced: true };
     }
     return { text: token.word, conf: token.conf, replaced: false };
-  } finally {
-    await worker2.terminate();
+  } catch {
+    return { text: token.word, conf: token.conf, replaced: false };
   }
 }
 
-async function runTesseract(src: string | File): Promise<{ text: string; confidence: number }> {
+async function runTesseract(src: string | File): Promise<{ text: string; rawText: string; confidence: number }> {
   const worker = await createTesseractWorker();
   const url = src instanceof File ? URL.createObjectURL(src) : src;
 
@@ -643,7 +644,7 @@ async function runTesseract(src: string | File): Promise<{ text: string; confide
   const words: any[] = (data as any).words ?? [];
   if (words.length === 0) {
     // Fallback: sem data.words disponível, retornar texto como está
-    return { text: data.text, confidence: data.confidence };
+    return { text: data.text, rawText: data.text, confidence: data.confidence };
   }
 
   // Mapear tokens por linha e identificar suspeitos
@@ -674,7 +675,7 @@ async function runTesseract(src: string | File): Promise<{ text: string; confide
   // Verificar se há linhas com tokens suspeitos
   const linesWithSuspicious = [...lineMap.values()].filter((l) => l.hasSuspicious);
   if (linesWithSuspicious.length === 0) {
-    return { text: data.text, confidence: data.confidence };
+    return { text: data.text, rawText: data.text, confidence: data.confidence };
   }
 
   // Dimensões da imagem para calcular crops corretos
@@ -704,62 +705,92 @@ async function runTesseract(src: string | File): Promise<{ text: string; confide
     imageDataUrl = src;
   }
 
-  // Segunda passada: processar tokens suspeitos SEQUENCIALMENTE
-  // (não usar Promise.all no mesmo worker — cada retryToken cria worker próprio)
-  const corrections = new Map<string, string>(); // word original → word corrigido
+  // Segunda passada — worker único reutilizado para todos os tokens suspeitos.
+  // PSM 7 e PSM 13 são executados sequencialmente no mesmo worker2.
+  // Isso evita criar/destruir um worker WASM por token (custo de inicialização elevado).
 
-  for (const line of linesWithSuspicious) {
-    for (const token of line.tokens) {
-      if (!isSuspiciousToken(token.word, token.conf)) continue;
-      // Pular tokens muito estreitos (crop seria inútil)
-      if (token.width < 20) continue;
+  /** Mapa posicional: "lineKey:tokenIndex" → texto corrigido.
+   *  Garante substituição do token EXATO por posição, não por valor de texto.
+   *  Tokens com o mesmo texto em posições diferentes são tratados independentemente. */
+  const posCorrections = new Map<string, string>();
 
-      const result = await retryToken(imageDataUrl, token, imgWidth, imgHeight);
-      if (result.replaced) {
-        corrections.set(token.word, result.text);
+  const worker2 = await createTesseractWorker();
+  try {
+    for (const line of linesWithSuspicious) {
+      for (let idx = 0; idx < line.tokens.length; idx++) {
+        const token = line.tokens[idx];
+        if (!isSuspiciousToken(token.word, token.conf)) continue;
+        if (token.width < 20) continue;
+
+        const result = await retryToken(worker2, imageDataUrl, token, imgWidth, imgHeight);
+        if (result.replaced) {
+          posCorrections.set(`${token.lineKey}:${idx}`, result.text);
+        }
       }
+    }
+  } finally {
+    await worker2.terminate();
+  }
+
+  if (posCorrections.size === 0) {
+    return { text: data.text, rawText: data.text, confidence: data.confidence };
+  }
+
+  // Reconstrução posicional: substituir cada token pela sua chave "lineKey:idx".
+  // Tokens com o mesmo texto em posições diferentes NÃO são afetados uns pelos outros.
+  // Estratégia: percorrer tokens em ordem de posição X dentro de cada linha,
+  // e substituir somente os marcados no mapa posicional.
+  const allTokensInOrder: Array<{ word: string; lineKey: string; idx: number }> = [];
+  for (const [, line] of lineMap) {
+    const sorted = [...line.tokens].sort((a, b) => a.left - b.left);
+    sorted.forEach((tok, i) => allTokensInOrder.push({ word: tok.word, lineKey: tok.lineKey, idx: i }));
+  }
+
+  // Aplicar correções posicionais: substituir a PRIMEIRA ocorrência restante do token
+  // no texto — processando na ordem original dos tokens garante a ocorrência correta.
+  let correctedText = data.text;
+  for (const { word, lineKey, idx } of allTokensInOrder) {
+    const key = `${lineKey}:${idx}`;
+    const correction = posCorrections.get(key);
+    if (!correction) continue;
+    const pos = correctedText.indexOf(word);
+    if (pos !== -1) {
+      correctedText = correctedText.slice(0, pos) + correction + correctedText.slice(pos + word.length);
     }
   }
 
-  if (corrections.size === 0) {
-    return { text: data.text, confidence: data.confidence };
-  }
-
-  // Reconstruir data.text substituindo somente os tokens corrigidos
-  // Mantendo a ordem e espaços da primeira passada
-  let correctedText = data.text;
-  for (const [original, corrected] of corrections) {
-    // Substituição do token original no texto reconstruído
-    correctedText = correctedText.split(original).join(corrected);
-  }
-
-  return { text: correctedText, confidence: data.confidence };
+  return { text: correctedText, rawText: data.text, confidence: data.confidence };
 }
 
 // ─── Entrada principal ────────────────────────────────────────────────────────
 
 export async function runOcr(file: File, schedules: any[]): Promise<OcrResult> {
-  let rawText = "", confidence = 100;
+  let rawText = "", rawOcr1Text = "", confidence = 100;
 
   if (file.type === "application/pdf") {
     const direct = await extractTextFromPdf(file);
     if (direct.trim().length > 50) {
       rawText = direct;
+      rawOcr1Text = direct; // PDF digital: texto já é o OCR1 real
     } else {
       // PDF escaneado — processar TODAS as páginas (corrigido)
       const numPages = await getPdfPageCount(file);
       const parts: string[] = [];
+      const rawParts: string[] = [];
       for (let p = 1; p <= numPages; p++) {
         const dataUrl = await renderPdfPageToDataUrl(file, p);
         const r = await runTesseract(dataUrl);
-        parts.push(r.text);
+        parts.push(r.text);         // correctedText (com OCR2)
+        rawParts.push(r.rawText);   // OCR1 original
         confidence = Math.min(confidence, r.confidence);
       }
       rawText = parts.join("\n");
+      rawOcr1Text = rawParts.join("\n");
     }
   } else {
     const r = await runTesseract(file);
-    rawText = r.text;
+    rawText = r.text;          // correctedText (com OCR2 aplicado)
+    rawOcr1Text = r.rawText;   // OCR1 original, antes de qualquer correção
     confidence = r.confidence;
   }
 
@@ -782,26 +813,38 @@ export async function runOcr(file: File, schedules: any[]): Promise<OcrResult> {
   // Extrair total do documento para validação auxiliar
   const documentTotal = extractDocumentTotal(rawText);
 
-  // Segmentar por linha
+  // Segmentar por linha — usando correctedText (rawText) para classificação
   const lines = rawText
+    .split(/\n/)
+    .map((l) => l.trim())
+    .filter((l) => l.length > 3);
+
+  // Linhas OCR1 originais — usadas para rawDescription (antes de qualquer correção OCR2)
+  const rawOcr1Lines = (rawOcr1Text || rawText)
     .split(/\n/)
     .map((l) => l.trim())
     .filter((l) => l.length > 3);
 
   // Para OCR de baixa qualidade, tentar pares de linhas consecutivas
   const usePairs = confidence < 70;
-  const candidates: string[] = [...lines];
+  const candidates: Array<{ corrected: string; raw: string }> = lines.map((l, i) => ({
+    corrected: l,
+    raw: rawOcr1Lines[i] ?? l,
+  }));
   if (usePairs) {
     for (let i = 0; i < lines.length - 1; i++) {
-      candidates.push(`${lines[i]} ${lines[i + 1]}`);
+      candidates.push({
+        corrected: `${lines[i]} ${lines[i + 1]}`,
+        raw: `${rawOcr1Lines[i] ?? lines[i]} ${rawOcr1Lines[i + 1] ?? lines[i + 1]}`,
+      });
     }
   }
 
   const seen = new Set<string>();
   const items: OcrSuggestedItem[] = [];
 
-  for (const line of candidates) {
-    const item = identifyItem(line, schedules);
+  for (const { corrected: line, raw: rawLine } of candidates) {
+    const item = identifyItem(line, schedules, rawLine);
     if (!item) continue;
 
     const rawKey = item.rawDescription.trim().toLowerCase();
