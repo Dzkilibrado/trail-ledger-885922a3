@@ -33,3 +33,4 @@ preservando o racional das escolhas feitas.
 | [0016](./0016-constituicao-do-produto.md) | Constituição do Produto TrailBook | Aceita | permanente |
 | [0017](./0017-tela-de-boas-vindas.md) | Tela de Boas-vindas e separação App × Site | Aceita | v1.9.1 |
 | [0018](./0018-identidade-invisivel.md) | Identidade Invisível: o usuário vê apenas TrailBook | Aceita | permanente |
+| [0019](./0019-smart-receipt-interpretacao-incremental.md) | Smart Receipt — Interpretação Incremental e Não Regressão | Aceita | v1.9.2 |
