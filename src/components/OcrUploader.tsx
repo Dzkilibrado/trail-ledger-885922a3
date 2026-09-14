@@ -22,6 +22,10 @@ import {
 } from "@/lib/ocr-engine";
 import type { MaintenanceItem } from "./types-registrar";
 import { useModule } from "@/hooks/useModules";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+import { getLastOcrDiagnostic, copyDiagnosticToClipboard, downloadDiagnostic } from "@/lib/ocr-diagnostic";
+import { ClipboardCopy, Download, FlaskConical } from "lucide-react";
+import { toast } from "sonner";
 
 const CATEGORY_ICON: Record<MaintenanceCategory, string> = {
   engine: "🔧",
@@ -53,6 +57,7 @@ export function OcrUploader({
   onConfirm: (items: Partial<MaintenanceItem>[], date?: string) => void;
   onCancel: () => void;
 }) {
+  const { isAdmin } = useIsAdmin();
   const [step, setStep] = useState<OcrStep>("idle");
   const [errorMsg, setErrorMsg] = useState("");
   const [warnings, setWarnings] = useState<string[]>([]);
@@ -477,6 +482,36 @@ export function OcrUploader({
           >
             Nova leitura
           </Button>
+          {isAdmin && getLastOcrDiagnostic() && (
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Copiar diagnóstico OCR (Modo Homologação)"
+                onClick={async () => {
+                  const diag = getLastOcrDiagnostic();
+                  if (!diag) return;
+                  const ok = await copyDiagnosticToClipboard(diag);
+                  toast[ok ? "success" : "error"](
+                    ok ? "Diagnóstico copiado para o clipboard." : "Erro ao copiar diagnóstico.",
+                  );
+                }}
+              >
+                <ClipboardCopy className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                title="Baixar diagnóstico OCR (Modo Homologação)"
+                onClick={() => {
+                  const diag = getLastOcrDiagnostic();
+                  if (diag) downloadDiagnostic(diag);
+                }}
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
           <Button
             onClick={confirm}
             disabled={selectedCount === 0}
@@ -487,6 +522,13 @@ export function OcrUploader({
           </Button>
         </div>
 
+        {isAdmin && getLastOcrDiagnostic() && (
+          <p className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded px-2 py-1">
+            <FlaskConical className="h-3 w-3 shrink-0" />
+            O diagnóstico pode conter textos extraídos do documento enviado.
+            Compartilhe somente para fins de homologação e suporte técnico.
+          </p>
+        )}
         <button
           onClick={onCancel}
           className="w-full text-xs text-muted-foreground hover:text-foreground underline"
