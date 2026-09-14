@@ -577,6 +577,15 @@ async function retryToken(
   const x1 = Math.min(imgWidth, token.left + token.width + PAD);
   const y1 = Math.min(imgHeight, token.top + token.height + PAD);
 
+  // ── DIAGNÓSTICO TEMPORÁRIO — crop ─────────────────────────────────────────
+  console.group(`[OCR DIAG] retryToken: "${token.word}"`);
+  console.log("[OCR DIAG] token.bbox (OCR1):", { left: token.left, top: token.top, width: token.width, height: token.height });
+  console.log("[OCR DIAG] imgWidth/imgHeight (bitmap):", imgWidth, imgHeight);
+  console.log("[OCR DIAG] DPR:", typeof window !== "undefined" ? (window as any).devicePixelRatio ?? 1 : 1);
+  console.log("[OCR DIAG] crop src (sx,sy,sw,sh):", x0, y0, x1 - x0, y1 - y0);
+  console.log("[OCR DIAG] crop canvas (cw,ch):", (x1-x0)*SCALE, (y1-y0)*SCALE);
+  // ── FIM DIAGNÓSTICO TEMPORÁRIO ─────────────────────────────────────────────
+
   // Criar canvas crop + upscale
   const cropCanvas = document.createElement("canvas");
   const cw = (x1 - x0) * SCALE;
@@ -591,6 +600,12 @@ async function retryToken(
     img.onload = () => resolve();
     img.src = imageDataUrl;
   });
+
+  // ── DIAGNÓSTICO TEMPORÁRIO — img vs canvas ─────────────────────────────────
+  console.log("[OCR DIAG] img.naturalWidth/naturalHeight:", img.naturalWidth, img.naturalHeight);
+  console.log("[OCR DIAG] drawImage: src(", x0, y0, x1-x0, y1-y0, ") → dst(0,0,", cw, ch, ")");
+  // ── FIM DIAGNÓSTICO TEMPORÁRIO ─────────────────────────────────────────────
+
   ctx.filter = "contrast(2.5) grayscale(1)";
   ctx.drawImage(img, x0, y0, x1 - x0, y1 - y0, 0, 0, cw, ch);
   const cropDataUrl = cropCanvas.toDataURL("image/png");
@@ -622,8 +637,16 @@ async function retryToken(
     const isValid = bestText.length > 0 && /[A-Za-zÀ-ÿ]/.test(bestText);
 
     if (hasImprovement && isValid) {
+      // ── DIAGNÓSTICO TEMPORÁRIO — resultado OCR2 ─────────────────────────────
+      console.log(`[OCR DIAG] ✅ SUBSTITUIU "${token.word}" → "${bestText}" (conf: ${token.conf}→${bestConf})`);
+      console.groupEnd();
+      // ── FIM ─────────────────────────────────────────────────────────────────
       return { text: bestText, conf: bestConf, replaced: true };
     }
+    // ── DIAGNÓSTICO TEMPORÁRIO ─────────────────────────────────────────────────
+    console.log(`[OCR DIAG] ⏭ MANTEVE "${token.word}" (psm7="${text7}" c=${conf7.toFixed(1)}, psm13="${text13}" c=${conf13.toFixed(1)}, Δ=${(bestConf - token.conf).toFixed(1)})`);
+    console.groupEnd();
+    // ── FIM ─────────────────────────────────────────────────────────────────────
     return { text: token.word, conf: token.conf, replaced: false };
   } catch {
     return { text: token.word, conf: token.conf, replaced: false };
@@ -638,6 +661,65 @@ async function runTesseract(src: string | File): Promise<{ text: string; rawText
   const { data } = await worker.recognize(url);
   await worker.terminate();
   if (src instanceof File) URL.revokeObjectURL(url);
+
+  // ── DIAGNÓSTICO TEMPORÁRIO ─────────────────────────────────────────────────
+  // REMOVER antes do commit final de produção
+  // Captura estrutura real de data.words no browser para comparar com Python
+  {
+    const words: any[] = (data as any).words ?? [];
+    const dpr = typeof window !== "undefined" ? (window as any).devicePixelRatio ?? 1 : 1;
+
+    // Amostra dos primeiros 5 tokens com todos os campos disponíveis
+    console.group("[OCR DIAG] data.words — estrutura real no browser");
+    console.log("[OCR DIAG] window.devicePixelRatio:", dpr);
+    console.log("[OCR DIAG] data.words.length:", words.length);
+    console.log("[OCR DIAG] Primeiros 5 tokens (campos completos):");
+    words.slice(0, 5).forEach((w: any, i: number) => {
+      console.log(`  [${i}]`, JSON.stringify({
+        text: w.text,
+        confidence: w.confidence,
+        bbox: w.bbox,
+        block_num: w.block_num,
+        par_num: w.par_num,
+        paragraph_num: w.paragraph_num,
+        line_num: w.line_num,
+        word_num: w.word_num,
+        // campos extras que Tesseract.js v5 pode retornar
+        is_bold: w.is_bold,
+        page_num: w.page_num,
+      }));
+    });
+
+    // Tokens de linhas específicas de interesse
+    const interest = ["RETENTOR", "OLEO", "ARBA", "ABRA", "MDO", "CONTRAPINO",
+                      "KITTRANSMISSAO", "DESCARBONIZANTE", "ANELVEDACAO"];
+    console.log("[OCR DIAG] Tokens de interesse (text + bbox + lineKey):");
+    words
+      .filter((w: any) => interest.some(kw => (w.text ?? "").toUpperCase().startsWith(kw)))
+      .forEach((w: any) => {
+        const lk = `${w.paragraph_num ?? w.par_num ?? "?"}-${w.line_num ?? "?"}`;
+        console.log(`  "${w.text}" conf=${w.confidence} bbox=${JSON.stringify(w.bbox)} lineKey=${lk}`);
+      });
+
+    // Reconstruir lineKeys e verificar mistura de linhas
+    const lineMap2 = new Map<string, { texts: string[]; ys: number[] }>();
+    for (const w of words) {
+      if (!w.text?.trim()) continue;
+      const lk = `${w.paragraph_num ?? w.par_num ?? 0}-${w.line_num ?? 0}`;
+      if (!lineMap2.has(lk)) lineMap2.set(lk, { texts: [], ys: [] });
+      lineMap2.get(lk)!.texts.push(w.text.trim());
+      if (w.bbox) lineMap2.get(lk)!.ys.push(w.bbox.y0);
+    }
+    console.log(`[OCR DIAG] Total de lineKeys distintos: ${lineMap2.size}`);
+    console.log("[OCR DIAG] Linhas (lineKey → texto reconstruído | y_range):");
+    for (const [lk, { texts, ys }] of lineMap2) {
+      const yMin = Math.min(...ys), yMax = Math.max(...ys);
+      const flag = (yMax - yMin) > 15 ? "⚠ MISTURA DE Y" : "";
+      console.log(`  ${lk}: "${texts.join(" ").slice(0, 80)}" | y_range=${yMax - yMin} ${flag}`);
+    }
+    console.groupEnd();
+  }
+  // ── FIM DIAGNÓSTICO TEMPORÁRIO ─────────────────────────────────────────────
 
   // Verificar se há tokens suspeitos que merecem segunda passada
   // data.words contém tokens individuais com bounding boxes
@@ -692,6 +774,33 @@ async function runTesseract(src: string | File): Promise<{ text: string; rawText
     const bmp = await createImageBitmap(src);
     imgWidth = bmp.width; imgHeight = bmp.height; bmp.close();
   }
+
+  // ── DIAGNÓSTICO TEMPORÁRIO — dimensões ────────────────────────────────────
+  {
+    const dpr = typeof window !== "undefined" ? (window as any).devicePixelRatio ?? 1 : 1;
+    console.group("[OCR DIAG] Dimensões da imagem para crop");
+    console.log("[OCR DIAG] DPR:", dpr);
+    console.log("[OCR DIAG] src type:", src instanceof File ? "File" : "dataUrl/string");
+    console.log("[OCR DIAG] imgWidth (usado para crop):", imgWidth);
+    console.log("[OCR DIAG] imgHeight (usado para crop):", imgHeight);
+    if (src instanceof File) {
+      // Comparar com naturalWidth via Image element
+      await new Promise<void>((resolve) => {
+        const tmpUrl = URL.createObjectURL(src);
+        const img = new Image();
+        img.onload = () => {
+          console.log("[OCR DIAG] img.naturalWidth:", img.naturalWidth);
+          console.log("[OCR DIAG] img.naturalHeight:", img.naturalHeight);
+          console.log("[OCR DIAG] bitmap.width === naturalWidth:", imgWidth === img.naturalWidth);
+          URL.revokeObjectURL(tmpUrl);
+          resolve();
+        };
+        img.src = tmpUrl;
+      });
+    }
+    console.groupEnd();
+  }
+  // ── FIM DIAGNÓSTICO TEMPORÁRIO ─────────────────────────────────────────────
 
   // Converter src para dataUrl para uso nos crops
   let imageDataUrl: string;
