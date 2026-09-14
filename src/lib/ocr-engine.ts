@@ -56,6 +56,17 @@ export interface OcrResult {
   documentTotal?: number;
 }
 
+/** Token individual retornado pelo Tesseract com coordenadas e confiança */
+interface TesseractToken {
+  word: string;
+  left: number;
+  top: number;
+  width: number;
+  height: number;
+  conf: number;
+  lineKey: string; // "block-par-line"
+}
+
 // ─── Padrões de exclusão (cabeçalho, fiscal, rodapé) ─────────────────────────
 // Princípio: em dúvida, NÃO excluir. Preferir falso positivo a falso negativo.
 
@@ -512,18 +523,217 @@ async function getPdfPageCount(file: File): Promise<number> {
   return pdf.numPages;
 }
 
-async function runTesseract(src: string | File): Promise<{ text: string; confidence: number }> {
+/** Configurações do CDN Tesseract.js — centralizadas para reutilização */
+const TESSERACT_OPTIONS = {
+  workerPath: "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js",
+  langPath: "https://tessdata.projectnaptha.com/4.0.0",
+  corePath: "https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core-simd-lstm.wasm.js",
+};
+
+/** Cria um novo worker Tesseract */
+async function createTesseractWorker() {
   const { createWorker } = await import("tesseract.js");
-  const worker = await createWorker("por+eng", 1, {
-    workerPath: "https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/worker.min.js",
-    langPath: "https://tessdata.projectnaptha.com/4.0.0",
-    corePath: "https://cdn.jsdelivr.net/npm/tesseract.js-core@5/tesseract-core-simd-lstm.wasm.js",
+  return createWorker("por+eng", 1, TESSERACT_OPTIONS);
+}
+
+/**
+ * Determina se um token é candidato à segunda passada.
+ * Critérios baseados nos testes reais do documento MOTOFIRE:
+ *   A. token muito longo sem espaço (possível junção de palavras)
+ *   B. OU confiança muito baixa em texto alfabético
+ * NÃO usa dicionário nem categoria — apenas estrutura do token.
+ */
+function isSuspiciousToken(word: string, conf: number): boolean {
+  const letters = word.replace(/[^A-Za-zÀ-ÿ]/g, "");
+  // A: token longo sem espaço + confiança moderada/baixa — possível junção
+  if (word.length >= 10 && !word.includes(" ") && conf < 85 && letters.length >= 7) return true;
+  // B: token muito longo independente de confiança
+  if (word.length > 14 && !word.includes(" ")) return true;
+  return false;
+}
+
+/**
+ * Segunda passada: OCR direcionado ao crop do token suspeito.
+ * Usa worker SEPARADO do principal — sem risco de condição de corrida.
+ * Executa PSM7 e PSM13 SEQUENCIALMENTE no mesmo worker secundário.
+ * Substitui o token original SOMENTE se conf2 > conf1 + 5 pontos.
+ */
+async function retryToken(
+  imageDataUrl: string,
+  token: TesseractToken,
+  imgWidth: number,
+  imgHeight: number,
+): Promise<{ text: string; conf: number; replaced: boolean }> {
+  // Crop do token com padding — limitado à largura real do token para não capturar tokens adjacentes
+  const PAD = 8;
+  const SCALE = 4;
+  const x0 = Math.max(0, token.left - PAD);
+  const y0 = Math.max(0, token.top - PAD);
+  // x1 limitado à borda direita do token + PAD (não capturar token ao lado)
+  const x1 = Math.min(imgWidth, token.left + token.width + PAD);
+  const y1 = Math.min(imgHeight, token.top + token.height + PAD);
+
+  // Criar canvas crop + upscale
+  const cropCanvas = document.createElement("canvas");
+  const cw = (x1 - x0) * SCALE;
+  const ch = (y1 - y0) * SCALE;
+  cropCanvas.width = cw;
+  cropCanvas.height = ch;
+  const ctx = cropCanvas.getContext("2d")!;
+
+  // Desenhar imagem original no canvas recortado
+  const img = new Image();
+  await new Promise<void>((resolve) => {
+    img.onload = () => resolve();
+    img.src = imageDataUrl;
   });
+  ctx.filter = "contrast(2.5) grayscale(1)";
+  ctx.drawImage(img, x0, y0, x1 - x0, y1 - y0, 0, 0, cw, ch);
+  const cropDataUrl = cropCanvas.toDataURL("image/png");
+
+  // Worker secundário — separado do principal para evitar condição de corrida
+  const worker2 = await createTesseractWorker();
+
+  try {
+    // PSM 7: single text line — bom para linhas com conteúdo misto
+    await (worker2 as any).setParameters({ tessedit_pageseg_mode: "7" });
+    const r7 = await worker2.recognize(cropDataUrl);
+    const text7 = r7.data.text.trim().replace(/[^\w\sÀ-ÿ().,-]/g, "").trim();
+    const conf7 = r7.data.confidence;
+
+    // PSM 13: raw line — bom para tokens técnicos/códigos sem dicionário
+    await (worker2 as any).setParameters({ tessedit_pageseg_mode: "13" });
+    const r13 = await worker2.recognize(cropDataUrl);
+    const text13 = r13.data.text.trim().replace(/[^\w\sÀ-ÿ().,-]/g, "").trim();
+    const conf13 = r13.data.confidence;
+
+    // Selecionar melhor resultado
+    const [bestText, bestConf] = conf7 >= conf13
+      ? [text7, conf7]
+      : [text13, conf13];
+
+    // Substituir somente se:
+    // 1. Há melhora real de confiança (margem de 5 pontos)
+    // 2. Resultado não está vazio
+    // 3. Não é apenas pontuação/ruído
+    const MARGIN = 5;
+    const hasImprovement = bestConf > token.conf + MARGIN;
+    const isValid = bestText.length > 0 && /[A-Za-zÀ-ÿ]/.test(bestText);
+
+    if (hasImprovement && isValid) {
+      return { text: bestText, conf: bestConf, replaced: true };
+    }
+    return { text: token.word, conf: token.conf, replaced: false };
+  } finally {
+    await worker2.terminate();
+  }
+}
+
+async function runTesseract(src: string | File): Promise<{ text: string; confidence: number }> {
+  const worker = await createTesseractWorker();
   const url = src instanceof File ? URL.createObjectURL(src) : src;
+
+  // Primeira passada: PSM 6 (página inteira)
   const { data } = await worker.recognize(url);
   await worker.terminate();
   if (src instanceof File) URL.revokeObjectURL(url);
-  return { text: data.text, confidence: data.confidence };
+
+  // Verificar se há tokens suspeitos que merecem segunda passada
+  // data.words contém tokens individuais com bounding boxes
+  const words: any[] = (data as any).words ?? [];
+  if (words.length === 0) {
+    // Fallback: sem data.words disponível, retornar texto como está
+    return { text: data.text, confidence: data.confidence };
+  }
+
+  // Mapear tokens por linha e identificar suspeitos
+  type LineTokens = { tokens: TesseractToken[]; hasSuspicious: boolean };
+  const lineMap = new Map<string, LineTokens>();
+
+  for (const w of words) {
+    if (!w.text?.trim()) continue;
+    // Tesseract.js v5 retorna w.bbox: {x0, y0, x1, y1}
+    const bbox = w.bbox ?? { x0: 0, y0: 0, x1: 0, y1: 0 };
+    const conf = w.confidence ?? 0;
+    const lineKey = `${w.paragraph_num ?? 0}-${w.line_num ?? 0}`;
+    const token: TesseractToken = {
+      word: w.text.trim(),
+      left: bbox.x0,
+      top: bbox.y0,
+      width: bbox.x1 - bbox.x0,
+      height: bbox.y1 - bbox.y0,
+      conf,
+      lineKey,
+    };
+    if (!lineMap.has(lineKey)) lineMap.set(lineKey, { tokens: [], hasSuspicious: false });
+    const entry = lineMap.get(lineKey)!;
+    entry.tokens.push(token);
+    if (isSuspiciousToken(token.word, conf)) entry.hasSuspicious = true;
+  }
+
+  // Verificar se há linhas com tokens suspeitos
+  const linesWithSuspicious = [...lineMap.values()].filter((l) => l.hasSuspicious);
+  if (linesWithSuspicious.length === 0) {
+    return { text: data.text, confidence: data.confidence };
+  }
+
+  // Dimensões da imagem para calcular crops corretos
+  let imgWidth = 0, imgHeight = 0;
+  if (typeof src === "string") {
+    // dataUrl — obter dimensões via Image
+    await new Promise<void>((resolve) => {
+      const img = new Image();
+      img.onload = () => { imgWidth = img.naturalWidth; imgHeight = img.naturalHeight; resolve(); };
+      img.src = src;
+    });
+  } else {
+    // File — criar dataUrl temporário para crops
+    const bmp = await createImageBitmap(src);
+    imgWidth = bmp.width; imgHeight = bmp.height; bmp.close();
+  }
+
+  // Converter src para dataUrl para uso nos crops
+  let imageDataUrl: string;
+  if (src instanceof File) {
+    imageDataUrl = await new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(src);
+    });
+  } else {
+    imageDataUrl = src;
+  }
+
+  // Segunda passada: processar tokens suspeitos SEQUENCIALMENTE
+  // (não usar Promise.all no mesmo worker — cada retryToken cria worker próprio)
+  const corrections = new Map<string, string>(); // word original → word corrigido
+
+  for (const line of linesWithSuspicious) {
+    for (const token of line.tokens) {
+      if (!isSuspiciousToken(token.word, token.conf)) continue;
+      // Pular tokens muito estreitos (crop seria inútil)
+      if (token.width < 20) continue;
+
+      const result = await retryToken(imageDataUrl, token, imgWidth, imgHeight);
+      if (result.replaced) {
+        corrections.set(token.word, result.text);
+      }
+    }
+  }
+
+  if (corrections.size === 0) {
+    return { text: data.text, confidence: data.confidence };
+  }
+
+  // Reconstruir data.text substituindo somente os tokens corrigidos
+  // Mantendo a ordem e espaços da primeira passada
+  let correctedText = data.text;
+  for (const [original, corrected] of corrections) {
+    // Substituição do token original no texto reconstruído
+    correctedText = correctedText.split(original).join(corrected);
+  }
+
+  return { text: correctedText, confidence: data.confidence };
 }
 
 // ─── Entrada principal ────────────────────────────────────────────────────────
