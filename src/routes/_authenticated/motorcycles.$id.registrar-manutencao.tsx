@@ -16,6 +16,10 @@ import {
   FileText,
   Paperclip,
   ListChecks,
+  BookMarked,
+  Pencil,
+  Trash2,
+  Filter,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -23,6 +27,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useModule } from "@/hooks/useModules";
+import { useUserItemLibrary } from "@/hooks/useUserItemLibrary";
+import type { UserItemLibraryEntry, NewUserItemLibraryEntry } from "@/hooks/useUserItemLibrary";
 import { MAINT_CATEGORY_LABEL, type MaintenanceCategory } from "@/lib/trailbook";
 import { cn } from "@/lib/utils";
 import { MotoMap } from "@/components/MotoMap";
@@ -525,7 +531,7 @@ function ItemsStep({
   onBack: () => void;
 }) {
   const [mode, setMode] = useState<
-    "menu" | "search" | "catalog" | "map" | "ocr" | "addItem" | "generalMaint"
+    "menu" | "search" | "catalog" | "map" | "ocr" | "addItem" | "generalMaint" | "myItems" | "addItemFromLibrary"
   >("menu");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<MaintenanceCategory | null>(null);
@@ -540,6 +546,7 @@ function ItemsStep({
   const modMapa = useModule("manut_mapa");
   const modOcr = useModule("manut_ocr");
   const modGeral = useModule("manut_geral");
+  const modMeusItens = useModule("manut_meus_itens");
 
   const isActive = (s: string) => s === "active";
   const isMaint = (s: string) => s === "maintenance";
@@ -703,17 +710,23 @@ function ItemsStep({
             />
           )}
 
-          {/* Item livre */}
-          <MenuCard
-            icon={<Plus className="h-6 w-6" />}
-            title="Item livre"
-            desc="Adicionar outro serviço ou despesa"
-            onClick={() => {
-              setEditingItem({});
-              setMode("addItem");
-            }}
-            dashed
-          />
+          {/* Meus Itens — biblioteca pessoal reutilizável */}
+          {modMeusItens.status !== "disabled" && (
+            <MenuCard
+              icon={<BookMarked className="h-6 w-6" />}
+              title="Meus Itens"
+              desc={
+                isMaint(modMeusItens.status)
+                  ? "Em manutenção"
+                  : "Peças e serviços que você usa"
+              }
+              disabled={isMaint(modMeusItens.status)}
+              beta={modMeusItens.status === "beta"}
+              onClick={() => {
+                if (!isMaint(modMeusItens.status)) setMode("myItems");
+              }}
+            />
+          )}
 
           {/* Histórico — quando ímpar, centralizado na última linha */}
           <div className="col-span-2 flex justify-center">
@@ -1033,6 +1046,45 @@ function ItemsStep({
   }
 
   // ---- formulário do item ----
+  // ---- Meus Itens ----
+  if (mode === "myItems") {
+    return (
+      <MyItemsMode
+        onBack={() => setMode("menu")}
+        onSelect={(entry) => {
+          addItem({
+            service: entry.description,
+            category: entry.category,
+            itemKind: entry.item_kind,
+          });
+          setMode("menu");
+        }}
+        onAddNew={(initial) => {
+          setEditingItem({
+            service: initial?.description ?? "",
+            category: initial?.category,
+            itemKind: initial?.item_kind,
+          });
+          setMode("addItemFromLibrary");
+        }}
+      />
+    );
+  }
+
+  if (mode === "addItemFromLibrary") {
+    return (
+      <AddFromLibraryWrapper
+        initial={editingItem ?? {}}
+        onBack={() => setMode("myItems")}
+        onSaved={() => setMode("myItems")}
+        onSavedAndAdded={(item) => {
+          addItem(item);
+          setMode("menu");
+        }}
+      />
+    );
+  }
+
   if (mode === "addItem" && editingItem !== null) {
     return (
       <AddItemForm
@@ -1047,6 +1099,356 @@ function ItemsStep({
   }
 
   return null;
+}
+
+
+
+// Wrapper que usa o hook corretamente dentro de um componente React
+function AddFromLibraryWrapper({
+  initial,
+  onBack,
+  onSaved,
+  onSavedAndAdded,
+}: {
+  initial: Partial<import("@/components/types-registrar").MaintenanceItem>;
+  onBack: () => void;
+  onSaved: () => void;
+  onSavedAndAdded: (item: Partial<import("@/components/types-registrar").MaintenanceItem>) => void;
+}) {
+  const { create } = useUserItemLibrary();
+
+  return (
+    <MyItemForm
+      initial={{
+        description: initial.service ?? "",
+        category: initial.category,
+        item_kind: initial.itemKind,
+      }}
+      onBack={onBack}
+      onSave={async (entry) => {
+        await create.mutateAsync(entry);
+        onSaved();
+      }}
+      onSaveAndAdd={async (entry) => {
+        await create.mutateAsync(entry);
+        onSavedAndAdded({
+          service: entry.description,
+          category: entry.category,
+          itemKind: entry.item_kind,
+        });
+      }}
+    />
+  );
+}
+
+// ============================================================
+// Meus Itens — biblioteca pessoal reutilizável
+// ============================================================
+function MyItemsMode({
+  onBack,
+  onSelect,
+  onAddNew,
+}: {
+  onBack: () => void;
+  onSelect: (entry: UserItemLibraryEntry) => void;
+  onAddNew: (initial?: Partial<NewUserItemLibraryEntry>) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const [kindFilter, setKindFilter] = useState<string>("all");
+  const [editingEntry, setEditingEntry] = useState<UserItemLibraryEntry | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { items, softDelete, update } = useUserItemLibrary(search);
+  const [toast_] = useState(() => ({ success: (m: string) => toast.success(m), error: (m: string) => toast.error(m) }));
+
+  const filtered = (items.data ?? []).filter(
+    (it) => kindFilter === "all" || it.item_kind === kindFilter,
+  );
+
+  const KIND_LABEL: Record<string, string> = {
+    technical: "Peça / Produto",
+    labor: "Serviço / Mão de obra",
+    expense: "Despesa / Taxa",
+  };
+
+  if (editingEntry) {
+    return (
+      <MyItemForm
+        initial={editingEntry}
+        onBack={() => setEditingEntry(null)}
+        onSave={async (patch) => {
+          await update.mutateAsync({ id: editingEntry.id, ...patch });
+          toast_.success("Item atualizado.");
+          setEditingEntry(null);
+        }}
+      />
+    );
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-xl space-y-4 pb-24">
+      <div className="flex items-center gap-3">
+        <button onClick={onBack} className="rounded-lg p-1.5 hover:bg-muted">
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <div className="flex-1 min-w-0">
+          <h2 className="font-display font-bold">Meus Itens</h2>
+          <p className="text-xs text-muted-foreground">Sua biblioteca pessoal</p>
+        </div>
+        <button
+          onClick={() => onAddNew()}
+          className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground"
+        >
+          <Plus className="h-3.5 w-3.5" /> Novo
+        </button>
+      </div>
+
+      {/* Busca */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Buscar meus itens…"
+          className="pl-9"
+        />
+      </div>
+
+      {/* Filtros de tipo */}
+      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-none">
+        {[
+          { key: "all", label: "Todos" },
+          { key: "technical", label: "Peças" },
+          { key: "labor", label: "Serviços" },
+          { key: "expense", label: "Despesas" },
+        ].map(({ key, label }) => (
+          <button
+            key={key}
+            onClick={() => setKindFilter(key)}
+            className={cn(
+              "shrink-0 rounded-full border px-3 py-1 text-xs font-medium transition",
+              kindFilter === key
+                ? "border-primary bg-primary text-primary-foreground"
+                : "border-border bg-card text-muted-foreground hover:border-primary/50",
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* Lista */}
+      {items.isLoading && <div className="py-8 text-center text-sm text-muted-foreground">Carregando…</div>}
+      {!items.isLoading && filtered.length === 0 && (
+        <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border p-8 text-center">
+          <BookMarked className="h-8 w-8 text-muted-foreground/50" />
+          <div>
+            <p className="font-medium text-sm">Nenhum item encontrado</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {search ? "Tente outro termo de busca" : "Cadastre peças e serviços que você usa para reutilizar depois"}
+            </p>
+          </div>
+          <button
+            onClick={() => onAddNew()}
+            className="mt-1 rounded-xl border border-primary/50 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/5"
+          >
+            + Cadastrar novo
+          </button>
+        </div>
+      )}
+      <div className="space-y-2">
+        {filtered.map((entry) => (
+          <div
+            key={entry.id}
+            className="flex items-center gap-2 rounded-xl border border-border bg-card p-3"
+          >
+            <button
+              className="min-w-0 flex-1 text-left"
+              onClick={() => onSelect(entry)}
+            >
+              <p className="truncate font-medium text-sm">{entry.description}</p>
+              <p className="text-xs text-muted-foreground">
+                {MAINT_CATEGORY_LABEL[entry.category]} · {KIND_LABEL[entry.item_kind]}
+              </p>
+            </button>
+            <button
+              onClick={() => setEditingEntry(entry)}
+              className="shrink-0 rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              title="Editar"
+            >
+              <Pencil className="h-3.5 w-3.5" />
+            </button>
+            <button
+              onClick={() => setDeletingId(entry.id)}
+              className="shrink-0 rounded p-1.5 text-muted-foreground hover:bg-muted hover:text-destructive"
+              title="Excluir"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        ))}
+      </div>
+
+      {/* Confirmação de exclusão */}
+      {deletingId && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4">
+          <div className="w-full max-w-sm rounded-2xl bg-card p-5 shadow-xl space-y-3">
+            <p className="font-semibold">Excluir este item dos Meus Itens?</p>
+            <p className="text-sm text-muted-foreground">
+              Ele deixará de aparecer para novas manutenções. Registros anteriores serão preservados.
+            </p>
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" className="flex-1" onClick={() => setDeletingId(null)}>
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={async () => {
+                  await softDelete.mutateAsync(deletingId);
+                  setDeletingId(null);
+                  toast_.success("Item removido dos Meus Itens.");
+                }}
+              >
+                Excluir
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Formulário de cadastro/edição de item na biblioteca pessoal
+function MyItemForm({
+  initial,
+  onBack,
+  onSave,
+  onSaveAndAdd,
+}: {
+  initial?: Partial<UserItemLibraryEntry & { description?: string }>;
+  onBack: () => void;
+  onSave: (entry: NewUserItemLibraryEntry) => Promise<void>;
+  onSaveAndAdd?: (entry: NewUserItemLibraryEntry) => Promise<void>;
+}) {
+  const { create } = useUserItemLibrary();
+  const [description, setDescription] = useState(initial?.description ?? "");
+  const [category, setCategory] = useState<MaintenanceCategory>(initial?.category ?? "other");
+  const [itemKind, setItemKind] = useState<ItemKind>(initial?.item_kind ?? "technical");
+  const [saving, setSaving] = useState(false);
+
+  const KIND_OPTIONS = [
+    { value: "technical" as ItemKind, label: "Peça / Produto" },
+    { value: "labor" as ItemKind, label: "Serviço / Mão de obra" },
+    { value: "expense" as ItemKind, label: "Despesa / Taxa" },
+  ];
+
+  async function handleSave(andAdd = false) {
+    if (!description.trim()) { toast.error("Informe a descrição"); return; }
+    setSaving(true);
+    try {
+      const entry: NewUserItemLibraryEntry = { description: description.trim(), category, item_kind: itemKind };
+      if (andAdd && onSaveAndAdd) {
+        await onSaveAndAdd(entry);
+      } else {
+        await onSave(entry);
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Erro ao salvar");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-xl space-y-4 pb-24">
+      <div className="flex items-center gap-3">
+        <button onClick={onBack} className="rounded-lg p-1.5 hover:bg-muted">
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <h2 className="font-display font-bold">
+          {initial?.id ? "Editar item" : "Novo item"}
+        </h2>
+      </div>
+
+      <div className="space-y-3">
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Descrição *
+          </label>
+          <Input
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Ex: Óleo Motorex 10W50"
+            autoFocus
+          />
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Categoria *
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            {(Object.keys(MAINT_CATEGORY_LABEL) as MaintenanceCategory[]).map((cat) => (
+              <button
+                key={cat}
+                onClick={() => setCategory(cat)}
+                className={cn(
+                  "flex items-center gap-2 rounded-xl border p-2.5 text-left text-sm transition",
+                  category === cat ? "border-primary bg-primary/10 font-semibold" : "border-border bg-card",
+                )}
+              >
+                <span>{CATEGORY_ICON[cat]}</span>
+                <span className="truncate">{MAINT_CATEGORY_LABEL[cat]}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+            Tipo *
+          </label>
+          <div className="flex flex-col gap-2">
+            {KIND_OPTIONS.map(({ value, label }) => (
+              <button
+                key={value}
+                onClick={() => setItemKind(value)}
+                className={cn(
+                  "flex items-center gap-2 rounded-xl border p-3 text-left text-sm transition",
+                  itemKind === value ? "border-primary bg-primary/10 font-semibold" : "border-border bg-card",
+                )}
+              >
+                {itemKind === value && <Check className="h-4 w-4 text-primary shrink-0" />}
+                {itemKind !== value && <div className="h-4 w-4 shrink-0" />}
+                {label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-2 pt-2">
+        {onSaveAndAdd && (
+          <Button
+            className="w-full btn-glow"
+            disabled={saving || !description.trim()}
+            onClick={() => handleSave(true)}
+          >
+            Salvar e adicionar à manutenção
+          </Button>
+        )}
+        <Button
+          variant={onSaveAndAdd ? "outline" : "default"}
+          className={cn("w-full", !onSaveAndAdd && "btn-glow")}
+          disabled={saving || !description.trim()}
+          onClick={() => handleSave(false)}
+        >
+          Salvar na biblioteca
+        </Button>
+      </div>
+    </div>
+  );
 }
 
 // ============================================================
@@ -1453,6 +1855,7 @@ function MenuCard({
   onClick,
   disabled = false,
   dashed = false,
+  beta = false,
 }: {
   icon: React.ReactNode;
   title: string;
@@ -1460,6 +1863,7 @@ function MenuCard({
   onClick: () => void;
   disabled?: boolean;
   dashed?: boolean;
+  beta?: boolean;
 }) {
   return (
     <button

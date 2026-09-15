@@ -1,6 +1,13 @@
 # ADR 0019 — Smart Receipt: Interpretação Incremental de Layouts e Política de Não Regressão
 
-**Status:** Aceita
+**Status:** Aceita — OCR pausado/desabilitado por módulo (ver nota abaixo)
+
+> **Nota (2026-09-15):** A funcionalidade "Ler Documento" foi temporariamente desabilitada
+> via `platform_modules` (`manut_ocr` → `disabled`). O código OCR (Tesseract, OCR1/OCR2,
+> parser, diagnóstico, fixtures, ADR 0019) está **preservado integralmente** para futura
+> retomada. Motivo: variabilidade de layouts de documentos de oficina e risco de regressões
+> entre heurísticas ao suportar novos layouts. Avaliação futura de Document AI / serviço
+> especializado antes de reativar.
 **Data:** 2026-09-14
 **Versão:** v1.9.2
 
