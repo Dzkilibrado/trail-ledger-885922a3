@@ -548,6 +548,13 @@ function ItemsStep({
   const modGeral = useModule("manut_geral");
   const modMeusItens = useModule("manut_meus_itens");
 
+  // Biblioteca pessoal — carregada uma vez e integrada à Busca e ao Catálogo.
+  // Só carrega quando manut_meus_itens está ativo/beta — respeita ModuleGate.
+  // A RLS do banco garante que só retorna itens do auth.uid() com deleted_at IS NULL.
+  const meusItensAtivo = modMeusItens.status === "active" || modMeusItens.status === "beta";
+  const { items: libraryQuery } = useUserItemLibrary(meusItensAtivo ? undefined : "__disabled__");
+  const libraryItems = meusItensAtivo ? (libraryQuery.data ?? []) : [];
+
   const isActive = (s: string) => s === "active";
   const isMaint = (s: string) => s === "maintenance";
 
@@ -559,6 +566,19 @@ function ItemsStep({
     }
     return schedules;
   }, [schedules, selectedCategory, searchQuery]);
+
+  // Itens pessoais filtrados por busca — usados em Buscar e Catálogo
+  const filteredLibraryItems = useMemo(() => {
+    if (!meusItensAtivo) return [];
+    if (selectedCategory) {
+      return libraryItems.filter((it) => it.category === selectedCategory);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return libraryItems.filter((it) => it.description.toLowerCase().includes(q));
+    }
+    return libraryItems;
+  }, [libraryItems, selectedCategory, searchQuery, meusItensAtivo]);
 
   function addItem(partial: Partial<MaintenanceItem>) {
     const newItem: MaintenanceItem = {
@@ -823,6 +843,41 @@ function ItemsStep({
                 ))}
               </>
             )}
+            {/* Itens da biblioteca pessoal — apenas quando manut_meus_itens ativo */}
+            {filteredLibraryItems.length > 0 && (
+              <>
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground px-1 mt-3">
+                  Meus Itens
+                </p>
+                {filteredLibraryItems.map((lib) => (
+                  <button
+                    key={lib.id}
+                    onClick={() => {
+                      addItem({
+                        service: lib.description,
+                        category: lib.category,
+                        itemKind: lib.item_kind,
+                      });
+                    }}
+                    className="flex w-full items-center justify-between gap-2 rounded-xl border border-border bg-card p-3 text-left hover:border-primary/50"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate font-medium text-sm">{lib.description}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {CATEGORY_ICON[lib.category as MaintenanceCategory]}{" "}
+                        {MAINT_CATEGORY_LABEL[lib.category as MaintenanceCategory]}
+                        {" · "}
+                        <span className="inline-flex items-center gap-0.5 rounded-sm bg-primary/10 px-1 py-px text-[10px] font-medium text-primary">
+                          Meu item
+                        </span>
+                      </p>
+                    </div>
+                    <Plus className="h-4 w-4 shrink-0 text-primary" />
+                  </button>
+                ))}
+              </>
+            )}
+
             <button
               onClick={() => {
                 setEditingItem({
@@ -875,8 +930,12 @@ function ItemsStep({
         {!selectedCategory ? (
           <div className="grid grid-cols-2 gap-2">
             {(Object.keys(MAINT_CATEGORY_LABEL) as MaintenanceCategory[]).map((cat) => {
-              const count = schedules.filter((s) => s.category === cat).length;
-              if (count === 0) return null;
+              const countOfficial = schedules.filter((s) => s.category === cat).length;
+              const countPersonal = meusItensAtivo
+                ? libraryItems.filter((it) => it.category === cat).length
+                : 0;
+              const total = countOfficial + countPersonal;
+              if (total === 0) return null;
               return (
                 <button
                   key={cat}
@@ -886,7 +945,11 @@ function ItemsStep({
                   <span className="text-2xl">{CATEGORY_ICON[cat]}</span>
                   <span className="text-sm font-semibold">{MAINT_CATEGORY_LABEL[cat]}</span>
                   <span className="text-[11px] text-muted-foreground">
-                    {count} item{count > 1 ? "s" : ""}
+                    {total} item{total > 1 ? "s" : ""}
+                    {countPersonal > 0 && countOfficial > 0 && (
+                      <span className="ml-1 text-primary/70">+{countPersonal} meus</span>
+                    )}
+                    {countPersonal > 0 && countOfficial === 0 && " (meus)"}
                   </span>
                 </button>
               );
@@ -927,6 +990,50 @@ function ItemsStep({
                 </button>
               );
             })}
+            {/* Itens pessoais nessa categoria */}
+            {filteredLibraryItems.length > 0 && (
+              <>
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground px-1 pt-2">
+                  Meus Itens
+                </p>
+                {filteredLibraryItems.map((lib) => {
+                  const alreadyAdded = items.some((it) => it.service === lib.description && it.category === lib.category);
+                  return (
+                    <button
+                      key={lib.id}
+                      onClick={() => {
+                        if (!alreadyAdded) {
+                          addItem({
+                            service: lib.description,
+                            category: lib.category,
+                            itemKind: lib.item_kind,
+                          });
+                        }
+                      }}
+                      className={cn(
+                        "flex w-full items-center justify-between gap-2 rounded-xl border bg-card p-3 text-left",
+                        alreadyAdded
+                          ? "border-primary/40 opacity-60"
+                          : "border-border hover:border-primary/50",
+                      )}
+                    >
+                      <div className="min-w-0">
+                        <p className="truncate font-medium text-sm">{lib.description}</p>
+                        <span className="inline-flex items-center gap-0.5 rounded-sm bg-primary/10 px-1 py-px text-[10px] font-medium text-primary">
+                          Meu item
+                        </span>
+                      </div>
+                      {alreadyAdded ? (
+                        <Check className="h-4 w-4 shrink-0 text-primary" />
+                      ) : (
+                        <Plus className="h-4 w-4 shrink-0 text-primary" />
+                      )}
+                    </button>
+                  );
+                })}
+              </>
+            )}
+
             <button
               onClick={() => {
                 setEditingItem({ category: selectedCategory });
