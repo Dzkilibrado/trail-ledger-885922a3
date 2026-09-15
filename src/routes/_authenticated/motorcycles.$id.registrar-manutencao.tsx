@@ -1072,6 +1072,21 @@ function ItemsStep({
         <MotoMap
           schedules={schedules}
           addedItems={items}
+          libraryItems={libraryItems}
+          onToggleLibrary={(lib) => {
+            const existing = items.find(
+              (it) => it.service === lib.description && it.category === lib.category,
+            );
+            if (existing) {
+              onItemsChange(items.filter((it) => it.localId !== existing.localId));
+            } else {
+              addItem({
+                service: lib.description,
+                category: lib.category,
+                itemKind: lib.item_kind,
+              });
+            }
+          }}
           onToggle={(name, category, scheduleId, templateItemId) => {
             const existing = items.find(
               (it) => it.service === name || (scheduleId && it.scheduleId === scheduleId),

@@ -9,6 +9,7 @@ import { X, Plus, Check } from "lucide-react";
 import { MAINT_CATEGORY_LABEL, type MaintenanceCategory } from "@/lib/trailbook";
 import { cn } from "@/lib/utils";
 import type { MaintenanceItem } from "./types-registrar";
+import type { UserItemLibraryEntry } from "@/hooks/useUserItemLibrary";
 
 export const REGION_ITEMS: Record<MaintenanceCategory, { name: string }[]> = {
   engine: [
@@ -268,15 +269,21 @@ function RegionSheet({
   addedItems,
   onToggle,
   onClose,
+  libraryItems = [],
+  onToggleLibrary,
 }: {
   category: MaintenanceCategory;
   schedules: any[];
   addedItems: MaintenanceItem[];
   onToggle: (name: string, scheduleId?: string, templateItemId?: string) => void;
   onClose: () => void;
+  libraryItems?: UserItemLibraryEntry[];
+  onToggleLibrary?: (item: UserItemLibraryEntry) => void;
 }) {
   const catalogItems = REGION_ITEMS[category] ?? [];
   const categorySchedules = schedules.filter((s) => s.category === category);
+  // Itens pessoais desta categoria (filtrados pela RLS no banco — auth.uid() + deleted_at IS NULL)
+  const personalItems = libraryItems.filter((it) => it.category === category);
   const mergedItems = [
     ...catalogItems.map((ci) => {
       const matched = categorySchedules.find((s) =>
@@ -339,6 +346,42 @@ function RegionSheet({
               </button>
             );
           })}
+
+          {/* Itens pessoais da biblioteca — mesmo badge de Buscar e Catálogo */}
+          {personalItems.length > 0 && (
+            <>
+              <p className="pt-2 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground px-1">
+                Meus Itens
+              </p>
+              {personalItems.map((lib) => {
+                const isAdded = addedItems.some((it) => it.service === lib.description && it.category === lib.category);
+                return (
+                  <button
+                    key={lib.id}
+                    onClick={() => onToggleLibrary?.(lib)}
+                    className={cn(
+                      "flex w-full items-center justify-between gap-3 rounded-xl border px-4 py-3 text-left transition active:scale-[0.98]",
+                      isAdded
+                        ? "border-primary bg-primary/10 text-primary"
+                        : "border-border bg-card hover:border-primary/50",
+                    )}
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-medium">{lib.description}</p>
+                      <span className="inline-flex items-center gap-0.5 rounded-sm bg-primary/10 px-1 py-px text-[10px] font-medium text-primary">
+                        Meu item
+                      </span>
+                    </div>
+                    {isAdded ? (
+                      <Check className="h-4 w-4 shrink-0" />
+                    ) : (
+                      <Plus className="h-4 w-4 shrink-0 text-primary" />
+                    )}
+                  </button>
+                );
+              })}
+            </>
+          )}
         </div>
       </div>
     </div>
@@ -349,6 +392,8 @@ export function MotoMap({
   schedules,
   addedItems,
   onToggle,
+  libraryItems = [],
+  onToggleLibrary,
 }: {
   schedules: any[];
   addedItems: MaintenanceItem[];
@@ -358,6 +403,10 @@ export function MotoMap({
     scheduleId?: string,
     templateItemId?: string,
   ) => void;
+  /** Itens da biblioteca pessoal — já filtrados por auth.uid() + deleted_at IS NULL via RLS */
+  libraryItems?: UserItemLibraryEntry[];
+  /** Callback ao selecionar item pessoal — addItem com snapshot */
+  onToggleLibrary?: (item: UserItemLibraryEntry) => void;
 }) {
   const [activeRegion, setActiveRegion] = useState<MaintenanceCategory | null>(null);
   const [viewMode, setViewMode] = useState<"map" | "list">("map");
@@ -404,6 +453,10 @@ export function MotoMap({
         <div className="grid grid-cols-2 gap-2">
           {(Object.keys(MAINT_CATEGORY_LABEL) as MaintenanceCategory[]).map((cat) => {
             const added = addedItems.filter((it) => it.category === cat).length;
+            const personalCount = libraryItems.filter((it) => it.category === cat).length;
+            const officialCount = REGION_ITEMS[cat]?.length ?? 0;
+            // Mostrar categoria se tiver item oficial OU item pessoal
+            if (officialCount === 0 && personalCount === 0) return null;
             return (
               <button
                 key={cat}
@@ -417,6 +470,11 @@ export function MotoMap({
               >
                 <span className="text-2xl">{CATEGORY_ICON[cat]}</span>
                 <span className="text-xs font-semibold">{MAINT_CATEGORY_LABEL[cat]}</span>
+                {personalCount > 0 && (
+                  <span className="text-[10px] text-primary/70 font-medium">
+                    +{personalCount} meu{personalCount > 1 ? "s" : ""}
+                  </span>
+                )}
                 {added > 0 && (
                   <span className="text-[10px] text-primary font-bold">
                     {added} selecionado{added > 1 ? "s" : ""}
@@ -434,6 +492,8 @@ export function MotoMap({
           addedItems={addedItems}
           onToggle={handleToggle}
           onClose={() => setActiveRegion(null)}
+          libraryItems={libraryItems}
+          onToggleLibrary={onToggleLibrary}
         />
       )}
     </div>
