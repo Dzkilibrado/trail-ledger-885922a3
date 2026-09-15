@@ -2943,6 +2943,47 @@ export type Database = {
           },
         ];
       };
+      user_item_library: {
+        Row: {
+          category: Database["public"]["Enums"]["maintenance_category"];
+          created_at: string;
+          deleted_at: string | null;
+          description: string;
+          id: string;
+          item_kind: Database["public"]["Enums"]["item_kind"];
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          category?: Database["public"]["Enums"]["maintenance_category"];
+          created_at?: string;
+          deleted_at?: string | null;
+          description: string;
+          id?: string;
+          item_kind?: Database["public"]["Enums"]["item_kind"];
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          category?: Database["public"]["Enums"]["maintenance_category"];
+          created_at?: string;
+          deleted_at?: string | null;
+          description?: string;
+          id?: string;
+          item_kind?: Database["public"]["Enums"]["item_kind"];
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "user_item_library_user_id_fkey";
+            columns: ["user_id"];
+            isOneToOne: false;
+            referencedRelation: "users";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       workshops: {
         Row: {
           city: string | null;

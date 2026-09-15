@@ -1,31 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import type { MaintenanceCategory } from "@/lib/trailbook";
-import type { ItemKind } from "@/components/types-registrar";
+import type { Database } from "@/integrations/supabase/types";
 
-// ── Tipos ─────────────────────────────────────────────────────────────────────
-// A tabela user_item_library é nova — os tipos gerados pelo Supabase ainda
-// não a contêm. Usando tipos locais até a próxima geração de types.
+// ── Tipos derivados do schema real ────────────────────────────────────────────
 
-export interface UserItemLibraryEntry {
-  id: string;
-  user_id: string;
-  description: string;
-  category: MaintenanceCategory;
-  item_kind: ItemKind;
-  deleted_at: string | null;
-  created_at: string;
-  updated_at: string;
-}
+type Row = Database["public"]["Tables"]["user_item_library"]["Row"];
+type Insert = Database["public"]["Tables"]["user_item_library"]["Insert"];
 
-export type NewUserItemLibraryEntry = Pick<
-  UserItemLibraryEntry,
-  "description" | "category" | "item_kind"
->;
+export type UserItemLibraryEntry = Row;
+
+export type NewUserItemLibraryEntry = Pick<Insert, "description" | "category" | "item_kind">;
 
 export type UpdateUserItemLibraryEntry = Partial<NewUserItemLibraryEntry> & { id: string };
 
-const TABLE = "user_item_library";
+const TABLE = "user_item_library" as const;
 const QK = ["user_item_library"] as const;
 
 // ── Hook ──────────────────────────────────────────────────────────────────────
@@ -36,7 +24,7 @@ export function useUserItemLibrary(search?: string) {
   const items = useQuery({
     queryKey: [...QK, search ?? ""],
     queryFn: async () => {
-      let q = (supabase as any)
+      let q = supabase
         .from(TABLE)
         .select("*")
         .order("created_at", { ascending: false });
@@ -56,7 +44,7 @@ export function useUserItemLibrary(search?: string) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Não autenticado");
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from(TABLE)
         .insert({ ...entry, user_id: user.id })
         .select()
@@ -69,7 +57,7 @@ export function useUserItemLibrary(search?: string) {
 
   const update = useMutation({
     mutationFn: async ({ id, ...patch }: UpdateUserItemLibraryEntry) => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from(TABLE)
         .update(patch)
         .eq("id", id)
@@ -81,9 +69,10 @@ export function useUserItemLibrary(search?: string) {
     onSuccess: () => qc.invalidateQueries({ queryKey: QK }),
   });
 
+  // softDelete: UPDATE deleted_at = now() — não executa DELETE físico
   const softDelete = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from(TABLE)
         .update({ deleted_at: new Date().toISOString() })
         .eq("id", id);
