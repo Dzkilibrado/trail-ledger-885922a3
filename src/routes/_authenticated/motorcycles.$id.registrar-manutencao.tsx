@@ -718,7 +718,7 @@ function ItemsStep({
               desc={
                 isMaint(modMeusItens.status)
                   ? "Em manutenção"
-                  : "Peças e serviços que você usa"
+                  : "Cadastre peças, produtos e serviços que você usa e reutilize nas próximas manutenções."
               }
               disabled={isMaint(modMeusItens.status)}
               beta={modMeusItens.status === "beta"}
@@ -1244,14 +1244,14 @@ function MyItemsMode({
           <div>
             <p className="font-medium text-sm">Nenhum item encontrado</p>
             <p className="text-xs text-muted-foreground mt-1">
-              {search ? "Tente outro termo de busca" : "Cadastre peças e serviços que você usa para reutilizar depois"}
+              {search ? "Tente outro termo de busca" : "Cadastre peças, produtos e serviços que você utiliza para encontrá-los rapidamente nas próximas manutenções."}
             </p>
           </div>
           <button
             onClick={() => onAddNew()}
             className="mt-1 rounded-xl border border-primary/50 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/5"
           >
-            + Cadastrar novo
+            + Cadastrar primeiro item
           </button>
         </div>
       )}
