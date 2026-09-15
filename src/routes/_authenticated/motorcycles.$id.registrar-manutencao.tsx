@@ -728,28 +728,18 @@ function ItemsStep({
             />
           )}
 
-          {/* Histórico — quando ímpar, centralizado na última linha */}
-          <div className="col-span-2 flex justify-center">
-            <button
-              onClick={() =>
-                navigate({
-                  to: "/motorcycles/$id/historico-manutencao" as never,
-                  params: { id: motoId } as never,
-                })
-              }
-              className="flex w-full max-w-[calc(50%-6px)] items-center gap-3 rounded-2xl border border-border bg-card p-4 text-left transition hover:border-primary/50 active:scale-[0.98]"
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary/10">
-                <Clock className="h-5 w-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold">Histórico</p>
-                <p className="text-[10px] text-muted-foreground">
-                  Consultar manutenções anteriores
-                </p>
-              </div>
-            </button>
-          </div>
+          {/* Histórico — card padrão dentro do grid; ocupa a próxima célula disponível */}
+          <MenuCard
+            icon={<Clock className="h-6 w-6" />}
+            title="Histórico"
+            desc="Consultar manutenções anteriores"
+            onClick={() =>
+              navigate({
+                to: "/motorcycles/$id/historico-manutencao" as never,
+                params: { id: motoId } as never,
+              })
+            }
+          />
         </div>
       </div>
     );
