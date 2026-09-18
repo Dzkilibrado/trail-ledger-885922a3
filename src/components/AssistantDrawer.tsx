@@ -51,9 +51,11 @@ export function AssistantDrawer({ state, ctx, moduleStatus }: Props) {
     query, setQuery,
     submitted, submitQuery, resetSearch,
     results, topResult, confidence, related,
+    topResultModuleStatus,
     homeSuggestions, topicGroups, suggestions,
     loading,
     recordUnanswered,
+    getModuleStatus,
   } = state;
 
   const inputRef = useRef<HTMLInputElement>(null);
@@ -244,6 +246,7 @@ export function AssistantDrawer({ state, ctx, moduleStatus }: Props) {
               article={selectedArticle}
               ctx={ctx}
               related={related}
+              moduleStatus={getModuleStatus(selectedArticle)}
               onCTA={() => handleCTA(selectedArticle)}
               onRelated={openArticle}
             />
@@ -256,6 +259,7 @@ export function AssistantDrawer({ state, ctx, moduleStatus }: Props) {
               confidence={confidence}
               topResult={topResult}
               related={related}
+              topResultModuleStatus={topResultModuleStatus}
               ctx={ctx}
               loading={loading}
               onCTA={(a) => handleCTA(a)}
@@ -381,16 +385,18 @@ function TopicDetailView({ topic, onArticle }: { topic: TopicGroup; onArticle: (
 }
 
 function ArticleView({
-  article, ctx, related, onCTA, onRelated,
+  article, ctx, related, moduleStatus, onCTA, onRelated,
 }: {
   article: HelpArticle;
   ctx: AssistantContext;
   related: HelpArticle[];
+  moduleStatus: import("@/lib/modules").ModuleStatus | null;
   onCTA: () => void;
   onRelated: (a: HelpArticle) => void;
 }) {
   const needsMoto = article.needs_motorcycle && !ctx.motorcycleId;
-  const hasRoute = !!(article.route_template || needsMoto);
+  const isUnavailable = moduleStatus === "disabled" || moduleStatus === "maintenance";
+  const hasRoute = !!(article.route_template || needsMoto) && !isUnavailable;
 
   return (
     <div className="space-y-3">
@@ -402,8 +408,18 @@ function ArticleView({
             <ReactMarkdown>{article.body_md}</ReactMarkdown>
           </div>
         )}
-        {needsMoto && (
+        {needsMoto && !isUnavailable && (
           <p className="text-xs text-muted-foreground italic">Para fazer isso, selecione uma moto primeiro.</p>
+        )}
+        {moduleStatus === "maintenance" && (
+          <p className="text-xs text-amber-500 dark:text-amber-400 font-medium">
+            🚧 Esta funcionalidade está temporariamente em manutenção.
+          </p>
+        )}
+        {moduleStatus === "disabled" && (
+          <p className="text-xs text-muted-foreground font-medium">
+            Esta funcionalidade ainda não está disponível.
+          </p>
         )}
         {hasRoute && (
           <Button size="sm" className="w-full btn-glow mt-2" onClick={onCTA}>
@@ -435,13 +451,14 @@ function ArticleView({
 }
 
 function SearchView({
-  results, confidence, topResult, related, ctx, loading,
+  results, confidence, topResult, related, topResultModuleStatus, ctx, loading,
   onCTA, onRelated, onOpenTopics, onOpenTicket,
 }: {
   results: ReturnType<typeof useAssistant>["results"];
   confidence: ReturnType<typeof useAssistant>["confidence"];
   topResult: ReturnType<typeof useAssistant>["topResult"];
   related: ReturnType<typeof useAssistant>["related"];
+  topResultModuleStatus: ReturnType<typeof useAssistant>["topResultModuleStatus"];
   ctx: AssistantContext;
   loading: boolean;
   onCTA: (a: HelpArticle) => void;
@@ -454,7 +471,8 @@ function SearchView({
   if (confidence === "HIGH" || confidence === "MEDIUM") {
     const article = topResult!.article;
     const needsMoto = article.needs_motorcycle && !ctx.motorcycleId;
-    const hasRoute = !!(article.route_template || needsMoto);
+    const isUnavailable = topResultModuleStatus === "disabled" || topResultModuleStatus === "maintenance";
+    const hasRoute = !!(article.route_template || needsMoto) && !isUnavailable;
 
     return (
       <div className="space-y-3">
@@ -470,7 +488,17 @@ function SearchView({
               <ReactMarkdown>{article.body_md}</ReactMarkdown>
             </div>
           )}
-          {needsMoto && (
+          {topResultModuleStatus === "maintenance" && (
+            <p className="text-xs text-amber-500 dark:text-amber-400 font-medium">
+              🚧 Esta funcionalidade está temporariamente em manutenção.
+            </p>
+          )}
+          {topResultModuleStatus === "disabled" && (
+            <p className="text-xs text-muted-foreground font-medium">
+              Esta funcionalidade ainda não está disponível.
+            </p>
+          )}
+          {needsMoto && !isUnavailable && (
             <p className="text-xs text-muted-foreground italic">Selecione uma moto primeiro.</p>
           )}
           {hasRoute && (
