@@ -47,13 +47,17 @@ import { cn } from "@/lib/utils";
 import { usePlan } from "@/hooks/usePlan";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { useViewAsUser } from "@/hooks/useViewAsUser";
-import { useModules } from "@/hooks/useModules";
+import { useModules, useModule } from "@/hooks/useModules";
 import { ROUTE_TO_MODULE, HUB_ROUTES, resolveRouteModule } from "@/lib/modules";
 import { ModuleGate } from "@/components/ModuleGate";
 import { WelcomeTour } from "@/components/onboarding/WelcomeTour";
 import { TBBottomSheet } from "@/design-system/overlays/TBBottomSheet";
 import { PullToRefresh } from "@/components/PullToRefresh";
 import { useBottomNav } from "@/hooks/useBottomNav";
+import { AssistantButton } from "@/components/AssistantButton";
+import { AssistantDrawer } from "@/components/AssistantDrawer";
+import { useAssistant } from "@/hooks/useAssistant";
+import { useAssistantContext } from "@/lib/assistant-context";
 import { useActiveMotorcycle } from "@/hooks/useActiveMotorcycle";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -174,6 +178,9 @@ function AuthedLayout() {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const assistantCtx = useAssistantContext();
+  const { status: assistenteStatus } = useModule("assistente");
+  const assistantState = useAssistant(assistantCtx);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [signOutOpen, setSignOutOpen] = useState(false);
   const { isAdmin, realIsAdmin, viewingAsUser } = useIsAdmin();
@@ -260,6 +267,19 @@ function AuthedLayout() {
         </main>
       </div>
       <BottomNav pathname={pathname} />
+      {assistenteStatus !== "disabled" && !pathname.startsWith("/admin") && (
+        <>
+          <AssistantButton
+            onClick={assistantState.openDrawer}
+            moduleStatus={assistenteStatus}
+          />
+          <AssistantDrawer
+            state={assistantState}
+            ctx={assistantCtx}
+            moduleStatus={assistenteStatus}
+          />
+        </>
+      )}
       <AlertDialog open={signOutOpen} onOpenChange={setSignOutOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>

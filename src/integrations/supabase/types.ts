@@ -2984,7 +2984,177 @@ export type Database = {
           },
         ];
       };
-      workshops: {
+      user_permissions: {
+        Row: {
+          granted_at: string;
+          granted_by: string | null;
+          id: string;
+          permission_key: string;
+          user_id: string;
+        };
+        Insert: {
+          granted_at?: string;
+          granted_by?: string | null;
+          id?: string;
+          permission_key: string;
+          user_id: string;
+        };
+        Update: {
+          granted_at?: string;
+          granted_by?: string | null;
+          id?: string;
+          permission_key?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          { foreignKeyName: "user_permissions_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"]; },
+          { foreignKeyName: "user_permissions_granted_by_fkey"; columns: ["granted_by"]; isOneToOne: false; referencedRelation: "users"; referencedColumns: ["id"]; }
+        ];
+      };
+      help_articles: {
+        Row: {
+          id: string;
+          slug: string;
+          title: string;
+          summary: string;
+          body_md: string | null;
+          module_key: string | null;
+          route_template: string | null;
+          cta_label: string | null;
+          context_tags: string[];
+          needs_motorcycle: boolean;
+          status: string;
+          sort_order: number;
+          created_at: string;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        Insert: {
+          id?: string;
+          slug: string;
+          title: string;
+          summary: string;
+          body_md?: string | null;
+          module_key?: string | null;
+          route_template?: string | null;
+          cta_label?: string | null;
+          context_tags?: string[];
+          needs_motorcycle?: boolean;
+          status?: string;
+          sort_order?: number;
+          created_at?: string;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          id?: string;
+          slug?: string;
+          title?: string;
+          summary?: string;
+          body_md?: string | null;
+          module_key?: string | null;
+          route_template?: string | null;
+          cta_label?: string | null;
+          context_tags?: string[];
+          needs_motorcycle?: boolean;
+          status?: string;
+          sort_order?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [];
+      };
+      help_intents: {
+        Row: {
+          id: string;
+          intent_key: string;
+          article_id: string;
+          description: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          intent_key: string;
+          article_id: string;
+          description?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          intent_key?: string;
+          article_id?: string;
+          description?: string | null;
+        };
+        Relationships: [
+          { foreignKeyName: "help_intents_article_id_fkey"; columns: ["article_id"]; isOneToOne: false; referencedRelation: "help_articles"; referencedColumns: ["id"]; }
+        ];
+      };
+      help_intent_phrases: {
+        Row: {
+          id: string;
+          intent_id: string;
+          phrase: string;
+          weight: number;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          intent_id: string;
+          phrase: string;
+          weight?: number;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          intent_id?: string;
+          phrase?: string;
+          weight?: number;
+        };
+        Relationships: [
+          { foreignKeyName: "help_intent_phrases_intent_id_fkey"; columns: ["intent_id"]; isOneToOne: false; referencedRelation: "help_intents"; referencedColumns: ["id"]; }
+        ];
+      };
+      help_unanswered: {
+        Row: {
+          id: string;
+          query_text: string;
+          query_hash: string;
+          frequency: number;
+          first_seen_at: string;
+          last_seen_at: string;
+          route: string | null;
+          module_key: string | null;
+          resolved: boolean;
+          resolved_at: string | null;
+          resolved_by: string | null;
+          article_id: string | null;
+          ticket_id: string | null;
+        };
+        Insert: {
+          id?: string;
+          query_text: string;
+          query_hash: string;
+          frequency?: number;
+          first_seen_at?: string;
+          last_seen_at?: string;
+          route?: string | null;
+          module_key?: string | null;
+          resolved?: boolean;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          article_id?: string | null;
+          ticket_id?: string | null;
+        };
+        Update: {
+          resolved?: boolean;
+          resolved_at?: string | null;
+          resolved_by?: string | null;
+          article_id?: string | null;
+          ticket_id?: string | null;
+        };
+        Relationships: [];
+      };
+            workshops: {
         Row: {
           city: string | null;
           cnpj: string | null;

@@ -1,7 +1,8 @@
 import { PageLineSkeleton } from "@/components/Skeletons";
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { ASSISTANT_PERMISSIONS } from "@/lib/assistant-permissions";
 import { PageHeader } from "@/components/PageHeader";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
 import { AccessDenied } from "./admin";
@@ -1555,3 +1556,84 @@ function DeleteHomologDialog({
     </AlertDialog>
   );
 }
+
+// ── Seção de Permissões do Assistente em admin.users ─────────
+export function UserPermissionsSection({ userId }: { userId: string }) {
+  const qc = useQueryClient();
+
+  const { data: perms = [] } = useQuery({
+    queryKey: ["user_perms", userId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_permissions")
+        .select("permission_key")
+        .eq("user_id", userId);
+      return (data ?? []).map((r) => r.permission_key);
+    },
+  });
+
+  const grantMutation = useMutation({
+    mutationFn: async (key: string) => {
+      const { error } = await supabase
+        .from("user_permissions")
+        .insert({ user_id: userId, permission_key: key });
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["user_perms", userId] }),
+  });
+
+  const revokeMutation = useMutation({
+    mutationFn: async (key: string) => {
+      const { error } = await supabase
+        .from("user_permissions")
+        .delete()
+        .eq("user_id", userId)
+        .eq("permission_key", key);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["user_perms", userId] }),
+  });
+
+  const LABELS: Record<string, string> = {
+    [ASSISTANT_PERMISSIONS.VIEW_ADMIN]:         "Visualizar Central",
+    [ASSISTANT_PERMISSIONS.MANAGE_CONTENT]:     "Gerenciar conteúdos",
+    [ASSISTANT_PERMISSIONS.MANAGE_INTENTS]:     "Gerenciar intenções",
+    [ASSISTANT_PERMISSIONS.VIEW_UNANSWERED]:    "Ver dúvidas",
+    [ASSISTANT_PERMISSIONS.RESOLVE_UNANSWERED]: "Resolver dúvidas",
+    [ASSISTANT_PERMISSIONS.HANDLE_SUPPORT]:     "Atender suporte",
+    [ASSISTANT_PERMISSIONS.VIEW_METRICS]:       "Ver métricas",
+  };
+
+  function toggle(key: string, has: boolean) {
+    if (has) revokeMutation.mutate(key);
+    else grantMutation.mutate(key);
+  }
+
+  return (
+    <div className="space-y-2 pt-2">
+      <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        Permissões — Assistente TrailBook
+      </p>
+      <div className="space-y-1.5">
+        {Object.entries(LABELS).map(([key, label]) => {
+          const has = perms.includes(key);
+          return (
+            <label key={key} className="flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={has}
+                onChange={() => toggle(key, has)}
+                className="h-4 w-4 rounded border-border"
+              />
+              <span className="text-sm">{label}</span>
+            </label>
+          );
+        })}
+      </div>
+      <p className="text-[10px] text-muted-foreground">
+        Admin tem todas as permissões implicitamente.
+      </p>
+    </div>
+  );
+}
+

@@ -152,6 +152,7 @@ function AdminHome() {
         <QuickAction to="/admin/modules" icon={Wrench} label="Módulos" />
         <QuickAction to="/admin/messages" icon={MessageSquare} label="Mensagens" />
         <QuickAction to="/admin/homolog" icon={FlaskConical} label="Homologação" />
+        <QuickAction to="/assistente-central" icon={Cpu} label="Assistente" />
       </div>
 
       {/* Cards principais — só os 4 mais acionáveis ficam sempre visíveis */}
