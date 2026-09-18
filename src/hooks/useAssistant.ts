@@ -50,7 +50,10 @@ function useAssistantKB() {
       const articleId = (row as any).help_intents?.article_id;
       if (!articleId) continue;
       if (!map[articleId]) map[articleId] = [];
-      map[articleId].push({ id: row.id, intent_id: row.intent_id, phrase: row.phrase, weight: row.weight, created_at: row.created_at });
+      map[articleId].push({
+        id: row.id, intent_id: row.intent_id,
+        phrase: row.phrase, weight: row.weight, created_at: row.created_at,
+      });
     }
     return map;
   }, [phrases.data]);
@@ -58,13 +61,74 @@ function useAssistantKB() {
   return { articles: articles.data ?? [], phrasesByArticle, loading: articles.isLoading || phrases.isLoading };
 }
 
-// ── Sugestões contextuais ─────────────────────────────────────
+// ── Grupos de tópicos — derivados da KB real ──────────────────
+// Mapeamento module_key → label e ordem de exibição
+// Sem hardcode de conteúdo: só usa artigos que existem na KB
+
+export interface TopicGroup {
+  key: string;
+  label: string;
+  icon: string;   // Lucide icon name
+  articles: HelpArticle[];
+}
+
+const TOPIC_CONFIG: Array<{ key: string; label: string; icon: string; order: number }> = [
+  { key: "motorcycle",   label: "Minha moto",          icon: "Bike",       order: 1 },
+  { key: "maintenance",  label: "Manutenção",           icon: "Wrench",     order: 2 },
+  { key: "passport",     label: "Passaporte Digital",   icon: "FileCheck",  order: 3 },
+  { key: "health",       label: "Saúde da moto",        icon: "HeartPulse", order: 4 },
+  { key: "certificate",  label: "Selos e certificados", icon: "BadgeCheck", order: 5 },
+  { key: "fiscal",       label: "Fiscalização e laudo", icon: "ShieldCheck",order: 6 },
+  { key: "profile",      label: "Conta e perfil",       icon: "User",       order: 7 },
+  { key: "support",      label: "Suporte",              icon: "LifeBuoy",   order: 8 },
+  { key: "agenda",       label: "Agenda",               icon: "Calendar",   order: 9 },
+  { key: "financial",    label: "Financeiro",           icon: "Banknote",   order: 10 },
+];
+
+// Artigos que viram sugestões principais na Home (sort_order ≤ 170 + não são duplicatas de contexto)
+// 6 slugs prioritários — ordem intencional orientada a intenção do usuário
+const HOME_SLUGS = [
+  "cadastrar-moto",
+  "registrar-manutencao",
+  "plano-manutencao",
+  "passaporte-digital",
+  "modo-fiscalizacao",
+  "abrir-chamado",
+];
+
+// ── Sugestões contextuais por tela ───────────────────────────
 
 function contextualSuggestions(articles: HelpArticle[], ctx: AssistantContext): HelpArticle[] {
+  // 1. Artigos cujo module_key coincide com o módulo atual
+  const byModule = articles.filter((a) => a.module_key === ctx.moduleKey);
+  // 2. Artigos cujo context_tags contém o moduleKey
+  const byTags = articles.filter(
+    (a) => a.context_tags?.some((t) => t === ctx.moduleKey) && !byModule.includes(a),
+  );
+  return [...byModule, ...byTags].slice(0, 4);
+}
+
+// ── Artigos relacionados após resultado ───────────────────────
+
+function relatedArticles(
+  topResult: SearchResult | null,
+  articles: HelpArticle[],
+): HelpArticle[] {
+  if (!topResult) return [];
+  const moduleKey = topResult.article.module_key;
   return articles
-    .filter((a) => a.context_tags?.includes(ctx.moduleKey))
+    .filter((a) => a.id !== topResult.article.id && a.module_key === moduleKey)
     .slice(0, 3);
 }
+
+// ── Estado do drawer ─────────────────────────────────────────
+
+export type DrawerView =
+  | "home"          // sugestões principais
+  | "topics"        // todos os tópicos
+  | "topic-detail"  // artigos de um tópico
+  | "article"       // artigo aberto via navegação
+  | "search";       // resultado de busca
 
 // ── Hook principal ────────────────────────────────────────────
 
@@ -72,10 +136,45 @@ export function useAssistant(ctx: AssistantContext) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [view, setView] = useState<DrawerView>("home");
+  const [selectedTopic, setSelectedTopic] = useState<TopicGroup | null>(null);
+  const [selectedArticle, setSelectedArticle] = useState<HelpArticle | null>(null);
   const [sessionHistory, setSessionHistory] = useState<string[]>([]);
 
   const { articles, phrasesByArticle, loading } = useAssistantKB();
 
+  // Sugestões da Home — 6 artigos prioritários derivados da KB
+  const homeSuggestions = useMemo<HelpArticle[]>(() => {
+    if (!articles.length) return [];
+    return HOME_SLUGS
+      .map((slug) => articles.find((a) => a.slug === slug))
+      .filter((a): a is HelpArticle => !!a);
+  }, [articles]);
+
+  // Grupos de tópicos com artigos da KB
+  const topicGroups = useMemo<TopicGroup[]>(() => {
+    return TOPIC_CONFIG
+      .map((cfg) => ({
+        key: cfg.key,
+        label: cfg.label,
+        icon: cfg.icon,
+        articles: articles.filter((a) => a.module_key === cfg.key),
+      }))
+      .filter((g) => g.articles.length > 0)
+      .sort((a, b) => {
+        const oa = TOPIC_CONFIG.find((c) => c.key === a.key)?.order ?? 99;
+        const ob = TOPIC_CONFIG.find((c) => c.key === b.key)?.order ?? 99;
+        return oa - ob;
+      });
+  }, [articles]);
+
+  // Sugestões contextuais da tela atual
+  const suggestions = useMemo(
+    () => contextualSuggestions(articles, ctx),
+    [articles, ctx],
+  );
+
+  // Resultados de busca
   const results: SearchResult[] = useMemo(() => {
     if (!submitted || !query.trim() || loading) return [];
     return searchHelp(query, articles, phrasesByArticle);
@@ -84,31 +183,73 @@ export function useAssistant(ctx: AssistantContext) {
   const topResult = results[0] ?? null;
   const confidence = topResult?.confidence ?? "ZERO";
 
-  const suggestions = useMemo(
-    () => contextualSuggestions(articles, ctx),
-    [articles, ctx],
+  // Artigos relacionados ao resultado atual
+  const related = useMemo(
+    () => relatedArticles(topResult, articles),
+    [topResult, articles],
   );
+
+  // Navegação
+  const openDrawer = useCallback(() => {
+    setOpen(true);
+    setView("home");
+    setSelectedTopic(null);
+    setSelectedArticle(null);
+  }, []);
+
+  const closeDrawer = useCallback(() => {
+    setOpen(false);
+    setView("home");
+    setQuery("");
+    setSubmitted(false);
+    setSelectedTopic(null);
+    setSelectedArticle(null);
+  }, []);
+
+  const goHome = useCallback(() => {
+    setView("home");
+    setQuery("");
+    setSubmitted(false);
+    setSelectedTopic(null);
+    setSelectedArticle(null);
+  }, []);
+
+  const openTopics = useCallback(() => setView("topics"), []);
+
+  const openTopic = useCallback((topic: TopicGroup) => {
+    setSelectedTopic(topic);
+    setView("topic-detail");
+  }, []);
+
+  const openArticle = useCallback((article: HelpArticle) => {
+    setSelectedArticle(article);
+    setView("article");
+  }, []);
+
+  const goBack = useCallback(() => {
+    if (view === "article" && selectedTopic) { setView("topic-detail"); setSelectedArticle(null); return; }
+    if (view === "article") { setView("home"); setSelectedArticle(null); return; }
+    if (view === "topic-detail") { setView("topics"); setSelectedTopic(null); return; }
+    if (view === "topics") { setView("home"); return; }
+    if (view === "search") { setView("home"); setQuery(""); setSubmitted(false); return; }
+    setView("home");
+  }, [view, selectedTopic]);
 
   const submitQuery = useCallback((q: string) => {
     const trimmed = q.trim();
     if (!trimmed) return;
     setQuery(trimmed);
     setSubmitted(true);
+    setView("search");
     setSessionHistory((h) => [trimmed, ...h.slice(0, 9)]);
   }, []);
 
   const resetSearch = useCallback(() => {
     setQuery("");
     setSubmitted(false);
+    setView("home");
   }, []);
 
-  const openDrawer = useCallback(() => setOpen(true), []);
-  const closeDrawer = useCallback(() => {
-    setOpen(false);
-    resetSearch();
-  }, [resetSearch]);
-
-  // Registrar dúvida não respondida via RPC (somente ZERO, somente após submit)
   const recordUnanswered = useCallback(async () => {
     if (!submitted || !query.trim() || confidence !== "ZERO") return;
     try {
@@ -117,17 +258,17 @@ export function useAssistant(ctx: AssistantContext) {
         _route: ctx.pathname,
         _module_key: ctx.moduleKey,
       });
-    } catch (_) {
-      // silencioso — não bloquear UX por falha de telemetria
-    }
+    } catch (_) {}
   }, [submitted, query, confidence, ctx]);
 
   return {
     open, openDrawer, closeDrawer,
+    view, goHome, openTopics, openTopic, openArticle, goBack,
+    selectedTopic, selectedArticle,
     query, setQuery,
     submitted, submitQuery, resetSearch,
-    results, topResult, confidence,
-    suggestions,
+    results, topResult, confidence, related,
+    homeSuggestions, topicGroups, suggestions,
     loading,
     sessionHistory,
     recordUnanswered,
