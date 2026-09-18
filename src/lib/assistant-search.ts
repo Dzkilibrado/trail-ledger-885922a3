@@ -25,11 +25,15 @@ export const CONFIDENCE_THRESHOLDS = {
 } as const;
 
 const STOPWORDS_PT = new Set([
+  // Stopwords PT-BR
   "de","da","do","em","um","uma","com","por","para","que","como",
   "quando","onde","qual","quais","meu","minha","meus","minhas",
   "o","a","os","as","e","ou","se","na","no","nos","nas","ao","aos",
   "eu","tu","ele","ela","nos","vos","eles","elas","me","te","lhe",
   "mim","ti","si","isso","isto","aqui","ai","la","ja","nao","sim",
+  // Stopwords de domínio TrailBook: presentes em quase todos os artigos,
+  // não discriminam o intent. "moto" em um app de motos = "the" em inglês.
+  "moto","motos","motocicleta","motocicletas","trailbook",
 ]);
 
 export function normalizeText(text: string): string {

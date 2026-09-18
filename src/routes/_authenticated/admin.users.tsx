@@ -709,6 +709,7 @@ function UserDetailsSheet({
                   <TabsTrigger value="chamados">Chamados</TabsTrigger>
                   <TabsTrigger value="seguranca">Segurança</TabsTrigger>
                   <TabsTrigger value="audit">Auditoria</TabsTrigger>
+                  <TabsTrigger value="permissoes">Permissões</TabsTrigger>
                 </TabsList>
               </div>
 
@@ -1042,6 +1043,19 @@ function UserDetailsSheet({
             </Tabs>
           )}
         </div>
+              <TabsContent value="permissoes" className="space-y-4">
+                <SectionTitle
+                  title="Permissões — Assistente TrailBook"
+                  description="Essas permissões não tornam o usuário Administrador. Elas concedem apenas acesso às funções selecionadas do Assistente TrailBook."
+                />
+                {isAdminProfile ? (
+                  <div className="rounded-lg border border-border bg-muted/30 p-4 text-sm text-muted-foreground">
+                    Administrador — acesso completo por função administrativa.
+                  </div>
+                ) : userId ? (
+                  <UserPermissionsSection userId={userId} />
+                ) : null}
+              </TabsContent>
       </SheetContent>
     </Sheet>
   );

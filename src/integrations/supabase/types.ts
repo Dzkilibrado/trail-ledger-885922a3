@@ -2849,8 +2849,9 @@ export type Database = {
           title: string;
           type?: Database["public"]["Enums"]["ticket_type"];
           updated_at?: string;
-          user_id: string;
+          user_id?: string;
           user_last_read_at?: string | null;
+          metadata?: Record<string, unknown>;
         };
         Update: {
           admin_last_read_at?: string | null;

@@ -31,10 +31,24 @@ export function AssistantDrawer({ state, ctx, moduleStatus }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
 
-  // Focus no input ao abrir
+  // Focus no input ao abrir / devolver foco ao botão ao fechar
+  const fabRef = useRef<HTMLElement | null>(null);
   useEffect(() => {
-    if (open) setTimeout(() => inputRef.current?.focus(), 100);
+    if (open) {
+      fabRef.current = document.activeElement as HTMLElement;
+      setTimeout(() => inputRef.current?.focus(), 100);
+    } else {
+      fabRef.current?.focus();
+    }
   }, [open]);
+
+  // Fechar com ESC
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") closeDrawer(); };
+    document.addEventListener("keydown", handler);
+    return () => document.removeEventListener("keydown", handler);
+  }, [open, closeDrawer]);
 
   // Registrar unanswered após render ZERO
   useEffect(() => {
@@ -48,15 +62,15 @@ export function AssistantDrawer({ state, ctx, moduleStatus }: Props) {
   async function handleOpenTicket() {
     const motoId = ctx.motorcycleId;
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("tickets")
         .insert({
-          subject: query || "Dúvida via Assistente TrailBook",
+          title: query.trim() || "Dúvida via Assistente TrailBook",
           description: `Via Assistente TrailBook\nPergunta: "${query}"\nTela: ${ctx.pathname}`,
-          type: "question",
-          module: ctx.moduleKey as any,
-          status: "open",
-          priority: "medium",
+          type: "question" as const,
+          module: "other" as const,
+          status: "open" as const,
+          priority: "medium" as const,
           metadata: {
             source: "assistente_trailbook",
             original_query: query,
