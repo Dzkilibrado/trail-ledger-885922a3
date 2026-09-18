@@ -5,6 +5,7 @@
 //     error logger plugins, and sandbox detection (port/host/strictPort).
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
+import { fileURLToPath } from "node:url";
 
 // Build identifiers (Solução Mínima de Controle de Versão — v1.7).
 // - APP_VERSION vem de package.json (funcional, legível).
@@ -40,6 +41,28 @@ export default defineConfig({
     server: { entry: "server" },
   },
   vite: {
+    resolve: {
+      alias: [
+        {
+          find: "entities/lib/decode.js",
+          replacement: fileURLToPath(
+            new URL("./node_modules/entities/lib/decode.js", import.meta.url),
+          ),
+        },
+        {
+          find: "entities/lib/encode.js",
+          replacement: fileURLToPath(
+            new URL("./node_modules/entities/lib/encode.js", import.meta.url),
+          ),
+        },
+        {
+          find: /^entities$/,
+          replacement: fileURLToPath(
+            new URL("./node_modules/entities/lib/index.js", import.meta.url),
+          ),
+        },
+      ],
+    },
     define: {
       __TB_APP_VERSION__: JSON.stringify(APP_VERSION),
       __TB_BUILD_ID__: JSON.stringify(BUILD_ID),
