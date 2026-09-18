@@ -34,6 +34,7 @@ import { Route as AuthenticatedCompleteProfileRouteImport } from './routes/_auth
 import { Route as AuthenticatedComoFuncionaRouteImport } from './routes/_authenticated/como-funciona'
 import { Route as AuthenticatedCertificatesRouteImport } from './routes/_authenticated/certificates'
 import { Route as AuthenticatedCentralRouteImport } from './routes/_authenticated/central'
+import { Route as AuthenticatedAssistenteCentralRouteImport } from './routes/_authenticated/assistente-central'
 import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated/agenda'
 import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedTicketsIndexRouteImport } from './routes/_authenticated/tickets.index'
@@ -205,6 +206,12 @@ const AuthenticatedCentralRoute = AuthenticatedCentralRouteImport.update({
   path: '/central',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAssistenteCentralRoute =
+  AuthenticatedAssistenteCentralRouteImport.update({
+    id: '/assistente-central',
+    path: '/assistente-central',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedAgendaRoute = AuthenticatedAgendaRouteImport.update({
   id: '/agenda',
   path: '/agenda',
@@ -451,6 +458,7 @@ export interface FileRoutesByFullPath {
   '/site': typeof SiteRoute
   '/admin': typeof AuthenticatedAdminRouteWithChildren
   '/agenda': typeof AuthenticatedAgendaRoute
+  '/assistente-central': typeof AuthenticatedAssistenteCentralRoute
   '/central': typeof AuthenticatedCentralRoute
   '/certificates': typeof AuthenticatedCertificatesRoute
   '/como-funciona': typeof AuthenticatedComoFuncionaRoute
@@ -517,6 +525,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/site': typeof SiteRoute
   '/agenda': typeof AuthenticatedAgendaRoute
+  '/assistente-central': typeof AuthenticatedAssistenteCentralRoute
   '/central': typeof AuthenticatedCentralRoute
   '/certificates': typeof AuthenticatedCertificatesRoute
   '/como-funciona': typeof AuthenticatedComoFuncionaRoute
@@ -584,6 +593,7 @@ export interface FileRoutesById {
   '/site': typeof SiteRoute
   '/_authenticated/admin': typeof AuthenticatedAdminRouteWithChildren
   '/_authenticated/agenda': typeof AuthenticatedAgendaRoute
+  '/_authenticated/assistente-central': typeof AuthenticatedAssistenteCentralRoute
   '/_authenticated/central': typeof AuthenticatedCentralRoute
   '/_authenticated/certificates': typeof AuthenticatedCertificatesRoute
   '/_authenticated/como-funciona': typeof AuthenticatedComoFuncionaRoute
@@ -653,6 +663,7 @@ export interface FileRouteTypes {
     | '/site'
     | '/admin'
     | '/agenda'
+    | '/assistente-central'
     | '/central'
     | '/certificates'
     | '/como-funciona'
@@ -719,6 +730,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/site'
     | '/agenda'
+    | '/assistente-central'
     | '/central'
     | '/certificates'
     | '/como-funciona'
@@ -785,6 +797,7 @@ export interface FileRouteTypes {
     | '/site'
     | '/_authenticated/admin'
     | '/_authenticated/agenda'
+    | '/_authenticated/assistente-central'
     | '/_authenticated/central'
     | '/_authenticated/certificates'
     | '/_authenticated/como-funciona'
@@ -1035,6 +1048,13 @@ declare module '@tanstack/react-router' {
       path: '/central'
       fullPath: '/central'
       preLoaderRoute: typeof AuthenticatedCentralRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/assistente-central': {
+      id: '/_authenticated/assistente-central'
+      path: '/assistente-central'
+      fullPath: '/assistente-central'
+      preLoaderRoute: typeof AuthenticatedAssistenteCentralRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/agenda': {
@@ -1425,6 +1445,7 @@ const AuthenticatedMotorcyclesIdRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRouteWithChildren
   AuthenticatedAgendaRoute: typeof AuthenticatedAgendaRoute
+  AuthenticatedAssistenteCentralRoute: typeof AuthenticatedAssistenteCentralRoute
   AuthenticatedCentralRoute: typeof AuthenticatedCentralRoute
   AuthenticatedCertificatesRoute: typeof AuthenticatedCertificatesRoute
   AuthenticatedComoFuncionaRoute: typeof AuthenticatedComoFuncionaRoute
@@ -1456,6 +1477,7 @@ interface AuthenticatedRouteRouteChildren {
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRouteWithChildren,
   AuthenticatedAgendaRoute: AuthenticatedAgendaRoute,
+  AuthenticatedAssistenteCentralRoute: AuthenticatedAssistenteCentralRoute,
   AuthenticatedCentralRoute: AuthenticatedCentralRoute,
   AuthenticatedCertificatesRoute: AuthenticatedCertificatesRoute,
   AuthenticatedComoFuncionaRoute: AuthenticatedComoFuncionaRoute,
