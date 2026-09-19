@@ -80,7 +80,7 @@ VALUES (
   'Oficinas',
   'Consulte e gerencie as oficinas associadas às suas manutenções registradas no TrailBook.',
   E'## Oficinas\n\nO TrailBook permite registrar e consultar as oficinas onde sua moto foi atendida.\n\n### Como acessar\n\nNo menu principal, acesse **Oficinas**.\n\n### O que você encontra\n\n- Oficinas vinculadas às suas manutenções\n- Histórico de atendimentos por local\n\n### Dica\n\nVincular uma oficina ao registrar uma manutenção facilita o rastreamento do histórico por estabelecimento.',
-  'maintenance',
+  'workshop',
   '/workshops',
   'Ver oficinas',
   ARRAY['oficina','workshop','serviço','mecânico','atendimento'],

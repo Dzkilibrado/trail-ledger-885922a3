@@ -20,10 +20,12 @@ function statuses(overrides: Record<string, ModuleStatus> = {}): Record<string, 
     "certificates":  "active",
     "tickets":       "active",
     "agenda":        "active",
+    "workshops":     "active",
     "dashboard":     "active",
     "moto-control":  "active",
     "checkups":      "active",
-    "fiscalizacao":  "active",   // agora é o módulo de fiscalização
+    "fiscalizacao":  "active",
+    "financial":     "active",
     ...overrides,
   };
 }
@@ -119,11 +121,73 @@ describe("ARTICLE_MODULE_MAP", () => {
     expect(ARTICLE_MODULE_MAP["passport"]).toBe("passport");
   });
 
+  it("agenda mapeia para agenda", () => {
+    expect(ARTICLE_MODULE_MAP["agenda"]).toBe("agenda");
+  });
+
+  it("workshop mapeia para workshops", () => {
+    expect(ARTICLE_MODULE_MAP["workshop"]).toBe("workshops");
+  });
+
   it("ELIGIBLE_STATUSES contém active e beta", () => {
     expect(ELIGIBLE_STATUSES).toContain("active");
     expect(ELIGIBLE_STATUSES).toContain("beta");
     expect(ELIGIBLE_STATUSES).not.toContain("disabled");
     expect(ELIGIBLE_STATUSES).not.toContain("maintenance");
+  });
+});
+
+describe("M01-M10 — Agenda e Oficinas no ModuleGate", () => {
+  it("M01 agenda active → elegível", () => {
+    expect(isModuleEligible("agenda", statuses({ "agenda": "active" }))).toBe(true);
+  });
+
+  it("M02 agenda beta → elegível", () => {
+    expect(isModuleEligible("agenda", statuses({ "agenda": "beta" }))).toBe(true);
+  });
+
+  it("M03 agenda maintenance → inelegível", () => {
+    expect(isModuleEligible("agenda", statuses({ "agenda": "maintenance" }))).toBe(false);
+  });
+
+  it("M04 agenda disabled → inelegível", () => {
+    expect(isModuleEligible("agenda", statuses({ "agenda": "disabled" }))).toBe(false);
+  });
+
+  it("M05 workshop active → elegível", () => {
+    expect(isModuleEligible("workshop", statuses({ "workshops": "active" }))).toBe(true);
+  });
+
+  it("M06 workshop beta → elegível", () => {
+    expect(isModuleEligible("workshop", statuses({ "workshops": "beta" }))).toBe(true);
+  });
+
+  it("M07 workshop maintenance → inelegível", () => {
+    expect(isModuleEligible("workshop", statuses({ "workshops": "maintenance" }))).toBe(false);
+  });
+
+  it("M08 workshop disabled → inelegível", () => {
+    expect(isModuleEligible("workshop", statuses({ "workshops": "disabled" }))).toBe(false);
+  });
+
+  it("M09 fiscalizacao continua mapeada corretamente", () => {
+    expect(ARTICLE_MODULE_MAP["fiscalizacao"]).toBe("fiscalizacao");
+    expect(isModuleEligible("fiscalizacao", statuses({ "fiscalizacao": "beta" }))).toBe(true);
+    expect(isModuleEligible("fiscalizacao", statuses({ "fiscalizacao": "disabled" }))).toBe(false);
+  });
+
+  it("M10 mappings anteriores não regrediram", () => {
+    expect(ARTICLE_MODULE_MAP["health"]).toBe("checkups");
+    expect(ARTICLE_MODULE_MAP["passport"]).toBe("passport");
+    expect(ARTICLE_MODULE_MAP["certificate"]).toBe("certificates");
+    expect(ARTICLE_MODULE_MAP["motorcycle"]).toBe("motorcycles");
+    expect(ARTICLE_MODULE_MAP["support"]).toBe("tickets");
+    expect(ARTICLE_MODULE_MAP["financial"]).toBe("financial");
+    // Todos os módulos anteriores continuam elegíveis quando active
+    const allActive = statuses();
+    expect(isModuleEligible("health", allActive)).toBe(true);
+    expect(isModuleEligible("passport", allActive)).toBe(true);
+    expect(isModuleEligible("fiscal", allActive)).toBe(true);
   });
 });
 

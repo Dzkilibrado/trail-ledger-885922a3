@@ -29,9 +29,11 @@ export const ARTICLE_MODULE_MAP: Record<string, string> = {
   certificate:    "certificates",  // Selos e Certificados
   motorcycle:     "motorcycles",   // Gestão de motos
   support:        "tickets",       // Chamados de suporte
-  agenda:         "agenda",        // Agenda de manutenção
+  agenda:         "agenda",        // Agenda de manutenção → platform_module 'agenda'
+  workshop:       "workshops",     // Oficinas → platform_module 'workshops' (active)
   financial:      "financial",     // Financeiro
   // maintenance, profile: sem gate único → sempre elegíveis (não listados aqui)
+  // historico-manutencao usa module_key 'maintenance' (sem gate próprio → sempre elegível)
 };
 
 /** Statuses que permitem promover o conteúdo como disponível */
