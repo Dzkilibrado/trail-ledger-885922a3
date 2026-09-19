@@ -47,11 +47,12 @@ const KB_ARTICLES: HelpArticle[] = [
   makeArticle({ id: "cpf",  slug: "cpf-obrigatorio", title: "Por que preciso informar meu CPF?", summary: "O CPF garante que cada moto tenha um dono real." }),
   makeArticle({ id: "acpf", slug: "alterar-cpf", title: "Como alterar meu CPF no TrailBook?", summary: "O CPF só pode ser alterado por chamado no suporte." }),
   makeArticle({ id: "rec",  slug: "recibo-compra-venda", title: "Como gerar e usar o Recibo de Compra e Venda?", summary: "O Recibo é um documento oficial do TrailBook para registrar a negociação." }),
-  makeArticle({ id: "ctrl", slug: "modo-fiscalizacao", title: "Como funciona o Modo Fiscalização?", summary: "Exibe informações essenciais da moto para agentes de trânsito." }),
+
   makeArticle({ id: "my",  slug: "meus-itens", title: "O que são Meus Itens?", summary: "Biblioteca pessoal de peças, produtos e serviços." }),
   makeArticle({ id: "sup", slug: "abrir-chamado", title: "Como abrir um chamado de suporte?", summary: "Acesse Central → Chamados → Novo Chamado." }),
   makeArticle({ id: "agen", slug: "agenda", title: "Agenda de manutenção", summary: "Agendamentos e compromissos de manutenção." }),
-  makeArticle({ id: "health", slug: "health-avaliacao", title: "Como funciona o Health 4.0?", summary: "Avalia a saúde da moto com base no histórico." }),
+  makeArticle({ id: "health", slug: "health-avaliacao", title: "Saude da Moto e Check-up", summary: "Acompanhe o estado da sua moto e faca um Check-up para emitir um Laudo." }),
+  makeArticle({ id: "laudo", slug: "check-up-laudo", title: "Gerar e consultar um Laudo", summary: "O Laudo registra o estado da moto, tem validade e pode ser compartilhado via QR." }),
 ];
 
 const KB_PHRASES: Record<string, HelpPhrase[]> = {
@@ -62,11 +63,12 @@ const KB_PHRASES: Record<string, HelpPhrase[]> = {
   "cpf":  [makePhrase("cpf","cpf obrigatorio",3), makePhrase("cpf","por que preciso do cpf",3)],
   "acpf": [makePhrase("acpf","alterar cpf",3), makePhrase("acpf","mudar cpf",3)],
   "rec":  [makePhrase("rec","recibo de compra e venda",3), makePhrase("rec","gerar recibo",3), makePhrase("rec","vender moto",2)],
-  "ctrl": [makePhrase("ctrl","modo fiscalizacao",3), makePhrase("ctrl","laudo",3), makePhrase("ctrl","gerar laudo",3), makePhrase("ctrl","blitz",3)],
+
   "my":   [makePhrase("my","meus itens",3), makePhrase("my","biblioteca pessoal",3)],
   "sup":  [makePhrase("sup","abrir chamado",3), makePhrase("sup","suporte",3)],
   "agen": [makePhrase("agen","agenda",3)],
-  "health": [makePhrase("health","health",3), makePhrase("health","saude da moto",3), makePhrase("health","avaliacao da moto",3)],
+  "health": [makePhrase("health","saude da moto",3), makePhrase("health","ver saude",3), makePhrase("health","check up",3), makePhrase("health","avaliacao da moto",2)],
+  "laudo":  [makePhrase("laudo","gerar laudo",3), makePhrase("laudo","laudo da moto",3), makePhrase("laudo","emitir laudo",3), makePhrase("laudo","compartilhar laudo",2)],
 };
 
 // ── Testes unitários ──────────────────────────────────────────
@@ -119,7 +121,7 @@ describe("searchHelp — dataset aprovado", () => {
     { query: "cpf obrigatorio",          expectedSlug: "cpf-obrigatorio",      minConf: "HIGH" },
     { query: "alterar cpf",              expectedSlug: "alterar-cpf",          minConf: "HIGH" },
     { query: "recibo de compra",         expectedSlug: "recibo-compra-venda",  minConf: "HIGH" },
-    { query: "como gerar laudo",         expectedSlug: "modo-fiscalizacao",    minConf: "MEDIUM" },
+    { query: "como gerar laudo",         expectedSlug: "check-up-laudo",       minConf: "HIGH" },
     { query: "meus itens",               expectedSlug: "meus-itens",           minConf: "HIGH" },
     { query: "suporte problema",         expectedSlug: "abrir-chamado",        minConf: "MEDIUM" },
     { query: "agenda",                   expectedSlug: "agenda",               minConf: "HIGH" },

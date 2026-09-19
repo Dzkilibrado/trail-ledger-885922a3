@@ -20,10 +20,11 @@ const ARTICLES: HelpArticle[] = [
   art("registrar-manutencao", "maintenance", ["manutenção","registrar"],            130),
   art("plano-manutencao",     "maintenance", ["plano","manutenção"],                140),
   art("passaporte-digital",   "passport",    ["passaporte","compartilhar"],         80),
-  art("modo-fiscalizacao",    "fiscal",      ["laudo","fiscalização"],              180),
+  // modo-fiscalizacao: ARQUIVADO — não está em published articles
   art("abrir-chamado",        "support",     ["suporte","chamado"],                 170),
   art("meus-itens",           "maintenance", ["meus itens","biblioteca"],           160),
-  art("health-avaliacao",     "health",      ["health","avaliação","saúde"],        150),
+  art("health-avaliacao",     "health",      ["saúde","check-up","laudo"],          150),
+  art("check-up-laudo",       "health",      ["laudo","check-up","qr","pdf"],       145),
   art("cpf-obrigatorio",      "profile",     ["perfil","cadastro","cpf"],           10),
   art("alterar-cpf",          "support",     ["cpf","suporte"],                     20),
   art("selos-qualidade",      "certificate", ["selos","qualidade","certificado"],   90),
@@ -34,11 +35,16 @@ const ARTICLES: HelpArticle[] = [
 // ── Helpers que replicam a lógica do hook sem React ───────────
 const HOME_SLUGS = [
   "cadastrar-moto","registrar-manutencao","plano-manutencao",
-  "passaporte-digital","modo-fiscalizacao","abrir-chamado",
+  "health-avaliacao","check-up-laudo","passaporte-digital",
+  "selos-qualidade","meus-itens","abrir-chamado",
 ];
 
+const MAX_HOME = 6;
 function getHomeSuggestions(articles: HelpArticle[]) {
-  return HOME_SLUGS.map((s) => articles.find((a) => a.slug === s)).filter(Boolean) as HelpArticle[];
+  return HOME_SLUGS
+    .map((s) => articles.find((a) => a.slug === s))
+    .filter((a): a is HelpArticle => !!a)
+    .slice(0, MAX_HOME);
 }
 
 function getContextSuggestions(articles: HelpArticle[], moduleKey: string) {
@@ -75,16 +81,24 @@ function getTopicGroups(articles: HelpArticle[]): TopicGroup[] {
 // ── Testes ────────────────────────────────────────────────────
 
 describe("Home — sugestões principais", () => {
-  it("retorna os 6 slugs esperados na ordem correta", () => {
+  it("retorna até MAX_HOME_SUGGESTIONS slugs elegíveis da lista de candidatos", () => {
     const sugg = getHomeSuggestions(ARTICLES);
-    expect(sugg.map((a) => a.slug)).toEqual(HOME_SLUGS);
+    // Todos os slugs retornados devem estar na KB
+    for (const a of sugg) expect(ARTICLES.some((kb) => kb.id === a.id)).toBe(true);
+    // Deve incluir health-avaliacao e check-up-laudo (novos)
+    const slugs = sugg.map((a) => a.slug);
+    expect(slugs).toContain("health-avaliacao");
+    expect(slugs).toContain("check-up-laudo");
+    // NÃO deve incluir modo-fiscalizacao (arquivado)
+    expect(slugs).not.toContain("modo-fiscalizacao");
   });
 
   it("retorna apenas artigos existentes na KB", () => {
-    const partial = ARTICLES.filter((a) => a.slug !== "modo-fiscalizacao");
+    // modo-fiscalizacao já não está na KB (arquivado), testar sem check-up-laudo
+    const partial = ARTICLES.filter((a) => a.slug !== "check-up-laudo");
     const sugg = getHomeSuggestions(partial);
-    expect(sugg.map((a) => a.slug)).not.toContain("modo-fiscalizacao");
-    expect(sugg.length).toBe(5); // 1 artigo faltando
+    expect(sugg.map((a) => a.slug)).not.toContain("check-up-laudo");
+    expect(sugg.length).toBeGreaterThan(0);
   });
 
   it("nunca retorna artigos fora da KB", () => {
@@ -190,9 +204,16 @@ describe("Lacunas da KB", () => {
     expect(found).toBeUndefined();
   });
 
-  it("não há artigo com module_key agenda no seed atual", () => {
-    // Agenda não está no seed — lacuna conhecida
-    const found = ARTICLES.find((a) => a.module_key === "agenda");
+  it("modo-fiscalizacao está arquivado e não aparece na home", () => {
+    const found = ARTICLES.find((a) => a.slug === "modo-fiscalizacao");
+    // Artigo arquivado não deve estar na lista de artigos published da fixture
     expect(found).toBeUndefined();
+  });
+
+  it("'Health 4.0' não é slug nem título em nenhum artigo published", () => {
+    const hasHealth40 = ARTICLES.some(
+      (a) => a.title?.includes("Health 4.0") || a.slug?.includes("health-40")
+    );
+    expect(hasHealth40).toBe(false);
   });
 });

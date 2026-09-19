@@ -99,14 +99,18 @@ const TOPIC_CONFIG: Array<{ key: string; label: string; icon: string; order: num
   { key: "financial",    label: "Financeiro",            icon: "Banknote",    order: 10 },
 ];
 
-// 6 slugs candidatos à Home — filtrados por elegibilidade de módulo
+// Slugs candidatos à Home — filtrados por elegibilidade de módulo
+// Ordem = prioridade de exibição (primeiros 6 elegíveis aparecem)
+// "modo-fiscalizacao" removido: funcionalidade não existe de forma independente
+// "health-avaliacao" → agora cobre Saúde + Check-up
+// "check-up-laudo" → artigo específico de Laudo
 const HOME_SLUG_CANDIDATES = [
   "cadastrar-moto",
   "registrar-manutencao",
   "plano-manutencao",
+  "health-avaliacao",     // Saúde da Moto e Check-up
+  "check-up-laudo",       // Gerar e consultar um Laudo
   "passaporte-digital",
-  "health-avaliacao",
-  "modo-fiscalizacao",
   "selos-qualidade",
   "meus-itens",
   "abrir-chamado",
