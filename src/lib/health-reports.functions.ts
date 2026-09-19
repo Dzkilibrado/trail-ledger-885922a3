@@ -218,6 +218,14 @@ export const getPublicHealthReport = createServerFn({ method: "GET" })
       preset: String(res.preset ?? "custom"),
       shareExpiresAt: (res.share_expires_at as string | null) ?? null,
       allowedSections: allowed,
+      fiscal: (res.fiscal as {
+        owner_name: string | null;
+        owner_cpf: string | null;
+        origin_doc_id: string | null;
+        origin_doc_type: string | null;
+        origin_doc_name: string | null;
+        origin_doc_number: string | null;
+      } | null) ?? null,
       snapshot,
     };
   });
@@ -246,5 +254,36 @@ export const validateHealthReportPublic = createServerFn({ method: "GET" })
       issuedAt: res.issued_at ?? null,
       validUntil: res.valid_until ?? null,
       motorcycle: res.motorcycle ?? null,
+    };
+  });
+
+/** Gera URL assinada para documento de origem vinculado ao share fiscal. */
+export const getFiscalDocumentUrl = createServerFn({ method: "GET" })
+  .inputValidator((data: { token: string; docId: string }) => ({
+    token: String(data?.token ?? "").trim(),
+    docId: String(data?.docId ?? "").trim(),
+  }))
+  .handler(async ({ data }) => {
+    const supabaseAdmin = createClient<Database>(
+      process.env.SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    );
+    const rpc = await supabaseAdmin.rpc("get_fiscal_document_url" as never, {
+      _token: data.token,
+      _doc_id: data.docId,
+    } as never);
+    const res = rpc.data as any;
+    if (!res?.ok) return { ok: false as const, reason: String(res?.reason ?? "error") };
+    // Gerar URL assinada com TTL retornado pela RPC
+    const { data: signed, error } = await supabaseAdmin.storage
+      .from(String(res.bucket))
+      .createSignedUrl(String(res.storage_path), Number(res.ttl_seconds));
+    if (error || !signed?.signedUrl) return { ok: false as const, reason: "storage_error" };
+    return {
+      ok: true as const,
+      signedUrl: signed.signedUrl,
+      fileName: String(res.file_name ?? "documento"),
+      mimeType: String(res.mime_type ?? "application/octet-stream"),
+      ttlSeconds: Number(res.ttl_seconds),
     };
   });

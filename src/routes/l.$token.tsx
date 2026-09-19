@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ShieldCheck } from "lucide-react";
+import { ShieldCheck, Eye, Loader2 } from "lucide-react";
 import { getPublicHealthReport } from "@/lib/health-reports.functions";
 import { ReportSnapshotView } from "@/components/health/reports/ReportSnapshotView";
 import { TBErrorState, TBLoadingState } from "@/design-system";
@@ -66,7 +66,7 @@ function PublicReportPage() {
   const isFiscal = (data as any).preset === "fiscal";
 
   if (isFiscal) {
-    return <FiscalPublicView data={data} />;
+    return <FiscalPublicView data={{ ...data, _token: token }} />;
   }
 
   return (
@@ -93,23 +93,52 @@ function PublicReportPage() {
   );
 }
 // ── Tela pública de Fiscalização ─────────────────────────────
+// Mostra proprietário, moto, laudo e documento de origem
+// Dados fiscais (CPF mascarado, doc) vêm do campo `fiscal` da RPC
 function FiscalPublicView({ data }: { data: any }) {
   const snap = data.snapshot as Partial<HealthReportSnapshot> | undefined;
   const moto = snap?.motorcycle;
-  const overall = snap?.overall;
   const rideAnswer = snap?.rideAnswer;
+  const fiscal = data.fiscal as {
+    owner_name: string | null;
+    owner_cpf: string | null;
+    origin_doc_id: string | null;
+    origin_doc_type: string | null;
+    origin_doc_name: string | null;
+    origin_doc_number: string | null;
+  } | null;
+
+  const [docUrl, setDocUrl] = useState<string | null>(null);
+  const [docLoading, setDocLoading] = useState(false);
+  const token = data._token as string | undefined; // passado pelo loader
 
   const statusLabel =
-    rideAnswer?.status === "ok"      ? "Saudável"      :
-    rideAnswer?.status === "attention"? "Atenção"       :
-    rideAnswer?.status === "action"  ? "Necessita ação" :
+    rideAnswer?.status === "ok"       ? "Saudável"       :
+    rideAnswer?.status === "attention" ? "Atenção"        :
+    rideAnswer?.status === "action"   ? "Necessita ação" :
     "Sem dados suficientes";
 
-  // shareExpiresAt: expiracao real do SHARE fiscal (disponivel apos update da RPC no banco)
-  const shareExpiresIso = (data as any).shareExpiresAt ?? null;
-  const expiresAt = shareExpiresIso
-    ? new Date(shareExpiresIso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })
+  const expiresAt = data.shareExpiresAt
+    ? new Date(data.shareExpiresAt).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })
     : null;
+
+  async function handleViewDoc() {
+    if (!fiscal?.origin_doc_id || !token) return;
+    setDocLoading(true);
+    try {
+      const { getFiscalDocumentUrl } = await import("@/lib/health-reports.functions");
+      const res = await getFiscalDocumentUrl({ data: { token, docId: fiscal.origin_doc_id } });
+      if (res.ok) {
+        window.open(res.signedUrl, "_blank", "noopener");
+      }
+    } catch (_) {}
+    setDocLoading(false);
+  }
+
+  const ORIGIN_DOC_LABELS: Record<string, string> = {
+    invoice: "Nota Fiscal",
+    bill_of_sale: "Recibo de Compra e Venda",
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
@@ -124,44 +153,85 @@ function FiscalPublicView({ data }: { data: any }) {
 
       <main className="flex-1 p-4 space-y-4 max-w-lg mx-auto w-full">
 
-        {/* Moto */}
+        {/* Situação geral */}
+        {rideAnswer && (
+          <section className="rounded-2xl border border-border bg-card p-4 space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Situação</p>
+            <p className="text-lg font-bold">{statusLabel}</p>
+            {rideAnswer.message && (
+              <p className="text-sm text-muted-foreground">{rideAnswer.message}</p>
+            )}
+          </section>
+        )}
+
+        {/* Proprietário */}
+        {fiscal?.owner_name && (
+          <section className="rounded-2xl border border-border bg-card p-4 space-y-1">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Proprietário</p>
+            <p className="text-base font-semibold">{fiscal.owner_name}</p>
+            {fiscal.owner_cpf && (
+              <p className="text-sm text-muted-foreground font-mono">CPF {fiscal.owner_cpf}</p>
+            )}
+          </section>
+        )}
+
+        {/* Motocicleta */}
         {moto && (
           <section className="rounded-2xl border border-border bg-card p-4 space-y-1">
             <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Motocicleta</p>
             <p className="text-lg font-bold">{moto.brand} {moto.model}</p>
-            <div className="flex gap-4 text-sm text-muted-foreground">
-              {moto.yearModel && <span>{moto.yearModel}</span>}
-              {moto.plate && <span>Placa: {moto.plate}</span>}
-              {moto.chassisMasked && <span>Chassi: {moto.chassisMasked}</span>}
+            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-sm text-muted-foreground mt-1">
+              {moto.yearModel && <span>Ano {moto.yearModel}</span>}
+              {moto.plate    && <span>Placa {moto.plate}</span>}
+              {moto.chassisMasked && <span className="col-span-2">Chassi {moto.chassisMasked}</span>}
             </div>
           </section>
         )}
+
+        {/* Documento de origem */}
+        <section className="rounded-2xl border border-border bg-card p-4 space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Documento de Origem</p>
+          {fiscal?.origin_doc_id ? (
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="text-sm font-medium truncate">
+                  {ORIGIN_DOC_LABELS[fiscal.origin_doc_type ?? ""] ?? fiscal.origin_doc_type ?? "Documento"}
+                </p>
+                {fiscal.origin_doc_number && (
+                  <p className="text-xs text-muted-foreground">Nº {fiscal.origin_doc_number}</p>
+                )}
+              </div>
+              <button
+                onClick={handleViewDoc}
+                disabled={docLoading}
+                className="shrink-0 flex items-center gap-1.5 rounded-lg border border-border bg-muted px-3 py-1.5 text-sm font-medium hover:bg-muted/80 transition"
+                aria-label="Visualizar documento de origem"
+              >
+                {docLoading
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <Eye className="h-4 w-4" />}
+                <span className="hidden sm:inline">Visualizar</span>
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Nenhum documento de origem cadastrado.</p>
+          )}
+        </section>
 
         {/* Laudo */}
         <section className="rounded-2xl border border-border bg-card p-4 space-y-1">
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Laudo</p>
           <p className="font-mono text-sm font-semibold">{data.code}</p>
           <p className="text-sm text-muted-foreground">
-            Emitido em {data.issued_at ? new Date(data.issued_at).toLocaleDateString("pt-BR") : "—"}
+            Emitido em {data.issuedAt ? new Date(data.issuedAt).toLocaleDateString("pt-BR") : "—"}
           </p>
           <p className="text-sm">
             Status: <span className="font-semibold">{REPORT_STATUS_LABEL[data.status as ReportStatus] ?? data.status}</span>
           </p>
         </section>
-
-        {/* Situacao geral */}
-        {rideAnswer && (
-          <section className="rounded-2xl border border-border bg-card p-4 space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Situação geral</p>
-            <p className="text-base font-bold">{statusLabel}</p>
-            {rideAnswer.message && (
-              <p className="text-sm text-muted-foreground">{rideAnswer.message}</p>
-            )}
-          </section>
-        )}
       </main>
 
-      {/* Rodape */}
+      {/* Rodapé */}
       <footer className="border-t border-border px-4 py-3 text-center space-y-1">
         <p className="text-xs text-muted-foreground leading-relaxed">
           Este acesso foi compartilhado voluntariamente pelo proprietário e possui validade temporária.

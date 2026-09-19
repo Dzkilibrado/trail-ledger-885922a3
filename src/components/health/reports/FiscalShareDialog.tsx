@@ -94,7 +94,7 @@ export function FiscalShareDialog({ reportId, reportStatus, reportCode, open, on
     },
     onSuccess: (token) => {
       qc.invalidateQueries({ queryKey: ["fiscal-shares", reportId] });
-      toast.success("Acesso para fiscalizacao criado.");
+      toast.success("Acesso para fiscalização criado.");
       generateQr(token);
     },
     onError: (e: any) => toast.error(e.message ?? "Erro ao criar acesso."),
@@ -104,7 +104,7 @@ export function FiscalShareDialog({ reportId, reportStatus, reportCode, open, on
     mutationFn: async (shareId: string) => {
       const { error } = await supabase
         .from("health_report_shares")
-        .update({ revoked_at: new Date().toISOString(), revoked_reason: "Revogado pelo proprietario" })
+        .update({ revoked_at: new Date().toISOString(), revoked_reason: "Revogado pelo proprietário" })
         .eq("id", shareId);
       if (error) throw error;
     },
@@ -142,12 +142,12 @@ export function FiscalShareDialog({ reportId, reportStatus, reportCode, open, on
   if (moduleStatus === "disabled") return null;
 
   return (
-    <TBBottomSheet open={open} onOpenChange={(v) => { if (!v) onClose(); }} title="Compartilhar para Fiscalizacao">
+    <TBBottomSheet open={open} onOpenChange={(v) => { if (!v) onClose(); }} title="Compartilhar para Fiscalização">
       <div className="space-y-4 pb-6">
 
         {moduleStatus === "maintenance" && (
           <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-400">
-            Este recurso esta temporariamente em manutencao.
+            Está temporariamente em manutenção.
           </div>
         )}
 

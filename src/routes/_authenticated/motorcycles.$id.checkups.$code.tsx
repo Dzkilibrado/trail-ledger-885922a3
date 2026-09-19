@@ -1,4 +1,5 @@
 import { shareUrl } from "@/lib/external-links";
+import { useModule } from "@/hooks/useModules";
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
@@ -45,6 +46,9 @@ function ReportPage() {
   const { id, code } = Route.useParams();
   const [saving, setSaving] = useState(false);
   const [fiscalOpen, setFiscalOpen] = useState(false);
+  const fiscalModule = useModule("fiscalizacao");
+  const fiscalEnabled = fiscalModule.status === "active" || fiscalModule.status === "beta";
+  const fiscalBeta = fiscalModule.status === "beta";
   const [reopenPdf, setReopenPdf] = useState<(() => void | Promise<void>) | null>(null);
   const lastRunRef = useRef(0);
 
@@ -165,9 +169,11 @@ function ReportPage() {
       />
 
       <div className="flex flex-wrap gap-2">
-        <TBButton variant="outline" onClick={() => setFiscalOpen(true)}>
-          Fiscalização
-        </TBButton>
+        {fiscalEnabled && (
+          <TBButton variant="outline" onClick={() => setFiscalOpen(true)}>
+            Fiscalização{fiscalBeta ? <span className="ml-1.5 rounded-sm bg-primary/10 px-1 py-0.5 text-[10px] font-bold text-primary uppercase tracking-wide">β</span> : null}
+          </TBButton>
+        )}
         <TBButton onClick={downloadPdf} disabled={saving || !snapshot} aria-busy={saving}>
           {saving ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
