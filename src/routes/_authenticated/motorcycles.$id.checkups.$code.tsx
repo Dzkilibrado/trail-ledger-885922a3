@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { TBButton, TBErrorState, TBLoadingState } from "@/design-system";
 import { ReportSnapshotView } from "@/components/health/reports/ReportSnapshotView";
 import { SharePanel } from "@/components/health/reports/SharePanel";
+import { FiscalShareDialog } from "@/components/health/reports/FiscalShareDialog";
 import { buildReportPdf, reportFileName } from "@/lib/health-reports/pdf";
 import {
   REPORT_STATUS_LABEL,
@@ -43,6 +44,7 @@ export const Route = createFileRoute("/_authenticated/motorcycles/$id/checkups/$
 function ReportPage() {
   const { id, code } = Route.useParams();
   const [saving, setSaving] = useState(false);
+  const [fiscalOpen, setFiscalOpen] = useState(false);
   const [reopenPdf, setReopenPdf] = useState<(() => void | Promise<void>) | null>(null);
   const lastRunRef = useRef(0);
 
@@ -163,6 +165,9 @@ function ReportPage() {
       />
 
       <div className="flex flex-wrap gap-2">
+        <TBButton variant="outline" onClick={() => setFiscalOpen(true)}>
+          Fiscalização
+        </TBButton>
         <TBButton onClick={downloadPdf} disabled={saving || !snapshot} aria-busy={saving}>
           {saving ? (
             <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
@@ -184,6 +189,15 @@ function ReportPage() {
       )}
 
       <SharePanel reportId={report.id} canManage />
+
+      {/* Compartilhar para Fiscalizacao */}
+      <FiscalShareDialog
+        reportId={report.id}
+        reportStatus={report.status as string}
+        reportCode={report.code ?? ""}
+        open={fiscalOpen}
+        onClose={() => setFiscalOpen(false)}
+      />
 
       {snapshot ? (
         <ReportSnapshotView

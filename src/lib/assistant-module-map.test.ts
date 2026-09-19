@@ -21,8 +21,9 @@ function statuses(overrides: Record<string, ModuleStatus> = {}): Record<string, 
     "tickets":       "active",
     "agenda":        "active",
     "dashboard":     "active",
-    "moto-control":  "active",   // default: active
+    "moto-control":  "active",
     "checkups":      "active",
+    "fiscalizacao":  "active",   // agora é o módulo de fiscalização
     ...overrides,
   };
 }
@@ -31,19 +32,19 @@ function statuses(overrides: Record<string, ModuleStatus> = {}): Record<string, 
 
 describe("isModuleEligible", () => {
   it("A. módulo active → elegível", () => {
-    expect(isModuleEligible("fiscal", statuses({ "moto-control": "active" }))).toBe(true);
+    expect(isModuleEligible("fiscal", statuses({ "fiscalizacao": "active" }))).toBe(true);
   });
 
   it("A. módulo beta → elegível", () => {
-    expect(isModuleEligible("fiscal", statuses({ "moto-control": "beta" }))).toBe(true);
+    expect(isModuleEligible("fiscal", statuses({ "fiscalizacao": "beta" }))).toBe(true);
   });
 
   it("B. módulo disabled → inelegível", () => {
-    expect(isModuleEligible("fiscal", statuses({ "moto-control": "disabled" }))).toBe(false);
+    expect(isModuleEligible("fiscal", statuses({ "fiscalizacao": "disabled" }))).toBe(false);
   });
 
   it("C. módulo maintenance → inelegível", () => {
-    expect(isModuleEligible("fiscal", statuses({ "moto-control": "maintenance" }))).toBe(false);
+    expect(isModuleEligible("fiscal", statuses({ "fiscalizacao": "maintenance" }))).toBe(false);
   });
 
   it("module_key sem gate (maintenance) → sempre elegível", () => {
@@ -76,8 +77,8 @@ describe("isModuleEligible", () => {
   });
 
   it("J. reativar módulo → volta a ser elegível", () => {
-    const disabled = statuses({ "moto-control": "disabled" });
-    const reactivated = { ...disabled, "moto-control": "active" as ModuleStatus };
+    const disabled = statuses({ "fiscalizacao": "disabled" });
+    const reactivated = { ...disabled, "fiscalizacao": "active" as ModuleStatus };
     expect(isModuleEligible("fiscal", disabled)).toBe(false);
     expect(isModuleEligible("fiscal", reactivated)).toBe(true);
   });
@@ -87,7 +88,7 @@ describe("isModuleEligible", () => {
 
 describe("getArticleModuleStatus", () => {
   it("fiscal → retorna status de moto-control", () => {
-    expect(getArticleModuleStatus("fiscal", statuses({ "moto-control": "disabled" }))).toBe("disabled");
+    expect(getArticleModuleStatus("fiscal", statuses({ "fiscalizacao": "disabled" }))).toBe("disabled");
   });
 
   it("profile → retorna null (sem gate)", () => {
@@ -99,15 +100,15 @@ describe("getArticleModuleStatus", () => {
   });
 
   it("fiscal maintenance → retorna maintenance", () => {
-    expect(getArticleModuleStatus("fiscal", statuses({ "moto-control": "maintenance" }))).toBe("maintenance");
+    expect(getArticleModuleStatus("fiscal", statuses({ "fiscalizacao": "maintenance" }))).toBe("maintenance");
   });
 });
 
 // ── Testes de configuração do mapa ───────────────────────────
 
 describe("ARTICLE_MODULE_MAP", () => {
-  it("fiscal mapeia para moto-control", () => {
-    expect(ARTICLE_MODULE_MAP["fiscal"]).toBe("moto-control");
+  it("fiscal mapeia para fiscalizacao", () => {
+    expect(ARTICLE_MODULE_MAP["fiscal"]).toBe("fiscalizacao");
   });
 
   it("health mapeia para checkups", () => {
@@ -151,13 +152,13 @@ const HOME_CANDIDATES = [
 
 describe("Filtro da Home", () => {
   it("D. modo-fiscalizacao excluído quando moto-control disabled", () => {
-    const st = statuses({ "moto-control": "disabled" });
+    const st = statuses({ "fiscalizacao": "disabled" });
     const eligible = HOME_CANDIDATES.filter((a) => isModuleEligible(a.module_key, st));
     expect(eligible.map((a) => a.slug)).not.toContain("modo-fiscalizacao");
   });
 
   it("K. home não fica vazio: candidatos de fallback assumem", () => {
-    const st = statuses({ "moto-control": "disabled" });
+    const st = statuses({ "fiscalizacao": "disabled" });
     const eligible = HOME_CANDIDATES.filter((a) => isModuleEligible(a.module_key, st));
     const home = eligible.slice(0, 6);
     expect(home.length).toBeGreaterThan(0);
@@ -167,7 +168,7 @@ describe("Filtro da Home", () => {
   });
 
   it("E. related não inclui módulo disabled", () => {
-    const st = statuses({ "moto-control": "disabled" });
+    const st = statuses({ "fiscalizacao": "disabled" });
     const topResult = art("health-avaliacao", "health"); // health = checkups = active
     const candidates = [art("modo-fiscalizacao", "fiscal"), art("selos-qualidade", "certificate")];
     const related = candidates.filter(
@@ -177,7 +178,7 @@ describe("Filtro da Home", () => {
   });
 
   it("tópico fiscal some quando moto-control disabled", () => {
-    const st = statuses({ "moto-control": "disabled" });
+    const st = statuses({ "fiscalizacao": "disabled" });
     const TOPIC_CONFIG = [
       { key: "motorcycle" }, { key: "maintenance" }, { key: "fiscal" }, { key: "passport" }
     ];
