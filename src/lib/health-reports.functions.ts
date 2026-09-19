@@ -216,6 +216,7 @@ export const getPublicHealthReport = createServerFn({ method: "GET" })
       outdatedReason: (res.outdated_reason as string | null) ?? null,
       sha256: String(res.sha256 ?? ""),
       preset: String(res.preset ?? "custom"),
+      shareExpiresAt: (res.share_expires_at as string | null) ?? null,
       allowedSections: allowed,
       snapshot,
     };

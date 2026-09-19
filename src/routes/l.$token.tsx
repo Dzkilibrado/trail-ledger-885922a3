@@ -100,13 +100,15 @@ function FiscalPublicView({ data }: { data: any }) {
   const rideAnswer = snap?.rideAnswer;
 
   const statusLabel =
-    rideAnswer?.status === "ok"      ? "Saudavel"      :
-    rideAnswer?.status === "attention"? "Atencao"       :
-    rideAnswer?.status === "action"  ? "Necessita acao" :
+    rideAnswer?.status === "ok"      ? "Saudável"      :
+    rideAnswer?.status === "attention"? "Atenção"       :
+    rideAnswer?.status === "action"  ? "Necessita ação" :
     "Sem dados suficientes";
 
-  const expiresAt = data.valid_until
-    ? new Date(data.valid_until).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })
+  // shareExpiresAt: expiracao real do SHARE fiscal (disponivel apos update da RPC no banco)
+  const shareExpiresIso = (data as any).shareExpiresAt ?? null;
+  const expiresAt = shareExpiresIso
+    ? new Date(shareExpiresIso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })
     : null;
 
   return (
@@ -116,7 +118,7 @@ function FiscalPublicView({ data }: { data: any }) {
         <ShieldCheck className="h-5 w-5 text-primary" />
         <div>
           <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">TrailBook</p>
-          <p className="text-sm font-bold leading-none">Acesso temporario para fiscalizacao</p>
+          <p className="text-sm font-bold leading-none">Acesso temporário para fiscalização</p>
         </div>
       </header>
 
@@ -150,7 +152,7 @@ function FiscalPublicView({ data }: { data: any }) {
         {/* Situacao geral */}
         {rideAnswer && (
           <section className="rounded-2xl border border-border bg-card p-4 space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Situacao geral</p>
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Situação geral</p>
             <p className="text-base font-bold">{statusLabel}</p>
             {rideAnswer.message && (
               <p className="text-sm text-muted-foreground">{rideAnswer.message}</p>
@@ -162,12 +164,16 @@ function FiscalPublicView({ data }: { data: any }) {
       {/* Rodape */}
       <footer className="border-t border-border px-4 py-3 text-center space-y-1">
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Este acesso foi compartilhado voluntariamente pelo proprietario e possui validade temporaria.
-          Nao substitui documento oficial governamental.
+          Este acesso foi compartilhado voluntariamente pelo proprietário e possui validade temporária.
+          Não substitui documento oficial governamental.
         </p>
-        {expiresAt && (
+        {expiresAt ? (
           <p className="text-xs font-semibold text-muted-foreground">
-            Valido ate: {expiresAt}
+            Acesso válido até: {expiresAt}
+          </p>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Este acesso tem validade temporária.
           </p>
         )}
       </footer>
