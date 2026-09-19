@@ -12,6 +12,10 @@ import {
   Stethoscope,
   CalendarClock,
   Headset,
+  HeartPulse,
+  ClipboardCheck,
+  QrCode,
+  Bot,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -159,6 +163,16 @@ const BENEFITS = [
     desc: "A identidade da sua moto, que atravessa proprietários e permanece com ela.",
   },
   {
+    icon: HeartPulse,
+    title: "Saúde da Moto",
+    desc: "Veja a condição real da sua moto com base em tudo que foi registrado — sem percentuais, só o que importa.",
+  },
+  {
+    icon: ClipboardCheck,
+    title: "Check-up e Laudo",
+    desc: "Faça uma avaliação completa e emita um Laudo imutável com diagnóstico, validade e compartilhamento seguro.",
+  },
+  {
     icon: Shield,
     title: "Documentos organizados",
     desc: "Nota fiscal, garantia e contratos sempre à mão, com privacidade que você controla.",
@@ -174,14 +188,19 @@ const BENEFITS = [
     desc: "O cuidado com a sua moto vira reputação verificável.",
   },
   {
-    icon: Stethoscope,
-    title: "Check-up e Laudo Digital",
-    desc: "Avaliação completa da moto, com laudo emitido e histórico de check-ups guardado.",
+    icon: QrCode,
+    title: "Fiscalização — Beta",
+    desc: "Compartilhe temporariamente informações essenciais do Laudo por QR, com validade definida e revogação a qualquer momento.",
   },
   {
     icon: CalendarClock,
     title: "Agenda Inteligente",
     desc: "Próximas manutenções calculadas a partir do uso real — nada de planilha ou estimativa no chute.",
+  },
+  {
+    icon: Bot,
+    title: "Assistente TrailBook",
+    desc: "Encontre rapidamente onde fazer cada coisa — perguntas prontas, busca por tópicos ou em linguagem natural.",
   },
   {
     icon: Headset,
@@ -270,19 +289,19 @@ function HowItWorks() {
 const SLIDES = [
   {
     img: phoneImage,
-    title: "Acompanhe a saúde da moto",
-    desc: "Indicadores claros de manutenções, componentes e próximas ações.",
-    alt: "Tela do aplicativo TrailBook mostrando a saúde da motocicleta",
+    title: "Saúde da Moto em tempo real",
+    desc: "Veja a condição atual da sua moto com base no histórico real — sem estimativas.",
+    alt: "Tela do TrailBook mostrando a saúde da motocicleta",
   },
   {
     img: heroImage,
-    title: "Organize documentos e manutenções",
-    desc: "Tudo centralizado, com histórico preservado e privacidade sob seu controle.",
-    alt: "Tela do aplicativo TrailBook com documentos e manutenções",
+    title: "Check-up e Laudo",
+    desc: "Avaliação guiada e Laudo imutável com diagnóstico, validade e compartilhamento seguro.",
+    alt: "Tela do TrailBook com check-up e laudo da moto",
   },
   {
     img: certificateImage,
-    title: "Compartilhe o Passaporte Digital",
+    title: "Passaporte Digital",
     desc: "Um link seguro com o histórico verificado da sua moto.",
     alt: "Passaporte Digital do TrailBook com histórico verificado",
   },
@@ -409,15 +428,31 @@ function AppShowcase() {
 const FAQS = [
   {
     q: "O que é o TrailBook?",
-    a: "Um aplicativo para organizar o histórico completo da sua motocicleta off-road — manutenções, documentos, proprietários e o Passaporte Digital.",
+    a: "Um aplicativo para organizar o histórico completo da sua motocicleta — manutenções, documentos, Saúde da Moto, Laudos e o Passaporte Digital.",
   },
   {
-    q: "Meus documentos ficam privados?",
-    a: "Sim. Você controla o que fica privado e o que pode ser compartilhado no Passaporte Digital.",
+    q: "O que é a Saúde da Moto?",
+    a: "É o painel de acompanhamento contínuo da condição da sua moto. Com base nas manutenções registradas, o TrailBook mostra o que está em dia, o que merece atenção e o que precisa ser resolvido.",
+  },
+  {
+    q: "O que é o Check-up e o Laudo?",
+    a: "O Check-up é uma avaliação guiada da moto — ao concluir, o TrailBook emite um Laudo: um documento imutável com diagnóstico, validade e opções de compartilhamento seguro.",
   },
   {
     q: "O que é o Passaporte Digital?",
     a: "É a identidade permanente da sua moto: acompanha a motocicleta ao longo dos anos, mesmo quando ela troca de proprietário.",
+  },
+  {
+    q: "O que é o recurso de Fiscalização?",
+    a: "Ainda em fase Beta, permite compartilhar temporariamente informações essenciais do Laudo por QR Code ou link — com validade definida, acesso limitado e revogação a qualquer momento. Não substitui documentos oficiais obrigatórios.",
+  },
+  {
+    q: "O que é o Assistente TrailBook?",
+    a: "Um atalho inteligente dentro do app que ajuda você a encontrar rapidamente onde fazer cada coisa — por perguntas prontas, tópicos ou busca em linguagem natural.",
+  },
+  {
+    q: "Meus documentos ficam privados?",
+    a: "Sim. Você controla o que fica privado e o que pode ser compartilhado no Passaporte Digital.",
   },
   {
     q: "Como funciona o Recibo de Compra e Venda?",
@@ -426,10 +461,6 @@ const FAQS = [
   {
     q: "Posso usar o TrailBook para motos off-road?",
     a: "Sim. O TrailBook foi construído para motocicletas de trilha, enduro, motocross e coleção — com ou sem documento.",
-  },
-  {
-    q: "O que é o Check-up e Laudo Digital?",
-    a: "Uma avaliação completa da moto a partir de tudo que já foi registrado. O TrailBook emite um laudo digital e guarda o histórico de check-ups, para você acompanhar a evolução da moto ao longo do tempo.",
   },
   {
     q: "E se eu tiver um problema ou uma dúvida?",

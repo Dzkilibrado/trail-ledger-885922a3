@@ -22,15 +22,16 @@ import type { ModuleStatus } from "@/lib/modules";
  * module_keys sem gate (profile, maintenance, general) ficam de fora → sempre elegíveis.
  */
 export const ARTICLE_MODULE_MAP: Record<string, string> = {
-  fiscal:         "fiscalizacao",  // Fiscalização — agora usa módulo próprio (ac88846+)
-  health:         "checkups",      // Avaliações e Check-ups → /motorcycles/$id/checkups
+  fiscal:         "fiscalizacao",  // artigo modo-fiscalizacao (archived) — módulo próprio
+  fiscalizacao:   "fiscalizacao",  // artigo fiscalizacao-laudo — módulo fiscalizacao
+  health:         "checkups",      // Avaliações, Check-ups e Laudos
   passport:       "passport",      // Passaporte Digital
-  certificate:    "certificates",  // Selos e Certificados → /certificates
-  motorcycle:     "motorcycles",   // Gestão de motos → /motorcycles
-  support:        "tickets",       // Chamados → /tickets
-  agenda:         "agenda",        // Agenda → /agenda
-  financial:      "financial",     // Financeiro → /financial
-  fiscalizacao:   "fiscalizacao",  // Artigos futuros sobre Fiscalização
+  certificate:    "certificates",  // Selos e Certificados
+  motorcycle:     "motorcycles",   // Gestão de motos
+  support:        "tickets",       // Chamados de suporte
+  agenda:         "agenda",        // Agenda de manutenção
+  financial:      "financial",     // Financeiro
+  // maintenance, profile: sem gate único → sempre elegíveis (não listados aqui)
 };
 
 /** Statuses que permitem promover o conteúdo como disponível */

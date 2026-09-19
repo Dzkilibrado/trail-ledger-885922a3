@@ -28,14 +28,15 @@ const ICON_MAP: Record<string, React.ElementType> = {
 };
 
 // Labels de sugestão orientadas à intenção do usuário
-// Linguagem de motociclista — sem termos técnicos internos ("Health 4.0", "Modo Fiscalização")
+// Linguagem de motociclista — sem termos técnicos internos
 const HOME_LABELS: Record<string, { label: string; emoji: string }> = {
   "cadastrar-moto":      { label: "Cadastrar ou gerenciar minha moto",  emoji: "🏍️" },
   "registrar-manutencao":{ label: "Registrar uma manutenção",           emoji: "🔧" },
-  "plano-manutencao":    { label: "Entender meu plano de manutenção",   emoji: "📅" },
   "health-avaliacao":    { label: "Ver a saúde da minha moto",          emoji: "❤️" },
   "check-up-laudo":      { label: "Gerar ou consultar um Laudo",        emoji: "📋" },
-  "passaporte-digital":  { label: "Passaporte Digital",                 emoji: "🛡️" },
+  "plano-manutencao":    { label: "Entender meu plano de manutenção",   emoji: "📅" },
+  "passaporte-digital":  { label: "Compartilhar o Passaporte Digital",  emoji: "🛡️" },
+  "fiscalizacao-laudo":  { label: "Apresentar minha moto em fiscalização", emoji: "🔵" },
   "selos-qualidade":     { label: "Entender os Selos de Qualidade",     emoji: "🏅" },
   "meus-itens":          { label: "Meus Itens — biblioteca pessoal",    emoji: "📦" },
   "abrir-chamado":       { label: "Preciso de ajuda / suporte",         emoji: "💬" },

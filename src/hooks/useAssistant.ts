@@ -101,16 +101,16 @@ const TOPIC_CONFIG: Array<{ key: string; label: string; icon: string; order: num
 
 // Slugs candidatos à Home — filtrados por elegibilidade de módulo
 // Ordem = prioridade de exibição (primeiros 6 elegíveis aparecem)
-// "modo-fiscalizacao" removido: funcionalidade não existe de forma independente
-// "health-avaliacao" → agora cobre Saúde + Check-up
-// "check-up-laudo" → artigo específico de Laudo
+// Composição: tarefas mais frequentes de um motociclista TrailBook
 const HOME_SLUG_CANDIDATES = [
-  "cadastrar-moto",
-  "registrar-manutencao",
-  "plano-manutencao",
-  "health-avaliacao",     // Saúde da Moto e Check-up
-  "check-up-laudo",       // Gerar e consultar um Laudo
-  "passaporte-digital",
+  "cadastrar-moto",           // Cadastrar ou gerenciar minha moto
+  "registrar-manutencao",     // Registrar uma manutenção
+  "health-avaliacao",         // Ver a saúde da minha moto
+  "check-up-laudo",           // Gerar ou consultar um Laudo
+  "plano-manutencao",         // Entender meu plano de manutenção
+  "passaporte-digital",       // Compartilhar o Passaporte Digital
+  // Candidatos de fallback (assumem quando módulo não elegível):
+  "fiscalizacao-laudo",       // Fiscalização (beta — aparece se módulo elegível)
   "selos-qualidade",
   "meus-itens",
   "abrir-chamado",
