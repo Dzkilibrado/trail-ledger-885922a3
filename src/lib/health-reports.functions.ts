@@ -225,6 +225,7 @@ export const getPublicHealthReport = createServerFn({ method: "GET" })
         origin_doc_type: string | null;
         origin_doc_name: string | null;
         origin_doc_number: string | null;
+        origin_doc_mime: string | null;
       } | null) ?? null,
       snapshot,
     };

@@ -9,7 +9,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import QRCode from "qrcode";
-import { Copy, QrCode, ShieldOff, Timer, Loader2, AlertTriangle } from "lucide-react";
+import { Copy, QrCode, ShieldOff, Timer, Loader2, AlertTriangle, FileDown } from "lucide-react";
 import { shareUrl } from "@/lib/external-links";
 import { Button } from "@/components/ui/button";
 import { TBBottomSheet } from "@/design-system/overlays/TBBottomSheet";
@@ -113,6 +113,29 @@ export function FiscalShareDialog({ reportId, reportStatus, reportCode, open, on
       toast.success("Acesso revogado.");
     },
   });
+
+  const downloadFiscalPdf = useCallback(async (token: string) => {
+    try {
+      const { getPublicHealthReport } = await import("@/lib/health-reports.functions");
+      const { buildFiscalPdf } = await import("@/lib/health-reports/fiscal-pdf");
+      const res = await getPublicHealthReport({ data: { token } });
+      if (!res.ok) { toast.error("Nao foi possivel gerar o PDF."); return; }
+      const blob = await buildFiscalPdf({
+        snapshot: (res as any).snapshot ?? {},
+        code: res.code,
+        issuedAt: res.issuedAt,
+        status: res.status,
+        fiscal: (res as any).fiscal ?? null,
+        docImageDataUrl: null, // proprietario autenticado pode buscar — pendencia de homologacao
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "fiscalizacao-" + res.code + ".pdf";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (_) { toast.error("Erro ao gerar PDF."); }
+  }, []);
 
   const generateQr = useCallback(async (token: string) => {
     if (qrMap[token]) return;
@@ -219,6 +242,10 @@ export function FiscalShareDialog({ reportId, reportStatus, reportCode, open, on
                     </Button>
                     <Button variant="outline" size="sm" className="flex-1" onClick={() => doShare(s.public_token)}>
                       Compartilhar
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => downloadFiscalPdf(s.public_token)}
+                      title="Baixar PDF para fiscalizacao">
+                      <FileDown className="h-3.5 w-3.5" />
                     </Button>
                     <Button
                       variant="outline" size="sm"

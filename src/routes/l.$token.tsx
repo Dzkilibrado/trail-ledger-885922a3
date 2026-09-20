@@ -106,6 +106,7 @@ function FiscalPublicView({ data }: { data: any }) {
     origin_doc_type: string | null;
     origin_doc_name: string | null;
     origin_doc_number: string | null;
+    origin_doc_mime: string | null;
   } | null;
 
   const [docUrl, setDocUrl] = useState<string | null>(null);
