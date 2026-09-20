@@ -96,7 +96,8 @@ export function Cockpit({ motoId }: { motoId: string }) {
     });
   }, [moto.data, events.data, schedules.data, attachments.data, isOwner]);
 
-  if (moto.isLoading || !snapshot || !moto.data) {
+  // Loading: query em andamento OU dados chegaram mas snapshot ainda calculando
+  if (moto.isLoading || (!moto.data && !moto.isError) || (!moto.isError && moto.data && !snapshot)) {
     return (
       <div className="mx-auto max-w-2xl space-y-4">
         <div className="surface-elevated h-56 animate-pulse rounded-3xl" />
@@ -109,11 +110,47 @@ export function Cockpit({ motoId }: { motoId: string }) {
     );
   }
 
+  // Erro de rede/autenticação — diferente de "não encontrada"
+  if (moto.isError) {
+    const isNotFound = (moto.error as any)?.code === "PGRST116" ||
+      (moto.error as any)?.message?.includes("0 rows");
+    return (
+      <div className="surface-elevated mx-auto max-w-md rounded-2xl p-10 text-center">
+        <AlertTriangle className="mx-auto h-10 w-10 text-destructive" />
+        {isNotFound ? (
+          <>
+            <h2 className="mt-4 font-display text-xl font-bold">Moto não encontrada</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Ela pode ter sido removida ou pertence a outro usuário.
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 className="mt-4 font-display text-xl font-bold">Erro ao carregar</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Verifique sua conexão e tente novamente.
+            </p>
+            <button
+              onClick={() => moto.refetch()}
+              className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+            >
+              Tentar novamente
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // Moto não encontrada (sem erro de rede — dados ausentes após load)
   if (!moto.data) {
     return (
       <div className="surface-elevated mx-auto max-w-md rounded-2xl p-10 text-center">
         <AlertTriangle className="mx-auto h-10 w-10 text-destructive" />
         <h2 className="mt-4 font-display text-xl font-bold">Moto não encontrada</h2>
+        <p className="mt-2 text-sm text-muted-foreground">
+          Ela pode ter sido removida ou pertence a outro usuário.
+        </p>
       </div>
     );
   }
@@ -154,15 +191,15 @@ export function Cockpit({ motoId }: { motoId: string }) {
       {/* Saudação contextual — vinda da TIL */}
       <div className="flex items-start gap-2 rounded-2xl bg-primary/5 px-4 py-3 text-sm text-foreground/90 animate-fade-in">
         <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-primary" aria-hidden />
-        <p className="leading-snug">{snapshot.greeting}</p>
+        <p className="leading-snug">{snapshot!.greeting}</p>
       </div>
 
-      <HealthHeroWidget snapshot={snapshot} />
+      <HealthHeroWidget snapshot={snapshot!} />
 
       {/* Card dinâmico de prioridade — aparece só quando há pendência */}
-      <NextActionWidget snapshot={snapshot} moto={m} />
+      <NextActionWidget snapshot={snapshot!} moto={m} />
 
-      <QuickStatsWidget snapshot={snapshot} />
+      <QuickStatsWidget snapshot={snapshot!} />
 
       {/* Áreas principais da moto — não menus */}
       <nav aria-label="Áreas da moto" className="space-y-3 pt-2">

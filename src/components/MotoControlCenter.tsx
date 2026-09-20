@@ -25,6 +25,8 @@ import {
   Archive,
   RotateCcw,
   ChevronDown,
+  Stethoscope,
+  ChevronRight,
 } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
@@ -108,7 +110,6 @@ export function MotoControlCenter({
   const [activityTypeFilter, setActivityTypeFilter] = useState<
     "all" | "maintenance" | "usage" | "incident" | "accessory" | "note"
   >("all");
-  const [moreActionsOpen, setMoreActionsOpen] = useState(false);
   const [inspectTarget, setInspectTarget] = useState<null | {
     id: string;
     name: string;
@@ -392,102 +393,118 @@ export function MotoControlCenter({
               <Stat label="Km" value={Number(m.km_total).toFixed(0)} />
               <Stat label="Investido" value={brl(totalCost)} />
             </div>
-            <div className="flex flex-wrap gap-2">
-              {isOwner && (
-                <>
-                  <Button
-                    className="btn-glow"
-                    onClick={() =>
-                      navigate({
-                        to: "/motorcycles/$id/registrar-manutencao" as never,
-                        params: { id: m.id } as never,
-                      })
-                    }
-                  >
-                    <Wrench className="h-4 w-4" /> Registrar manutenção
-                  </Button>
-                  <NewEventDialog
-                    moto={m}
-                    triggerLabel="Registrar atividade"
-                    open={autoOpenEvent}
-                    onOpenChange={(v) => setAutoOpenEvent(v ? true : undefined)}
-                  />
-                </>
-              )}
-              <Button variant="outline" asChild className="btn-glow">
-                <Link to="/motorcycles/$id/passport" params={{ id: m.id }}>
-                  <BadgeCheck className="h-4 w-4" /> Passaporte Digital
-                </Link>
-              </Button>
-              {!isArchived && (
+            {/* ── AÇÕES PRINCIPAIS ── */}
+            {isOwner && !isArchived && (
+              <div className="grid grid-cols-2 gap-3">
                 <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setMoreActionsOpen((v) => !v)}
+                  className="btn-glow col-span-2 h-12 text-base"
+                  onClick={() =>
+                    navigate({
+                      to: "/motorcycles/$id/registrar-manutencao" as never,
+                      params: { id: m.id } as never,
+                    })
+                  }
                 >
-                  <ChevronDown
-                    className={`h-4 w-4 transition-transform ${moreActionsOpen ? "rotate-180" : ""}`}
-                  />
-                  {moreActionsOpen ? "Menos opções" : "Mais opções"}
+                  <Wrench className="h-4 w-4" /> Registrar manutenção
                 </Button>
-              )}
-              {!isOwner && currentUserId && (
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
-                  <Eye className="h-3.5 w-3.5" /> Modo somente leitura — você não é o proprietário
-                  desta moto
-                </span>
-              )}
+                <NewEventDialog
+                  moto={m}
+                  triggerLabel="Registrar atividade"
+                  open={autoOpenEvent}
+                  onOpenChange={(v) => setAutoOpenEvent(v ? true : undefined)}
+                />
+              </div>
+            )}
+
+            {/* ── SAÚDE E DOCUMENTOS ── */}
+            <div className="space-y-1">
+              <p className="px-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Saúde e documentos</p>
+              <div className="rounded-2xl border border-border bg-card overflow-hidden divide-y divide-border">
+                <Link to="/motorcycles/$id/checkups" params={{ id: m.id }}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors">
+                  <Stethoscope className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">Check-ups e Laudos</p>
+                    <p className="text-xs text-muted-foreground">Avaliação e resultado formal</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </Link>
+                <Link to="/motorcycles/$id/passport" params={{ id: m.id }}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors">
+                  <BadgeCheck className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">Passaporte Digital</p>
+                    <p className="text-xs text-muted-foreground">Apresentação e compartilhamento</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                </Link>
+                {isOwner && (
+                  <Link to="/motorcycles/$id/certificate" params={{ id: m.id }}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors">
+                    <QrCode className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">Certificado Digital</p>
+                      <p className="text-xs text-muted-foreground">Documento público configurável</p>
+                    </div>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </Link>
+                )}
+              </div>
             </div>
-            {moreActionsOpen && (
-              <div className="flex flex-wrap gap-2 rounded-xl border border-border bg-muted/20 p-3">
-                {isOwner && (
-                  <Button variant="outline" asChild>
-                    <Link to="/motorcycles/$id/editar" params={{ id: m.id }}>
-                      <Pencil className="h-4 w-4" /> Editar dados da moto
-                    </Link>
-                  </Button>
-                )}
-                {isOwner && (
-                  <Button variant="outline" asChild>
-                    <Link to="/motorcycles/$id/components" params={{ id: m.id }}>
-                      <Wand2 className="h-4 w-4" /> Componentes
-                    </Link>
-                  </Button>
-                )}
-                {isOwner && (
+
+            {/* ── GESTÃO DA MOTO ── */}
+            {isOwner && (
+              <div className="space-y-1">
+                <p className="px-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Gestão</p>
+                <div className="rounded-2xl border border-border bg-card overflow-hidden divide-y divide-border">
+                  <Link to="/motorcycles/$id/editar" params={{ id: m.id }}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors">
+                    <Pencil className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="flex-1 text-sm font-medium">Editar dados da moto</span>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </Link>
+                  <Link to="/motorcycles/$id/components" params={{ id: m.id }}
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors">
+                    <Wand2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                    <span className="flex-1 text-sm font-medium">Componentes</span>
+                    <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                  </Link>
                   <PlanCatalogSyncDialog
                     moto={m}
                     trigger={
-                      <Button variant="outline">
-                        <Wand2 className="h-4 w-4" /> Atualizar plano com catálogo
-                      </Button>
+                      <button type="button" className="flex w-full items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors text-left">
+                        <Wand2 className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <span className="flex-1 text-sm font-medium">Atualizar plano com catálogo</span>
+                        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      </button>
                     }
                   />
-                )}
-                {isOwner && (
-                  <Button variant="outline" asChild>
-                    <Link to="/motorcycles/$id/certificate" params={{ id: m.id }}>
-                      <QrCode className="h-4 w-4" /> Certificado Digital
-                    </Link>
-                  </Button>
-                )}
-                {isOwner &&
-                  (pendingTransfer.data ? (
-                    <Button variant="outline" disabled className="text-amber-400">
-                      <ArrowRightLeft className="h-4 w-4" /> Transferência pendente
-                    </Button>
+                </div>
+              </div>
+            )}
+
+            {/* ── PROPRIEDADE ── */}
+            {isOwner && !isArchived && (
+              <div className="space-y-1">
+                <p className="px-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Propriedade</p>
+                <div className="rounded-2xl border border-border bg-card overflow-hidden divide-y divide-border">
+                  {pendingTransfer.data ? (
+                    <div className="flex items-center gap-3 px-4 py-3 opacity-60">
+                      <ArrowRightLeft className="h-4 w-4 shrink-0 text-amber-400" />
+                      <span className="flex-1 text-sm font-medium text-amber-400">Transferência pendente</span>
+                    </div>
                   ) : (
                     <TransferOwnershipDialog
                       motorcycleId={m.id}
                       trigger={
-                        <Button variant="outline">
-                          <ArrowRightLeft className="h-4 w-4" /> Transferir
-                        </Button>
+                        <button type="button" className="flex w-full items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors text-left">
+                          <ArrowRightLeft className="h-4 w-4 shrink-0 text-muted-foreground" />
+                          <span className="flex-1 text-sm font-medium">Transferir moto</span>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        </button>
                       }
                     />
-                  ))}
-                {isOwner && !isArchived && (
+                  )}
                   <EmitReceiptDialog
                     motorcycleId={m.id}
                     onIssued={() => {
@@ -499,12 +516,22 @@ export function MotoControlCenter({
                       qc.invalidateQueries({ queryKey: ["smart-receipts", m.id] });
                     }}
                     trigger={
-                      <Button variant="outline" className="btn-glow">
-                        <FileSignature className="h-4 w-4" /> Vender / Emitir Recibo
-                      </Button>
+                      <button type="button" className="flex w-full items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors btn-glow text-left">
+                        <FileSignature className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <span className="flex-1 text-sm font-medium">Vender / Emitir Recibo</span>
+                        <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground" />
+                      </button>
                     }
                   />
-                )}
+                </div>
+              </div>
+            )}
+
+            {/* ── ZONA DE RISCO ── */}
+            {isOwner && (
+              <div className="space-y-1">
+                <p className="px-1 text-xs font-semibold uppercase tracking-widest text-muted-foreground">Zona de risco</p>
+                <div className="rounded-2xl border border-destructive/20 bg-card overflow-hidden divide-y divide-border">
                 {isOwner && !isArchived && (
                   <AlertDialog
                     onOpenChange={(o) => {
@@ -703,6 +730,7 @@ export function MotoControlCenter({
                     </AlertDialogContent>
                   </AlertDialog>
                 )}
+                </div>
               </div>
             )}
           </div>

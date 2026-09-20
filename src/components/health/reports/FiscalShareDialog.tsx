@@ -228,31 +228,40 @@ export function FiscalShareDialog({ reportId, reportStatus, reportCode, open, on
               const qr = qrMap[s.public_token];
               if (!qr) generateQr(s.public_token);
               return (
-                <div key={s.id} className="rounded-xl border border-border bg-card p-3 space-y-2">
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Timer className="h-3.5 w-3.5 shrink-0" />
-                    <span>Expira em {s.expires_at ? formatExpiry(s.expires_at) : "?"}</span>
-                  </div>
+                <div key={s.id} className="rounded-xl border border-border bg-card p-4 space-y-4">
+                  {/* QR centralizado */}
                   {qr
-                    ? <img src={qr} alt="QR do acesso fiscal" className="mx-auto rounded-lg w-44 h-44" />
-                    : <div className="mx-auto w-44 h-44 rounded-lg bg-muted animate-pulse" />}
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => copyLink(s.public_token)}>
-                      <Copy className="mr-1.5 h-3.5 w-3.5" /> Copiar
+                    ? <img src={qr} alt="QR do acesso fiscal" className="mx-auto rounded-xl w-52 h-52" />
+                    : <div className="mx-auto w-52 h-52 rounded-xl bg-muted animate-pulse" />}
+
+                  {/* Expiração */}
+                  <div className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
+                    <Timer className="h-4 w-4 shrink-0" />
+                    <span>Expira em <strong>{s.expires_at ? formatExpiry(s.expires_at) : "?"}</strong></span>
+                  </div>
+
+                  {/* Ações principais */}
+                  <div className="flex flex-col gap-2">
+                    <Button variant="outline" className="w-full" onClick={() => copyLink(s.public_token)}>
+                      <Copy className="mr-2 h-4 w-4" /> Copiar link
                     </Button>
-                    <Button variant="outline" size="sm" className="flex-1" onClick={() => doShare(s.public_token)}>
+                    <Button variant="outline" className="w-full" onClick={() => doShare(s.public_token)}>
                       Compartilhar
                     </Button>
-                    <Button variant="outline" size="sm" onClick={() => downloadFiscalPdf(s.public_token)}
-                      title="Baixar PDF para fiscalizacao">
-                      <FileDown className="h-3.5 w-3.5" />
+                    <Button variant="outline" className="w-full" onClick={() => downloadFiscalPdf(s.public_token)}>
+                      <FileDown className="mr-2 h-4 w-4" /> Baixar PDF
                     </Button>
+                  </div>
+
+                  {/* Ação destrutiva separada */}
+                  <div className="border-t border-border pt-3">
                     <Button
-                      variant="outline" size="sm"
-                      className="text-destructive border-destructive/30 hover:bg-destructive/10"
-                      onClick={() => revoke.mutate(s.id)} disabled={revoke.isPending}
+                      variant="outline"
+                      className="w-full text-destructive border-destructive/30 hover:bg-destructive/10"
+                      onClick={() => revoke.mutate(s.id)}
+                      disabled={revoke.isPending}
                     >
-                      <ShieldOff className="h-3.5 w-3.5" />
+                      <ShieldOff className="mr-2 h-4 w-4" /> Revogar acesso
                     </Button>
                   </div>
                 </div>
