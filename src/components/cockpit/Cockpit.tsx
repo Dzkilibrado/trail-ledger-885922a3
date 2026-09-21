@@ -29,6 +29,50 @@ import { useActiveMotorcycle } from "@/hooks/useActiveMotorcycle";
  * - Nenhum cálculo aqui — tudo vem do snapshot da TIL.
  * - Mobile-first; desktop é apenas adaptação centralizada.
  */
+
+/**
+ * Painel de diagnóstico para tela de erro na Central da Moto.
+ * Exibe apenas em homologação/admin — sem dados sensíveis.
+ */
+function CockpitDiag({ motoId, moto }: { motoId: string; moto: ReturnType<typeof import("@tanstack/react-query")["useQuery"]> }) {
+  const [open, setOpen] = useState(false);
+  const isHomolog = window.location.hostname.includes("lovable") ||
+    window.location.pathname.startsWith("/admin");
+  if (!isHomolog) return null;
+  const diag = {
+    ts: new Date().toISOString(),
+    pathname: window.location.pathname,
+    motoId,
+    isLoading: moto.isLoading,
+    isFetching: moto.isFetching,
+    isPending: moto.isPending,
+    isError: moto.isError,
+    errorCode: (moto.error as any)?.code ?? null,
+    errorMsg: String((moto.error as any)?.message ?? "").slice(0, 120),
+    hasData: !!moto.data,
+    dataStatus: (moto.data as any)?.status ?? null,
+  };
+  return (
+    <div className="mt-4 text-left">
+      <button onClick={() => setOpen(!open)}
+        className="text-xs text-muted-foreground underline underline-offset-2">
+        {open ? "Fechar diagnóstico" : "Diagnóstico (homologação)"}
+      </button>
+      {open && (
+        <pre className="mt-2 max-h-48 overflow-auto rounded-lg bg-muted p-3 text-left text-xs font-mono">
+          {JSON.stringify(diag, null, 2)}
+        </pre>
+      )}
+      {open && (
+        <button onClick={() => navigator.clipboard?.writeText(JSON.stringify(diag, null, 2))}
+          className="mt-1 text-xs text-primary underline underline-offset-2">
+          Copiar diagnóstico
+        </button>
+      )}
+    </div>
+  );
+}
+
 export function Cockpit({ motoId }: { motoId: string }) {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const { setActiveId } = useActiveMotorcycle();
@@ -46,6 +90,9 @@ export function Cockpit({ motoId }: { motoId: string }) {
       if (error) throw error;
       return data;
     },
+    // Manter dado anterior durante refetch — evita falso "Moto não encontrada"
+    placeholderData: (prev: any) => prev,
+    staleTime: 30_000,
   });
 
   const events = useQuery({
@@ -136,6 +183,8 @@ export function Cockpit({ motoId }: { motoId: string }) {
             >
               Tentar novamente
             </button>
+            {/* Diagnóstico — visível apenas em homologação */}
+            <CockpitDiag motoId={motoId} moto={moto} />
           </>
         )}
       </div>

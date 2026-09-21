@@ -48,7 +48,13 @@ function CertificatePage() {
 
   const moto = useQuery({
     queryKey: ["motorcycle", id],
-    queryFn: async () => (await supabase.from("motorcycles").select("*").eq("id", id).single()).data,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("motorcycles").select("*").eq("id", id).single();
+      if (error) throw error;
+      return data;
+    },
+    placeholderData: (prev: any) => prev,
+    staleTime: 30_000,
   });
 
   const certs = useQuery({
@@ -140,8 +146,24 @@ function CertificatePage() {
   const m = moto.data;
   const motoLabel = useMemo(() => m?.nickname || m?.model || "Moto", [m]);
 
-  if (moto.isLoading || certs.isLoading) {
+  if (moto.isLoading || certs.isLoading || (!moto.data && !moto.isError)) {
     return <div className="surface-elevated h-64 animate-pulse rounded-2xl" />;
+  }
+  if (moto.isError && !moto.data) {
+    const isNotFound = (moto.error as any)?.code === "PGRST116";
+    return (
+      <div className="surface-elevated rounded-2xl p-10 text-center">
+        <h2 className="font-display text-xl font-bold">
+          {isNotFound ? "Moto não encontrada" : "Erro ao carregar"}
+        </h2>
+        {!isNotFound && (
+          <button onClick={() => moto.refetch()}
+            className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+            Tentar novamente
+          </button>
+        )}
+      </div>
+    );
   }
   if (!m) {
     return (

@@ -140,6 +140,9 @@ export function MotoControlCenter({
       if (error) throw error;
       return data;
     },
+    // Manter dado anterior durante refetch para evitar falso "Moto não encontrada"
+    placeholderData: (prev: any) => prev,
+    staleTime: 30_000, // 30s — evita refetch na troca de rota
   });
 
   const pendency = useMotoDocumentPendency(id);
@@ -270,7 +273,8 @@ export function MotoControlCenter({
   // Persiste o score recalculado quando muda (hook deve vir antes de qualquer return)
   useSyncConservation(m?.id ?? null, m?.conservation_score ?? 0, conservation.score);
 
-  if (moto.isLoading) {
+  // Loading: query em andamento ou sem dado ainda (mas não em erro)
+  if (moto.isLoading || (!moto.data && !moto.isError)) {
     return (
       <div className="space-y-4">
         <div className="surface-elevated h-56 animate-pulse rounded-2xl" />
@@ -278,6 +282,40 @@ export function MotoControlCenter({
       </div>
     );
   }
+
+  // Erro de rede: diferente de "não encontrada"
+  if (moto.isError && moto.data === undefined) {
+    const isNotFound = (moto.error as any)?.code === "PGRST116" ||
+      (moto.error as any)?.message?.includes("0 rows");
+    return (
+      <div className="surface-elevated rounded-2xl p-10 text-center">
+        <AlertTriangle className="mx-auto h-10 w-10 text-destructive" />
+        {isNotFound ? (
+          <>
+            <h2 className="mt-4 font-display text-xl font-bold">Moto não encontrada</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Ela pode ter sido removida ou pertence a outro usuário.
+            </p>
+          </>
+        ) : (
+          <>
+            <h2 className="mt-4 font-display text-xl font-bold">Erro ao carregar</h2>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Verifique sua conexão e tente novamente.
+            </p>
+            <button
+              onClick={() => moto.refetch()}
+              className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground"
+            >
+              Tentar novamente
+            </button>
+          </>
+        )}
+      </div>
+    );
+  }
+
+  // Sem dado e sem erro explícito (estado improvável com placeholderData)
   if (!m) {
     return (
       <div className="surface-elevated rounded-2xl p-10 text-center">

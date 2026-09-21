@@ -64,8 +64,13 @@ function Passport() {
 
   const moto = useQuery({
     queryKey: ["motorcycle", id],
-    queryFn: async () =>
-      (await supabase.from("motorcycles").select("*").eq("id", id).single()).data,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("motorcycles").select("*").eq("id", id).single();
+      if (error) throw error;
+      return data;
+    },
+    placeholderData: (prev: any) => prev,
+    staleTime: 30_000,
   });
   const events = useQuery({
     queryKey: ["events", id],
@@ -236,13 +241,30 @@ function Passport() {
     diamond: "Diamante",
   };
 
-  if (moto.isLoading) {
+  if (moto.isLoading || (!moto.data && !moto.isError)) {
     return (
       <div className="space-y-4 px-1">
         <div className="h-10 w-48 animate-pulse rounded-xl bg-muted" />
         <div className="h-40 animate-pulse rounded-2xl bg-muted" />
         <div className="h-28 animate-pulse rounded-2xl bg-muted" />
         <div className="h-28 animate-pulse rounded-2xl bg-muted" />
+      </div>
+    );
+  }
+  if (moto.isError && !moto.data) {
+    const isNotFound = (moto.error as any)?.code === "PGRST116";
+    return (
+      <div className="surface-elevated rounded-2xl p-10 text-center">
+        <AlertTriangle className="mx-auto h-10 w-10 text-destructive" />
+        <h2 className="mt-4 font-display text-xl font-bold">
+          {isNotFound ? "Moto não encontrada" : "Erro ao carregar"}
+        </h2>
+        {!isNotFound && (
+          <button onClick={() => moto.refetch()}
+            className="mt-4 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground">
+            Tentar novamente
+          </button>
+        )}
       </div>
     );
   }
