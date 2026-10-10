@@ -3884,6 +3884,20 @@ export type Database = {
           km_total: number
         }[]
       }
+      commit_usage_increment: {
+        Args: {
+          _amount: number
+          _date: string
+          _location?: string
+          _moto: string
+          _request_id?: string
+        }
+        Returns: {
+          event_id: string
+          hours_total: number
+          km_total: number
+        }[]
+      }
       commit_usage_reading: {
         Args: {
           _date: string
