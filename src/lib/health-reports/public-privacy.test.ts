@@ -153,4 +153,25 @@ describe('Correção 01 — PostgreSQL isolado, RPC direta e defesa adicional', 
     expect((await signAuthorizedFiscalDocument({ok:true,bucket:'b',storage_path:'p',ttl_seconds:301},sign)).ok).toBe(false);
     expect(calls).toBe(0);
   });
+  it('objetos e arrays malformados não fazem campos desconhecidos atravessarem a lista', () => {
+    const malformed={...snapshot,components:[{...snapshot.components[0],reasons:[{cpf:'PRIVATE_SENTINEL'},'reason']}],history:{...snapshot.history,lastInspections:[null,{date:'synthetic',decision:'good',notes:'PRIVATE_SENTINEL'}]}};
+    const result=JSON.parse(sql(`SELECT public.health_public_snapshot(${quote(malformed)},ARRAY['components','history']);`));
+    expect(result).toEqual(sanitizePublicSnapshot(malformed,['components','history']));
+    expect(result.components[0].reasons).toEqual(['reason']); expect(result.history.lastInspections).toHaveLength(1);
+    expect(JSON.stringify(result)).not.toContain('PRIVATE_SENTINEL');
+  });
+  it('combinação de seções desconhecidas não amplia acesso', () => {
+    const res=JSON.parse(sql(`SELECT public.health_public_snapshot(${quote(snapshot)},ARRAY['summary','owner','fiscal','history_extra']);`));
+    expect(res).toEqual(sanitizePublicSnapshot(snapshot,['summary'])); expect(res).not.toHaveProperty('history');
+  });
+  it('matriz dos cinco compartilhamentos existentes preserva expiração e autorização', () => {
+    const matrix=['expired','expired','expired','expired','synthetic-buyer'].map(token=>rpc(token));
+    expect(matrix.map(x=>x.ok)).toEqual([false,false,false,false,true]);
+    expect(matrix[4].allowed_sections).toEqual([...all].sort()); expect(matrix[4].fiscal).toBeNull();
+  });
+  it('documento de tipo não autorizado é negado mesmo na mesma moto', () => {
+    sql(`UPDATE public.motorcycle_documents SET doc_type='manual' WHERE id='${did}';`);
+    expect(doc().reason).toBe('document_not_found');
+    sql(`UPDATE public.motorcycle_documents SET doc_type='invoice' WHERE id='${did}';`);
+  });
 });
