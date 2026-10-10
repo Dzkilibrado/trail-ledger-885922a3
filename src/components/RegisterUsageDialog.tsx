@@ -31,9 +31,9 @@ export function RegisterUsageDialog({ moto, onClose }: { moto: Motorcycle | null
     request.current ??= crypto.randomUUID();
     submitted.current = true;
     try {
-      const { data, error: failure } = await supabase.rpc("commit_usage_increment" as never, {
+      const { data, error: failure } = await supabase.rpc("commit_usage_increment", {
         _moto: moto.id, _date: date, _amount: Number(reading.replace(",", ".")), _location: location.trim(), _request_id: request.current,
-      } as never);
+      });
       if (failure) {
         // A confirmed RPC rejection rolls back; a transport failure retains the retry identity.
         if (["P0001", "42501", "22003", "PGRST202", "42883"].includes(failure.code)) { request.current = null; submitted.current = false; }
