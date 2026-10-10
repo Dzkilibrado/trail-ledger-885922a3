@@ -47,7 +47,7 @@ beforeAll(() => {
     IF NOT EXISTS(SELECT FROM pg_roles WHERE rolname='outsider') THEN CREATE ROLE outsider; END IF;
     END $$;`);
   sql(`CREATE TABLE public.health_reports(id uuid,owner_id uuid,issued_by uuid,motorcycle_id uuid,code text,status text,issued_at timestamptz,valid_until timestamptz,valid_hours_limit numeric,valid_km_limit numeric,outdated_at timestamptz,outdated_reason text,snapshot_sha256 text,format_version text,revoked_at timestamptz);
-  CREATE TABLE public.health_report_shares(id uuid,public_token text,report_id uuid,preset text,allowed_sections text[],expires_at timestamptz,revoked_at timestamptz);
+  CREATE TABLE public.health_report_shares(id uuid,public_token text,report_id uuid,preset text,allowed_sections jsonb,expires_at timestamptz,revoked_at timestamptz);
   CREATE TABLE public.health_report_snapshots(report_id uuid,payload jsonb,sha256 text);
   CREATE TABLE public.profiles(id uuid,full_name text,cpf text);
   CREATE TABLE public.motorcycle_documents(id uuid,motorcycle_id uuid,doc_type text,file_name text,mime_type text,doc_number text,doc_date date,created_at timestamptz,bucket text,storage_path text);
@@ -77,9 +77,17 @@ beforeAll(() => {
     ('expired-fiscal-2','${rid}','fiscal',ARRAY['identification','summary'],now()-interval '1 hour'),
     ('expired-fiscal-3','${rid}','fiscal',ARRAY['identification','summary'],now()-interval '1 day');`);
   sql(readFileSync('docs/security/migrations/20261010030000_health_report_public_privacy.sql','utf8'));
+  sql(readFileSync('docs/security/migrations/20261010033000_health_report_jsonb_sections.sql','utf8'));
 });
 
 describe('Correção 01 — PostgreSQL isolado, RPC direta e defesa adicional', () => {
+  it('seções JSONB de produção preservam autorização pública e rejeitam valores malformados', () => {
+    expect(sql(`SELECT data_type FROM information_schema.columns WHERE table_schema='public' AND table_name='health_report_shares' AND column_name='allowed_sections';`)).toBe('jsonb');
+    expect(JSON.parse(sql(`SELECT to_jsonb(public.health_public_sections('["summary",null,17,{"owner":true}]'::jsonb));`))).toEqual(['summary']);
+    expect(JSON.parse(sql(`SELECT to_jsonb(public.health_public_sections('{"summary":true}'::jsonb));`))).toEqual([]);
+    expect(rpc().ok).toBe(true);
+    expect(doc().ttl_seconds).toBe(300);
+  });
   it.each(['anon','authenticated'])('token válido diretamente como %s retorna somente campos permitidos', role => {
     const res=rpc('synthetic-buyer',role);
     expect(res.ok).toBe(true); expect(JSON.stringify(res)).not.toContain('PRIVATE_SENTINEL');
