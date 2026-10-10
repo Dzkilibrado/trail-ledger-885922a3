@@ -10,4 +10,6 @@
 - [x] Finalização prioritária: contrato exists comprovado, documento fiscal restrito, textos protegidos para identidades conhecidas e identificadores estruturados; 190 testes aprovados.
 - [x] Inspeção visual das páginas reais com respostas sintéticas, QR decodificado e PDF fiscal com imagem sintética; nenhuma escrita no banco compartilhado.
 - [ ] Assinatura/download/expiração reais de armazenamento — bloqueados por ausência de backend isolado com armazenamento privado; mocks não substituem essa comprovação.
-- [ ] Fase B: aplicação no banco compartilhado — bloqueada por autorização específica do proprietário.
+- [ ] Fase B autorizada em 10/10/2026: verificar dependências, aplicar somente a nova migration e conferir integridade e compartilhamentos básicos.
+- [ ] Publicar a versão atual após testes e conferência de segurança; verificar acesso, login e navegação.
+- [ ] Confirmar sincronização GitHub — depende de acesso ao repositório principal, indisponível nesta sessão.
