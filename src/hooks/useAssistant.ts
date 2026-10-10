@@ -18,6 +18,7 @@ import { useModules } from "@/hooks/useModules";
 import { isModuleEligible, getArticleModuleStatus } from "@/lib/assistant-module-map";
 import type { ModuleStatus } from "@/lib/modules";
 import { withReportSharingGuidance } from "@/lib/help/report-sharing-guidance";
+import { withUsageGuidance } from "@/lib/help/usage-guidance";
 
 // ── Queries KB ────────────────────────────────────────────────
 
@@ -31,7 +32,7 @@ function useAssistantKB() {
         .eq("status", "published")
         .order("sort_order", { ascending: true });
       if (error) throw error;
-      return withReportSharingGuidance((data ?? []) as HelpArticle[]);
+      return withUsageGuidance(withReportSharingGuidance((data ?? []) as HelpArticle[]));
     },
     staleTime: 5 * 60_000,
   });

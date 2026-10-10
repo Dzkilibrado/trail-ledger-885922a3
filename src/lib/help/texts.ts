@@ -95,7 +95,7 @@ export const HELP = {
   centralMoto:
     "Painel principal da sua moto: estado atual, pendências, próxima ação e atalhos para tudo o que existe sobre ela.",
   quickShortcuts:
-    "Atalhos rápidos para as áreas mais usadas. Toque para abrir direto — sem precisar navegar por menus.",
+    "Registrar Uso atualiza a leitura acumulada da moto ativa. Em Personalizar, você pode remover ou reorganizar seus atalhos; suas escolhas são mantidas.",
 } as const;
 
 export type HelpKey = keyof typeof HELP;

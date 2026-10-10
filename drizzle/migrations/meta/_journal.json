@@ -15,6 +15,13 @@
       "when": 1791602769787,
       "tag": "0001_health_report_jsonb_sections",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791605861597,
+      "tag": "0002_register_usage_reading_and_initial_shortcut",
+      "breakpoints": true
     }
   ]
 }

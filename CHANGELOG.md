@@ -1,3 +1,10 @@
+## [Homologação — Ajuste 01] — 2026-10-10 — Registrar Uso
+
+- Novo primeiro atalho inicial, inserido uma única vez na primeira leitura das preferências; remoção e ordem posteriores são respeitadas.
+- Limite ampliado de 9 para 10 para não excluir escolhas existentes.
+- Formulário de data, leitura acumulada na unidade oficial e local opcional; gravação atômica pelo fluxo oficial, repetição idempotente e sincronia antes do sucesso.
+- FAQ, Assistente e orientações de atalhos atualizados; sem publicação.
+
 ## [1.9.2] — 2026-08-03 — Separação App × Site Institucional
 
 ### Alterado

@@ -1,9 +1,9 @@
 # Correção 01 — Fase A
 
 ## Ajuste 01 — Registrar Uso
-- [ ] Incluir atalho inicialmente uma única vez, preservando personalização e todos os itens.
-- [ ] Reutilizar registro oficial com formulário de data, leitura acumulada e local.
-- [ ] Validar sincronia, regras, interface e documentação sem publicação.
+- [x] Incluir atalho inicialmente uma única vez, preservando personalização e todos os itens.
+- [x] Reutilizar registro oficial com formulário de data, leitura acumulada e local.
+- [x] Validar sincronia, regras, interface e documentação sem publicação: 237 testes, build OK, interface desktop/mobile; limitações em docs/homologacao/ajuste-01-registrar-uso.md.
 
 - [x] Incorporar esclarecimento: acesso público sem login, modalidades, identificação necessária, prazos existentes e testes positivos de funcionamento.
 

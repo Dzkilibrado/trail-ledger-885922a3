@@ -2658,6 +2658,7 @@ export type Database = {
           status: Database["public"]["Enums"]["user_status"]
           uf: string | null
           updated_at: string
+          usage_shortcut_initialized: boolean
           whatsapp: string | null
           whatsapp_same_as_phone: boolean
         }
@@ -2696,6 +2697,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["user_status"]
           uf?: string | null
           updated_at?: string
+          usage_shortcut_initialized?: boolean
           whatsapp?: string | null
           whatsapp_same_as_phone?: boolean
         }
@@ -2734,6 +2736,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["user_status"]
           uf?: string | null
           updated_at?: string
+          usage_shortcut_initialized?: boolean
           whatsapp?: string | null
           whatsapp_same_as_phone?: boolean
         }
@@ -3881,6 +3884,20 @@ export type Database = {
           km_total: number
         }[]
       }
+      commit_usage_reading: {
+        Args: {
+          _date: string
+          _location?: string
+          _moto: string
+          _reading: number
+          _request_id?: string
+        }
+        Returns: {
+          event_id: string
+          hours_total: number
+          km_total: number
+        }[]
+      }
       complete_initial_review: {
         Args: {
           _confirmed_service_ids: string[]
@@ -4047,6 +4064,7 @@ export type Database = {
         Args: { allowed: string[]; payload: Json }
         Returns: Json
       }
+      initialize_usage_shortcut: { Args: never; Returns: string[] }
       is_feature_enabled: { Args: { _key: string }; Returns: boolean }
       is_moto_owner: { Args: { _moto_id: string }; Returns: boolean }
       is_public_certificate_motorcycle_photo: {
