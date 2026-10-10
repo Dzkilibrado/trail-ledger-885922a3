@@ -4042,6 +4042,7 @@ export type Database = {
         Args: { identities: string[]; value: Json }
         Returns: Json
       }
+      health_public_sections: { Args: { value: Json }; Returns: string[] }
       health_public_snapshot: {
         Args: { allowed: string[]; payload: Json }
         Returns: Json
