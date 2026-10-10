@@ -21,7 +21,7 @@ export function RegisterUsageDialog({ moto, onClose }: { moto: Motorcycle | null
   async function save(e: React.FormEvent) {
     e.preventDefault();
     if (busy.current || !moto) return;
-    const validation = validateUsageReading(moto.control_type, reading, date, current);
+    const validation = submitted.current ? null : validateUsageReading(moto.control_type, reading, date, current);
     if (validation) { setError(validation); return; }
     busy.current = true; setSaving(true); setError(null);
     request.current ??= crypto.randomUUID();
@@ -32,7 +32,7 @@ export function RegisterUsageDialog({ moto, onClose }: { moto: Motorcycle | null
       } as never);
       if (failure) {
         // A confirmed RPC rejection rolls back; a transport failure retains the retry identity.
-        if (failure.code && failure.code !== "") { request.current = null; submitted.current = false; }
+        if (failure.code === "P0001" || failure.code === "42501" || failure.code === "22003") { request.current = null; submitted.current = false; }
         throw failure;
       }
       const row = (Array.isArray(data) ? data[0] : data) as { event_id?: string } | null;

@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { Search } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 import { withReportSharingGuidance, FISCAL_GUIDANCE } from "@/lib/help/report-sharing-guidance";
+import { withUsageGuidance, USAGE_GUIDANCE } from "@/lib/help/usage-guidance";
 
 type Article = Database["public"]["Tables"]["help_articles"]["Row"];
 
@@ -26,6 +27,7 @@ export const Route = (createFileRoute as any)("/_authenticated/faq")({
 
 // ── Fallback hardcoded (usado se KB não carregar) ──────────────
 const FAQ_FALLBACK = [
+  { id: "uso", title: "Uso da motocicleta", items: [{ q: USAGE_GUIDANCE.title, a: USAGE_GUIDANCE.body_md ?? USAGE_GUIDANCE.summary }] },
   { id: "cadastro", title: "Cadastro", items: [
     { q: "Por que preciso informar meu CPF?", a: "O CPF garante que cada motocicleta tenha um dono real e único, evitando cadastros duplicados e dando validade jurídica aos documentos como o Recibo de Compra e Venda." },
     { q: "Posso alterar meu CPF?", a: "Depois de validado, o CPF só pode ser alterado por meio de um chamado no suporte, para proteger seu histórico e evitar fraudes." },
@@ -80,7 +82,7 @@ function FAQ() {
         .eq("status", "published")
         .order("sort_order");
       if (error) throw error;
-      return withReportSharingGuidance((data ?? []) as Article[]);
+      return withUsageGuidance(withReportSharingGuidance((data ?? []) as Article[]));
     },
     staleTime: 5 * 60_000,
   });
