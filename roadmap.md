@@ -1,7 +1,7 @@
 # Correção 01 — Fase A
 
 ## Ajuste 01 — Registrar Uso
-- [ ] Correção do atalho: quantidade adicional, resumo TIL, RPC independente da leitura acumulada, testes e documentação; sem publicação.
+- [x] Correção do atalho: quantidade adicional, resumo TIL, RPC independente da leitura acumulada, 267 testes e build OK; evidências em docs/homologacao/registrar-uso-adicional.md; sem publicação.
 - [ ] Aplicar nova função ao banco compartilhado — depende de aprovação específica; não aplicar durante implementação.
 - [x] Incluir atalho inicialmente uma única vez, preservando personalização e todos os itens.
 - [x] Reutilizar registro oficial com formulário de data, leitura acumulada e local.
