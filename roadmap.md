@@ -1,6 +1,6 @@
 # Correção 01 — Fase A
 
-- [ ] Incorporar esclarecimento: acesso público sem login, modalidades, identificação necessária, prazos existentes e testes positivos de funcionamento.
+- [x] Incorporar esclarecimento: acesso público sem login, modalidades, identificação necessária, prazos existentes e testes positivos de funcionamento.
 
 - [x] Implementar contratos públicos por lista de campos e defesa adicional da aplicação.
 - [x] Criar proposta SQL específica fora das migrations aplicáveis, sem aplicação no banco compartilhado.
