@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ShieldCheck, Eye, Loader2 } from "lucide-react";
-import { getPublicHealthReport } from "@/lib/health-reports.functions";
+import { getPublicHealthReport, getFiscalDocumentUrl } from "@/lib/health-reports.functions";
+import { Button } from "@/components/ui/button";
 import { ReportSnapshotView } from "@/components/health/reports/ReportSnapshotView";
 import { TBErrorState, TBLoadingState } from "@/design-system";
 import { trackHealth } from "@/lib/health-reports/telemetry";
@@ -108,7 +109,7 @@ function FiscalPublicView({ data }: { data: any }) {
     origin_doc_mime: string | null;
   } | null;
 
-  const [docUrl, setDocUrl] = useState<string | null>(null);
+  const [docError, setDocError] = useState<string | null>(null);
   const [docLoading, setDocLoading] = useState(false);
   const token = data._token as string | undefined; // passado pelo loader
 
@@ -124,15 +125,24 @@ function FiscalPublicView({ data }: { data: any }) {
 
   async function handleViewDoc() {
     if (!fiscal?.origin_doc_id || !token) return;
+    const documentWindow = window.open("about:blank", "_blank");
+    if (documentWindow) documentWindow.opener = null;
     setDocLoading(true);
+    setDocError(null);
     try {
-      const { getFiscalDocumentUrl } = await import("@/lib/health-reports.functions");
       const res = await getFiscalDocumentUrl({ data: { token, docId: fiscal.origin_doc_id } });
-      if (res.ok) {
-        window.open(res.signedUrl, "_blank", "noopener");
+      if (!res.ok) {
+        documentWindow?.close();
+        setDocError("O documento não está disponível. O acesso pode ter expirado ou sido revogado.");
+      } else if (documentWindow) {
+        documentWindow.location.href = res.signedUrl;
+      } else {
+        window.location.assign(res.signedUrl);
       }
-    } catch (_) {}
-    setDocLoading(false);
+    } catch (_) {
+      documentWindow?.close();
+      setDocError("Não foi possível abrir o documento. Tente novamente.");
+    } finally { setDocLoading(false); }
   }
 
   const ORIGIN_DOC_LABELS: Record<string, string> = {
@@ -147,7 +157,7 @@ function FiscalPublicView({ data }: { data: any }) {
         <ShieldCheck className="h-5 w-5 text-primary" />
         <div>
           <p className="text-xs font-black uppercase tracking-widest text-muted-foreground">TrailBook</p>
-          <p className="text-sm font-bold leading-none">Acesso temporário para fiscalização</p>
+          <p className="text-sm font-bold leading-none">Acesso para fiscalização</p>
         </div>
       </header>
 
@@ -201,7 +211,9 @@ function FiscalPublicView({ data }: { data: any }) {
                   <p className="text-xs text-muted-foreground">Nº {fiscal.origin_doc_number}</p>
                 )}
               </div>
-              <button
+              <Button
+                variant="outline"
+                size="icon"
                 onClick={handleViewDoc}
                 disabled={docLoading}
                 className="shrink-0 flex items-center gap-1.5 rounded-lg border border-border bg-muted px-3 py-1.5 text-sm font-medium hover:bg-muted/80 transition"
@@ -211,12 +223,14 @@ function FiscalPublicView({ data }: { data: any }) {
                   ? <Loader2 className="h-4 w-4 animate-spin" />
                   : <Eye className="h-4 w-4" />}
                 <span className="hidden sm:inline">Visualizar</span>
-              </button>
+              </Button>
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">Nenhum documento de origem cadastrado.</p>
           )}
         </section>
+
+        {docError && <p role="alert" className="text-sm text-destructive">{docError}</p>}
 
         {/* Laudo */}
         <section className="rounded-2xl border border-border bg-card p-4 space-y-1">
@@ -234,7 +248,7 @@ function FiscalPublicView({ data }: { data: any }) {
       {/* Rodapé */}
       <footer className="border-t border-border px-4 py-3 text-center space-y-1">
         <p className="text-xs text-muted-foreground leading-relaxed">
-          Este acesso foi compartilhado voluntariamente pelo proprietário e possui validade temporária.
+          Este acesso foi compartilhado voluntariamente pelo proprietário.
           Não substitui documento oficial governamental.
         </p>
         {expiresAt ? (
@@ -243,7 +257,7 @@ function FiscalPublicView({ data }: { data: any }) {
           </p>
         ) : (
           <p className="text-xs text-muted-foreground">
-            Este acesso tem validade temporária.
+            Acesso sem expiração definida; pode ser revogado pelo proprietário.
           </p>
         )}
       </footer>
