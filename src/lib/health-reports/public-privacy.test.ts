@@ -58,24 +58,24 @@ beforeAll(() => {
   INSERT INTO public.profiles VALUES('${uid}','Synthetic Owner','12345678909');
   INSERT INTO public.motorcycle_documents VALUES('${did}','${mid}','invoice','synthetic.pdf','application/pdf','SYNTHETIC',current_date,now(),'synthetic-bucket','private-synthetic-path');
   INSERT INTO public.health_report_shares(public_token,report_id,preset,allowed_sections,expires_at) VALUES
-  ('synthetic-buyer','${rid}','buyer',ARRAY['${all.join("','")}'],NULL),
-  ('synthetic-fiscal','${rid}','fiscal',ARRAY['${all.join("','")}'],now()+interval '1 hour'),
-  ('expired','${rid}','buyer',ARRAY['summary'],now()-interval '1 second'),
-  ('boundary','${rid}','buyer',ARRAY['summary'],now()),
-  ('missing-report','00000000-0000-4000-8000-000000000099','buyer',ARRAY['summary'],NULL),
+  ('synthetic-buyer','${rid}','buyer',to_jsonb(ARRAY['${all.join("','")}']::text[]),NULL),
+  ('synthetic-fiscal','${rid}','fiscal',to_jsonb(ARRAY['${all.join("','")}']::text[]),now()+interval '1 hour'),
+  ('expired','${rid}','buyer',to_jsonb(ARRAY['summary']::text[]),now()-interval '1 second'),
+  ('boundary','${rid}','buyer',to_jsonb(ARRAY['summary']::text[]),now()),
+  ('missing-report','00000000-0000-4000-8000-000000000099','buyer',to_jsonb(ARRAY['summary']::text[]),NULL),
   ('null-sections','${rid}','buyer',NULL,NULL),
-  ('unknown-sections','${rid}','buyer',ARRAY['owner','fiscal'],NULL),
-  ('fiscal-no-id','${rid}','fiscal',ARRAY['summary'],NULL);
-  INSERT INTO public.health_report_shares(public_token,report_id,preset,allowed_sections,revoked_at) VALUES('revoked','${rid}','buyer',ARRAY['summary'],now());`);
+  ('unknown-sections','${rid}','buyer',to_jsonb(ARRAY['owner','fiscal']::text[]),NULL),
+  ('fiscal-no-id','${rid}','fiscal',to_jsonb(ARRAY['summary']::text[]),NULL);
+  INSERT INTO public.health_report_shares(public_token,report_id,preset,allowed_sections,revoked_at) VALUES('revoked','${rid}','buyer',to_jsonb(ARRAY['summary']::text[]),now());`);
   before=sql(`SELECT md5(string_agg(payload::text||sha256,'')) FROM public.health_report_snapshots;`);
   sql(`INSERT INTO public.health_report_shares(public_token,report_id,preset,allowed_sections,expires_at) VALUES
-    ('synthetic-buyer-timed','${rid}','buyer',ARRAY['identification','summary'],now()+interval '1 hour'),
-    ('synthetic-workshop','${rid}','workshop',ARRAY['identification','components'],NULL),
-    ('synthetic-custom','${rid}','custom',ARRAY['history'],NULL),
-    ('synthetic-fiscal-unlimited','${rid}','fiscal',ARRAY['identification','summary'],NULL),
-    ('expired-fiscal-1','${rid}','fiscal',ARRAY['identification','summary'],now()-interval '1 second'),
-    ('expired-fiscal-2','${rid}','fiscal',ARRAY['identification','summary'],now()-interval '1 hour'),
-    ('expired-fiscal-3','${rid}','fiscal',ARRAY['identification','summary'],now()-interval '1 day');`);
+    ('synthetic-buyer-timed','${rid}','buyer',to_jsonb(ARRAY['identification','summary']::text[]),now()+interval '1 hour'),
+    ('synthetic-workshop','${rid}','workshop',to_jsonb(ARRAY['identification','components']::text[]),NULL),
+    ('synthetic-custom','${rid}','custom',to_jsonb(ARRAY['history']::text[]),NULL),
+    ('synthetic-fiscal-unlimited','${rid}','fiscal',to_jsonb(ARRAY['identification','summary']::text[]),NULL),
+    ('expired-fiscal-1','${rid}','fiscal',to_jsonb(ARRAY['identification','summary']::text[]),now()-interval '1 second'),
+    ('expired-fiscal-2','${rid}','fiscal',to_jsonb(ARRAY['identification','summary']::text[]),now()-interval '1 hour'),
+    ('expired-fiscal-3','${rid}','fiscal',to_jsonb(ARRAY['identification','summary']::text[]),now()-interval '1 day');`);
   sql(readFileSync('docs/security/migrations/20261010030000_health_report_public_privacy.sql','utf8'));
   sql(readFileSync('docs/security/migrations/20261010033000_health_report_jsonb_sections.sql','utf8'));
 });
@@ -200,7 +200,7 @@ describe('Correção 01 — PostgreSQL isolado, RPC direta e defesa adicional', 
   });
   it.each(all)('RPC pública autoriza apenas %s e omite cada outra seção', section => {
     const token=`section-${section}`;
-    sql(`INSERT INTO public.health_report_shares(public_token,report_id,preset,allowed_sections) VALUES('${token}','${rid}','custom',ARRAY['${section}']);`);
+    sql(`INSERT INTO public.health_report_shares(public_token,report_id,preset,allowed_sections) VALUES('${token}','${rid}','custom',to_jsonb(ARRAY['${section}']::text[]));`);
     const res=rpc(token);
     const keys: Record<string,string[]>={identification:['motorcycle'],summary:['overall','rideAnswer','nextMaintenance'],components:['components'],action_plan:['recommendations'],history:['history'],indices:['indices'],reservations:['reservations','conflicts','missingData']};
     expect(res.ok).toBe(true); expect(res.allowed_sections).toEqual([section]);
