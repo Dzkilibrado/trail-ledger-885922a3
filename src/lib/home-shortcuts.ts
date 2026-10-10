@@ -12,6 +12,7 @@ import {
   Wallet,
   CalendarDays,
   QrCode,
+  Gauge,
   type LucideIcon,
 } from "lucide-react";
 
@@ -23,6 +24,7 @@ import {
  * `needsMoto: false` — o Dashboard não injeta o parâmetro de moto nesses.
  */
 export type HomeShortcutKey =
+  | "registrar-uso"
   | "passaporte"
   | "documentos"
   | "recibo"
@@ -53,6 +55,13 @@ export interface HomeShortcutDef {
 }
 
 export const HOME_SHORTCUT_CATALOG: HomeShortcutDef[] = [
+  {
+    key: "registrar-uso",
+    label: "Registrar Uso",
+    description: "Leitura acumulada do horímetro ou da quilometragem",
+    icon: Gauge,
+    to: "/dashboard",
+  },
   {
     key: "cockpit",
     label: "Cockpit",
@@ -180,6 +189,7 @@ export const HOME_SHORTCUT_BY_KEY: Record<string, HomeShortcutDef> = Object.from
 
 /** Conjunto padrão para quem nunca personalizou (mantém o comportamento atual). */
 export const DEFAULT_HOME_SHORTCUTS: HomeShortcutKey[] = [
+  "registrar-uso",
   "passaporte",
   "documentos",
   "recibo",
@@ -191,10 +201,10 @@ export const DEFAULT_HOME_SHORTCUTS: HomeShortcutKey[] = [
 
 // 9 preenche perfeitamente 3 linhas completas no grid de 3 colunas (mobile),
 // evitando um espaço vago sobrando na última linha (ex: com 8, sobra 1 vazio).
-export const MAX_HOME_SHORTCUTS = 9;
+export const MAX_HOME_SHORTCUTS = 10;
 
 /** Resolve as chaves salvas do usuário para definições válidas, ignorando chaves desconhecidas. */
 export function resolveHomeShortcuts(keys: string[] | null | undefined): HomeShortcutDef[] {
-  const source = keys && keys.length > 0 ? keys : DEFAULT_HOME_SHORTCUTS;
+  const source = keys ?? DEFAULT_HOME_SHORTCUTS;
   return source.map((k) => HOME_SHORTCUT_BY_KEY[k]).filter((s): s is HomeShortcutDef => !!s);
 }

@@ -20,6 +20,9 @@ export const Route = createFileRoute("/_authenticated/perfil/atalhos")({
     meta: [
       { title: "Personalizar atalhos — TrailBook" },
       { name: "description", content: "Escolha quais atalhos aparecem na sua tela inicial." },
+      { property: "og:title", content: "Personalizar atalhos — TrailBook" },
+      { property: "og:description", content: "Organize seus atalhos pessoais do TrailBook." },
+      { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
     ],
   }),
   component: EditShortcutsPage,
@@ -27,18 +30,18 @@ export const Route = createFileRoute("/_authenticated/perfil/atalhos")({
 
 function EditShortcutsPage() {
   const qc = useQueryClient();
-  const { keys, isLoading } = useHomeShortcuts();
+  const { keys, isLoading, error } = useHomeShortcuts();
   const [selected, setSelected] = useState<HomeShortcutKey[]>([]);
   const [saving, setSaving] = useState(false);
   const [hydrated, setHydrated] = useState(false);
 
   // Carrega a seleção salva assim que a query resolve (uma vez só).
   useEffect(() => {
-    if (isLoading || hydrated) return;
-    const initial = (keys && keys.length > 0 ? keys : DEFAULT_HOME_SHORTCUTS) as HomeShortcutKey[];
+    if (isLoading || hydrated || error) return;
+    const initial = (keys ?? DEFAULT_HOME_SHORTCUTS) as HomeShortcutKey[];
     setSelected(initial.filter((k) => !!HOME_SHORTCUT_BY_KEY[k]));
     setHydrated(true);
-  }, [isLoading, hydrated, keys]);
+  }, [isLoading, hydrated, keys, error]);
 
   const available = HOME_SHORTCUT_CATALOG.filter((s) => !selected.includes(s.key));
   const atMax = selected.length >= MAX_HOME_SHORTCUTS;
@@ -75,13 +78,14 @@ function EditShortcutsPage() {
     const { error } = await supabase
       .from("profiles")
       .update({ home_shortcuts: selected })
-      .eq("id", uid);
+      .eq("id", uid).select("id").single();
     setSaving(false);
     if (error) return toast.error(error.message);
+    await qc.invalidateQueries({ queryKey: HOME_SHORTCUTS_QUERY_KEY });
     toast.success("Atalhos atualizados.");
-    qc.invalidateQueries({ queryKey: HOME_SHORTCUTS_QUERY_KEY });
   }
 
+  if (error) return <p role="alert">Não foi possível carregar seus atalhos. Tente novamente em instantes.</p>;
   if (isLoading || !hydrated) return <TBLoadingState label="Carregando seus atalhos…" />;
 
   return (
@@ -89,7 +93,7 @@ function EditShortcutsPage() {
       <PageHeader
         title="Personalizar atalhos"
         crumbs={[{ label: "Minha Conta", to: "/perfil" }, { label: "Atalhos" }]}
-        description="Escolha e ordene o que aparece na seção Atalhos da tela inicial. Até 9 itens."
+        description={`Escolha e ordene seus atalhos. Até ${MAX_HOME_SHORTCUTS} itens.`}
       />
 
       <div className="space-y-2">

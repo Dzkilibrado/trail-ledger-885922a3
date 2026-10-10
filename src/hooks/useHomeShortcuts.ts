@@ -8,12 +8,9 @@ async function fetchHomeShortcutKeys(): Promise<string[] | null> {
   const { data: s } = await supabase.auth.getSession();
   const uid = s.session?.user.id;
   if (!uid) return null;
-  const { data } = await supabase
-    .from("profiles")
-    .select("home_shortcuts")
-    .eq("id", uid)
-    .maybeSingle();
-  return data?.home_shortcuts ?? null;
+  const { data, error } = await supabase.rpc("initialize_usage_shortcut" as never);
+  if (error) throw error;
+  return data as string[] | null;
 }
 
 /** Atalhos personalizados do usuário para a tela inicial, já resolvidos com ícone/rota. */
@@ -27,5 +24,6 @@ export function useHomeShortcuts() {
     keys: q.data ?? null,
     shortcuts: resolveHomeShortcuts(q.data),
     isLoading: q.isLoading,
+    error: q.error,
   };
 }
