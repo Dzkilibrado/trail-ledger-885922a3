@@ -1,5 +1,10 @@
 # Correção 01 — Fase A
 
+## Ajuste 01 — Registrar Uso
+- [ ] Incluir atalho inicialmente uma única vez, preservando personalização e todos os itens.
+- [ ] Reutilizar registro oficial com formulário de data, leitura acumulada e local.
+- [ ] Validar sincronia, regras, interface e documentação sem publicação.
+
 - [x] Incorporar esclarecimento: acesso público sem login, modalidades, identificação necessária, prazos existentes e testes positivos de funcionamento.
 
 - [x] Implementar contratos públicos por lista de campos e defesa adicional da aplicação.
