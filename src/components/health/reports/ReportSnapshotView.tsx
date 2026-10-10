@@ -156,8 +156,7 @@ export function ReportSnapshotView({
               <TBCard key={group} className="space-y-2">
                 <div className="text-sm font-bold">{group}</div>
                 <ul className="space-y-2">
-                  {s.recommendations?.
-                    .filter((r) => r.groupLabel === group)
+                  {s.recommendations?.filter((r) => r.groupLabel === group)
                     .map((r) => (
                       <li key={r.title} className="text-sm">
                         <span className="font-semibold">{r.title}</span>
@@ -174,9 +173,9 @@ export function ReportSnapshotView({
       {show("history") && s.history && (
         <Section title={SECTION_LABEL.history}>
           <TBCard className="space-y-3">
-            {s.history.lastMaintenances.length > 0 ? (
+            {s.history.lastMaintenances?.length > 0 ? (
               <ul className="space-y-1 text-sm">
-                {s.history.lastMaintenances.map((m, i) => (
+                {s.history.lastMaintenances?.map((m, i) => (
                   <li key={i} className="text-muted-foreground">
                     <span className="font-semibold text-foreground">{formatDate(m.date)}</span> — {m.type}
                   </li>
@@ -185,11 +184,11 @@ export function ReportSnapshotView({
             ) : (
               <p className="text-sm text-muted-foreground">Nenhuma manutenção registrada até a emissão.</p>
             )}
-            {s.history.incidents.length > 0 && (
+            {s.history.incidents?.length > 0 && (
               <div>
                 <div className="text-sm font-bold">Ocorrências</div>
                 <ul className="space-y-1 text-sm text-muted-foreground">
-                  {s.history.incidents.map((i, idx) => (
+                  {s.history.incidents?.map((i, idx) => (
                     <li key={idx}>
                       {formatDate(i.date)} — Ocorrência registrada
                     </li>

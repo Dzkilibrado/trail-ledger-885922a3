@@ -13,7 +13,7 @@ import { Copy, QrCode, ShieldOff, Timer, Loader2, AlertTriangle, FileDown } from
 import { shareUrl } from "@/lib/external-links";
 import { Button } from "@/components/ui/button";
 import { TBBottomSheet } from "@/design-system/overlays/TBBottomSheet";
-import { FISCAL_DEFAULT_MINUTES, FISCAL_EXPIRY_OPTIONS } from "@/lib/health-reports/sections";
+import { FISCAL_DEFAULT_MINUTES, FISCAL_EXPIRY_OPTIONS, FISCAL_PRIVACY_NOTICE } from "@/lib/health-reports/sections";
 import { useModule } from "@/hooks/useModules";
 import type { ReportStatus } from "@/lib/health-reports/types";
 
@@ -121,11 +121,11 @@ export function FiscalShareDialog({ reportId, reportStatus, reportCode, open, on
       const res = await getPublicHealthReport({ data: { token } });
       if (!res.ok) { toast.error("Nao foi possivel gerar o PDF."); return; }
       const blob = await buildFiscalPdf({
-        snapshot: (res as any).snapshot ?? {},
+        snapshot: res.snapshot,
         code: res.code,
         issuedAt: res.issuedAt,
         status: res.status,
-        fiscal: (res as any).fiscal ?? null,
+        fiscal: res.fiscal,
         docImageDataUrl: null, // proprietario autenticado pode buscar — pendencia de homologacao
       });
       const url = URL.createObjectURL(blob);
@@ -190,6 +190,7 @@ export function FiscalShareDialog({ reportId, reportStatus, reportCode, open, on
               Crie um acesso temporario com as informacoes essenciais da moto e do Laudo para
               apresentacao durante uma fiscalizacao. O link expira automaticamente.
             </p>
+            <p className="text-xs text-muted-foreground">{FISCAL_PRIVACY_NOTICE}</p>
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-2">
                 Validade do acesso
