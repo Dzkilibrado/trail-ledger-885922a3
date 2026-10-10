@@ -1,0 +1,127 @@
+{
+  "issuedAt": "string",
+  "timezone": "string",
+  "formatVersion": "string",
+  "disclaimer": "string",
+  "validity": {
+    "validUntil": "string",
+    "hoursLimit": "number",
+    "kmLimit": "number",
+    "reason": "string",
+    "label": "string"
+  },
+  "motorcycle": {
+    "trailbookId": "string",
+    "brand": "string",
+    "model": "string",
+    "plate": "string",
+    "chassisMasked": "string",
+    "controlType": "string",
+    "condition": "string",
+    "yearMake": "number",
+    "yearModel": "number",
+    "displacement": "number",
+    "hoursTotal": "number",
+    "kmTotal": "number"
+  },
+  "overall": {
+    "status": "string",
+    "statusLabel": "string",
+    "headline": "string"
+  },
+  "rideAnswer": {
+    "status": "string",
+    "title": "string",
+    "message": "string",
+    "rationale": "string",
+    "disclaimer": "string",
+    "counts": {
+      "critical": "number",
+      "attention": "number",
+      "ok": "number",
+      "unknown": "number",
+      "total": "number"
+    }
+  },
+  "nextMaintenance": {
+    "name": "string",
+    "remainingLabel": "string",
+    "status": "string"
+  },
+  "components": [
+    {
+      "name": "string",
+      "category": "string",
+      "categoryLabel": "string",
+      "status": "string",
+      "statusLabel": "string",
+      "severity": "string",
+      "conclusion": "string",
+      "trend": "string",
+      "trendLabel": "string",
+      "lifeRemainingLabel": "string",
+      "nextAction": "string",
+      "dueEstimateLabel": "string",
+      "confidenceLevel": "string",
+      "confidenceLabel": "string",
+      "remainingLabel": "string",
+      "reasons": [
+        "string"
+      ],
+      "missingData": [
+        "string"
+      ],
+      "lifeRemainingPct": "number",
+      "hasConflict": "boolean",
+      "isSafetyItem": "boolean"
+    }
+  ],
+  "recommendations": [
+    {
+      "group": "string",
+      "groupLabel": "string",
+      "title": "string",
+      "recommendation": "string",
+      "status": "string",
+      "lifecycle": "string",
+      "dueEstimateLabel": "string",
+      "isSafetyItem": "boolean"
+    }
+  ],
+  "history": {
+    "lastMaintenances": [
+      {
+        "date": "string",
+        "type": "string"
+      }
+    ],
+    "lastInspections": [
+      {
+        "date": "string",
+        "decision": "string"
+      }
+    ],
+    "incidents": [
+      {
+        "date": "string"
+      }
+    ],
+    "totalEvents": "number"
+  },
+  "indices": {
+    "conservationExplanation": "string",
+    "confidenceLevel": "string",
+    "confidenceLabel": "string",
+    "confidenceExplanation": "string",
+    "conservation": "number"
+  },
+  "reservations": [
+    "string"
+  ],
+  "conflicts": [
+    "string"
+  ],
+  "missingData": [
+    "string"
+  ]
+}

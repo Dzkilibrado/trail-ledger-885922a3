@@ -9,10 +9,18 @@ import { Input } from "@/components/ui/input";
 import { PageHeader } from "@/components/PageHeader";
 import { Search } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
+import { withReportSharingGuidance, FISCAL_GUIDANCE } from "@/lib/help/report-sharing-guidance";
 
 type Article = Database["public"]["Tables"]["help_articles"]["Row"];
 
 export const Route = (createFileRoute as any)("/_authenticated/faq")({
+  head: () => ({ meta: [
+    { title: "Perguntas frequentes — TrailBook" },
+    { name: "description", content: "Dúvidas sobre motos, laudos e privacidade no TrailBook." },
+    { property: "og:title", content: "Perguntas frequentes — TrailBook" },
+    { property: "og:description", content: "Orientações sobre o TrailBook e compartilhamentos autorizados." },
+    { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
+  ] }),
   component: FAQ,
 });
 
@@ -45,7 +53,7 @@ const FAQ_FALLBACK = [
     { q: "O que é o Passaporte Digital?", a: "É uma visão pública e confiável da sua motocicleta: modelo, ano, estado de conservação, Selos conquistados e resumo do histórico." },
     { q: "Quem pode visualizar?", a: "Qualquer pessoa com quem você compartilhar o link. Você controla quando gerar e quando desativar." },
     { q: "O que é compartilhado?", a: "Apenas informações públicas: dados da moto, Selos e resumo. Documentos privados e dados pessoais não aparecem." },
-    { q: "Meus documentos ficam públicos?", a: "Não. Documentos como Nota Fiscal e Recibo ficam sempre protegidos e visíveis somente para você." },
+    { q: "Meus documentos ficam públicos?", a: "Não no compartilhamento comum. O acesso fiscal autorizado pode apresentar o documento de origem da moto por um endereço temporário." },
   ]},
   { id: "selos", title: "Selos de Qualidade", items: [
     { q: "O que significam?", a: "Os Selos mostram, de forma visual, que a sua motocicleta tem histórico comprovado — origem, documentação, manutenções e cadeia de propriedade." },
@@ -54,7 +62,8 @@ const FAQ_FALLBACK = [
     { q: "Por que um selo desapareceu?", a: "Se uma condição deixou de ser atendida, o selo é retirado automaticamente. Basta regularizar para reconquistar." },
   ]},
   { id: "seguranca", title: "Segurança e privacidade", items: [
-    { q: "Quem pode visualizar meus documentos?", a: "Apenas você. Compartilhamento só acontece por Passaporte Digital (dados públicos) ou Recibo (partes da negociação)." },
+    { q: "Quem pode visualizar meus documentos?", a: "Você e os destinatários de autorizações específicas, como as partes do Recibo ou o acesso fiscal temporário ao documento de origem." },
+    { q: "O acesso fiscal mostra meu CPF?", a: FISCAL_GUIDANCE.summary },
     { q: "Como funciona a LGPD?", a: "Seus dados são tratados conforme a LGPD: você pode consultar, atualizar e solicitar exclusão a qualquer momento pelo suporte." },
   ]},
 ];
@@ -67,11 +76,11 @@ function FAQ() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("help_articles")
-        .select("id, title, summary, body_md, module_key, status")
+        .select("id, slug, title, summary, body_md, module_key, status")
         .eq("status", "published")
         .order("sort_order");
       if (error) throw error;
-      return (data ?? []) as Article[];
+      return withReportSharingGuidance((data ?? []) as Article[]);
     },
     staleTime: 5 * 60_000,
   });

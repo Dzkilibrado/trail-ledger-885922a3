@@ -46,7 +46,8 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
   }, [error]);
 
-  const isSessionIssue = /jwt|session|sess|auth|token|401/i.test(error?.message ?? "");
+  const errorMessage = error instanceof Error ? error.message : "";
+  const isSessionIssue = /jwt|session|sess|auth|token|401/i.test(errorMessage);
 
   return (
     <div className="flex min-h-dvh items-center justify-center bg-background px-4">

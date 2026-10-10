@@ -17,6 +17,7 @@ import type { AssistantContext } from "@/lib/assistant-context";
 import { useModules } from "@/hooks/useModules";
 import { isModuleEligible, getArticleModuleStatus } from "@/lib/assistant-module-map";
 import type { ModuleStatus } from "@/lib/modules";
+import { withReportSharingGuidance } from "@/lib/help/report-sharing-guidance";
 
 // ── Queries KB ────────────────────────────────────────────────
 
@@ -30,7 +31,7 @@ function useAssistantKB() {
         .eq("status", "published")
         .order("sort_order", { ascending: true });
       if (error) throw error;
-      return (data ?? []) as HelpArticle[];
+      return withReportSharingGuidance((data ?? []) as HelpArticle[]);
     },
     staleTime: 5 * 60_000,
   });

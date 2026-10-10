@@ -64,6 +64,8 @@ export const HELP = {
   // ============ Compartilhamento ============
   sharing:
     "Toda vez que você compartilha algo do TrailBook, é por link controlado por você. Pode revogar, definir validade e ver os acessos.",
+  reportPrivacy:
+    "Compartilhamentos comuns do laudo mostram só as seções autorizadas, sem nome, CPF ou documentos de origem. No acesso fiscal autorizado, nome completo, CPF completo e documento de origem podem ser apresentados.",
 
   // ============ Recibos / Negociação ============
   buyerTrailBook:

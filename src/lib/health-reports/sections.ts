@@ -5,7 +5,8 @@ import type { ReportSection } from "./types";
 // identification: placa (mascarada), chassi (mascarado), marca/modelo/ano
 // summary: status geral (ok/atenção/necessita ação), validade, próxima manutenção
 // Excluído deliberadamente: components, action_plan, history, indices, reservations,
-// dados financeiros, fotos, documentos, histórico detalhado, dados pessoais.
+// dados financeiros, fotos e histórico detalhado. Nome, CPF completo e documento
+// de origem são exceções explícitas do acesso fiscal autorizado (fora do snapshot).
 export type SharePreset = "buyer" | "workshop" | "custom" | "fiscal";
 
 export const PRESET_SECTIONS: Record<SharePreset, ReportSection[]> = {
@@ -38,7 +39,7 @@ export const FISCAL_EXPIRY_OPTIONS: Array<{ label: string; minutes: number }> = 
 ];
 export const FISCAL_DEFAULT_MINUTES = 60; // 1 hora
 
-/** Dados que nunca são compartilhados, independentemente do preset. */
+/** Dados excluídos do compartilhamento comum. Exceção fiscal explicitada abaixo. */
 export const NEVER_SHARED = [
   "CPF e documentos pessoais",
   "Endereço, telefone e e-mail",
@@ -47,3 +48,5 @@ export const NEVER_SHARED = [
   "Regras técnicas internas do algoritmo",
   "Dados de outros proprietários",
 ];
+
+export const FISCAL_PRIVACY_NOTICE = "O acesso fiscal autorizado exibe nome completo, CPF completo e documento de origem da moto. Esses dados não são exibidos nos compartilhamentos comuns. URLs de documentos já emitidas podem permanecer acessíveis por até 5 minutos, mesmo após revogar o acesso.";

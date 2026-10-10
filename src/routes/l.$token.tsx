@@ -78,12 +78,11 @@ function PublicReportPage() {
         <h1 className="text-2xl font-black leading-tight">Laudo Inteligente {data.code}</h1>
         <p className="text-sm text-muted-foreground">
           {REPORT_STATUS_LABEL[data.status as ReportStatus] ?? data.status}
-          {data.outdatedReason ? ` · ${data.outdatedReason}` : ""}
         </p>
       </header>
 
       <ReportSnapshotView
-        snapshot={data.snapshot as Partial<HealthReportSnapshot>}
+        snapshot={data.snapshot}
         sections={data.allowedSections}
         code={data.code}
         sha256={data.sha256}
@@ -94,7 +93,7 @@ function PublicReportPage() {
 }
 // ── Tela pública de Fiscalização ─────────────────────────────
 // Mostra proprietário, moto, laudo e documento de origem
-// Dados fiscais (CPF mascarado, doc) vêm do campo `fiscal` da RPC
+// Nome, CPF COMPLETO e documento só no acesso fiscal autorizado, fora do snapshot.
 function FiscalPublicView({ data }: { data: any }) {
   const snap = data.snapshot as Partial<HealthReportSnapshot> | undefined;
   const moto = snap?.motorcycle;
