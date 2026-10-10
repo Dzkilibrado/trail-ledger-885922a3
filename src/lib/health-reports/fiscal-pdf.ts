@@ -5,7 +5,7 @@
 
 import jsPDF from "jspdf";
 import { formatDate } from "@/lib/trailbook";
-import type { HealthReportSnapshot } from "./types";
+import type { PublicHealthReportSnapshot } from "./public-types";
 
 const M = 15;
 const W = 210;
@@ -24,7 +24,7 @@ const DOC_TYPE_LABEL: Record<string, string> = {
 };
 
 export interface FiscalPdfInput {
-  snapshot: Partial<HealthReportSnapshot>;
+  snapshot: PublicHealthReportSnapshot;
   code: string;
   issuedAt: string;
   status: string;

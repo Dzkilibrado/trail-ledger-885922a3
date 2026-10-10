@@ -94,7 +94,7 @@ function PublicReportPage() {
 }
 // ── Tela pública de Fiscalização ─────────────────────────────
 // Mostra proprietário, moto, laudo e documento de origem
-// Dados fiscais (CPF mascarado, doc) vêm do campo `fiscal` da RPC
+// Nome, CPF COMPLETO e documento só no acesso fiscal autorizado, fora do snapshot.
 function FiscalPublicView({ data }: { data: any }) {
   const snap = data.snapshot as Partial<HealthReportSnapshot> | undefined;
   const moto = snap?.motorcycle;

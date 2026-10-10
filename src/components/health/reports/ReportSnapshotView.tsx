@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/trailbook";
 import { cn } from "@/lib/utils";
 import { EvaluationPill } from "@/components/health/EvaluationPill";
 import { stateFromScore } from "@/lib/ui/evaluation";
+import type { PublicHealthReportSnapshot, PublicComponent } from "@/lib/health-reports/public-types";
 
 const asStatus = (v: string): HealthStatus => (["ok", "attention", "action", "unknown"].includes(v) ? (v as HealthStatus) : "unknown");
 
@@ -29,7 +30,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function ComponentRow({ c }: { c: HealthReportSnapshot["components"][number] }) {
+function ComponentRow({ c }: { c: PublicComponent }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="rounded-xl border border-border">
@@ -81,7 +82,7 @@ export function ReportSnapshotView({
   statusLabel,
   className,
 }: {
-  snapshot: Partial<HealthReportSnapshot>;
+  snapshot: PublicHealthReportSnapshot;
   sections?: ReportSection[];
   code?: string;
   sha256?: string;
@@ -98,7 +99,6 @@ export function ReportSnapshotView({
             <div className="mb-2 text-lg font-black">
               {s.motorcycle.brand} {s.motorcycle.model}
             </div>
-            <Row label="Apelido" value={s.motorcycle.nickname} />
             <Row
               label="Ano"
               value={
@@ -143,7 +143,7 @@ export function ReportSnapshotView({
         <Section title={SECTION_LABEL.components}>
           <div className="space-y-2">
             {s.components.map((c) => (
-              <ComponentRow key={`${c.name}-${c.scheduleId}`} c={c} />
+              <ComponentRow key={`${c.name}-${c.category}`} c={c} />
             ))}
           </div>
         </Section>
@@ -156,7 +156,7 @@ export function ReportSnapshotView({
               <TBCard key={group} className="space-y-2">
                 <div className="text-sm font-bold">{group}</div>
                 <ul className="space-y-2">
-                  {s.recommendations!
+                  {s.recommendations?.
                     .filter((r) => r.groupLabel === group)
                     .map((r) => (
                       <li key={r.title} className="text-sm">
@@ -178,7 +178,7 @@ export function ReportSnapshotView({
               <ul className="space-y-1 text-sm">
                 {s.history.lastMaintenances.map((m, i) => (
                   <li key={i} className="text-muted-foreground">
-                    <span className="font-semibold text-foreground">{formatDate(m.date)}</span> — {m.title} ({m.type})
+                    <span className="font-semibold text-foreground">{formatDate(m.date)}</span> — {m.type}
                   </li>
                 ))}
               </ul>
@@ -191,7 +191,7 @@ export function ReportSnapshotView({
                 <ul className="space-y-1 text-sm text-muted-foreground">
                   {s.history.incidents.map((i, idx) => (
                     <li key={idx}>
-                      {formatDate(i.date)} — {i.title}
+                      {formatDate(i.date)} — Ocorrência registrada
                     </li>
                   ))}
                 </ul>
@@ -258,7 +258,7 @@ export function ReportSnapshotView({
           {s.issuedAt && <Row label="Emitido em" value={formatDate(s.issuedAt)} />}
           <Row
             label="Versões"
-            value={`${s.formatVersion ?? "—"} · ${s.tilVersion ?? "—"} · ${s.ruleVersion ?? "—"}`}
+            value={s.formatVersion ?? "—"}
           />
           {sha256 && (
             <p className="flex items-start gap-2 break-all pt-2 text-[11px] text-muted-foreground">

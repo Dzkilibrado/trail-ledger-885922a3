@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { snapshotHash } from "@/lib/health-reports/snapshot";
-import { sanitizePublicSnapshot } from "@/lib/health-reports/public-payload";
+import { sanitizePublicSnapshot, publicSections, sanitizeFiscal } from "@/lib/health-reports/public-payload";
 import type { HealthReportSnapshot, ReportSection } from "@/lib/health-reports/types";
 
 /** Abre um Check-up (run). O run é a chave de idempotência da emissão. */
@@ -205,28 +205,21 @@ export const getPublicHealthReport = createServerFn({ method: "GET" })
     }
     await supabase.rpc("log_health_report_access" as never, { _token: data.token, _result: "ok" } as never);
 
-    const allowed = (res.allowed_sections as ReportSection[]) ?? [];
-    const snapshot = sanitizePublicSnapshot(res.snapshot as HealthReportSnapshot, allowed);
+    const preset = String(res.preset ?? "custom");
+    const allowed = publicSections(res.allowed_sections, preset);
+    const snapshot = sanitizePublicSnapshot(res.snapshot, allowed, preset);
     return {
       ok: true as const,
       code: String(res.code ?? ""),
       status: String(res.status ?? ""),
       issuedAt: String(res.issued_at ?? ""),
       validUntil: (res.valid_until as string | null) ?? null,
-      outdatedReason: (res.outdated_reason as string | null) ?? null,
+      outdatedReason: null,
       sha256: String(res.sha256 ?? ""),
-      preset: String(res.preset ?? "custom"),
+      preset,
       shareExpiresAt: (res.share_expires_at as string | null) ?? null,
       allowedSections: allowed,
-      fiscal: (res.fiscal as {
-        owner_name: string | null;
-        owner_cpf: string | null;
-        origin_doc_id: string | null;
-        origin_doc_type: string | null;
-        origin_doc_name: string | null;
-        origin_doc_number: string | null;
-        origin_doc_mime: string | null;
-      } | null) ?? null,
+      fiscal: sanitizeFiscal(res.fiscal, allowed, preset),
       snapshot,
     };
   });
@@ -265,10 +258,11 @@ export const getFiscalDocumentUrl = createServerFn({ method: "GET" })
     docId: String(data?.docId ?? "").trim(),
   }))
   .handler(async ({ data }) => {
-    const supabaseAdmin = createClient<Database>(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    );
+    if (!data.token || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(data.docId)) {
+      return { ok: false as const, reason: "not_found" };
+    }
+    // Token authorization is enforced by the dedicated fiscal RPC before storage access.
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const rpc = await supabaseAdmin.rpc("get_fiscal_document_url" as never, {
       _token: data.token,
       _doc_id: data.docId,
