@@ -6,6 +6,7 @@ import { snapshotHash } from "@/lib/health-reports/snapshot";
 import { sanitizePublicSnapshot, publicSections, sanitizeFiscal } from "@/lib/health-reports/public-payload";
 import type { HealthReportSnapshot, ReportSection } from "@/lib/health-reports/types";
 import { signAuthorizedFiscalDocument, type FiscalDocumentAuthorization } from "@/lib/health-reports/fiscal-document-signing";
+import { publicValidationResult } from "@/lib/health-reports/public-validation";
 
 /** Abre um Check-up (run). O run é a chave de idempotência da emissão. */
 export const startCheckRun = createServerFn({ method: "POST" })
@@ -236,20 +237,7 @@ export const validateHealthReportPublic = createServerFn({ method: "GET" })
       _code: data.code,
     } as never);
     if (error) throw new Error(error.message);
-    const res = (json ?? {}) as {
-      ok?: boolean;
-      status?: string;
-      issued_at?: string;
-      valid_until?: string | null;
-      motorcycle?: string;
-    };
-    return {
-      ok: res.ok === true,
-      status: String(res.status ?? "not_found"),
-      issuedAt: res.issued_at ?? null,
-      validUntil: res.valid_until ?? null,
-      motorcycle: res.motorcycle ?? null,
-    };
+    return publicValidationResult(json);
   });
 
 /** Gera URL assinada para documento de origem vinculado ao share fiscal. */
