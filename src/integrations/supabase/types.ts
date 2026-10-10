@@ -4034,6 +4034,18 @@ export type Database = {
         Returns: boolean
       }
       hash_cpf: { Args: { _cpf: string }; Returns: string }
+      health_public_project: {
+        Args: { policy: Json; value: Json }
+        Returns: Json
+      }
+      health_public_redact: {
+        Args: { identities: string[]; value: Json }
+        Returns: Json
+      }
+      health_public_snapshot: {
+        Args: { allowed: string[]; payload: Json }
+        Returns: Json
+      }
       is_feature_enabled: { Args: { _key: string }; Returns: boolean }
       is_moto_owner: { Args: { _moto_id: string }; Returns: boolean }
       is_public_certificate_motorcycle_photo: {
