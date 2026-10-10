@@ -117,14 +117,16 @@ export function AssistantDrawer({ state, ctx, moduleStatus }: Props) {
 
   async function handleOpenTicket() {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
       await supabase.from("tickets").insert({
+        user_id: user.id,
         title: query.trim() || "Dúvida via Assistente TrailBook",
         description: `Via Assistente TrailBook\nPergunta: "${query}"\nTela: ${ctx.pathname}`,
         type: "question" as const,
         module: "other" as const,
         status: "open" as const,
         priority: "medium" as const,
-        metadata: { source: "assistente_trailbook", original_query: query, route: ctx.pathname, module_key: ctx.moduleKey },
       });
       navigate({ to: "/tickets" as never });
     } catch (_) {}
