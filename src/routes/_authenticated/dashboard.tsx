@@ -28,11 +28,16 @@ import { HelpTooltip } from "@/components/HelpTooltip";
 import { HELP } from "@/lib/help/texts";
 import { memo, useState } from "react";
 import { DashboardSkeleton } from "@/components/Skeletons";
+import { RegisterUsageDialog } from "@/components/RegisterUsageDialog";
+import { TBButton } from "@/design-system";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
       { title: "Início — TrailBook" },
+      { property: "og:title", content: "Início — TrailBook" },
+      { property: "og:description", content: "Sua moto ativa, acompanhamento e registro rápido de uso." },
+      { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" },
       {
         name: "description",
         content: "Seu painel do TrailBook: motos, pendências, novidades e atalhos rápidos.",
@@ -217,7 +222,9 @@ function Dashboard() {
 }
 
 const QuickActions = memo(function QuickActions({ motoId }: { motoId: string }) {
-  const { shortcuts, isLoading } = useHomeShortcuts();
+  const { shortcuts, isLoading, error } = useHomeShortcuts();
+  const { activeMoto } = useActiveMotorcycle();
+  const [usageOpen, setUsageOpen] = useState(false);
   return (
     <section aria-label="Atalhos rápidos">
       <div className="mb-3 flex items-center justify-between gap-1.5">
@@ -234,7 +241,7 @@ const QuickActions = memo(function QuickActions({ motoId }: { motoId: string }) 
           <Settings2 className="h-3.5 w-3.5" aria-hidden /> Personalizar
         </Link>
       </div>
-      {!isLoading && shortcuts.length === 0 ? (
+      {error ? <p role="alert" className="text-sm text-destructive">Não foi possível carregar seus atalhos. Tente novamente em instantes.</p> : !isLoading && shortcuts.length === 0 ? (
         <Link
           to="/perfil/atalhos"
           className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-border px-4 py-5 text-center text-sm text-muted-foreground hover:border-primary/40 hover:text-primary"
@@ -243,7 +250,12 @@ const QuickActions = memo(function QuickActions({ motoId }: { motoId: string }) 
         </Link>
       ) : (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
-          {shortcuts.map((it) => (
+          {shortcuts.map((it) => it.key === "registrar-uso" ? (
+            <TBButton key={it.key} variant="ghost" onClick={() => setUsageOpen(true)} className="group flex h-auto min-h-[90px] flex-col gap-1.5 whitespace-normal rounded-2xl border border-border bg-card px-2 py-3 hover:border-primary/40 hover:bg-accent/40">
+              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><it.icon className="h-4 w-4" /></span>
+              <span className="text-[11px] font-semibold leading-tight sm:text-xs">{it.label}</span>
+            </TBButton>
+          ) : (
             <Link
               key={it.key}
               to={it.to as any}
@@ -259,6 +271,7 @@ const QuickActions = memo(function QuickActions({ motoId }: { motoId: string }) 
           ))}
         </div>
       )}
+      {usageOpen && <RegisterUsageDialog key={motoId} moto={activeMoto?.id === motoId ? activeMoto : null} onClose={() => setUsageOpen(false)} />}
     </section>
   );
 });
