@@ -13,12 +13,14 @@
 - Testes adicionais: local vazio, idempotência, duas conexões simultâneas, retroativos aceitos após última leitura e rejeitados antes dela, manutenção/alertas TIL, rollback integral, autorização, zero/negativo/precisão e compatibilidade da leitura acumulada.
 - Preview autenticado: rótulo Horas utilizadas (h), resumo 10/10/20 h, rejeição de zero, celular 393 px sem transbordamento e sem erros de execução. Nenhum registro real submetido; a chamada de gravação foi interceptada para comprovar mensagem segura de liberação pendente.
 
-## Liberação necessária — não aplicada
+## Liberação autorizada e aplicada — 10/10/2026
 SQL proposto: `docs/security/migrations/20261010043000_usage_increment.sql`, fora das migrations autoaplicáveis.
 
-Necessita de **aprovação específica para o banco compartilhado**. Cria somente uma função em public, com execução para authenticated e negação a PUBLIC/anon; não altera tabelas, dados históricos, atalhos, laudos, hashes, snapshots nem funções acumuladas. Dependências: `is_moto_owner`, `commit_event_and_recompose`, estruturas existentes motorcycles/events e papéis existentes. Essas dependências foram exercitadas com o motor oficial em PostgreSQL sintético; a aplicação hospedada ainda exige conferência das dependências/permissões atuais.
+**Aprovação específica recebida: “pode seguir”, 04:30 UTC.** Aplicada como `drizzle/migrations/0003_usage_increment.sql`. Cria somente uma função em public, com execução para authenticated e negação a PUBLIC/anon, conferidas após aplicação. Dependências `is_moto_owner`, `commit_event_and_recompose` e `commit_usage_reading` confirmadas antes da aplicação. Tipos regenerados; cliente usa agora a assinatura tipada.
 
-Impacto até aprovação: preview mostra o formulário corrigido, mas a gravação incremental não está liberada no backend compartilhado. Não há fallback para a função acumulada, evitando registrar quantidade adicional como total. Aplicação publicada permanece inalterada.
+Função incremental disponível no backend compartilhado. Sem publicação do aplicativo. Fingerprints agregados dos eventos, motocicletas e snapshots idênticos antes/depois; definição de `commit_usage_reading` também idêntica. Nenhum uso real criado para testar.
+
+Após liberação, o preview enviou uma chamada real à nova RPC com quantidade alterada para zero pelo teste: rejeição correta do backend, formulário preservado e nenhum registro criado. Resumo 10 + 10 = 20 h e rótulos confirmados no celular; sem erros de execução. Build automático OK após uso da assinatura tipada.
 
 Reversão/contensão: retirar o acesso à nova função e manter o atalho incremental indisponível; não retornar ao significado acumulado com rótulos de uso adicional. Não excluir registros gerados nem reverter históricos. Não publicar sem autorização.
 
@@ -26,4 +28,4 @@ Reversão/contensão: retirar o acesso à nova função e manter o atalho increm
 - Usa o calendário America/Sao_Paulo e o posicionamento no fim do dia do atalho anterior, com ordenação secundária `created_at` no motor oficial. A data de hoje recebe horário de fim de dia; consumidores que filtram eventos até `now()` podem exibi-lo posteriormente. Alterar essa convenção exigiria avaliar snapshots existentes, não foi feito neste ajuste.
 - Retroativos anteriores à última atividade com uso continuam recusados para não reescrever snapshots históricos; usos na mesma data ou posteriores são aceitos. Eventos sem incremento não estabelecem uma nova leitura de uso no contrato oficial.
 - A busca de identidade usa eventos da moto sem índice novo específico de metadata; não foi realizado teste de carga de grandes históricos. Não há contratação de infraestrutura adicional.
-- Gravação hospedada e confirmação visual dos indicadores após uso real aguardam liberação; funcionamento transacional, manutenção e alertas comprovados somente em dados sintéticos isolados.
+- Confirmação visual dos indicadores após uso real fica para homologação do usuário; funcionamento transacional, manutenção e alertas comprovados em dados sintéticos isolados. Suíte reexecutada após aplicação: 267 testes aprovados.
