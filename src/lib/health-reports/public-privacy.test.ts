@@ -37,6 +37,7 @@ function doc(token='synthetic-fiscal', docId=did): any {
 }
 let before: string;
 beforeAll(() => {
+  execFileSync('python3', ['scripts/security/start-isolated-postgres.py'], {stdio:'pipe'});
   sql(`DROP SCHEMA public CASCADE; CREATE SCHEMA public; GRANT USAGE ON SCHEMA public TO PUBLIC;
     DO $$ BEGIN
     IF NOT EXISTS(SELECT FROM pg_roles WHERE rolname='anon') THEN CREATE ROLE anon; END IF;
