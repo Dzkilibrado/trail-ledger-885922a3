@@ -16,3 +16,4 @@
 - Security migration proposals are tested against a standalone synthetic PostgreSQL cluster; shared-database application requires explicit approval separate from code implementation.
 - Keep unapproved SQL proposals under docs/security/migrations, outside auto-managed migration directories, so preparing evidence cannot apply a shared-database change.
 - Public report validation maps RPC existence separately from report status and preserves explicit authenticity metadata, so anonymous verification does not confuse existence with validity.
+- Public share sections are stored as JSONB; normalize string arrays in SQL before membership checks and mirror this production type in isolated tests to prevent schema-only regressions.
