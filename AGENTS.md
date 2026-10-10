@@ -10,6 +10,8 @@
 <!-- LOVABLE:END -->
 
 - Public health reports use recursive field allowlists in SQL and application code; a dedicated public type keeps private immutable snapshots independent of partial public contracts.
+- Public snapshot prose is redacted recursively for known owner/issuer identities and structured personal identifiers; authorized fiscal identity is a separate contract, not public prose.
+- Fiscal document authorization selects exactly the same deterministic origin document as the public report; sibling documents cannot be signed through that share.
 - Fiscal document signing uses the generated server-only client after the token-authorizing RPC; internal storage paths are not public RPC results.
 - Security migration proposals are tested against a standalone synthetic PostgreSQL cluster; shared-database application requires explicit approval separate from code implementation.
 - Keep unapproved SQL proposals under docs/security/migrations, outside auto-managed migration directories, so preparing evidence cannot apply a shared-database change.

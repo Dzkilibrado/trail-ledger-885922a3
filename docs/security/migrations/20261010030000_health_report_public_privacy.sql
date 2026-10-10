@@ -1,6 +1,43 @@
 -- Correção 01 / Fase A: proposta NÃO APLICADA ao banco compartilhado.
 -- Só funções/permissões; nenhuma mutação de laudos, snapshots, hashes ou shares.
 BEGIN;
+-- Redact only the public copy; fiscal identity is deliberately returned separately.
+CREATE OR REPLACE FUNCTION public.health_public_redact(value jsonb, identities text[])
+RETURNS jsonb LANGUAGE plpgsql IMMUTABLE SET search_path = pg_catalog, public AS $$
+DECLARE result jsonb; k text; v jsonb; txt text; remaining text; cleaned text; identity text; position int;
+BEGIN
+  IF jsonb_typeof(value) = 'object' THEN
+    result := '{}'::jsonb;
+    FOR k,v IN SELECT * FROM jsonb_each(value) LOOP
+      result := result || jsonb_build_object(k, public.health_public_redact(v, identities));
+    END LOOP;
+    RETURN result;
+  ELSIF jsonb_typeof(value) = 'array' THEN
+    result := '[]'::jsonb;
+    FOR v IN SELECT * FROM jsonb_array_elements(value) LOOP
+      result := result || jsonb_build_array(public.health_public_redact(v, identities));
+    END LOOP;
+    RETURN result;
+  ELSIF jsonb_typeof(value) <> 'string' THEN RETURN value;
+  END IF;
+  txt := value #>> '{}';
+  FOREACH identity IN ARRAY coalesce(identities, ARRAY[]::text[]) LOOP
+    identity := btrim(identity);
+    IF identity IS NULL OR length(identity) < 3 THEN CONTINUE; END IF;
+    remaining := txt; cleaned := '';
+    LOOP
+      position := strpos(lower(remaining),lower(identity));
+      EXIT WHEN position = 0;
+      cleaned := cleaned || substr(remaining,1,position-1) || '[identificação protegida]';
+      remaining := substr(remaining,position+length(identity));
+    END LOOP;
+    txt := cleaned || remaining;
+  END LOOP;
+  txt := regexp_replace(txt, '\m[0-9]{3}\.?[0-9]{3}\.?[0-9]{3}-?[0-9]{2}\M', '[CPF protegido]', 'g');
+  txt := regexp_replace(txt, '[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}', '[contato protegido]', 'gi');
+  txt := regexp_replace(txt, '\(?[0-9]{2}\)?[ .-]+[0-9]{4,5}[ .-]+[0-9]{4}\M', '[contato protegido]', 'g');
+  RETURN to_jsonb(txt);
+END $$;
 CREATE OR REPLACE FUNCTION public.health_public_project(value jsonb, policy jsonb)
 RETURNS jsonb LANGUAGE plpgsql IMMUTABLE SET search_path = pg_catalog, public AS $$
 DECLARE result jsonb; k text; v jsonb; projected jsonb;
@@ -171,7 +208,8 @@ BEGIN
       selected := selected || jsonb_build_object(k,policy->k);
     END LOOP;
   END LOOP;
-  RETURN public.health_public_project(payload,selected);
+  RETURN public.health_public_redact(public.health_public_project(payload,selected),
+    ARRAY[payload#>>'{owner,name}', payload#>>'{issuedBy,name}']);
 END $fn$;
 CREATE OR REPLACE FUNCTION public.get_public_health_report(_token text)
 RETURNS jsonb
@@ -189,6 +227,7 @@ DECLARE
   cpf_formatted text;
   fiscal_extra jsonb;
   effective_sections text[];
+  identities text[];
 BEGIN
   IF _token IS NULL OR btrim(_token) = '' THEN RETURN jsonb_build_object('ok', false, 'reason', 'not_found'); END IF;
   SELECT * INTO s FROM public.health_report_shares WHERE public_token = _token;
@@ -220,7 +259,8 @@ BEGIN
   FROM (SELECT DISTINCT unnest(s.allowed_sections) x) a
   WHERE x = ANY(ARRAY['identification','summary','components','action_plan','history','indices','reservations'])
     AND (s.preset <> 'fiscal' OR x = ANY(ARRAY['identification','summary']));
-  snap := public.health_public_snapshot(snap, effective_sections);
+  SELECT array_agg(full_name) INTO identities FROM public.profiles WHERE id IN (r.owner_id, r.issued_by);
+  snap := public.health_public_redact(public.health_public_snapshot(snap, effective_sections), identities);
 
   -- Para preset fiscal: dados adicionais do proprietario e documento de origem
   fiscal_extra := NULL;
@@ -252,7 +292,7 @@ BEGIN
     FROM public.motorcycle_documents
     WHERE motorcycle_id = r.motorcycle_id
       AND doc_type IN ('invoice', 'bill_of_sale')
-    ORDER BY doc_date DESC NULLS LAST, created_at DESC
+    ORDER BY doc_date DESC NULLS LAST, created_at DESC, id DESC
     LIMIT 1;
 
     fiscal_extra := jsonb_build_object(
@@ -327,11 +367,13 @@ BEGIN
   END IF;
 
   -- Validar documento: deve pertencer a moto do laudo e ser tipo de origem
+  -- Exactly the origin document displayed by get_public_health_report, not any sibling invoice.
   SELECT * INTO d FROM public.motorcycle_documents
-  WHERE id = _doc_id
-    AND motorcycle_id = r.motorcycle_id
-    AND doc_type IN ('invoice', 'bill_of_sale');
-  IF NOT FOUND THEN
+  WHERE motorcycle_id = r.motorcycle_id
+    AND doc_type IN ('invoice', 'bill_of_sale')
+  ORDER BY doc_date DESC NULLS LAST, created_at DESC, id DESC
+  LIMIT 1;
+  IF NOT FOUND OR d.id IS DISTINCT FROM _doc_id THEN
     RETURN jsonb_build_object('ok', false, 'reason', 'document_not_found');
   END IF;
 
@@ -374,6 +416,7 @@ BEGIN
 END $$;
 
 REVOKE ALL ON FUNCTION public.health_public_project(jsonb,jsonb) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.health_public_redact(jsonb,text[]) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.health_public_snapshot(jsonb,text[]) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.get_public_health_report(text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_public_health_report(text) TO anon, authenticated, service_role;
