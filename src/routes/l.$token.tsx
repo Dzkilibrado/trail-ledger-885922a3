@@ -78,12 +78,11 @@ function PublicReportPage() {
         <h1 className="text-2xl font-black leading-tight">Laudo Inteligente {data.code}</h1>
         <p className="text-sm text-muted-foreground">
           {REPORT_STATUS_LABEL[data.status as ReportStatus] ?? data.status}
-          {data.outdatedReason ? ` · ${data.outdatedReason}` : ""}
         </p>
       </header>
 
       <ReportSnapshotView
-        snapshot={data.snapshot as Partial<HealthReportSnapshot>}
+        snapshot={data.snapshot}
         sections={data.allowedSections}
         code={data.code}
         sha256={data.sha256}
