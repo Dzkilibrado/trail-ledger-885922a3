@@ -20,6 +20,8 @@ SQL proposto: `docs/security/migrations/20261010043000_usage_increment.sql`, for
 
 Função incremental disponível no backend compartilhado. Sem publicação do aplicativo. Fingerprints agregados dos eventos, motocicletas e snapshots idênticos antes/depois; definição de `commit_usage_reading` também idêntica. Nenhum uso real criado para testar.
 
+Após liberação, o preview enviou uma chamada real à nova RPC com quantidade alterada para zero pelo teste: rejeição correta do backend, formulário preservado e nenhum registro criado. Resumo 10 + 10 = 20 h e rótulos confirmados no celular; sem erros de execução. Build automático OK após uso da assinatura tipada.
+
 Reversão/contensão: retirar o acesso à nova função e manter o atalho incremental indisponível; não retornar ao significado acumulado com rótulos de uso adicional. Não excluir registros gerados nem reverter históricos. Não publicar sem autorização.
 
 ## Limites preservados
