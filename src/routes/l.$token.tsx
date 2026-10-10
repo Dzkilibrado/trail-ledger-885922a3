@@ -214,6 +214,7 @@ function FiscalPublicView({ data }: { data: any }) {
               <Button
                 variant="outline"
                 size="icon"
+                title="Visualizar documento de origem"
                 onClick={handleViewDoc}
                 disabled={docLoading}
                 className="shrink-0 flex items-center gap-1.5 rounded-lg border border-border bg-muted px-3 py-1.5 text-sm font-medium hover:bg-muted/80 transition"
@@ -222,7 +223,6 @@ function FiscalPublicView({ data }: { data: any }) {
                 {docLoading
                   ? <Loader2 className="h-4 w-4 animate-spin" />
                   : <Eye className="h-4 w-4" />}
-                <span className="hidden sm:inline">Visualizar</span>
               </Button>
             </div>
           ) : (
