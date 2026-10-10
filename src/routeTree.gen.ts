@@ -9,91 +9,77 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
-import { Route as AuthRouteImport } from './routes/auth'
-import { Route as HelpRouteImport } from './routes/help'
-import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SiteRouteImport } from './routes/site'
-import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
-import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated/agenda'
-import { Route as AuthenticatedAssistenteCentralRouteImport } from './routes/_authenticated/assistente-central'
-import { Route as AuthenticatedCentralRouteImport } from './routes/_authenticated/central'
-import { Route as AuthenticatedCertificatesRouteImport } from './routes/_authenticated/certificates'
-import { Route as AuthenticatedComoFuncionaRouteImport } from './routes/_authenticated/como-funciona'
-import { Route as AuthenticatedCompleteProfileRouteImport } from './routes/_authenticated/complete-profile'
-import { Route as AuthenticatedComunicacaoRouteImport } from './routes/_authenticated/comunicacao'
-import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
-import { Route as AuthenticatedFaqRouteImport } from './routes/_authenticated/faq'
-import { Route as AuthenticatedFinancialRouteImport } from './routes/_authenticated/financial'
-import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated/messages'
-import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
-import { Route as AuthenticatedPlansRouteImport } from './routes/_authenticated/plans'
-import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
-import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
-import { Route as AuthenticatedTicketsRouteImport } from './routes/_authenticated/tickets'
-import { Route as AuthenticatedTransfersRouteImport } from './routes/_authenticated/transfers'
-import { Route as AuthenticatedWorkshopsRouteImport } from './routes/_authenticated/workshops'
-import { Route as CTokenRouteImport } from './routes/c.$token'
-import { Route as LTokenRouteImport } from './routes/l.$token'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as HelpRouteImport } from './routes/help'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as IndexRouteImport } from './routes/index'
 import { Route as RCodeRouteImport } from './routes/r.$code'
-import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
-import { Route as AuthenticatedAdminDocumentsRouteImport } from './routes/_authenticated/admin.documents'
-import { Route as AuthenticatedAdminHomologRouteImport } from './routes/_authenticated/admin.homolog'
-import { Route as AuthenticatedAdminMessagesRouteImport } from './routes/_authenticated/admin.messages'
-import { Route as AuthenticatedAdminModulesRouteImport } from './routes/_authenticated/admin.modules'
-import { Route as AuthenticatedAdminTicketsRouteImport } from './routes/_authenticated/admin.tickets'
-import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
-import { Route as AuthenticatedDocumentsIndexRouteImport } from './routes/_authenticated/documents.index'
-import { Route as AuthenticatedDocumentsIdRouteImport } from './routes/_authenticated/documents.$id'
-import { Route as AuthenticatedMotorcyclesIndexRouteImport } from './routes/_authenticated/motorcycles.index'
-import { Route as AuthenticatedMotorcyclesIdRouteImport } from './routes/_authenticated/motorcycles.$id'
-import { Route as AuthenticatedMotorcyclesNewRouteImport } from './routes/_authenticated/motorcycles.new'
-import { Route as AuthenticatedPerfilIndexRouteImport } from './routes/_authenticated/perfil.index'
-import { Route as AuthenticatedPerfilAtalhosRouteImport } from './routes/_authenticated/perfil.atalhos'
-import { Route as AuthenticatedPerfilContaRouteImport } from './routes/_authenticated/perfil.conta'
-import { Route as AuthenticatedPerfilMenuInferiorRouteImport } from './routes/_authenticated/perfil.menu-inferior'
+import { Route as LTokenRouteImport } from './routes/l.$token'
+import { Route as CTokenRouteImport } from './routes/c.$token'
+import { Route as AuthenticatedWorkshopsRouteImport } from './routes/_authenticated/workshops'
+import { Route as AuthenticatedTransfersRouteImport } from './routes/_authenticated/transfers'
+import { Route as AuthenticatedTicketsRouteImport } from './routes/_authenticated/tickets'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedProfileRouteImport } from './routes/_authenticated/profile'
+import { Route as AuthenticatedPlansRouteImport } from './routes/_authenticated/plans'
+import { Route as AuthenticatedNotificationsRouteImport } from './routes/_authenticated/notifications'
+import { Route as AuthenticatedMessagesRouteImport } from './routes/_authenticated/messages'
+import { Route as AuthenticatedFinancialRouteImport } from './routes/_authenticated/financial'
+import { Route as AuthenticatedFaqRouteImport } from './routes/_authenticated/faq'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedComunicacaoRouteImport } from './routes/_authenticated/comunicacao'
+import { Route as AuthenticatedCompleteProfileRouteImport } from './routes/_authenticated/complete-profile'
+import { Route as AuthenticatedComoFuncionaRouteImport } from './routes/_authenticated/como-funciona'
+import { Route as AuthenticatedCertificatesRouteImport } from './routes/_authenticated/certificates'
+import { Route as AuthenticatedCentralRouteImport } from './routes/_authenticated/central'
+import { Route as AuthenticatedAssistenteCentralRouteImport } from './routes/_authenticated/assistente-central'
+import { Route as AuthenticatedAgendaRouteImport } from './routes/_authenticated/agenda'
+import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/admin'
 import { Route as AuthenticatedTicketsIndexRouteImport } from './routes/_authenticated/tickets.index'
-import { Route as AuthenticatedTicketsIdRouteImport } from './routes/_authenticated/tickets.$id'
-import { Route as AuthenticatedTicketsCpfChangeRouteImport } from './routes/_authenticated/tickets.cpf-change'
-import { Route as AuthenticatedTicketsNewRouteImport } from './routes/_authenticated/tickets.new'
+import { Route as AuthenticatedPerfilIndexRouteImport } from './routes/_authenticated/perfil.index'
+import { Route as AuthenticatedMotorcyclesIndexRouteImport } from './routes/_authenticated/motorcycles.index'
+import { Route as AuthenticatedDocumentsIndexRouteImport } from './routes/_authenticated/documents.index'
+import { Route as AuthenticatedAdminIndexRouteImport } from './routes/_authenticated/admin.index'
 import { Route as ApiPublicAppVersionRouteImport } from './routes/api/public/app-version'
+import { Route as AuthenticatedTicketsNewRouteImport } from './routes/_authenticated/tickets.new'
+import { Route as AuthenticatedTicketsCpfChangeRouteImport } from './routes/_authenticated/tickets.cpf-change'
+import { Route as AuthenticatedTicketsIdRouteImport } from './routes/_authenticated/tickets.$id'
+import { Route as AuthenticatedPerfilMenuInferiorRouteImport } from './routes/_authenticated/perfil.menu-inferior'
+import { Route as AuthenticatedPerfilContaRouteImport } from './routes/_authenticated/perfil.conta'
+import { Route as AuthenticatedPerfilAtalhosRouteImport } from './routes/_authenticated/perfil.atalhos'
+import { Route as AuthenticatedMotorcyclesNewRouteImport } from './routes/_authenticated/motorcycles.new'
+import { Route as AuthenticatedMotorcyclesIdRouteImport } from './routes/_authenticated/motorcycles.$id'
+import { Route as AuthenticatedDocumentsIdRouteImport } from './routes/_authenticated/documents.$id'
+import { Route as AuthenticatedAdminUsersRouteImport } from './routes/_authenticated/admin.users'
+import { Route as AuthenticatedAdminTicketsRouteImport } from './routes/_authenticated/admin.tickets'
+import { Route as AuthenticatedAdminModulesRouteImport } from './routes/_authenticated/admin.modules'
+import { Route as AuthenticatedAdminMessagesRouteImport } from './routes/_authenticated/admin.messages'
+import { Route as AuthenticatedAdminHomologRouteImport } from './routes/_authenticated/admin.homolog'
+import { Route as AuthenticatedAdminDocumentsRouteImport } from './routes/_authenticated/admin.documents'
 import { Route as AuthenticatedMotorcyclesIdIndexRouteImport } from './routes/_authenticated/motorcycles.$id.index'
-import { Route as AuthenticatedMotorcyclesIdCertificateRouteImport } from './routes/_authenticated/motorcycles.$id.certificate'
-import { Route as AuthenticatedMotorcyclesIdComponentsRouteImport } from './routes/_authenticated/motorcycles.$id.components'
-import { Route as AuthenticatedMotorcyclesIdControlRouteImport } from './routes/_authenticated/motorcycles.$id.control'
-import { Route as AuthenticatedMotorcyclesIdEditarRouteImport } from './routes/_authenticated/motorcycles.$id.editar'
-import { Route as AuthenticatedMotorcyclesIdEditarManutencaoRouteImport } from './routes/_authenticated/motorcycles.$id.editar-manutencao'
-import { Route as AuthenticatedMotorcyclesIdHealthRouteImport } from './routes/_authenticated/motorcycles.$id.health'
-import { Route as AuthenticatedMotorcyclesIdHistoricoManutencaoRouteImport } from './routes/_authenticated/motorcycles.$id.historico-manutencao'
-import { Route as AuthenticatedMotorcyclesIdPassportRouteImport } from './routes/_authenticated/motorcycles.$id.passport'
-import { Route as AuthenticatedMotorcyclesIdPlanRouteImport } from './routes/_authenticated/motorcycles.$id.plan'
-import { Route as AuthenticatedMotorcyclesIdRegistrarManutencaoRouteImport } from './routes/_authenticated/motorcycles.$id.registrar-manutencao'
-import { Route as AuthenticatedRecibosCodeVisualizarRouteImport } from './routes/_authenticated/recibos.$code.visualizar'
-import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
 import { Route as LovableEmailAuthWebhookRouteImport } from './routes/lovable/email/auth/webhook'
+import { Route as LovableEmailAuthPreviewRouteImport } from './routes/lovable/email/auth/preview'
+import { Route as AuthenticatedRecibosCodeVisualizarRouteImport } from './routes/_authenticated/recibos.$code.visualizar'
+import { Route as AuthenticatedMotorcyclesIdRegistrarManutencaoRouteImport } from './routes/_authenticated/motorcycles.$id.registrar-manutencao'
+import { Route as AuthenticatedMotorcyclesIdPlanRouteImport } from './routes/_authenticated/motorcycles.$id.plan'
+import { Route as AuthenticatedMotorcyclesIdPassportRouteImport } from './routes/_authenticated/motorcycles.$id.passport'
+import { Route as AuthenticatedMotorcyclesIdHistoricoManutencaoRouteImport } from './routes/_authenticated/motorcycles.$id.historico-manutencao'
+import { Route as AuthenticatedMotorcyclesIdHealthRouteImport } from './routes/_authenticated/motorcycles.$id.health'
+import { Route as AuthenticatedMotorcyclesIdEditarManutencaoRouteImport } from './routes/_authenticated/motorcycles.$id.editar-manutencao'
+import { Route as AuthenticatedMotorcyclesIdEditarRouteImport } from './routes/_authenticated/motorcycles.$id.editar'
+import { Route as AuthenticatedMotorcyclesIdControlRouteImport } from './routes/_authenticated/motorcycles.$id.control'
+import { Route as AuthenticatedMotorcyclesIdComponentsRouteImport } from './routes/_authenticated/motorcycles.$id.components'
+import { Route as AuthenticatedMotorcyclesIdCertificateRouteImport } from './routes/_authenticated/motorcycles.$id.certificate'
 import { Route as AuthenticatedMotorcyclesIdCheckupsIndexRouteImport } from './routes/_authenticated/motorcycles.$id.checkups.index'
-import { Route as AuthenticatedMotorcyclesIdCheckupsCodeRouteImport } from './routes/_authenticated/motorcycles.$id.checkups.$code'
-import { Route as AuthenticatedMotorcyclesIdCheckupsCompararRouteImport } from './routes/_authenticated/motorcycles.$id.checkups.comparar'
 import { Route as AuthenticatedMotorcyclesIdCheckupsNovoRouteImport } from './routes/_authenticated/motorcycles.$id.checkups.novo'
+import { Route as AuthenticatedMotorcyclesIdCheckupsCompararRouteImport } from './routes/_authenticated/motorcycles.$id.checkups.comparar'
+import { Route as AuthenticatedMotorcyclesIdCheckupsCodeRouteImport } from './routes/_authenticated/motorcycles.$id.checkups.$code'
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
-  id: '/_authenticated',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthRoute = AuthRouteImport.update({
-  id: '/auth',
-  path: '/auth',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const HelpRoute = HelpRouteImport.update({
-  id: '/help',
-  path: '/help',
+const SiteRoute = SiteRouteImport.update({
+  id: '/site',
+  path: '/site',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -101,74 +87,68 @@ const ResetPasswordRoute = ResetPasswordRouteImport.update({
   path: '/reset-password',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SiteRoute = SiteRouteImport.update({
-  id: '/site',
-  path: '/site',
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
-  id: '/admin',
-  path: '/admin',
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RCodeRoute = RCodeRouteImport.update({
+  id: '/r/$code',
+  path: '/r/$code',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LTokenRoute = LTokenRouteImport.update({
+  id: '/l/$token',
+  path: '/l/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CTokenRoute = CTokenRouteImport.update({
+  id: '/c/$token',
+  path: '/c/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedWorkshopsRoute = AuthenticatedWorkshopsRouteImport.update({
+  id: '/workshops',
+  path: '/workshops',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAgendaRoute = AuthenticatedAgendaRouteImport.update({
-  id: '/agenda',
-  path: '/agenda',
+const AuthenticatedTransfersRoute = AuthenticatedTransfersRouteImport.update({
+  id: '/transfers',
+  path: '/transfers',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedAssistenteCentralRoute =
-  AuthenticatedAssistenteCentralRouteImport.update({
-    id: '/assistente-central',
-    path: '/assistente-central',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedCentralRoute = AuthenticatedCentralRouteImport.update({
-  id: '/central',
-  path: '/central',
+const AuthenticatedTicketsRoute = AuthenticatedTicketsRouteImport.update({
+  id: '/tickets',
+  path: '/tickets',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedCertificatesRoute =
-  AuthenticatedCertificatesRouteImport.update({
-    id: '/certificates',
-    path: '/certificates',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedComoFuncionaRoute =
-  AuthenticatedComoFuncionaRouteImport.update({
-    id: '/como-funciona',
-    path: '/como-funciona',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedCompleteProfileRoute =
-  AuthenticatedCompleteProfileRouteImport.update({
-    id: '/complete-profile',
-    path: '/complete-profile',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedComunicacaoRoute =
-  AuthenticatedComunicacaoRouteImport.update({
-    id: '/comunicacao',
-    path: '/comunicacao',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedFaqRoute = AuthenticatedFaqRouteImport.update({
-  id: '/faq',
-  path: '/faq',
+const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedFinancialRoute = AuthenticatedFinancialRouteImport.update({
-  id: '/financial',
-  path: '/financial',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedMessagesRoute = AuthenticatedMessagesRouteImport.update({
-  id: '/messages',
-  path: '/messages',
+const AuthenticatedPlansRoute = AuthenticatedPlansRouteImport.update({
+  id: '/plans',
+  path: '/plans',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 const AuthenticatedNotificationsRoute =
@@ -177,101 +157,81 @@ const AuthenticatedNotificationsRoute =
     path: '/notifications',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedPlansRoute = AuthenticatedPlansRouteImport.update({
-  id: '/plans',
-  path: '/plans',
+const AuthenticatedMessagesRoute = AuthenticatedMessagesRouteImport.update({
+  id: '/messages',
+  path: '/messages',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedProfileRoute = AuthenticatedProfileRouteImport.update({
-  id: '/profile',
-  path: '/profile',
+const AuthenticatedFinancialRoute = AuthenticatedFinancialRouteImport.update({
+  id: '/financial',
+  path: '/financial',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
+const AuthenticatedFaqRoute = AuthenticatedFaqRouteImport.update({
+  id: '/faq',
+  path: '/faq',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedTicketsRoute = AuthenticatedTicketsRouteImport.update({
-  id: '/tickets',
-  path: '/tickets',
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedTransfersRoute = AuthenticatedTransfersRouteImport.update({
-  id: '/transfers',
-  path: '/transfers',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const AuthenticatedWorkshopsRoute = AuthenticatedWorkshopsRouteImport.update({
-  id: '/workshops',
-  path: '/workshops',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
-const CTokenRoute = CTokenRouteImport.update({
-  id: '/c/$token',
-  path: '/c/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LTokenRoute = LTokenRouteImport.update({
-  id: '/l/$token',
-  path: '/l/$token',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const RCodeRoute = RCodeRouteImport.update({
-  id: '/r/$code',
-  path: '/r/$code',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => AuthenticatedAdminRoute,
-} as any)
-const AuthenticatedAdminDocumentsRoute =
-  AuthenticatedAdminDocumentsRouteImport.update({
-    id: '/documents',
-    path: '/documents',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
-const AuthenticatedAdminHomologRoute =
-  AuthenticatedAdminHomologRouteImport.update({
-    id: '/homolog',
-    path: '/homolog',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
-const AuthenticatedAdminMessagesRoute =
-  AuthenticatedAdminMessagesRouteImport.update({
-    id: '/messages',
-    path: '/messages',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
-const AuthenticatedAdminModulesRoute =
-  AuthenticatedAdminModulesRouteImport.update({
-    id: '/modules',
-    path: '/modules',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
-const AuthenticatedAdminTicketsRoute =
-  AuthenticatedAdminTicketsRouteImport.update({
-    id: '/tickets',
-    path: '/tickets',
-    getParentRoute: () => AuthenticatedAdminRoute,
-  } as any)
-const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => AuthenticatedAdminRoute,
-} as any)
-const AuthenticatedDocumentsIndexRoute =
-  AuthenticatedDocumentsIndexRouteImport.update({
-    id: '/documents/',
-    path: '/documents/',
+const AuthenticatedComunicacaoRoute =
+  AuthenticatedComunicacaoRouteImport.update({
+    id: '/comunicacao',
+    path: '/comunicacao',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedDocumentsIdRoute =
-  AuthenticatedDocumentsIdRouteImport.update({
-    id: '/documents/$id',
-    path: '/documents/$id',
+const AuthenticatedCompleteProfileRoute =
+  AuthenticatedCompleteProfileRouteImport.update({
+    id: '/complete-profile',
+    path: '/complete-profile',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedComoFuncionaRoute =
+  AuthenticatedComoFuncionaRouteImport.update({
+    id: '/como-funciona',
+    path: '/como-funciona',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCertificatesRoute =
+  AuthenticatedCertificatesRouteImport.update({
+    id: '/certificates',
+    path: '/certificates',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedCentralRoute = AuthenticatedCentralRouteImport.update({
+  id: '/central',
+  path: '/central',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAssistenteCentralRoute =
+  AuthenticatedAssistenteCentralRouteImport.update({
+    id: '/assistente-central',
+    path: '/assistente-central',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAgendaRoute = AuthenticatedAgendaRouteImport.update({
+  id: '/agenda',
+  path: '/agenda',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedAdminRoute = AuthenticatedAdminRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedTicketsIndexRoute =
+  AuthenticatedTicketsIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedTicketsRoute,
+  } as any)
+const AuthenticatedPerfilIndexRoute =
+  AuthenticatedPerfilIndexRouteImport.update({
+    id: '/perfil/',
+    path: '/perfil/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedMotorcyclesIndexRoute =
@@ -280,51 +240,25 @@ const AuthenticatedMotorcyclesIndexRoute =
     path: '/motorcycles/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedMotorcyclesIdRoute =
-  AuthenticatedMotorcyclesIdRouteImport.update({
-    id: '/motorcycles/$id',
-    path: '/motorcycles/$id',
+const AuthenticatedDocumentsIndexRoute =
+  AuthenticatedDocumentsIndexRouteImport.update({
+    id: '/documents/',
+    path: '/documents/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedMotorcyclesNewRoute =
-  AuthenticatedMotorcyclesNewRouteImport.update({
-    id: '/motorcycles/new',
-    path: '/motorcycles/new',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPerfilIndexRoute =
-  AuthenticatedPerfilIndexRouteImport.update({
-    id: '/perfil/',
-    path: '/perfil/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPerfilAtalhosRoute =
-  AuthenticatedPerfilAtalhosRouteImport.update({
-    id: '/perfil/atalhos',
-    path: '/perfil/atalhos',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPerfilContaRoute =
-  AuthenticatedPerfilContaRouteImport.update({
-    id: '/perfil/conta',
-    path: '/perfil/conta',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedPerfilMenuInferiorRoute =
-  AuthenticatedPerfilMenuInferiorRouteImport.update({
-    id: '/perfil/menu-inferior',
-    path: '/perfil/menu-inferior',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
-const AuthenticatedTicketsIndexRoute =
-  AuthenticatedTicketsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AuthenticatedTicketsRoute,
-  } as any)
-const AuthenticatedTicketsIdRoute = AuthenticatedTicketsIdRouteImport.update({
-  id: '/$id',
-  path: '/$id',
+const AuthenticatedAdminIndexRoute = AuthenticatedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthenticatedAdminRoute,
+} as any)
+const ApiPublicAppVersionRoute = ApiPublicAppVersionRouteImport.update({
+  id: '/api/public/app-version',
+  path: '/api/public/app-version',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedTicketsNewRoute = AuthenticatedTicketsNewRouteImport.update({
+  id: '/new',
+  path: '/new',
   getParentRoute: () => AuthenticatedTicketsRoute,
 } as any)
 const AuthenticatedTicketsCpfChangeRoute =
@@ -333,68 +267,108 @@ const AuthenticatedTicketsCpfChangeRoute =
     path: '/cpf-change',
     getParentRoute: () => AuthenticatedTicketsRoute,
   } as any)
-const AuthenticatedTicketsNewRoute = AuthenticatedTicketsNewRouteImport.update({
-  id: '/new',
-  path: '/new',
+const AuthenticatedTicketsIdRoute = AuthenticatedTicketsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
   getParentRoute: () => AuthenticatedTicketsRoute,
 } as any)
-const ApiPublicAppVersionRoute = ApiPublicAppVersionRouteImport.update({
-  id: '/api/public/app-version',
-  path: '/api/public/app-version',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedPerfilMenuInferiorRoute =
+  AuthenticatedPerfilMenuInferiorRouteImport.update({
+    id: '/perfil/menu-inferior',
+    path: '/perfil/menu-inferior',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPerfilContaRoute =
+  AuthenticatedPerfilContaRouteImport.update({
+    id: '/perfil/conta',
+    path: '/perfil/conta',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPerfilAtalhosRoute =
+  AuthenticatedPerfilAtalhosRouteImport.update({
+    id: '/perfil/atalhos',
+    path: '/perfil/atalhos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedMotorcyclesNewRoute =
+  AuthenticatedMotorcyclesNewRouteImport.update({
+    id: '/motorcycles/new',
+    path: '/motorcycles/new',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedMotorcyclesIdRoute =
+  AuthenticatedMotorcyclesIdRouteImport.update({
+    id: '/motorcycles/$id',
+    path: '/motorcycles/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedDocumentsIdRoute =
+  AuthenticatedDocumentsIdRouteImport.update({
+    id: '/documents/$id',
+    path: '/documents/$id',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedAdminUsersRoute = AuthenticatedAdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthenticatedAdminRoute,
 } as any)
+const AuthenticatedAdminTicketsRoute =
+  AuthenticatedAdminTicketsRouteImport.update({
+    id: '/tickets',
+    path: '/tickets',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminModulesRoute =
+  AuthenticatedAdminModulesRouteImport.update({
+    id: '/modules',
+    path: '/modules',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminMessagesRoute =
+  AuthenticatedAdminMessagesRouteImport.update({
+    id: '/messages',
+    path: '/messages',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminHomologRoute =
+  AuthenticatedAdminHomologRouteImport.update({
+    id: '/homolog',
+    path: '/homolog',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
+const AuthenticatedAdminDocumentsRoute =
+  AuthenticatedAdminDocumentsRouteImport.update({
+    id: '/documents',
+    path: '/documents',
+    getParentRoute: () => AuthenticatedAdminRoute,
+  } as any)
 const AuthenticatedMotorcyclesIdIndexRoute =
   AuthenticatedMotorcyclesIdIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
   } as any)
-const AuthenticatedMotorcyclesIdCertificateRoute =
-  AuthenticatedMotorcyclesIdCertificateRouteImport.update({
-    id: '/certificate',
-    path: '/certificate',
-    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
+const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
+  id: '/lovable/email/auth/webhook',
+  path: '/lovable/email/auth/webhook',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
+  id: '/lovable/email/auth/preview',
+  path: '/lovable/email/auth/preview',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRecibosCodeVisualizarRoute =
+  AuthenticatedRecibosCodeVisualizarRouteImport.update({
+    id: '/recibos/$code/visualizar',
+    path: '/recibos/$code/visualizar',
+    getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedMotorcyclesIdComponentsRoute =
-  AuthenticatedMotorcyclesIdComponentsRouteImport.update({
-    id: '/components',
-    path: '/components',
-    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
-  } as any)
-const AuthenticatedMotorcyclesIdControlRoute =
-  AuthenticatedMotorcyclesIdControlRouteImport.update({
-    id: '/control',
-    path: '/control',
-    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
-  } as any)
-const AuthenticatedMotorcyclesIdEditarRoute =
-  AuthenticatedMotorcyclesIdEditarRouteImport.update({
-    id: '/editar',
-    path: '/editar',
-    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
-  } as any)
-const AuthenticatedMotorcyclesIdEditarManutencaoRoute =
-  AuthenticatedMotorcyclesIdEditarManutencaoRouteImport.update({
-    id: '/editar-manutencao',
-    path: '/editar-manutencao',
-    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
-  } as any)
-const AuthenticatedMotorcyclesIdHealthRoute =
-  AuthenticatedMotorcyclesIdHealthRouteImport.update({
-    id: '/health',
-    path: '/health',
-    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
-  } as any)
-const AuthenticatedMotorcyclesIdHistoricoManutencaoRoute =
-  AuthenticatedMotorcyclesIdHistoricoManutencaoRouteImport.update({
-    id: '/historico-manutencao',
-    path: '/historico-manutencao',
-    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
-  } as any)
-const AuthenticatedMotorcyclesIdPassportRoute =
-  AuthenticatedMotorcyclesIdPassportRouteImport.update({
-    id: '/passport',
-    path: '/passport',
+const AuthenticatedMotorcyclesIdRegistrarManutencaoRoute =
+  AuthenticatedMotorcyclesIdRegistrarManutencaoRouteImport.update({
+    id: '/registrar-manutencao',
+    path: '/registrar-manutencao',
     getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
   } as any)
 const AuthenticatedMotorcyclesIdPlanRoute =
@@ -403,38 +377,64 @@ const AuthenticatedMotorcyclesIdPlanRoute =
     path: '/plan',
     getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
   } as any)
-const AuthenticatedMotorcyclesIdRegistrarManutencaoRoute =
-  AuthenticatedMotorcyclesIdRegistrarManutencaoRouteImport.update({
-    id: '/registrar-manutencao',
-    path: '/registrar-manutencao',
+const AuthenticatedMotorcyclesIdPassportRoute =
+  AuthenticatedMotorcyclesIdPassportRouteImport.update({
+    id: '/passport',
+    path: '/passport',
     getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
   } as any)
-const AuthenticatedRecibosCodeVisualizarRoute =
-  AuthenticatedRecibosCodeVisualizarRouteImport.update({
-    id: '/recibos/$code/visualizar',
-    path: '/recibos/$code/visualizar',
-    getParentRoute: () => AuthenticatedRouteRoute,
+const AuthenticatedMotorcyclesIdHistoricoManutencaoRoute =
+  AuthenticatedMotorcyclesIdHistoricoManutencaoRouteImport.update({
+    id: '/historico-manutencao',
+    path: '/historico-manutencao',
+    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
   } as any)
-const LovableEmailAuthPreviewRoute = LovableEmailAuthPreviewRouteImport.update({
-  id: '/lovable/email/auth/preview',
-  path: '/lovable/email/auth/preview',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LovableEmailAuthWebhookRoute = LovableEmailAuthWebhookRouteImport.update({
-  id: '/lovable/email/auth/webhook',
-  path: '/lovable/email/auth/webhook',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const AuthenticatedMotorcyclesIdHealthRoute =
+  AuthenticatedMotorcyclesIdHealthRouteImport.update({
+    id: '/health',
+    path: '/health',
+    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
+  } as any)
+const AuthenticatedMotorcyclesIdEditarManutencaoRoute =
+  AuthenticatedMotorcyclesIdEditarManutencaoRouteImport.update({
+    id: '/editar-manutencao',
+    path: '/editar-manutencao',
+    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
+  } as any)
+const AuthenticatedMotorcyclesIdEditarRoute =
+  AuthenticatedMotorcyclesIdEditarRouteImport.update({
+    id: '/editar',
+    path: '/editar',
+    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
+  } as any)
+const AuthenticatedMotorcyclesIdControlRoute =
+  AuthenticatedMotorcyclesIdControlRouteImport.update({
+    id: '/control',
+    path: '/control',
+    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
+  } as any)
+const AuthenticatedMotorcyclesIdComponentsRoute =
+  AuthenticatedMotorcyclesIdComponentsRouteImport.update({
+    id: '/components',
+    path: '/components',
+    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
+  } as any)
+const AuthenticatedMotorcyclesIdCertificateRoute =
+  AuthenticatedMotorcyclesIdCertificateRouteImport.update({
+    id: '/certificate',
+    path: '/certificate',
+    getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
+  } as any)
 const AuthenticatedMotorcyclesIdCheckupsIndexRoute =
   AuthenticatedMotorcyclesIdCheckupsIndexRouteImport.update({
     id: '/checkups/',
     path: '/checkups/',
     getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
   } as any)
-const AuthenticatedMotorcyclesIdCheckupsCodeRoute =
-  AuthenticatedMotorcyclesIdCheckupsCodeRouteImport.update({
-    id: '/checkups/$code',
-    path: '/checkups/$code',
+const AuthenticatedMotorcyclesIdCheckupsNovoRoute =
+  AuthenticatedMotorcyclesIdCheckupsNovoRouteImport.update({
+    id: '/checkups/novo',
+    path: '/checkups/novo',
     getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
   } as any)
 const AuthenticatedMotorcyclesIdCheckupsCompararRoute =
@@ -443,10 +443,10 @@ const AuthenticatedMotorcyclesIdCheckupsCompararRoute =
     path: '/checkups/comparar',
     getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
   } as any)
-const AuthenticatedMotorcyclesIdCheckupsNovoRoute =
-  AuthenticatedMotorcyclesIdCheckupsNovoRouteImport.update({
-    id: '/checkups/novo',
-    path: '/checkups/novo',
+const AuthenticatedMotorcyclesIdCheckupsCodeRoute =
+  AuthenticatedMotorcyclesIdCheckupsCodeRouteImport.update({
+    id: '/checkups/$code',
+    path: '/checkups/$code',
     getParentRoute: () => AuthenticatedMotorcyclesIdRoute,
   } as any)
 
@@ -875,32 +875,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/_authenticated': {
-      id: '/_authenticated'
-      path: ''
-      fullPath: '/'
-      preLoaderRoute: typeof AuthenticatedRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/auth': {
-      id: '/auth'
-      path: '/auth'
-      fullPath: '/auth'
-      preLoaderRoute: typeof AuthRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/help': {
-      id: '/help'
-      path: '/help'
-      fullPath: '/help'
-      preLoaderRoute: typeof HelpRouteImport
+    '/site': {
+      id: '/site'
+      path: '/site'
+      fullPath: '/site'
+      preLoaderRoute: typeof SiteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -910,158 +889,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ResetPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/site': {
-      id: '/site'
-      path: '/site'
-      fullPath: '/site'
-      preLoaderRoute: typeof SiteRouteImport
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/admin': {
-      id: '/_authenticated/admin'
-      path: '/admin'
-      fullPath: '/admin'
-      preLoaderRoute: typeof AuthenticatedAdminRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/agenda': {
-      id: '/_authenticated/agenda'
-      path: '/agenda'
-      fullPath: '/agenda'
-      preLoaderRoute: typeof AuthenticatedAgendaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/assistente-central': {
-      id: '/_authenticated/assistente-central'
-      path: '/assistente-central'
-      fullPath: '/assistente-central'
-      preLoaderRoute: typeof AuthenticatedAssistenteCentralRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/central': {
-      id: '/_authenticated/central'
-      path: '/central'
-      fullPath: '/central'
-      preLoaderRoute: typeof AuthenticatedCentralRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/certificates': {
-      id: '/_authenticated/certificates'
-      path: '/certificates'
-      fullPath: '/certificates'
-      preLoaderRoute: typeof AuthenticatedCertificatesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/como-funciona': {
-      id: '/_authenticated/como-funciona'
-      path: '/como-funciona'
-      fullPath: '/como-funciona'
-      preLoaderRoute: typeof AuthenticatedComoFuncionaRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/complete-profile': {
-      id: '/_authenticated/complete-profile'
-      path: '/complete-profile'
-      fullPath: '/complete-profile'
-      preLoaderRoute: typeof AuthenticatedCompleteProfileRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/comunicacao': {
-      id: '/_authenticated/comunicacao'
-      path: '/comunicacao'
-      fullPath: '/comunicacao'
-      preLoaderRoute: typeof AuthenticatedComunicacaoRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/dashboard': {
-      id: '/_authenticated/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/faq': {
-      id: '/_authenticated/faq'
-      path: '/faq'
-      fullPath: '/faq'
-      preLoaderRoute: typeof AuthenticatedFaqRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/financial': {
-      id: '/_authenticated/financial'
-      path: '/financial'
-      fullPath: '/financial'
-      preLoaderRoute: typeof AuthenticatedFinancialRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/messages': {
-      id: '/_authenticated/messages'
-      path: '/messages'
-      fullPath: '/messages'
-      preLoaderRoute: typeof AuthenticatedMessagesRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/notifications': {
-      id: '/_authenticated/notifications'
-      path: '/notifications'
-      fullPath: '/notifications'
-      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/plans': {
-      id: '/_authenticated/plans'
-      path: '/plans'
-      fullPath: '/plans'
-      preLoaderRoute: typeof AuthenticatedPlansRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/profile': {
-      id: '/_authenticated/profile'
-      path: '/profile'
-      fullPath: '/profile'
-      preLoaderRoute: typeof AuthenticatedProfileRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/settings': {
-      id: '/_authenticated/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/tickets': {
-      id: '/_authenticated/tickets'
-      path: '/tickets'
-      fullPath: '/tickets'
-      preLoaderRoute: typeof AuthenticatedTicketsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/transfers': {
-      id: '/_authenticated/transfers'
-      path: '/transfers'
-      fullPath: '/transfers'
-      preLoaderRoute: typeof AuthenticatedTransfersRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/_authenticated/workshops': {
-      id: '/_authenticated/workshops'
-      path: '/workshops'
-      fullPath: '/workshops'
-      preLoaderRoute: typeof AuthenticatedWorkshopsRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
-    '/c/$token': {
-      id: '/c/$token'
-      path: '/c/$token'
-      fullPath: '/c/$token'
-      preLoaderRoute: typeof CTokenRouteImport
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/l/$token': {
-      id: '/l/$token'
-      path: '/l/$token'
-      fullPath: '/l/$token'
-      preLoaderRoute: typeof LTokenRouteImport
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/r/$code': {
@@ -1071,116 +924,151 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RCodeRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/admin/': {
-      id: '/_authenticated/admin/'
-      path: '/'
-      fullPath: '/admin/'
-      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+    '/l/$token': {
+      id: '/l/$token'
+      path: '/l/$token'
+      fullPath: '/l/$token'
+      preLoaderRoute: typeof LTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/admin/documents': {
-      id: '/_authenticated/admin/documents'
-      path: '/documents'
-      fullPath: '/admin/documents'
-      preLoaderRoute: typeof AuthenticatedAdminDocumentsRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+    '/c/$token': {
+      id: '/c/$token'
+      path: '/c/$token'
+      fullPath: '/c/$token'
+      preLoaderRoute: typeof CTokenRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/admin/homolog': {
-      id: '/_authenticated/admin/homolog'
-      path: '/homolog'
-      fullPath: '/admin/homolog'
-      preLoaderRoute: typeof AuthenticatedAdminHomologRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+    '/_authenticated/workshops': {
+      id: '/_authenticated/workshops'
+      path: '/workshops'
+      fullPath: '/workshops'
+      preLoaderRoute: typeof AuthenticatedWorkshopsRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/admin/messages': {
-      id: '/_authenticated/admin/messages'
-      path: '/messages'
-      fullPath: '/admin/messages'
-      preLoaderRoute: typeof AuthenticatedAdminMessagesRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
+    '/_authenticated/transfers': {
+      id: '/_authenticated/transfers'
+      path: '/transfers'
+      fullPath: '/transfers'
+      preLoaderRoute: typeof AuthenticatedTransfersRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/admin/modules': {
-      id: '/_authenticated/admin/modules'
-      path: '/modules'
-      fullPath: '/admin/modules'
-      preLoaderRoute: typeof AuthenticatedAdminModulesRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
-    }
-    '/_authenticated/admin/tickets': {
-      id: '/_authenticated/admin/tickets'
+    '/_authenticated/tickets': {
+      id: '/_authenticated/tickets'
       path: '/tickets'
-      fullPath: '/admin/tickets'
-      preLoaderRoute: typeof AuthenticatedAdminTicketsRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
-    }
-    '/_authenticated/admin/users': {
-      id: '/_authenticated/admin/users'
-      path: '/users'
-      fullPath: '/admin/users'
-      preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
-      parentRoute: typeof AuthenticatedAdminRoute
-    }
-    '/_authenticated/documents/': {
-      id: '/_authenticated/documents/'
-      path: '/documents'
-      fullPath: '/documents/'
-      preLoaderRoute: typeof AuthenticatedDocumentsIndexRouteImport
+      fullPath: '/tickets'
+      preLoaderRoute: typeof AuthenticatedTicketsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/documents/$id': {
-      id: '/_authenticated/documents/$id'
-      path: '/documents/$id'
-      fullPath: '/documents/$id'
-      preLoaderRoute: typeof AuthenticatedDocumentsIdRouteImport
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/motorcycles/': {
-      id: '/_authenticated/motorcycles/'
-      path: '/motorcycles'
-      fullPath: '/motorcycles/'
-      preLoaderRoute: typeof AuthenticatedMotorcyclesIndexRouteImport
+    '/_authenticated/profile': {
+      id: '/_authenticated/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthenticatedProfileRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/motorcycles/$id': {
-      id: '/_authenticated/motorcycles/$id'
-      path: '/motorcycles/$id'
-      fullPath: '/motorcycles/$id'
-      preLoaderRoute: typeof AuthenticatedMotorcyclesIdRouteImport
+    '/_authenticated/plans': {
+      id: '/_authenticated/plans'
+      path: '/plans'
+      fullPath: '/plans'
+      preLoaderRoute: typeof AuthenticatedPlansRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/motorcycles/new': {
-      id: '/_authenticated/motorcycles/new'
-      path: '/motorcycles/new'
-      fullPath: '/motorcycles/new'
-      preLoaderRoute: typeof AuthenticatedMotorcyclesNewRouteImport
+    '/_authenticated/notifications': {
+      id: '/_authenticated/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof AuthenticatedNotificationsRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/perfil/': {
-      id: '/_authenticated/perfil/'
-      path: '/perfil'
-      fullPath: '/perfil/'
-      preLoaderRoute: typeof AuthenticatedPerfilIndexRouteImport
+    '/_authenticated/messages': {
+      id: '/_authenticated/messages'
+      path: '/messages'
+      fullPath: '/messages'
+      preLoaderRoute: typeof AuthenticatedMessagesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/perfil/atalhos': {
-      id: '/_authenticated/perfil/atalhos'
-      path: '/perfil/atalhos'
-      fullPath: '/perfil/atalhos'
-      preLoaderRoute: typeof AuthenticatedPerfilAtalhosRouteImport
+    '/_authenticated/financial': {
+      id: '/_authenticated/financial'
+      path: '/financial'
+      fullPath: '/financial'
+      preLoaderRoute: typeof AuthenticatedFinancialRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/perfil/conta': {
-      id: '/_authenticated/perfil/conta'
-      path: '/perfil/conta'
-      fullPath: '/perfil/conta'
-      preLoaderRoute: typeof AuthenticatedPerfilContaRouteImport
+    '/_authenticated/faq': {
+      id: '/_authenticated/faq'
+      path: '/faq'
+      fullPath: '/faq'
+      preLoaderRoute: typeof AuthenticatedFaqRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/perfil/menu-inferior': {
-      id: '/_authenticated/perfil/menu-inferior'
-      path: '/perfil/menu-inferior'
-      fullPath: '/perfil/menu-inferior'
-      preLoaderRoute: typeof AuthenticatedPerfilMenuInferiorRouteImport
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/comunicacao': {
+      id: '/_authenticated/comunicacao'
+      path: '/comunicacao'
+      fullPath: '/comunicacao'
+      preLoaderRoute: typeof AuthenticatedComunicacaoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/complete-profile': {
+      id: '/_authenticated/complete-profile'
+      path: '/complete-profile'
+      fullPath: '/complete-profile'
+      preLoaderRoute: typeof AuthenticatedCompleteProfileRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/como-funciona': {
+      id: '/_authenticated/como-funciona'
+      path: '/como-funciona'
+      fullPath: '/como-funciona'
+      preLoaderRoute: typeof AuthenticatedComoFuncionaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/certificates': {
+      id: '/_authenticated/certificates'
+      path: '/certificates'
+      fullPath: '/certificates'
+      preLoaderRoute: typeof AuthenticatedCertificatesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/central': {
+      id: '/_authenticated/central'
+      path: '/central'
+      fullPath: '/central'
+      preLoaderRoute: typeof AuthenticatedCentralRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/assistente-central': {
+      id: '/_authenticated/assistente-central'
+      path: '/assistente-central'
+      fullPath: '/assistente-central'
+      preLoaderRoute: typeof AuthenticatedAssistenteCentralRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/agenda': {
+      id: '/_authenticated/agenda'
+      path: '/agenda'
+      fullPath: '/agenda'
+      preLoaderRoute: typeof AuthenticatedAgendaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin': {
+      id: '/_authenticated/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthenticatedAdminRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/tickets/': {
@@ -1190,11 +1078,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTicketsIndexRouteImport
       parentRoute: typeof AuthenticatedTicketsRoute
     }
-    '/_authenticated/tickets/$id': {
-      id: '/_authenticated/tickets/$id'
-      path: '/$id'
-      fullPath: '/tickets/$id'
-      preLoaderRoute: typeof AuthenticatedTicketsIdRouteImport
+    '/_authenticated/perfil/': {
+      id: '/_authenticated/perfil/'
+      path: '/perfil'
+      fullPath: '/perfil/'
+      preLoaderRoute: typeof AuthenticatedPerfilIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/motorcycles/': {
+      id: '/_authenticated/motorcycles/'
+      path: '/motorcycles'
+      fullPath: '/motorcycles/'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/documents/': {
+      id: '/_authenticated/documents/'
+      path: '/documents'
+      fullPath: '/documents/'
+      preLoaderRoute: typeof AuthenticatedDocumentsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/': {
+      id: '/_authenticated/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthenticatedAdminIndexRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/api/public/app-version': {
+      id: '/api/public/app-version'
+      path: '/api/public/app-version'
+      fullPath: '/api/public/app-version'
+      preLoaderRoute: typeof ApiPublicAppVersionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/tickets/new': {
+      id: '/_authenticated/tickets/new'
+      path: '/new'
+      fullPath: '/tickets/new'
+      preLoaderRoute: typeof AuthenticatedTicketsNewRouteImport
       parentRoute: typeof AuthenticatedTicketsRoute
     }
     '/_authenticated/tickets/cpf-change': {
@@ -1204,19 +1127,96 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedTicketsCpfChangeRouteImport
       parentRoute: typeof AuthenticatedTicketsRoute
     }
-    '/_authenticated/tickets/new': {
-      id: '/_authenticated/tickets/new'
-      path: '/new'
-      fullPath: '/tickets/new'
-      preLoaderRoute: typeof AuthenticatedTicketsNewRouteImport
+    '/_authenticated/tickets/$id': {
+      id: '/_authenticated/tickets/$id'
+      path: '/$id'
+      fullPath: '/tickets/$id'
+      preLoaderRoute: typeof AuthenticatedTicketsIdRouteImport
       parentRoute: typeof AuthenticatedTicketsRoute
     }
-    '/api/public/app-version': {
-      id: '/api/public/app-version'
-      path: '/api/public/app-version'
-      fullPath: '/api/public/app-version'
-      preLoaderRoute: typeof ApiPublicAppVersionRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authenticated/perfil/menu-inferior': {
+      id: '/_authenticated/perfil/menu-inferior'
+      path: '/perfil/menu-inferior'
+      fullPath: '/perfil/menu-inferior'
+      preLoaderRoute: typeof AuthenticatedPerfilMenuInferiorRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/perfil/conta': {
+      id: '/_authenticated/perfil/conta'
+      path: '/perfil/conta'
+      fullPath: '/perfil/conta'
+      preLoaderRoute: typeof AuthenticatedPerfilContaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/perfil/atalhos': {
+      id: '/_authenticated/perfil/atalhos'
+      path: '/perfil/atalhos'
+      fullPath: '/perfil/atalhos'
+      preLoaderRoute: typeof AuthenticatedPerfilAtalhosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/motorcycles/new': {
+      id: '/_authenticated/motorcycles/new'
+      path: '/motorcycles/new'
+      fullPath: '/motorcycles/new'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesNewRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/motorcycles/$id': {
+      id: '/_authenticated/motorcycles/$id'
+      path: '/motorcycles/$id'
+      fullPath: '/motorcycles/$id'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/documents/$id': {
+      id: '/_authenticated/documents/$id'
+      path: '/documents/$id'
+      fullPath: '/documents/$id'
+      preLoaderRoute: typeof AuthenticatedDocumentsIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/admin/users': {
+      id: '/_authenticated/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AuthenticatedAdminUsersRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/tickets': {
+      id: '/_authenticated/admin/tickets'
+      path: '/tickets'
+      fullPath: '/admin/tickets'
+      preLoaderRoute: typeof AuthenticatedAdminTicketsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/modules': {
+      id: '/_authenticated/admin/modules'
+      path: '/modules'
+      fullPath: '/admin/modules'
+      preLoaderRoute: typeof AuthenticatedAdminModulesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/messages': {
+      id: '/_authenticated/admin/messages'
+      path: '/messages'
+      fullPath: '/admin/messages'
+      preLoaderRoute: typeof AuthenticatedAdminMessagesRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/homolog': {
+      id: '/_authenticated/admin/homolog'
+      path: '/homolog'
+      fullPath: '/admin/homolog'
+      preLoaderRoute: typeof AuthenticatedAdminHomologRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
+    }
+    '/_authenticated/admin/documents': {
+      id: '/_authenticated/admin/documents'
+      path: '/documents'
+      fullPath: '/admin/documents'
+      preLoaderRoute: typeof AuthenticatedAdminDocumentsRouteImport
+      parentRoute: typeof AuthenticatedAdminRoute
     }
     '/_authenticated/motorcycles/$id/': {
       id: '/_authenticated/motorcycles/$id/'
@@ -1225,60 +1225,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMotorcyclesIdIndexRouteImport
       parentRoute: typeof AuthenticatedMotorcyclesIdRoute
     }
-    '/_authenticated/motorcycles/$id/certificate': {
-      id: '/_authenticated/motorcycles/$id/certificate'
-      path: '/certificate'
-      fullPath: '/motorcycles/$id/certificate'
-      preLoaderRoute: typeof AuthenticatedMotorcyclesIdCertificateRouteImport
-      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
+    '/lovable/email/auth/webhook': {
+      id: '/lovable/email/auth/webhook'
+      path: '/lovable/email/auth/webhook'
+      fullPath: '/lovable/email/auth/webhook'
+      preLoaderRoute: typeof LovableEmailAuthWebhookRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/motorcycles/$id/components': {
-      id: '/_authenticated/motorcycles/$id/components'
-      path: '/components'
-      fullPath: '/motorcycles/$id/components'
-      preLoaderRoute: typeof AuthenticatedMotorcyclesIdComponentsRouteImport
-      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
+    '/lovable/email/auth/preview': {
+      id: '/lovable/email/auth/preview'
+      path: '/lovable/email/auth/preview'
+      fullPath: '/lovable/email/auth/preview'
+      preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
+      parentRoute: typeof rootRouteImport
     }
-    '/_authenticated/motorcycles/$id/control': {
-      id: '/_authenticated/motorcycles/$id/control'
-      path: '/control'
-      fullPath: '/motorcycles/$id/control'
-      preLoaderRoute: typeof AuthenticatedMotorcyclesIdControlRouteImport
-      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
+    '/_authenticated/recibos/$code/visualizar': {
+      id: '/_authenticated/recibos/$code/visualizar'
+      path: '/recibos/$code/visualizar'
+      fullPath: '/recibos/$code/visualizar'
+      preLoaderRoute: typeof AuthenticatedRecibosCodeVisualizarRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/motorcycles/$id/editar': {
-      id: '/_authenticated/motorcycles/$id/editar'
-      path: '/editar'
-      fullPath: '/motorcycles/$id/editar'
-      preLoaderRoute: typeof AuthenticatedMotorcyclesIdEditarRouteImport
-      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
-    }
-    '/_authenticated/motorcycles/$id/editar-manutencao': {
-      id: '/_authenticated/motorcycles/$id/editar-manutencao'
-      path: '/editar-manutencao'
-      fullPath: '/motorcycles/$id/editar-manutencao'
-      preLoaderRoute: typeof AuthenticatedMotorcyclesIdEditarManutencaoRouteImport
-      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
-    }
-    '/_authenticated/motorcycles/$id/health': {
-      id: '/_authenticated/motorcycles/$id/health'
-      path: '/health'
-      fullPath: '/motorcycles/$id/health'
-      preLoaderRoute: typeof AuthenticatedMotorcyclesIdHealthRouteImport
-      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
-    }
-    '/_authenticated/motorcycles/$id/historico-manutencao': {
-      id: '/_authenticated/motorcycles/$id/historico-manutencao'
-      path: '/historico-manutencao'
-      fullPath: '/motorcycles/$id/historico-manutencao'
-      preLoaderRoute: typeof AuthenticatedMotorcyclesIdHistoricoManutencaoRouteImport
-      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
-    }
-    '/_authenticated/motorcycles/$id/passport': {
-      id: '/_authenticated/motorcycles/$id/passport'
-      path: '/passport'
-      fullPath: '/motorcycles/$id/passport'
-      preLoaderRoute: typeof AuthenticatedMotorcyclesIdPassportRouteImport
+    '/_authenticated/motorcycles/$id/registrar-manutencao': {
+      id: '/_authenticated/motorcycles/$id/registrar-manutencao'
+      path: '/registrar-manutencao'
+      fullPath: '/motorcycles/$id/registrar-manutencao'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdRegistrarManutencaoRouteImport
       parentRoute: typeof AuthenticatedMotorcyclesIdRoute
     }
     '/_authenticated/motorcycles/$id/plan': {
@@ -1288,33 +1260,61 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMotorcyclesIdPlanRouteImport
       parentRoute: typeof AuthenticatedMotorcyclesIdRoute
     }
-    '/_authenticated/motorcycles/$id/registrar-manutencao': {
-      id: '/_authenticated/motorcycles/$id/registrar-manutencao'
-      path: '/registrar-manutencao'
-      fullPath: '/motorcycles/$id/registrar-manutencao'
-      preLoaderRoute: typeof AuthenticatedMotorcyclesIdRegistrarManutencaoRouteImport
+    '/_authenticated/motorcycles/$id/passport': {
+      id: '/_authenticated/motorcycles/$id/passport'
+      path: '/passport'
+      fullPath: '/motorcycles/$id/passport'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdPassportRouteImport
       parentRoute: typeof AuthenticatedMotorcyclesIdRoute
     }
-    '/_authenticated/recibos/$code/visualizar': {
-      id: '/_authenticated/recibos/$code/visualizar'
-      path: '/recibos/$code/visualizar'
-      fullPath: '/recibos/$code/visualizar'
-      preLoaderRoute: typeof AuthenticatedRecibosCodeVisualizarRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
+    '/_authenticated/motorcycles/$id/historico-manutencao': {
+      id: '/_authenticated/motorcycles/$id/historico-manutencao'
+      path: '/historico-manutencao'
+      fullPath: '/motorcycles/$id/historico-manutencao'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdHistoricoManutencaoRouteImport
+      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
     }
-    '/lovable/email/auth/preview': {
-      id: '/lovable/email/auth/preview'
-      path: '/lovable/email/auth/preview'
-      fullPath: '/lovable/email/auth/preview'
-      preLoaderRoute: typeof LovableEmailAuthPreviewRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authenticated/motorcycles/$id/health': {
+      id: '/_authenticated/motorcycles/$id/health'
+      path: '/health'
+      fullPath: '/motorcycles/$id/health'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdHealthRouteImport
+      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
     }
-    '/lovable/email/auth/webhook': {
-      id: '/lovable/email/auth/webhook'
-      path: '/lovable/email/auth/webhook'
-      fullPath: '/lovable/email/auth/webhook'
-      preLoaderRoute: typeof LovableEmailAuthWebhookRouteImport
-      parentRoute: typeof rootRouteImport
+    '/_authenticated/motorcycles/$id/editar-manutencao': {
+      id: '/_authenticated/motorcycles/$id/editar-manutencao'
+      path: '/editar-manutencao'
+      fullPath: '/motorcycles/$id/editar-manutencao'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdEditarManutencaoRouteImport
+      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
+    }
+    '/_authenticated/motorcycles/$id/editar': {
+      id: '/_authenticated/motorcycles/$id/editar'
+      path: '/editar'
+      fullPath: '/motorcycles/$id/editar'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdEditarRouteImport
+      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
+    }
+    '/_authenticated/motorcycles/$id/control': {
+      id: '/_authenticated/motorcycles/$id/control'
+      path: '/control'
+      fullPath: '/motorcycles/$id/control'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdControlRouteImport
+      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
+    }
+    '/_authenticated/motorcycles/$id/components': {
+      id: '/_authenticated/motorcycles/$id/components'
+      path: '/components'
+      fullPath: '/motorcycles/$id/components'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdComponentsRouteImport
+      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
+    }
+    '/_authenticated/motorcycles/$id/certificate': {
+      id: '/_authenticated/motorcycles/$id/certificate'
+      path: '/certificate'
+      fullPath: '/motorcycles/$id/certificate'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdCertificateRouteImport
+      parentRoute: typeof AuthenticatedMotorcyclesIdRoute
     }
     '/_authenticated/motorcycles/$id/checkups/': {
       id: '/_authenticated/motorcycles/$id/checkups/'
@@ -1323,11 +1323,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMotorcyclesIdCheckupsIndexRouteImport
       parentRoute: typeof AuthenticatedMotorcyclesIdRoute
     }
-    '/_authenticated/motorcycles/$id/checkups/$code': {
-      id: '/_authenticated/motorcycles/$id/checkups/$code'
-      path: '/checkups/$code'
-      fullPath: '/motorcycles/$id/checkups/$code'
-      preLoaderRoute: typeof AuthenticatedMotorcyclesIdCheckupsCodeRouteImport
+    '/_authenticated/motorcycles/$id/checkups/novo': {
+      id: '/_authenticated/motorcycles/$id/checkups/novo'
+      path: '/checkups/novo'
+      fullPath: '/motorcycles/$id/checkups/novo'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdCheckupsNovoRouteImport
       parentRoute: typeof AuthenticatedMotorcyclesIdRoute
     }
     '/_authenticated/motorcycles/$id/checkups/comparar': {
@@ -1337,11 +1337,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedMotorcyclesIdCheckupsCompararRouteImport
       parentRoute: typeof AuthenticatedMotorcyclesIdRoute
     }
-    '/_authenticated/motorcycles/$id/checkups/novo': {
-      id: '/_authenticated/motorcycles/$id/checkups/novo'
-      path: '/checkups/novo'
-      fullPath: '/motorcycles/$id/checkups/novo'
-      preLoaderRoute: typeof AuthenticatedMotorcyclesIdCheckupsNovoRouteImport
+    '/_authenticated/motorcycles/$id/checkups/$code': {
+      id: '/_authenticated/motorcycles/$id/checkups/$code'
+      path: '/checkups/$code'
+      fullPath: '/motorcycles/$id/checkups/$code'
+      preLoaderRoute: typeof AuthenticatedMotorcyclesIdCheckupsCodeRouteImport
       parentRoute: typeof AuthenticatedMotorcyclesIdRoute
     }
   }
