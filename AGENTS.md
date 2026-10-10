@@ -18,4 +18,4 @@
 - Public report validation maps RPC existence separately from report status and preserves explicit authenticity metadata, so anonymous verification does not confuse existence with validity.
 - Public share sections are stored as JSONB; normalize string arrays in SQL before membership checks and mirror this production type in isolated tests to prevent schema-only regressions.
 - Initialize new home shortcuts once under a profile row lock, preserving empty arrays and all selected entries; durable preferences must survive sessions.
-- Accumulated usage readings are committed under the official motorcycle advisory lock through commit_event_and_recompose; reject dates before the last usage-bearing activity rather than rewriting historical readings.
+- Keep accumulated readings and shortcut increments in separate RPC contracts, both delegating to commit_event_and_recompose under the official motorcycle lock with retry identities; this preserves existing semantics and prevents lost updates. Reject dates before the last usage-bearing activity to preserve historical snapshots.
