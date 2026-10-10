@@ -1,6 +1,7 @@
 import policy from './public-policy.json';
 import type { ReportSection } from './types';
 import type { PublicHealthReportSnapshot } from './public-types';
+import { redactPublicText, snapshotIdentities } from './public-text';
 
 const sections: Record<ReportSection, string[]> = {
   identification: ['motorcycle'], summary: ['overall', 'rideAnswer', 'nextMaintenance'],
@@ -39,7 +40,7 @@ export function sanitizePublicSnapshot(snapshot: unknown, allowed: unknown, pres
     ...publicSections(allowed, preset).flatMap(s => sections[s])];
   const source = policy as Record<string, unknown>;
   const shape = Object.fromEntries(keys.map(k => [k, source[k]]));
-  return (project(snapshot, shape) ?? {}) as PublicHealthReportSnapshot;
+  return redactPublicText(project(snapshot, shape) ?? {}, snapshotIdentities(snapshot)) as PublicHealthReportSnapshot;
 }
 
 export function sanitizeFiscal(value: unknown, allowed: unknown, preset: string) {

@@ -227,4 +227,33 @@ describe('Correção 01 — PostgreSQL isolado, RPC direta e defesa adicional', 
     expect(publicValidationResult({exists:false}).ok).toBe(false);
     expect(publicValidationResult({...raw,revoked:true,status:'revoked'}).revoked).toBe(true);
   });
+  it('fiscal autoriza apenas o documento apresentado, não outra nota da mesma moto', () => {
+    const older='00000000-0000-4000-8000-000000000005';
+    sql(`INSERT INTO public.motorcycle_documents VALUES('${older}','${mid}','invoice','older.pdf','application/pdf','OLD',current_date-1,now(),'synthetic-bucket','older-private-path');`);
+    expect(rpc('synthetic-fiscal').fiscal.origin_doc_id).toBe(did);
+    expect(doc('synthetic-fiscal',older)).toEqual({ok:false,reason:'document_not_found'});
+    expect(doc().ok).toBe(true);
+    sql(`DELETE FROM public.motorcycle_documents WHERE id='${older}';`);
+  });
+  it('textos aninhados não expõem CPF, contato ou nomes conhecidos, preservando o diagnóstico', () => {
+    const prose={...snapshot,owner:{name:'Synthetic Owner'},issuedBy:{name:'Synthetic Issuer'},
+      rideAnswer:{...snapshot.rideAnswer,message:'Revisar freios. synthetic owner, Synthetic Issuer, 123.456.789-09, 12345678909, teste@example.invalid, (11) 99999-8888'},
+      components:[{...snapshot.components[0],reasons:['Synthetic Owner: revisar óleo; CPF 12345678909']}]};
+    const projected=JSON.parse(sql(`SELECT public.health_public_snapshot(${quote(prose)},ARRAY['summary','components']);`));
+    expect(projected).toEqual(sanitizePublicSnapshot(prose,['summary','components']));
+    expect(projected.rideAnswer.message).toContain('Revisar freios.');
+    for(const secret of ['Synthetic Owner','synthetic owner','Synthetic Issuer','123.456.789-09','12345678909','teste@example.invalid','99999-8888']) expect(JSON.stringify(projected)).not.toContain(secret);
+    expect(projected.components[0].reasons[0]).toContain('revisar óleo');
+  });
+  it('RPC direta protege nome atual do proprietário no texto e preserva identificação fiscal autorizada', () => {
+    const prose={...snapshot,rideAnswer:{...snapshot.rideAnswer,message:'Synthetic Owner: revisar freios, CPF 12345678909'}};
+    sql(`UPDATE public.health_report_snapshots SET payload=${quote(prose)};`);
+    try {
+      const buyer=rpc(); const fiscal=rpc('synthetic-fiscal');
+      expect(buyer.snapshot.rideAnswer.message).toBe('[identificação protegida]: revisar freios, CPF [CPF protegido]');
+      expect(fiscal.snapshot.rideAnswer.message).toBe(buyer.snapshot.rideAnswer.message);
+      expect(fiscal.fiscal.owner_name).toBe('Synthetic Owner');
+      expect(fiscal.fiscal.owner_cpf).toBe('123.456.789-09');
+    } finally { sql(`UPDATE public.health_report_snapshots SET payload=${quote(snapshot)};`); }
+  });
 });
