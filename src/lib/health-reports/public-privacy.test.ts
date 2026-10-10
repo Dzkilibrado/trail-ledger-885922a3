@@ -8,6 +8,7 @@ import { sanitizePublicSnapshot, sanitizeFiscal, publicSections } from './public
 import { buildFiscalPdf } from './fiscal-pdf';
 import { ReportSnapshotView } from '@/components/health/reports/ReportSnapshotView';
 import { signAuthorizedFiscalDocument } from './fiscal-document-signing';
+import { publicValidationResult } from './public-validation';
 
 // Explicit host/user/db: NEVER inherits a managed Cloud connection.
 function sql(query: string) {
@@ -67,6 +68,14 @@ beforeAll(() => {
   ('fiscal-no-id','${rid}','fiscal',ARRAY['summary'],NULL);
   INSERT INTO public.health_report_shares(public_token,report_id,preset,allowed_sections,revoked_at) VALUES('revoked','${rid}','buyer',ARRAY['summary'],now());`);
   before=sql(`SELECT md5(string_agg(payload::text||sha256,'')) FROM public.health_report_snapshots;`);
+  sql(`INSERT INTO public.health_report_shares(public_token,report_id,preset,allowed_sections,expires_at) VALUES
+    ('synthetic-buyer-timed','${rid}','buyer',ARRAY['identification','summary'],now()+interval '1 hour'),
+    ('synthetic-workshop','${rid}','workshop',ARRAY['identification','components'],NULL),
+    ('synthetic-custom','${rid}','custom',ARRAY['history'],NULL),
+    ('synthetic-fiscal-unlimited','${rid}','fiscal',ARRAY['identification','summary'],NULL),
+    ('expired-fiscal-1','${rid}','fiscal',ARRAY['identification','summary'],now()-interval '1 second'),
+    ('expired-fiscal-2','${rid}','fiscal',ARRAY['identification','summary'],now()-interval '1 hour'),
+    ('expired-fiscal-3','${rid}','fiscal',ARRAY['identification','summary'],now()-interval '1 day');`);
   sql(readFileSync('docs/security/migrations/20261010030000_health_report_public_privacy.sql','utf8'));
 });
 
@@ -165,8 +174,8 @@ describe('Correção 01 — PostgreSQL isolado, RPC direta e defesa adicional', 
     const res=JSON.parse(sql(`SELECT public.health_public_snapshot(${quote(snapshot)},ARRAY['summary','owner','fiscal','history_extra']);`));
     expect(res).toEqual(sanitizePublicSnapshot(snapshot,['summary'])); expect(res).not.toHaveProperty('history');
   });
-  it('matriz dos cinco compartilhamentos existentes preserva expiração e autorização', () => {
-    const matrix=['expired','expired','expired','expired','synthetic-buyer'].map(token=>rpc(token));
+  it('matriz sintética com cinco registros independentes preserva expiração e autorização', () => {
+    const matrix=['expired-fiscal-1','expired-fiscal-2','expired-fiscal-3','expired','synthetic-buyer'].map(token=>rpc(token));
     expect(matrix.map(x=>x.ok)).toEqual([false,false,false,false,true]);
     expect(matrix[4].allowed_sections).toEqual([...all].sort()); expect(matrix[4].fiscal).toBeNull();
   });
@@ -174,5 +183,48 @@ describe('Correção 01 — PostgreSQL isolado, RPC direta e defesa adicional', 
     sql(`UPDATE public.motorcycle_documents SET doc_type='manual' WHERE id='${did}';`);
     expect(doc().reason).toBe('document_not_found');
     sql(`UPDATE public.motorcycle_documents SET doc_type='invoice' WHERE id='${did}';`);
+  });
+  it.each(['synthetic-buyer','synthetic-buyer-timed','synthetic-workshop','synthetic-custom','synthetic-fiscal','synthetic-fiscal-unlimited'])('modalidade %s funciona diretamente sem sessão do destinatário', token => {
+    const res=rpc(token,'anon');
+    expect(res.ok).toBe(true); expect(res.code).toBe('TB-SYNTHETIC'); expect(res.sha256).toBe('original-hash');
+    expect(res.snapshot.issuedAt).toBe('2026-10-10T00:00:00Z');
+    expect(JSON.stringify(res)).not.toContain('PRIVATE_SENTINEL');
+  });
+  it.each(all)('RPC pública autoriza apenas %s e omite cada outra seção', section => {
+    const token=`section-${section}`;
+    sql(`INSERT INTO public.health_report_shares(public_token,report_id,preset,allowed_sections) VALUES('${token}','${rid}','custom',ARRAY['${section}']);`);
+    const res=rpc(token);
+    const keys: Record<string,string[]>={identification:['motorcycle'],summary:['overall','rideAnswer','nextMaintenance'],components:['components'],action_plan:['recommendations'],history:['history'],indices:['indices'],reservations:['reservations','conflicts','missingData']};
+    expect(res.ok).toBe(true); expect(res.allowed_sections).toEqual([section]);
+    for(const [name,fields] of Object.entries(keys)) for(const field of fields) {
+      if(name===section) expect(res.snapshot).toHaveProperty(field);
+      else expect(res.snapshot).not.toHaveProperty(field);
+    }
+  });
+  it('identificação autorizada mantém os campos necessários da moto, sem dados do proprietário comum', () => {
+    const res=rpc('synthetic-buyer-timed');
+    expect(res.snapshot.motorcycle.brand).toBe('Honda'); expect(res.snapshot.motorcycle.model).toBe('CRF');
+    expect(res.snapshot.motorcycle.trailbookId).toBe('synthetic'); expect(res.snapshot.motorcycle.plate).toBe('synthetic');
+    expect(res.snapshot.motorcycle.chassisMasked).toBe('synthetic');
+    expect(res.fiscal).toBeNull(); expect(res.snapshot).not.toHaveProperty('owner');
+  });
+  it('links com e sem expiração mantêm prazos e podem ser revogados pelo registro existente', () => {
+    const beforeShares=sql(`SELECT jsonb_agg(to_jsonb(s) ORDER BY public_token) FROM public.health_report_shares s;`);
+    expect(rpc('synthetic-buyer').share_expires_at).toBeNull();
+    expect(rpc('synthetic-buyer-timed').share_expires_at).not.toBeNull();
+    expect(doc('synthetic-fiscal-unlimited').ttl_seconds).toBe(300);
+    expect(sql(`SELECT jsonb_agg(to_jsonb(s) ORDER BY public_token) FROM public.health_report_shares s;`)).toBe(beforeShares);
+    sql(`UPDATE public.health_report_shares SET revoked_at=now() WHERE public_token='synthetic-buyer-timed';`);
+    expect(rpc('synthetic-buyer-timed').reason).toBe('revoked');
+    sql(`UPDATE public.health_report_shares SET revoked_at=NULL WHERE public_token='synthetic-buyer-timed';`);
+  });
+  it('conferência pública por código preserva autenticidade sem login e sem snapshot', () => {
+    const raw=JSON.parse(sql(`SET ROLE anon; SELECT public.validate_health_report('TB-SYNTHETIC'); RESET ROLE;`));
+    const result=publicValidationResult(raw);
+    expect(result.ok).toBe(true); expect(result.exists).toBe(true); expect(result.code).toBe('TB-SYNTHETIC');
+    expect(result.sha256).toBe('original-hash'); expect(result.status).toBe('valid');
+    expect(result).not.toHaveProperty('snapshot'); expect(result).not.toHaveProperty('owner');
+    expect(publicValidationResult({exists:false}).ok).toBe(false);
+    expect(publicValidationResult({...raw,revoked:true,status:'revoked'}).revoked).toBe(true);
   });
 });
