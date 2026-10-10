@@ -34,3 +34,11 @@ Não há link fiscal vigente entre os cinco registros existentes; não reativar 
 GitHub principal não verificável: não existe conexão GitHub acessível nesta sessão. Não confundir commits automáticos no armazenamento Lovable com sincronização confirmada em `Dzklibrado/trail-ledger-885922a3`.
 
 O pedido de publicação e sua verificação posterior devem ser distinguidos: agendamento não comprova implantação concluída. Evidências operacionais temporárias ficam em `/tmp/browser/release01/`, sem tokens em relatórios.
+
+## Conferência posterior ao pedido de publicação
+
+Domínio oficial `https://www.trailbook.com.br` respondeu HTTP 200. Endpoint público de versão confirmou **1.6.11**, build **20261010-032827-89lbomr**, data **2026-10-10T03:28:27.442Z**. Este identificador usa sufixo aleatório; não prova sozinho o SHA Git. HEAD observado após o pedido: `270f45e3b9da7f0f29f5441511e73ee15b8712fe`; sincronização GitHub continua não confirmada.
+
+No domínio publicado, início e formulário de login renderizam; sessão autorizada existente acessa `/dashboard` e `/central`; laudo comprador ativo abre sem login e sem erro. Nenhum erro de página foi capturado. Senha/Google não foram exercitados. Os links fiscais existentes estão expirados e foram preservados, portanto não há comprovação de acesso fiscal válido ou download real. QR/PDF permanecem validados sinteticamente, não em nova leitura pela câmera no domínio publicado.
+
+Scanner executado novamente após publicação: nenhuma constatação crítica, uma advertência preexistente e seis informativas; verificação não equivale a auditoria universal. Nenhuma contratação ou alteração histórica realizada.
