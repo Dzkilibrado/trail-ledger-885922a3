@@ -7,6 +7,7 @@ import policy from './public-policy.json';
 import { sanitizePublicSnapshot, sanitizeFiscal, publicSections } from './public-payload';
 import { buildFiscalPdf } from './fiscal-pdf';
 import { ReportSnapshotView } from '@/components/health/reports/ReportSnapshotView';
+import { signAuthorizedFiscalDocument } from './fiscal-document-signing';
 
 // Explicit host/user/db: NEVER inherits a managed Cloud connection.
 function sql(query: string) {
@@ -65,7 +66,7 @@ beforeAll(() => {
   ('fiscal-no-id','${rid}','fiscal',ARRAY['summary'],NULL);
   INSERT INTO public.health_report_shares(public_token,report_id,preset,allowed_sections,revoked_at) VALUES('revoked','${rid}','buyer',ARRAY['summary'],now());`);
   before=sql(`SELECT md5(string_agg(payload::text||sha256,'')) FROM public.health_report_snapshots;`);
-  sql(readFileSync('supabase/migrations/20261010030000_health_report_public_privacy.sql','utf8'));
+  sql(readFileSync('docs/security/migrations/20261010030000_health_report_public_privacy.sql','utf8'));
 });
 
 describe('Correção 01 — PostgreSQL isolado, RPC direta e defesa adicional', () => {
@@ -135,5 +136,21 @@ describe('Correção 01 — PostgreSQL isolado, RPC direta e defesa adicional', 
   it('snapshots e hashes mantêm integridade após migration e validações', () => {
     expect(sql(`SELECT md5(string_agg(payload::text||sha256,'')) FROM public.health_report_snapshots;`)).toBe(before);
     expect(sql(`SELECT snapshot_sha256 FROM public.health_reports WHERE id='${rid}';`)).toBe('original-hash');
+  });
+  it('validação por código não expõe snapshot nem motivos livres', () => {
+    const res=JSON.parse(sql(`SET ROLE anon; SELECT public.validate_health_report('TB-SYNTHETIC'); RESET ROLE;`));
+    expect(res.exists).toBe(true); expect(res).not.toHaveProperty('snapshot'); expect(res).not.toHaveProperty('outdated_reason');
+  });
+  it('assinatura recebe exclusivamente caminho autorizado e TTL da RPC', async () => {
+    const authorization=doc(); const calls: unknown[]=[];
+    const signed=await signAuthorizedFiscalDocument(authorization,async (...args)=>{calls.push(args);return 'https://synthetic.invalid/temporary-document';});
+    expect(signed.ok).toBe(true); expect(calls).toEqual([['synthetic-bucket','private-synthetic-path',300]]);
+    expect(signed).not.toHaveProperty('storage_path'); expect(signed).not.toHaveProperty('bucket');
+  });
+  it('nega assinatura não autorizada e TTL acima de 300 sem acessar armazenamento', async () => {
+    let calls=0; const sign=async()=>{calls++;return 'https://synthetic.invalid/doc';};
+    expect((await signAuthorizedFiscalDocument({ok:false},sign)).ok).toBe(false);
+    expect((await signAuthorizedFiscalDocument({ok:true,bucket:'b',storage_path:'p',ttl_seconds:301},sign)).ok).toBe(false);
+    expect(calls).toBe(0);
   });
 });

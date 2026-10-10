@@ -359,10 +359,26 @@ BEGIN
 END $$;
 
 
+-- Alternate public validation exposes only metadata, not free-text reasons.
+CREATE OR REPLACE FUNCTION public.validate_health_report(_code text)
+RETURNS jsonb LANGUAGE plpgsql STABLE SECURITY DEFINER
+SET search_path = pg_catalog, public AS $$
+DECLARE r record;
+BEGIN
+  SELECT code,status,issued_at,valid_until,snapshot_sha256,format_version,outdated_at,revoked_at
+  INTO r FROM public.health_reports WHERE code = _code;
+  IF NOT FOUND THEN RETURN jsonb_build_object('exists',false); END IF;
+  RETURN jsonb_build_object('exists',true,'code',r.code,'status',r.status,'issued_at',r.issued_at,
+    'valid_until',r.valid_until,'sha256',r.snapshot_sha256,'format_version',r.format_version,
+    'outdated_at',r.outdated_at,'revoked',r.revoked_at IS NOT NULL);
+END $$;
+
 REVOKE ALL ON FUNCTION public.health_public_project(jsonb,jsonb) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.health_public_snapshot(jsonb,text[]) FROM PUBLIC, anon, authenticated;
 REVOKE ALL ON FUNCTION public.get_public_health_report(text) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_public_health_report(text) TO anon, authenticated, service_role;
 REVOKE ALL ON FUNCTION public.get_fiscal_document_url(text,uuid) FROM PUBLIC, anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.get_fiscal_document_url(text,uuid) TO service_role;
+REVOKE ALL ON FUNCTION public.validate_health_report(text) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.validate_health_report(text) TO anon, authenticated, service_role;
 COMMIT;

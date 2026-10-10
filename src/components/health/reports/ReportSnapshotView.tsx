@@ -82,7 +82,7 @@ export function ReportSnapshotView({
   statusLabel,
   className,
 }: {
-  snapshot: PublicHealthReportSnapshot;
+  snapshot: PublicHealthReportSnapshot | Partial<HealthReportSnapshot>;
   sections?: ReportSection[];
   code?: string;
   sha256?: string;
@@ -99,6 +99,7 @@ export function ReportSnapshotView({
             <div className="mb-2 text-lg font-black">
               {s.motorcycle.brand} {s.motorcycle.model}
             </div>
+            {"nickname" in s.motorcycle && <Row label="Apelido" value={s.motorcycle.nickname} />}
             <Row
               label="Ano"
               value={
@@ -177,7 +178,7 @@ export function ReportSnapshotView({
               <ul className="space-y-1 text-sm">
                 {s.history.lastMaintenances?.map((m, i) => (
                   <li key={i} className="text-muted-foreground">
-                    <span className="font-semibold text-foreground">{formatDate(m.date)}</span> — {m.type}
+                    <span className="font-semibold text-foreground">{formatDate(m.date)}</span> — {"title" in m ? `${m.title} (${m.type})` : m.type}
                   </li>
                 ))}
               </ul>
@@ -190,7 +191,7 @@ export function ReportSnapshotView({
                 <ul className="space-y-1 text-sm text-muted-foreground">
                   {s.history.incidents?.map((i, idx) => (
                     <li key={idx}>
-                      {formatDate(i.date)} — Ocorrência registrada
+                      {formatDate(i.date)} — {"title" in i ? i.title : "Ocorrência registrada"}
                     </li>
                   ))}
                 </ul>
@@ -257,7 +258,7 @@ export function ReportSnapshotView({
           {s.issuedAt && <Row label="Emitido em" value={formatDate(s.issuedAt)} />}
           <Row
             label="Versões"
-            value={s.formatVersion ?? "—"}
+            value={"tilVersion" in s ? `${s.formatVersion ?? "—"} · ${s.tilVersion ?? "—"} · ${s.ruleVersion ?? "—"}` : s.formatVersion ?? "—"}
           />
           {sha256 && (
             <p className="flex items-start gap-2 break-all pt-2 text-[11px] text-muted-foreground">

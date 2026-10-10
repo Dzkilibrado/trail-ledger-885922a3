@@ -5,6 +5,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { snapshotHash } from "@/lib/health-reports/snapshot";
 import { sanitizePublicSnapshot, publicSections, sanitizeFiscal } from "@/lib/health-reports/public-payload";
 import type { HealthReportSnapshot, ReportSection } from "@/lib/health-reports/types";
+import { signAuthorizedFiscalDocument, type FiscalDocumentAuthorization } from "@/lib/health-reports/fiscal-document-signing";
 
 /** Abre um Check-up (run). O run é a chave de idempotência da emissão. */
 export const startCheckRun = createServerFn({ method: "POST" })
@@ -267,18 +268,9 @@ export const getFiscalDocumentUrl = createServerFn({ method: "GET" })
       _token: data.token,
       _doc_id: data.docId,
     } as never);
-    const res = rpc.data as any;
-    if (!res?.ok) return { ok: false as const, reason: String(res?.reason ?? "error") };
-    // Gerar URL assinada com TTL retornado pela RPC
-    const { data: signed, error } = await supabaseAdmin.storage
-      .from(String(res.bucket))
-      .createSignedUrl(String(res.storage_path), Number(res.ttl_seconds));
-    if (error || !signed?.signedUrl) return { ok: false as const, reason: "storage_error" };
-    return {
-      ok: true as const,
-      signedUrl: signed.signedUrl,
-      fileName: String(res.file_name ?? "documento"),
-      mimeType: String(res.mime_type ?? "application/octet-stream"),
-      ttlSeconds: Number(res.ttl_seconds),
-    };
+    if (rpc.error) return { ok: false as const, reason: "authorization_error" };
+    return signAuthorizedFiscalDocument(rpc.data as unknown as FiscalDocumentAuthorization | null, async (bucket, path, ttl) => {
+      const { data: signed, error } = await supabaseAdmin.storage.from(bucket).createSignedUrl(path, ttl);
+      return error ? null : signed?.signedUrl ?? null;
+    });
   });
