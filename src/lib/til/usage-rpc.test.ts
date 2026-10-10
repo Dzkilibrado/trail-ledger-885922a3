@@ -33,6 +33,34 @@ beforeAll(() => {
   const official = readFileSync("supabase/migrations/20260722172504_9c21fba2-d019-4eea-8c4d-072f80c90918.sql","utf8");
   sql(official.slice(0, official.indexOf("CREATE OR REPLACE FUNCTION public.update_event_and_recompose")));
   sql(readFileSync("docs/security/migrations/20261010041000_register_usage.sql","utf8"));
+  sql(readFileSync("docs/security/migrations/20261010043000_usage_increment.sql","utf8"));
+});
+const increment = (amount = 10, date = "current_date", key = "00000000-0000-4000-8000-000000000030") => asUser(`SELECT row_to_json(r) FROM commit_usage_increment('${mid}',${date},${amount},'','${key}') r;`);
+describe("additional usage RPC — isolated PostgreSQL", () => {
+  it("adds 10h to 10h and stores usage delta", () => { expect(JSON.parse(increment()).hours_total).toBe(20); expect(sql("SELECT hours_delta FROM events")).toBe("10"); expect(sql("SELECT hours_at_event FROM events")).toBe("20"); });
+  it("adds 1.5h to 10h", () => expect(JSON.parse(increment(1.5)).hours_total).toBe(11.5));
+  it("adds 80km to 1500km", () => { sql("UPDATE motorcycles SET control_type='km', km_initial=1500, km_total=1500"); expect(JSON.parse(increment(80)).km_total).toBe(1580); expect(sql("SELECT km_delta FROM events")).toBe("80"); });
+  it("stores an empty location as optional", () => { increment(); expect(sql("SELECT location IS NULL FROM events")).toBe("t"); });
+  it("does not duplicate retries", () => { increment(); increment(); expect(sql("SELECT count(*) FROM events")).toBe("1"); expect(sql("SELECT hours_total FROM motorcycles")).toBe("20"); });
+  it("accepts identical additional quantities with separate identities", () => { increment(); increment(10,"current_date","00000000-0000-4000-8000-000000000031"); expect(sql("SELECT hours_total FROM motorcycles")).toBe("30"); });
+  it("serializes two additions without loss", async () => {
+    const submit = () => new Promise<boolean>(resolve => execFile("psql", ["-h","127.0.0.1","-p","55432","-U","lovable","-d","trailbook_usage_test","-X","-qAt","-v","ON_ERROR_STOP=1","-c",`SET ROLE authenticated; SET request.jwt.claim.sub='${uid}'; SELECT * FROM commit_usage_increment('${mid}',current_date,10,'',gen_random_uuid());`], {env:{PATH:process.env.PATH,PGSSLMODE:"disable"}}, error => resolve(!error)));
+    expect(await Promise.all([submit(),submit()])).toEqual([true,true]); expect(sql("SELECT count(*) FROM events")).toBe("2"); expect(sql("SELECT hours_total FROM motorcycles")).toBe("30");
+  });
+  it("accepts retroactive usage after the latest usage-bearing activity", () => expect(JSON.parse(increment(10,"current_date-1")).hours_total).toBe(20));
+  it("rejects retroactive usage that would rewrite prior snapshots", () => { increment(); expect(() => increment(1,"current_date-1","00000000-0000-4000-8000-000000000031")).toThrow(); expect(sql("SELECT hours_total FROM motorcycles")).toBe("20"); });
+  for (const amount of [0,-1,1.501]) it(`rejects amount ${amount}`, () => { expect(() => increment(amount)).toThrow(); expect(sql("SELECT count(*) FROM events")).toBe("0"); });
+  it("preserves accumulated reading semantics", () => { increment(1.5); expect(JSON.parse(register(13)).hours_total).toBe(13); expect(sql("SELECT sum(hours_delta) FROM events")).toBe("3.0"); });
+  it("updates TIL maintenance and alert state", () => {
+    const schedule = { id:"synthetic-oil", name:"Synthetic Oil", category:"engine", active:true, status:"active", interval_hours:10, last_done_hours:10 } as Schedule;
+    increment(); const moto = JSON.parse(sql("SELECT row_to_json(m) FROM motorcycles m")) as Moto;
+    const statuses=computeStatuses(moto,[schedule],[]); expect(statuses[0].remaining.hours).toBe(0); expect(computeNextMaintenance(statuses)?.scheduleId).toBe("synthetic-oil"); expect(computeNextAlert(statuses)?.tone).toBe("bad");
+  });
+  it("denies anonymous and unrelated owners", () => { expect(() => sql(`SET ROLE anon; SELECT * FROM commit_usage_increment('${mid}',current_date,10,'',gen_random_uuid())`)).toThrow(); expect(() => asUser(`SELECT * FROM commit_usage_increment('${mid}',current_date,10,'',gen_random_uuid())`,"00000000-0000-4000-8000-000000000099")).toThrow(); });
+  it("rolls back addition on persistence failure", () => {
+    sql(`CREATE FUNCTION increment_fail() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'synthetic failure'; END $$; CREATE TRIGGER synthetic_failure BEFORE UPDATE ON motorcycles FOR EACH ROW EXECUTE FUNCTION increment_fail();`);
+    try { expect(() => increment()).toThrow(); expect(sql("SELECT count(*) FROM events")).toBe("0"); expect(sql("SELECT hours_total FROM motorcycles")).toBe("10"); } finally { sql("DROP TRIGGER synthetic_failure ON motorcycles; DROP FUNCTION increment_fail()"); }
+  });
 });
 beforeEach(() => {
   sql(`TRUNCATE profiles, motorcycles, events, maintenance_schedules, maintenance_items;

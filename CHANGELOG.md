@@ -1,3 +1,8 @@
+## [Homologação — Correção do Ajuste 01] — 2026-10-10
+
+- Registrar Uso passa a receber quantidade adicional com resumo de total atual, uso informado e total previsto; outros campos acumulados permanecem intactos.
+- Nova RPC incremental proposta, protegida pelo lock oficial e identificação idempotente, sem aplicação ao banco compartilhado ou publicação.
+
 ## [Homologação — Ajuste 01] — 2026-10-10 — Registrar Uso
 
 - Novo primeiro atalho inicial, inserido uma única vez na primeira leitura das preferências; remoção e ordem posteriores são respeitadas.
