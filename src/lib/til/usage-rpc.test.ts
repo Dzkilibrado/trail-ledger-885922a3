@@ -1,6 +1,9 @@
 import { beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { execFileSync } from "node:child_process";
+import { execFileSync, execFile } from "node:child_process";
 import { readFileSync } from "node:fs";
+import { computeStatuses, computeNextMaintenance } from "./schedule";
+import { computeNextAlert } from "./alerts";
+import type { Moto, Schedule } from "./types";
 const uid = "00000000-0000-4000-8000-000000000003", mid = "00000000-0000-4000-8000-000000000002";
 function sql(q: string, db = "trailbook_usage_test") {
   return execFileSync("psql", ["-h","127.0.0.1","-p","55432","-U","lovable","-d",db,"-X","-qAt","-v","ON_ERROR_STOP=1","-c",q], {encoding:"utf8", env:{PATH:process.env.PATH,PGSSLMODE:"disable"},stdio:["pipe","pipe","pipe"]}).trim();
@@ -37,6 +40,36 @@ beforeEach(() => {
     INSERT INTO motorcycles(id,owner_id,status,control_type,hours_initial,km_initial,hours_total,km_total) VALUES('${mid}','${uid}','active','hours',10,10000,10,10000);`);
 });
 describe("usage RPC and initial preferences — isolated PostgreSQL", () => {
+  it("serializes competing accumulated readings", async () => {
+    function submit() { return new Promise<boolean>(resolve => execFile("psql", ["-h","127.0.0.1","-p","55432","-U","lovable","-d","trailbook_usage_test","-X","-qAt","-v","ON_ERROR_STOP=1","-c",`SET ROLE authenticated; SET request.jwt.claim.sub='${uid}'; SELECT * FROM commit_usage_reading('${mid}',current_date,13,'',gen_random_uuid());`], {env:{PATH:process.env.PATH,PGSSLMODE:"disable"}}, error => resolve(!error))); }
+    const outcomes = await Promise.all([submit(),submit()]);
+    expect(outcomes.filter(Boolean)).toHaveLength(1);
+    expect(sql("SELECT count(*) FROM events")).toBe("1");
+    expect(sql("SELECT hours_total FROM motorcycles")).toBe("13");
+  });
+  it("updates official TIL maintenance and alerts from the persisted reading", () => {
+    const before = JSON.parse(sql("SELECT row_to_json(m) FROM motorcycles m")) as Moto;
+    const schedule = { id:"synthetic-oil", name:"Synthetic Oil", category:"engine", active:true, status:"active", interval_hours:3, last_done_hours:10 } as Schedule;
+    expect(computeStatuses(before,[schedule],[])[0].status).toBe("ok");
+    register();
+    const after = JSON.parse(sql("SELECT row_to_json(m) FROM motorcycles m")) as Moto;
+    const statuses = computeStatuses(after,[schedule],[]);
+    expect(statuses[0].status).toBe("overdue");
+    expect(statuses[0].remaining.hours).toBe(0);
+    expect(computeNextMaintenance(statuses)?.scheduleId).toBe("synthetic-oil");
+    expect(computeNextAlert(statuses)?.tone).toBe("bad");
+  });
+  it("does not rewrite a prior maintenance snapshot", () => {
+    const eid="00000000-0000-4000-8000-000000000020", sid="00000000-0000-4000-8000-000000000021";
+    sql(`INSERT INTO events(id,motorcycle_id,created_by,type,occurred_at,title,hours_delta,hours_at_event,km_at_event) VALUES('${eid}','${mid}','${uid}','maintenance',now()-interval '1 day','Synthetic maintenance',0,10,10000);
+      INSERT INTO maintenance_schedules(id,motorcycle_id,last_done_hours,last_done_km,last_done_at,last_completed_event_id) VALUES('${sid}','${mid}',10,10000,now()-interval '1 day','${eid}'); INSERT INTO maintenance_items VALUES('${eid}','${sid}');`);
+    register();
+    expect(sql(`SELECT hours_at_event FROM events WHERE id='${eid}'`)).toBe("10");
+    expect(sql(`SELECT last_done_hours FROM maintenance_schedules WHERE id='${sid}'`)).toBe("10");
+  });
+  it("rejects excessive precision server-side", () => expect(() => register(13.501)).toThrow());
+  it("rejects fractional km server-side", () => {sql("UPDATE motorcycles SET control_type='km'"); expect(() => register(12500.5)).toThrow();});
+  it("rejects archived motorcycles", () => {sql("UPDATE motorcycles SET status='archived'"); expect(() => register()).toThrow();});
   it("initializes defaults once", () => { expect(asUser("SELECT initialize_usage_shortcut()" )).toBe("{registrar-uso,passaporte,documentos,recibo,selos,saude,manutencoes,cockpit}"); expect(asUser("SELECT initialize_usage_shortcut()" )).toBe("{registrar-uso,passaporte,documentos,recibo,selos,saude,manutencoes,cockpit}"); });
   it("preserves personalized order", () => { sql(`UPDATE profiles SET home_shortcuts=ARRAY['agenda','cockpit']`); expect(asUser("SELECT initialize_usage_shortcut()")).toBe("{registrar-uso,agenda,cockpit}"); });
   it("preserves nine existing shortcuts", () => { sql(`UPDATE profiles SET home_shortcuts=ARRAY['passaporte','documentos','recibo','selos','saude','manutencoes','cockpit','agenda','financeiro']`); expect(asUser("SELECT cardinality(initialize_usage_shortcut())")).toBe("10"); });
