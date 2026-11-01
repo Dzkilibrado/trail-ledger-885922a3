@@ -1095,7 +1095,16 @@ export function MotoControlCenter({
                                   <div className="text-xs text-muted-foreground">
                                     {formatDate(e.occurred_at)}
                                   </div>
-                                  {isOwner && !isArchived && <EventActionsMenu event={e as any} />}
+                                  {isOwner && !isArchived && (
+                                    <EventActionsMenu
+                                      event={e as any}
+                                      onChanged={() => {
+                                        qc.invalidateQueries({ queryKey: ["events", id] });
+                                        qc.invalidateQueries({ queryKey: ["motorcycle", id] });
+                                        qc.invalidateQueries({ queryKey: ["usage-history-avg", id] });
+                                      }}
+                                    />
+                                  )}
                                 </div>
                               </div>
                               <div className="text-xs uppercase tracking-widest text-muted-foreground">
