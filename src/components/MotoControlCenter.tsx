@@ -123,10 +123,11 @@ export function MotoControlCenter({
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteWord, setDeleteWord] = useState("");
   const [view, setView] = useState<ControlView>(() => resolveInitialView(initialTab));
+  // Sub-navegação dentro de Lançamentos
+  type LancamentoFilter = "menu" | "maintenance" | "usage" | "incident" | "accessory" | "note";
+  const [lancamentoFilter, setLancamentoFilter] = useState<LancamentoFilter>("menu");
   const [activitySearch, setActivitySearch] = useState("");
-  const [activityTypeFilter, setActivityTypeFilter] = useState<
-    "all" | "maintenance" | "usage" | "incident" | "accessory" | "note"
-  >("all");
+  // activityTypeFilter removido — sub-menu de cards substitui os filtros pill
   const [inspectTarget, setInspectTarget] = useState<null | {
     id: string;
     name: string;
@@ -802,7 +803,7 @@ export function MotoControlCenter({
         {view !== "menu" && (
           <button
             type="button"
-            onClick={() => setView("menu")}
+            onClick={() => { setView("menu"); setLancamentoFilter("menu"); setActivitySearch(""); }}
             className="mb-5 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:bg-muted/80"
           >
             <ArrowLeft className="h-4 w-4 shrink-0" />
@@ -1055,205 +1056,229 @@ export function MotoControlCenter({
             </section>
         </div>}
 
-        {/* ── SEÇÃO: Lançamentos (ex-Histórico/Atividade) ── */}
+        {/* ── SEÇÃO: Lançamentos ── */}
         {view === "atividade" && <div className="space-y-4">
-          {/* Filtros */}
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="Buscar por item, serviço ou local…"
-                  value={activitySearch}
-                  onChange={(e) => setActivitySearch(e.target.value)}
-                  className="h-9 w-full rounded-xl border border-border bg-card pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
-                />
-              </div>
-              {activitySearch && (
-                <button
-                  onClick={() => setActivitySearch("")}
-                  className="rounded-xl border border-border bg-card px-3 text-xs text-muted-foreground hover:text-foreground"
-                >
-                  Limpar
-                </button>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              {(
-                [
-                  ["all", "Todas"],
-                  ["maintenance", "🔧 Manutenções"],
-                  ["usage", "🏍 Uso"],
-                  ["incident", "⚠️ Sinistros"],
-                  ["accessory", "🎽 Acessórios"],
-                  ["note", "📝 Notas"],
-                ] as const
-              ).map(([val, label]) => (
-                <button
-                  key={val}
-                  onClick={() => setActivityTypeFilter(val)}
-                  className={cn(
-                    "rounded-full border px-3 py-1 text-xs font-medium transition",
-                    activityTypeFilter === val
-                      ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:border-primary/40",
-                  )}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
-          </div>
 
-          <section>
-            {isOwner && !isArchived && (events.data?.length ?? 0) > 0 && (
-              <p className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Pencil className="h-3 w-3 shrink-0" /> Errou uma hora, km ou data? Use
-                os botões <strong>Editar</strong> ou <strong>Excluir</strong> abaixo de
-                cada atividade — o sistema recalcula tudo sozinho.
-              </p>
-            )}
-            {events.isLoading ? (
-              <ol className="relative space-y-4 border-l border-border pl-6" aria-hidden="true">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <li key={i} className="relative">
-                    <span className="absolute -left-[34px] top-2 h-3 w-3 rounded-full bg-primary/40 ring-4 ring-background" />
-                    <div className="surface-elevated rounded-2xl p-4">
-                      <div className="h-4 w-1/3 animate-pulse rounded bg-primary/10" />
-                      <div className="mt-2 h-3 w-1/4 animate-pulse rounded bg-primary/10" />
-                      <div className="mt-3 h-3 w-2/3 animate-pulse rounded bg-primary/10" />
-                    </div>
-                  </li>
-                ))}
-              </ol>
-            ) : events.data && events.data.length > 0 ? (
-              (() => {
-                const filtered = events.data.filter((e) => {
-                  if (activityTypeFilter !== "all") {
-                    if (
-                      activityTypeFilter === "maintenance" &&
-                      e.type !== "maintenance" &&
-                      e.type !== "revision"
-                    )
-                      return false;
-                    if (activityTypeFilter !== "maintenance" && e.type !== activityTypeFilter)
-                      return false;
-                  }
-                  if (activitySearch.trim()) {
-                    const q = activitySearch.toLowerCase();
+          {/* Botão Voltar para o sub-menu de Lançamentos */}
+          {lancamentoFilter !== "menu" && (
+            <button
+              type="button"
+              onClick={() => { setLancamentoFilter("menu"); setActivitySearch(""); }}
+              className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:bg-muted/80"
+            >
+              <ArrowLeft className="h-4 w-4 shrink-0" />
+              Categorias de lançamentos
+            </button>
+          )}
+
+          {/* ── SUB-MENU: Grid de categorias ── */}
+          {lancamentoFilter === "menu" && (() => {
+            const cats = [
+              { key: "maintenance" as const, emoji: "🔧", label: "Manutenções", desc: "Revisões, trocas e reparos", color: "bg-orange-500/10 text-orange-500" },
+              { key: "usage"       as const, emoji: "🏍", label: "Uso",          desc: "Horas e quilômetros rodados", color: "bg-primary/10 text-primary" },
+              { key: "incident"    as const, emoji: "⚠️", label: "Sinistros",    desc: "Quedas, roubos e avarias", color: "bg-destructive/10 text-destructive" },
+              { key: "accessory"   as const, emoji: "🎽", label: "Acessórios",   desc: "Equipamentos e proteções", color: "bg-sky-500/10 text-sky-500" },
+              { key: "note"        as const, emoji: "📝", label: "Notas",        desc: "Observações e registros livres", color: "bg-violet-500/10 text-violet-500" },
+            ];
+            const countFor = (key: string) => {
+              if (!events.data) return null;
+              const n = events.data.filter((e: any) =>
+                key === "maintenance"
+                  ? e.type === "maintenance" || e.type === "revision"
+                  : e.type === key
+              ).length;
+              return n;
+            };
+            return (
+              <div className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  Selecione uma categoria para ver, editar ou excluir os registros.
+                </p>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {cats.map(({ key, emoji, label, desc, color }) => {
+                    const count = countFor(key);
                     return (
-                      e.title?.toLowerCase().includes(q) ||
-                      e.location?.toLowerCase().includes(q) ||
-                      e.description?.toLowerCase().includes(q)
-                    );
-                  }
-                  return true;
-                });
-
-                if (filtered.length === 0) {
-                  return (
-                    <div className="rounded-2xl border border-dashed border-border p-8 text-center">
-                      <p className="text-sm text-muted-foreground">
-                        {activitySearch
-                          ? `Nenhuma atividade encontrada para "${activitySearch}"`
-                          : "Nenhuma atividade nesta categoria"}
-                      </p>
-                      {activitySearch && (
-                        <button
-                          onClick={() => setActivitySearch("")}
-                          className="mt-2 text-xs text-primary hover:underline"
-                        >
-                          Limpar busca
-                        </button>
-                      )}
-                    </div>
-                  );
-                }
-
-                return (
-                  <ol className="relative space-y-4 border-l border-border pl-6">
-                    {filtered.map((e) => (
-                      <li key={e.id} className="relative">
-                        <span className="absolute -left-[34px] top-2 h-3 w-3 rounded-full bg-primary ring-4 ring-background" />
-                        <div className="surface-elevated rounded-2xl p-4">
-                          <div className="flex items-start gap-3">
-                            <EventTypeIcon type={e.type} />
-                            <div className="min-w-0 flex-1">
-                              <div className="flex flex-wrap items-baseline justify-between gap-2">
-                                <div className="font-semibold">{e.title}</div>
-                                <div className="text-xs text-muted-foreground">
-                                  {formatDate(e.occurred_at)}
-                                </div>
-                              </div>
-                              <div className="text-xs uppercase tracking-widest text-muted-foreground">
-                                {EVENT_TYPE_LABEL[e.type]}
-                              </div>
-                              {e.description && (
-                                <p className="mt-2 text-sm text-muted-foreground">
-                                  {e.description}
-                                </p>
-                              )}
-                              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                                {e.hours_at_event != null && (
-                                  <span>{Number(e.hours_at_event).toFixed(1)} h</span>
-                                )}
-                                {e.km_at_event != null && (
-                                  <span>{Number(e.km_at_event).toFixed(0)} km</span>
-                                )}
-                                {e.location && <span>{e.location}</span>}
-                                {e.cost != null && (
-                                  <span className="font-semibold text-primary">
-                                    {brl(Number(e.cost))}
-                                  </span>
-                                )}
-                              </div>
-                              {(() => {
-                                const meta = (e.metadata ?? {}) as Record<string, unknown>;
-                                const code =
-                                  typeof meta.receipt_code === "string" ? meta.receipt_code : null;
-                                if (e.type !== "ownership_transfer" || !code) return null;
-                                return (
-                                  <div className="mt-3 flex flex-wrap gap-1.5">
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      onClick={() => openReceiptPdf(code, "signed")}
-                                    >
-                                      <Eye className="h-3.5 w-3.5" /> Visualizar recibo
-                                    </Button>
-                                  </div>
-                                );
-                              })()}
-                              {/* Botões de ação — sempre visíveis no rodapé do card */}
-                              {isOwner && !isArchived && (
-                                <div className="mt-3 border-t border-border pt-3">
-                                  <EventActionsMenu
-                                    event={e as any}
-                                    variant="inline"
-                                    onChanged={() => {
-                                      qc.invalidateQueries({ queryKey: ["events", id] });
-                                      qc.invalidateQueries({ queryKey: ["motorcycle", id] });
-                                      qc.invalidateQueries({ queryKey: ["usage-history-avg", id] });
-                                    }}
-                                  />
-                                </div>
-                              )}
-                            </div>
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setLancamentoFilter(key)}
+                        className="surface-elevated flex flex-col items-start gap-3 rounded-2xl p-4 text-left transition-all hover:ring-2 hover:ring-primary/40 active:scale-[0.98]"
+                      >
+                        <div className={cn("flex h-10 w-10 items-center justify-center rounded-xl text-lg", color)}>
+                          {emoji}
+                        </div>
+                        <div className="min-w-0 w-full">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="font-semibold leading-tight">{label}</span>
+                            {count !== null && count > 0 && (
+                              <span className="shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">
+                                {count}
+                              </span>
+                            )}
                           </div>
+                          <div className="mt-0.5 text-xs text-muted-foreground">{desc}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* ── LISTA FILTRADA por categoria ── */}
+          {lancamentoFilter !== "menu" && (() => {
+            const catLabels: Record<string, string> = {
+              maintenance: "🔧 Manutenções",
+              usage: "🏍 Uso",
+              incident: "⚠️ Sinistros",
+              accessory: "🎽 Acessórios",
+              note: "📝 Notas",
+            };
+            const filterFn = (e: any) => {
+              const typeMatch =
+                lancamentoFilter === "maintenance"
+                  ? e.type === "maintenance" || e.type === "revision"
+                  : e.type === lancamentoFilter;
+              if (!typeMatch) return false;
+              if (activitySearch.trim()) {
+                const q = activitySearch.toLowerCase();
+                return (
+                  e.title?.toLowerCase().includes(q) ||
+                  e.location?.toLowerCase().includes(q) ||
+                  e.description?.toLowerCase().includes(q)
+                );
+              }
+              return true;
+            };
+
+            return (
+              <section className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-display text-base font-bold">{catLabels[lancamentoFilter]}</h3>
+                  {isOwner && !isArchived && (
+                    <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Pencil className="h-3 w-3 shrink-0" /> Edite ou exclua abaixo de cada item
+                    </p>
+                  )}
+                </div>
+
+                {/* Busca dentro da categoria */}
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+                    <input
+                      type="text"
+                      placeholder="Buscar nesta categoria…"
+                      value={activitySearch}
+                      onChange={(e) => setActivitySearch(e.target.value)}
+                      className="h-9 w-full rounded-xl border border-border bg-card pl-8 pr-3 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary"
+                    />
+                  </div>
+                  {activitySearch && (
+                    <button
+                      onClick={() => setActivitySearch("")}
+                      className="rounded-xl border border-border bg-card px-3 text-xs text-muted-foreground hover:text-foreground"
+                    >
+                      Limpar
+                    </button>
+                  )}
+                </div>
+
+                {events.isLoading ? (
+                  <ol className="relative space-y-4 border-l border-border pl-6" aria-hidden="true">
+                    {Array.from({ length: 3 }).map((_, i) => (
+                      <li key={i} className="relative">
+                        <span className="absolute -left-[34px] top-2 h-3 w-3 rounded-full bg-primary/40 ring-4 ring-background" />
+                        <div className="surface-elevated rounded-2xl p-4">
+                          <div className="h-4 w-1/3 animate-pulse rounded bg-primary/10" />
+                          <div className="mt-2 h-3 w-1/4 animate-pulse rounded bg-primary/10" />
+                          <div className="mt-3 h-3 w-2/3 animate-pulse rounded bg-primary/10" />
                         </div>
                       </li>
                     ))}
                   </ol>
-                );
-              })()
-            ) : (
-              <div className="surface-elevated rounded-2xl p-10 text-center text-sm text-muted-foreground">
-                Nenhum evento registrado ainda. Clique em <strong>Registrar atividade</strong> para
-                começar.
-              </div>
-            )}
-          </section>
+                ) : (() => {
+                  const filtered = (events.data ?? []).filter(filterFn);
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="rounded-2xl border border-dashed border-border p-8 text-center">
+                        <p className="text-sm text-muted-foreground">
+                          {activitySearch
+                            ? `Nenhum resultado para "${activitySearch}"`
+                            : "Nenhum registro nesta categoria ainda."}
+                        </p>
+                        {activitySearch && (
+                          <button onClick={() => setActivitySearch("")} className="mt-2 text-xs text-primary hover:underline">
+                            Limpar busca
+                          </button>
+                        )}
+                      </div>
+                    );
+                  }
+                  return (
+                    <ol className="relative space-y-4 border-l border-border pl-6">
+                      {filtered.map((e: any) => (
+                        <li key={e.id} className="relative">
+                          <span className="absolute -left-[34px] top-2 h-3 w-3 rounded-full bg-primary ring-4 ring-background" />
+                          <div className="surface-elevated rounded-2xl p-4">
+                            <div className="flex items-start gap-3">
+                              <EventTypeIcon type={e.type} />
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                                  <div className="font-semibold">{e.title}</div>
+                                  <div className="text-xs text-muted-foreground">{formatDate(e.occurred_at)}</div>
+                                </div>
+                                <div className="text-xs uppercase tracking-widest text-muted-foreground">
+                                  {EVENT_TYPE_LABEL[e.type]}
+                                </div>
+                                {e.description && (
+                                  <p className="mt-2 text-sm text-muted-foreground">{e.description}</p>
+                                )}
+                                <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                                  {e.hours_at_event != null && <span>{Number(e.hours_at_event).toFixed(1)} h</span>}
+                                  {e.km_at_event != null && <span>{Number(e.km_at_event).toFixed(0)} km</span>}
+                                  {e.location && <span>{e.location}</span>}
+                                  {e.cost != null && (
+                                    <span className="font-semibold text-primary">{brl(Number(e.cost))}</span>
+                                  )}
+                                </div>
+                                {(() => {
+                                  const meta = (e.metadata ?? {}) as Record<string, unknown>;
+                                  const code = typeof meta.receipt_code === "string" ? meta.receipt_code : null;
+                                  if (e.type !== "ownership_transfer" || !code) return null;
+                                  return (
+                                    <div className="mt-3 flex flex-wrap gap-1.5">
+                                      <Button size="sm" variant="outline" onClick={() => openReceiptPdf(code, "signed")}>
+                                        <Eye className="h-3.5 w-3.5" /> Visualizar recibo
+                                      </Button>
+                                    </div>
+                                  );
+                                })()}
+                                {isOwner && !isArchived && (
+                                  <div className="mt-3 border-t border-border pt-3">
+                                    <EventActionsMenu
+                                      event={e as any}
+                                      variant="inline"
+                                      onChanged={() => {
+                                        qc.invalidateQueries({ queryKey: ["events", id] });
+                                        qc.invalidateQueries({ queryKey: ["motorcycle", id] });
+                                        qc.invalidateQueries({ queryKey: ["usage-history-avg", id] });
+                                      }}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </li>
+                      ))}
+                    </ol>
+                  );
+                })()}
+              </section>
+            );
+          })()}
         </div>}
 
         {/* ── SEÇÃO: Documentos ── */}
