@@ -70,8 +70,8 @@ const QUICK_SHORTCUTS: QuickShortcut[] = [
   {
     key: "lancamentos-manutencao",
     emoji: "🔧",
-    label: "Ver Manutenções",
-    sublabel: "Revisões, trocas e reparos registrados",
+    label: "Manutenções",
+    sublabel: "Ver, editar ou excluir revisões e reparos",
     color: "bg-orange-500/10 border-orange-500/20 text-orange-600 dark:text-orange-400",
     path: ["Minha Moto", "Lançamentos", "Manutenções"],
     routeTemplate: "/motorcycles/$motorcycleId?tab=atividade",
@@ -80,8 +80,8 @@ const QUICK_SHORTCUTS: QuickShortcut[] = [
   {
     key: "lancamentos-uso",
     emoji: "🏍️",
-    label: "Registrar Uso",
-    sublabel: "Horas e quilômetros rodados",
+    label: "Uso (horas/km)",
+    sublabel: "Ver, editar ou excluir registros de uso",
     color: "bg-primary/10 border-primary/20 text-primary",
     path: ["Minha Moto", "Lançamentos", "Uso"],
     routeTemplate: "/motorcycles/$motorcycleId?tab=atividade",
@@ -90,8 +90,8 @@ const QUICK_SHORTCUTS: QuickShortcut[] = [
   {
     key: "lancamentos-sinistro",
     emoji: "⚠️",
-    label: "Registrar Sinistro",
-    sublabel: "Quedas, roubos e avarias",
+    label: "Sinistros",
+    sublabel: "Ver, editar ou excluir quedas e avarias",
     color: "bg-destructive/10 border-destructive/20 text-destructive",
     path: ["Minha Moto", "Lançamentos", "Sinistros"],
     routeTemplate: "/motorcycles/$motorcycleId?tab=atividade",
@@ -115,6 +115,16 @@ const QUICK_SHORTCUTS: QuickShortcut[] = [
     color: "bg-violet-500/10 border-violet-500/20 text-violet-600 dark:text-violet-400",
     path: ["Minha Moto", "Documentos"],
     routeTemplate: "/motorcycles/$motorcycleId?tab=documentos",
+    needsMoto: true,
+  },
+  {
+    key: "editar-lancamento",
+    emoji: "✏️",
+    label: "Editar Lançamento",
+    sublabel: "Corrigir ou atualizar qualquer registro",
+    color: "bg-amber-500/10 border-amber-500/20 text-amber-600 dark:text-amber-400",
+    path: ["Minha Moto", "Lançamentos", "Categoria", "Editar"],
+    routeTemplate: "/motorcycles/$motorcycleId?tab=atividade",
     needsMoto: true,
   },
   {
@@ -193,12 +203,12 @@ const HOME_LABELS: Record<string, { label: string; emoji: string; path?: string[
     path: ["Minha Moto", "Lançamentos", "Manutenções"],
   },
   "lancamentos-uso": {
-    label: "Ver ou registrar uso (horas/km)",
+    label: "Ver, registrar ou editar uso (horas/km)",
     emoji: "🏍️",
     path: ["Minha Moto", "Lançamentos", "Uso"],
   },
   "lancamentos-sinistro": {
-    label: "Registrar ou consultar sinistros",
+    label: "Registrar, consultar ou editar sinistros",
     emoji: "⚠️",
     path: ["Minha Moto", "Lançamentos", "Sinistros"],
   },
@@ -211,6 +221,17 @@ const HOME_LABELS: Record<string, { label: string; emoji: string; path?: string[
     label: "Ver ou criar notas livres",
     emoji: "📝",
     path: ["Minha Moto", "Lançamentos", "Notas"],
+  },
+  // Editar / excluir lançamentos — fluxo específico
+  "editar-lancamento": {
+    label: "Editar ou excluir um lançamento",
+    emoji: "✏️",
+    path: ["Minha Moto", "Lançamentos", "Categoria", "→ Editar / Excluir"],
+  },
+  "excluir-lancamento": {
+    label: "Excluir um lançamento registrado",
+    emoji: "🗑️",
+    path: ["Minha Moto", "Lançamentos", "Categoria", "→ Excluir"],
   },
   "pecas-instaladas": {
     label: "Ver peças e componentes instalados",
@@ -617,6 +638,19 @@ function HomeView({
             </button>
           ))}
         </div>
+
+        {/* Guia de edição/exclusão — sempre visível quando tem moto */}
+        {ctx.motorcycleId && (
+          <StepGuide
+            title="Como editar ou excluir um lançamento"
+            steps={[
+              { icon: "🏍️", text: "Abra a tela da sua moto" },
+              { icon: "📋", text: "Toque em Lançamentos no menu" },
+              { icon: "🔧", text: "Escolha a categoria (Manutenções, Uso, Sinistros, Acessórios ou Notas)" },
+              { icon: "✏️", text: "Na lista, toque em Editar ou Excluir ao lado do registro desejado" },
+            ]}
+          />
+        )}
       </div>
 
       {/* Separador */}
@@ -721,6 +755,30 @@ function TopicDetailView({ topic, onArticle }: { topic: TopicGroup; onArticle: (
   );
 }
 
+// Guia de fluxo passo a passo numerado — para ações com múltiplas etapas
+function StepGuide({ title, steps }: { title: string; steps: { icon: string; text: string }[] }) {
+  return (
+    <div className="rounded-xl bg-muted/40 border border-border/50 p-3 space-y-2.5">
+      <p className="text-[11px] font-semibold uppercase tracking-widest text-muted-foreground flex items-center gap-1.5">
+        <MapPin className="h-3 w-3" />
+        {title}
+      </p>
+      <div className="space-y-1.5">
+        {steps.map((s, i) => (
+          <div key={i} className="flex items-start gap-2.5">
+            <div className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+              {i + 1}
+            </div>
+            <p className="text-xs text-foreground/80 leading-relaxed flex-1">
+              <span className="mr-1">{s.icon}</span>{s.text}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Componente de passo a passo de navegação
 function NavigationGuide({ steps }: { steps: string[] }) {
   if (!steps.length) return null;
@@ -751,6 +809,13 @@ function NavigationGuide({ steps }: { steps: string[] }) {
   );
 }
 
+// Slugs que envolvem edição/exclusão de lançamentos
+const EDIT_FLOW_SLUGS = new Set([
+  "registrar-manutencao", "editar-lancamento", "excluir-lancamento",
+  "lancamentos-manutencao", "lancamentos-uso", "lancamentos-sinistro",
+  "lancamentos-acessorio", "lancamentos-nota",
+]);
+
 function ArticleView({
   article, ctx, related, moduleStatus, onCTA, onRelated,
 }: {
@@ -769,10 +834,26 @@ function ArticleView({
   const meta = HOME_LABELS[article.slug];
   const navSteps = meta?.path ?? [];
 
+  // Mostrar guia de edição para artigos de lançamentos
+  const showEditGuide = EDIT_FLOW_SLUGS.has(article.slug) || article.module_key === "maintenance";
+
   return (
     <div className="space-y-3">
       {/* Trilha de navegação */}
       {navSteps.length > 0 && <NavigationGuide steps={navSteps} />}
+
+      {/* Guia de edição/exclusão para artigos de lançamentos */}
+      {showEditGuide && ctx.motorcycleId && (
+        <StepGuide
+          title="Como editar ou excluir um lançamento"
+          steps={[
+            { icon: "🏍️", text: "Acesse a tela da sua moto" },
+            { icon: "📋", text: "Toque em Lançamentos no menu principal" },
+            { icon: "🔍", text: "Escolha a categoria: Manutenções, Uso, Sinistros, Acessórios ou Notas" },
+            { icon: "✏️", text: "Toque em Editar para corrigir o registro, ou Excluir para removê-lo" },
+          ]}
+        />
+      )}
 
       {/* Conteúdo do artigo */}
       <div className="rounded-2xl border border-border bg-card p-4 space-y-3">
@@ -872,6 +953,7 @@ function SearchView({
     const hasRoute = !!(article.route_template || needsMoto) && !isUnavailable;
     const meta = HOME_LABELS[article.slug];
     const navSteps = meta?.path ?? [];
+    const showEditGuide = EDIT_FLOW_SLUGS.has(article.slug) || article.module_key === "maintenance";
 
     return (
       <div className="space-y-3">
@@ -880,6 +962,19 @@ function SearchView({
         )}
 
         {navSteps.length > 0 && <NavigationGuide steps={navSteps} />}
+
+        {/* Guia de edição/exclusão para buscas relacionadas a lançamentos */}
+        {showEditGuide && ctx.motorcycleId && (
+          <StepGuide
+            title="Como editar ou excluir um lançamento"
+            steps={[
+              { icon: "🏍️", text: "Acesse a tela da sua moto" },
+              { icon: "📋", text: "Toque em Lançamentos no menu principal" },
+              { icon: "🔍", text: "Escolha a categoria: Manutenções, Uso, Sinistros, Acessórios ou Notas" },
+              { icon: "✏️", text: "Toque em Editar para corrigir o registro, ou Excluir para removê-lo" },
+            ]}
+          />
+        )}
 
         <div className="rounded-2xl border border-border bg-card p-4 space-y-2">
           <p className="font-semibold text-sm">{article.title}</p>
