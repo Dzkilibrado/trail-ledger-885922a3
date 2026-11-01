@@ -30,6 +30,7 @@ import {
   ShieldCheck,
   Home,
   LifeBuoy,
+  CreditCard,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -163,6 +164,7 @@ const NAV = [
   { to: "/motorcycles", label: "Minhas Motos", icon: Bike },
   { to: "/central", label: "Central", icon: FolderOpen },
   { to: "/perfil", label: "Perfil", icon: User },
+  { to: "/assinatura", label: "Minha Assinatura", icon: CreditCard },
 ] as const;
 
 const ADMIN_NAV = [
@@ -172,6 +174,7 @@ const ADMIN_NAV = [
   { to: "/admin/messages", label: "Central de Mensagens", icon: MessageSquare },
   { to: "/admin/documents", label: "Gestão de Documentos", icon: FolderOpen },
   { to: "/admin/modules", label: "Módulos", icon: Blocks },
+  { to: "/admin/assinaturas", label: "Gestão de Assinaturas", icon: CreditCard },
 ] as const;
 
 function AuthedLayout() {
