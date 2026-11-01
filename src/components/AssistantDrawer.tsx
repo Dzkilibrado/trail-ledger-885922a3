@@ -793,15 +793,21 @@ export function AssistantDrawer({ state, ctx, moduleStatus }: Props) {
     <>
       <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={closeDrawer} aria-hidden="true" />
 
+      {/* Wrapper de posicionamento — mobile: bottom sheet / desktop: painel lateral direito centralizado */}
+      <div className="fixed inset-0 z-50 flex items-end justify-center sm:items-end sm:justify-center md:items-end md:justify-end md:pr-6 md:pb-6 pointer-events-none">
       <div
         role="dialog"
         aria-label="Assistente TrailBook"
         aria-modal="true"
-        className="fixed inset-x-0 bottom-0 z-50 flex flex-col rounded-t-2xl bg-background shadow-2xl
-          max-h-[92dvh] outline-none border-t border-border/50"
+        className="pointer-events-auto flex flex-col bg-background shadow-2xl outline-none
+          w-full rounded-t-2xl border-t border-border/50
+          max-h-[92dvh]
+          md:w-[420px] md:rounded-2xl md:border md:border-border/60 md:max-h-[85dvh]
+          lg:w-[440px]"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
       >
-        <div className="mx-auto mt-3 mb-1 h-1 w-12 rounded-full bg-border/60 shrink-0" />
+        {/* Drag handle — só faz sentido no mobile (bottom sheet) */}
+        <div className="mx-auto mt-3 mb-1 h-1 w-12 rounded-full bg-border/60 shrink-0 md:hidden" />
 
         {/* Header */}
         <div className="flex items-center gap-2 px-4 pb-3 pt-2 shrink-0 border-b border-border/40">
@@ -936,6 +942,7 @@ export function AssistantDrawer({ state, ctx, moduleStatus }: Props) {
 
         </div>
       </div>
+      </div>{/* /wrapper posicionamento */}
     </>
   );
 }
@@ -1126,7 +1133,7 @@ function HomeView({
             Ir direto para
           </p>
         </div>
-        <div className="grid grid-cols-1 gap-1.5">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
           {shortcuts.map((d) => (
             <DestCard key={d.key} dest={d} onDest={onDest} size="md" />
           ))}
