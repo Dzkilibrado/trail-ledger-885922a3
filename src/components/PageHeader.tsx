@@ -6,10 +6,14 @@ export type Crumb = { label: string; to?: string };
 
 /**
  * Cabeçalho padronizado de página interna.
- * - Botão "Voltar" usa o histórico do navegador (com fallback configurável).
- * - Botão "Início" leva para o Dashboard.
- * - Breadcrumb opcional.
- * - Slot de ações à direita (botões contextuais).
+ *
+ * Layout em três linhas bem separadas:
+ *   1. Barra de navegação: [← Voltar]  ·  espaço  ·  [⌂ Início]
+ *   2. Breadcrumb discreto (apenas crumbs intermediários, sem "Início")
+ *   3. Título + descrição + ações
+ *
+ * Princípio: o usuário nunca se sente preso. "Voltar" e "Início" são
+ * sempre visíveis e facilmente tocáveis (área mínima 44 px).
  */
 export function PageHeader({
   title,
@@ -29,10 +33,6 @@ export function PageHeader({
   const router = useRouter();
 
   function goBack() {
-    // Preferir destino explícito quando fornecido (fallback previsível),
-    // já que window.history.length costuma ser > 1 mesmo em acesso direto
-    // (redirecionamentos internos), e history.back() pode devolver o
-    // usuário para uma rota irrelevante (ex.: /auth).
     if (backTo) {
       router.navigate({ to: backTo });
     } else if (typeof window !== "undefined" && window.history.length > 1) {
@@ -43,40 +43,65 @@ export function PageHeader({
   }
 
   return (
-    <div className="mb-6 space-y-3">
-      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        {showBack && (
+    <div className="mb-6 space-y-4">
+      {/* ── Linha 1: Voltar  ·  Início ── */}
+      <div className="flex items-center justify-between gap-2">
+        {showBack ? (
           <button
             type="button"
             onClick={goBack}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-muted hover:text-foreground"
+            className="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:bg-muted/80"
           >
-            <ArrowLeft className="h-3.5 w-3.5" />
+            <ArrowLeft className="h-4 w-4 shrink-0" />
             <span>Voltar</span>
           </button>
+        ) : (
+          /* placeholder para manter o Início sempre à direita */
+          <span />
         )}
-        <Link to="/dashboard" className="hidden sm:inline-flex items-center gap-1 rounded-md px-2 py-1 hover:bg-muted hover:text-foreground">
-          <Home className="h-3.5 w-3.5" /> Início
+
+        <Link
+          to="/dashboard"
+          className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:bg-muted/80"
+          title="Ir para o início"
+        >
+          <Home className="h-4 w-4 shrink-0" />
+          <span className="hidden sm:inline">Início</span>
         </Link>
-        {crumbs && crumbs.length > 0 && (
-          <span className="hidden sm:flex flex-wrap items-center gap-1">
-            {crumbs.map((c, i) => (
-              <span key={i} className="flex items-center gap-1">
-                <ChevronRight className="h-3 w-3 opacity-50" />
-                {c.to ? (
-                  <Link to={c.to} className="hover:text-foreground">{c.label}</Link>
-                ) : (
-                  <span className="text-foreground/80">{c.label}</span>
-                )}
-              </span>
-            ))}
-          </span>
-        )}
       </div>
+
+      {/* ── Linha 2: Breadcrumb (só se houver crumbs) ── */}
+      {crumbs && crumbs.length > 0 && (
+        <nav aria-label="Localização" className="flex min-w-0 flex-wrap items-center gap-1 text-xs text-muted-foreground">
+          {crumbs.map((c, i) => (
+            <span key={i} className="flex items-center gap-1 min-w-0">
+              {i > 0 && <ChevronRight className="h-3 w-3 shrink-0 opacity-40" />}
+              {c.to ? (
+                <Link
+                  to={c.to}
+                  className="truncate max-w-[120px] sm:max-w-[200px] rounded hover:text-foreground underline-offset-2 hover:underline"
+                >
+                  {c.label}
+                </Link>
+              ) : (
+                <span className="truncate max-w-[120px] sm:max-w-[200px] font-medium text-foreground/70">
+                  {c.label}
+                </span>
+              )}
+            </span>
+          ))}
+        </nav>
+      )}
+
+      {/* ── Linha 3: Título + descrição + ações ── */}
       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-between">
         <div className="min-w-0">
-          <h1 className="font-display text-xl font-bold leading-tight [overflow-wrap:anywhere] sm:text-2xl">{title}</h1>
-          {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+          <h1 className="font-display text-xl font-bold leading-tight [overflow-wrap:anywhere] sm:text-2xl">
+            {title}
+          </h1>
+          {description && (
+            <p className="mt-1 text-sm text-muted-foreground">{description}</p>
+          )}
         </div>
         {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
       </div>
