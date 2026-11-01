@@ -1018,9 +1018,9 @@ export function MotoControlCenter({
           <section>
             {isOwner && !isArchived && (events.data?.length ?? 0) > 0 && (
               <p className="mb-3 flex items-center gap-1.5 text-xs text-muted-foreground">
-                <Pencil className="h-3 w-3 shrink-0" /> Errou uma hora, km ou data ao registrar?
-                Toque no <MoreVertical className="mx-0.5 inline h-3 w-3" /> de qualquer atividade
-                para corrigir — o sistema recalcula tudo sozinho.
+                <Pencil className="h-3 w-3 shrink-0" /> Errou uma hora, km ou data? Use
+                os botões <strong>Editar</strong> ou <strong>Excluir</strong> abaixo de
+                cada atividade — o sistema recalcula tudo sozinho.
               </p>
             )}
             {events.isLoading ? (
@@ -1091,20 +1091,8 @@ export function MotoControlCenter({
                             <div className="min-w-0 flex-1">
                               <div className="flex flex-wrap items-baseline justify-between gap-2">
                                 <div className="font-semibold">{e.title}</div>
-                                <div className="flex items-center gap-1">
-                                  <div className="text-xs text-muted-foreground">
-                                    {formatDate(e.occurred_at)}
-                                  </div>
-                                  {isOwner && !isArchived && (
-                                    <EventActionsMenu
-                                      event={e as any}
-                                      onChanged={() => {
-                                        qc.invalidateQueries({ queryKey: ["events", id] });
-                                        qc.invalidateQueries({ queryKey: ["motorcycle", id] });
-                                        qc.invalidateQueries({ queryKey: ["usage-history-avg", id] });
-                                      }}
-                                    />
-                                  )}
+                                <div className="text-xs text-muted-foreground">
+                                  {formatDate(e.occurred_at)}
                                 </div>
                               </div>
                               <div className="text-xs uppercase tracking-widest text-muted-foreground">
@@ -1146,6 +1134,20 @@ export function MotoControlCenter({
                                   </div>
                                 );
                               })()}
+                              {/* Botões de ação — sempre visíveis no rodapé do card */}
+                              {isOwner && !isArchived && (
+                                <div className="mt-3 border-t border-border pt-3">
+                                  <EventActionsMenu
+                                    event={e as any}
+                                    variant="inline"
+                                    onChanged={() => {
+                                      qc.invalidateQueries({ queryKey: ["events", id] });
+                                      qc.invalidateQueries({ queryKey: ["motorcycle", id] });
+                                      qc.invalidateQueries({ queryKey: ["usage-history-avg", id] });
+                                    }}
+                                  />
+                                </div>
+                              )}
                             </div>
                           </div>
                         </div>

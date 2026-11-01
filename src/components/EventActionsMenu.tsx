@@ -48,13 +48,18 @@ type EventRow = {
  * Menu de ações por atividade — editar, excluir. Edita apenas os campos
  * comuns e recalcula automaticamente saldos + programações vinculadas.
  * Toda operação grava em `audit_log`.
+ *
+ * variant="menu"   (padrão) — botão ⋮ com dropdown
+ * variant="inline" — dois botões visíveis (Editar / Excluir) no rodapé do card
  */
 export function EventActionsMenu({
   event,
   onChanged,
+  variant = "menu",
 }: {
   event: EventRow;
   onChanged?: () => void;
+  variant?: "menu" | "inline";
 }) {
   const qc = useQueryClient();
   const [editing, setEditing] = useState(false);
@@ -139,29 +144,56 @@ export function EventActionsMenu({
 
   return (
     <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
+      {variant === "inline" ? (
+        /* Botões visíveis — Editar e Excluir sempre à vista no rodapé do card */
+        <div className="flex items-center gap-2">
           <Button
+            type="button"
             variant="outline"
-            size="icon"
-            aria-label="Editar ou excluir esta atividade"
-            className="h-9 w-9 shrink-0"
+            size="sm"
+            aria-label="Editar atividade"
+            className="h-8 gap-1.5 text-xs"
+            onClick={() => setEditing(true)}
           >
-            <MoreVertical className="h-4 w-4" />
+            <Pencil className="h-3 w-3" /> Editar
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => setEditing(true)}>
-            <Pencil className="h-3.5 w-3.5" /> Editar atividade
-          </DropdownMenuItem>
-          <DropdownMenuItem
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            aria-label="Excluir atividade"
+            className="h-8 gap-1.5 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive border-destructive/30"
             onClick={() => setConfirming(true)}
-            className="text-destructive focus:text-destructive"
           >
-            <Trash2 className="h-3.5 w-3.5" /> Excluir atividade
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            <Trash2 className="h-3 w-3" /> Excluir
+          </Button>
+        </div>
+      ) : (
+        /* Dropdown padrão — ⋮ compacto para listas densas */
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              size="icon"
+              aria-label="Editar ou excluir esta atividade"
+              className="h-9 w-9 shrink-0"
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={() => setEditing(true)}>
+              <Pencil className="h-3.5 w-3.5" /> Editar atividade
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => setConfirming(true)}
+              className="text-destructive focus:text-destructive"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Excluir atividade
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
 
       <Dialog open={editing} onOpenChange={setEditing}>
         <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg">

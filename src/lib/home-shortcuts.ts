@@ -1,5 +1,6 @@
 import {
   Award,
+  ClipboardList,
   FileSignature,
   FolderOpen,
   Heart,
@@ -34,6 +35,7 @@ export type HomeShortcutKey =
   | "cockpit"
   | "checkups"
   | "central-moto"
+  | "central-revisao"
   | "registrar-atividade"
   | "registrar-manutencao"
   | "historico-manutencao"
@@ -75,6 +77,14 @@ export const HOME_SHORTCUT_CATALOG: HomeShortcutDef[] = [
     description: "Documentos, recibos e ações da moto",
     icon: ShieldCheck,
     to: "/motorcycles/$id/control",
+  },
+  {
+    key: "central-revisao",
+    label: "Central de Revisão",
+    description: "Editar ou excluir qualquer lançamento: uso, manutenção, sinistro e mais",
+    icon: ClipboardList,
+    to: "/motorcycles/$id/control",
+    search: { tab: "atividade" },
   },
   {
     key: "registrar-atividade",
