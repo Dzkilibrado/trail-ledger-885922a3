@@ -16,3 +16,27 @@ export function usageIncrementPreview(mode: string, current: number, value: stri
   if (validateUsageIncrement(mode, value, usageDate()) || !Number.isFinite(current)) return null;
   return { current, amount, total: Math.round((current + amount) * 100) / 100 };
 }
+
+// ---------------------------------------------------------------------------
+// Média adaptativa de uso
+// ---------------------------------------------------------------------------
+// Usa pesos exponenciais: o registro mais recente vale 3x, o anterior 2x, o
+// mais antigo 1x — assim a média acompanha tendências de aumento ou
+// diminuição em vez de tratar todos os lançamentos de forma igual.
+// Retorna null quando não há dados suficientes (< 2 registros).
+export function computeUsageAverage(amounts: number[]): number | null {
+  if (amounts.length < 2) return null;
+  // Usa os últimos 3 (mais recentes primeiro já que a query ordena desc)
+  const slice = amounts.slice(0, 3);
+  const weights = [3, 2, 1].slice(0, slice.length);
+  const sumW = weights.reduce((a, b) => a + b, 0);
+  const weighted = slice.reduce((acc, val, i) => acc + val * weights[i], 0);
+  return weighted / sumW;
+}
+
+// Limiar de alerta: 10% acima da média ponderada.
+// Retorna true quando o valor informado é atípico e merece confirmação extra.
+export function isUsageAtypical(amount: number, average: number | null): boolean {
+  if (average === null || average <= 0) return false;
+  return amount > average * 1.1;
+}

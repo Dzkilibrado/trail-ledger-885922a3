@@ -2,14 +2,16 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Info } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { TBLoadingState } from "@/design-system";
+import { TBLoadingState, TBEmptyState } from "@/design-system";
 import { BRANDS } from "@/lib/trailbook";
 import { PhotoReplace } from "@/components/PhotoReplace";
+import { EventActionsMenu } from "@/components/EventActionsMenu";
 
 export const Route = createFileRoute("/_authenticated/motorcycles/$id/editar")({
   head: () => ({ meta: [{ title: "Editar dados da moto — TrailBook" }] }),
@@ -46,6 +48,24 @@ function EditMotorcyclePage() {
     },
     staleTime: 0,
     refetchOnMount: "always",
+  });
+
+  // Lançamentos de uso — últimos 30, ordenados do mais recente ao mais antigo.
+  const [usagePage, setUsagePage] = useState(20);
+  const usageEvents = useQuery({
+    queryKey: ["usage-events-edit", id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("events")
+        .select("id, motorcycle_id, type, title, description, occurred_at, hours_delta, km_delta, cost")
+        .eq("motorcycle_id", id)
+        .eq("type", "usage")
+        .order("occurred_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return data ?? [];
+    },
+    staleTime: 30_000,
   });
 
   const [form, setForm] = useState<Record<string, string>>({});
@@ -253,6 +273,76 @@ function EditMotorcyclePage() {
           </Button>
         </div>
       </form>
+
+      {/* ── Card de lançamentos de uso ── */}
+      <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+        <div>
+          <h2 className="text-base font-semibold">Lançamentos de uso</h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Histórico de registros de horas ou quilômetros desta moto. Use os botões ao lado de
+            cada linha para corrigir ou remover um lançamento incorreto.
+          </p>
+        </div>
+
+        <div className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-600 dark:text-amber-400">
+          <Info className="mt-0.5 h-4 w-4 shrink-0" />
+          <span>
+            Ao editar ou excluir um lançamento, o TrailBook recalcula automaticamente o hodômetro,
+            a agenda de manutenção e todos os alertas.
+          </span>
+        </div>
+
+        {usageEvents.isLoading ? (
+          <TBLoadingState label="Carregando lançamentos…" />
+        ) : !usageEvents.data || usageEvents.data.length === 0 ? (
+          <TBEmptyState
+            title="Nenhum lançamento ainda"
+            description="Os registros de uso desta moto aparecerão aqui."
+          />
+        ) : (
+          <>
+            <ul className="divide-y divide-border">
+              {usageEvents.data.slice(0, usagePage).map((ev) => {
+                const delta = ev.hours_delta != null ? ev.hours_delta : ev.km_delta;
+                const unitLabel = ev.hours_delta != null ? "h" : "km";
+                const deltaFormatted =
+                  delta != null
+                    ? delta.toLocaleString("pt-BR", { maximumFractionDigits: 2 }) + " " + unitLabel
+                    : "—";
+                const dateFormatted = new Date(ev.occurred_at).toLocaleDateString("pt-BR", {
+                  day: "2-digit",
+                  month: "short",
+                  year: "numeric",
+                });
+                return (
+                  <li key={ev.id} className="flex items-center gap-3 py-3">
+                    <div className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium">{deltaFormatted}</span>
+                      <span className="text-xs text-muted-foreground">{dateFormatted}</span>
+                    </div>
+                    <EventActionsMenu
+                      event={ev as any}
+                      onChanged={() => {
+                        qc.invalidateQueries({ queryKey: ["usage-events-edit", id] });
+                        qc.invalidateQueries({ queryKey: ["usage-history-avg", id] });
+                      }}
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+
+            {usageEvents.data.length > usagePage && (
+              <button
+                onClick={() => setUsagePage((p) => p + 20)}
+                className="w-full rounded-xl border border-border py-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Ver mais ({usageEvents.data.length - usagePage} restantes)
+              </button>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
