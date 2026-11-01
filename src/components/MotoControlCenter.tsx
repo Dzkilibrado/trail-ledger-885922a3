@@ -27,8 +27,13 @@ import {
   ChevronDown,
   Stethoscope,
   ChevronRight,
+  LayoutDashboard,
+  Settings2,
+  ClipboardList,
+  FileText,
+  ArrowLeft,
 } from "lucide-react";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+// Tabs removidos — substituídos por grid de cards de navegação
 import {
   Accordion,
   AccordionItem,
@@ -88,6 +93,17 @@ import {
   setStoredActiveMotorcycleId,
 } from "@/hooks/useActiveMotorcycle";
 
+/** Seções navegáveis da Central da Moto */
+type ControlView = "menu" | "geral" | "checkup" | "componentes" | "atividade" | "documentos";
+
+function resolveInitialView(
+  tab?: "geral" | "checkup" | "componentes" | "atividade" | "documentos" | "historico",
+): ControlView {
+  if (!tab) return "menu";
+  if (tab === "historico") return "atividade"; // alias legado
+  return tab;
+}
+
 export function MotoControlCenter({
   id,
   autoOpenAction,
@@ -95,7 +111,7 @@ export function MotoControlCenter({
 }: {
   id: string;
   autoOpenAction?: "registrar";
-  /** Abre direto numa aba específica — usado pelos atalhos da tela inicial (ex: "Documentos"). */
+  /** Abre direto numa seção específica — usado pelos atalhos da tela inicial. */
   initialTab?: "geral" | "checkup" | "componentes" | "atividade" | "documentos" | "historico";
 }) {
   const qc = useQueryClient();
@@ -106,6 +122,7 @@ export function MotoControlCenter({
   const [unarchiveOpen, setUnarchiveOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteWord, setDeleteWord] = useState("");
+  const [view, setView] = useState<ControlView>(() => resolveInitialView(initialTab));
   const [activitySearch, setActivitySearch] = useState("");
   const [activityTypeFilter, setActivityTypeFilter] = useState<
     "all" | "maintenance" | "usage" | "incident" | "accessory" | "note"
@@ -779,31 +796,104 @@ export function MotoControlCenter({
         <ActiveNegotiationCard motoId={m.id} negotiation={activeNegotiation.data} />
       )}
 
-      <Tabs defaultValue={initialTab ?? "geral"} className="w-full">
-        <TabsList className="h-auto w-full flex-wrap justify-start gap-1 bg-transparent p-0">
-          <TabsTrigger value="geral" className="surface-elevated data-[state=active]:btn-glow">
-            Visão Geral
-          </TabsTrigger>
-          <TabsTrigger value="checkup" className="surface-elevated data-[state=active]:btn-glow">
-            Check-up
-          </TabsTrigger>
-          {isOwner && (
-            <TabsTrigger
-              value="componentes"
-              className="surface-elevated data-[state=active]:btn-glow"
-            >
-              Componentes
-            </TabsTrigger>
-          )}
-          <TabsTrigger value="atividade" className="surface-elevated data-[state=active]:btn-glow">
-            Histórico
-          </TabsTrigger>
-          <TabsTrigger value="documentos" className="surface-elevated data-[state=active]:btn-glow">
-            Documentos
-          </TabsTrigger>
-        </TabsList>
+      {/* ── Navegação por cards ── */}
+      <div className="w-full">
+        {/* Botão Voltar ao menu (visível em qualquer seção interna) */}
+        {view !== "menu" && (
+          <button
+            type="button"
+            onClick={() => setView("menu")}
+            className="mb-5 inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground active:bg-muted/80"
+          >
+            <ArrowLeft className="h-4 w-4 shrink-0" />
+            Voltar ao menu
+          </button>
+        )}
 
-        <TabsContent value="geral" className="space-y-8">
+        {/* ── MENU: Grid de cards ── */}
+        {view === "menu" && (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {/* Painel */}
+            <button
+              type="button"
+              onClick={() => setView("geral")}
+              className="surface-elevated group flex flex-col items-start gap-3 rounded-2xl p-4 text-left transition-all hover:ring-2 hover:ring-primary/40 active:scale-[0.98]"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <LayoutDashboard className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="font-semibold leading-tight">Painel</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">Saúde e próx. revisões</div>
+              </div>
+            </button>
+
+            {/* Check-up */}
+            <button
+              type="button"
+              onClick={() => setView("checkup")}
+              className="surface-elevated group flex flex-col items-start gap-3 rounded-2xl p-4 text-left transition-all hover:ring-2 hover:ring-primary/40 active:scale-[0.98]"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-500">
+                <Stethoscope className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="font-semibold leading-tight">Check-up</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">Avaliar e registrar inspeção</div>
+              </div>
+            </button>
+
+            {/* Peças & Componentes (só para owner) */}
+            {isOwner && (
+              <button
+                type="button"
+                onClick={() => setView("componentes")}
+                className="surface-elevated group flex flex-col items-start gap-3 rounded-2xl p-4 text-left transition-all hover:ring-2 hover:ring-primary/40 active:scale-[0.98]"
+              >
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10 text-sky-500">
+                  <Settings2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <div className="font-semibold leading-tight">Peças</div>
+                  <div className="mt-0.5 text-xs text-muted-foreground">Componentes instalados</div>
+                </div>
+              </button>
+            )}
+
+            {/* Lançamentos */}
+            <button
+              type="button"
+              onClick={() => setView("atividade")}
+              className="surface-elevated group flex flex-col items-start gap-3 rounded-2xl p-4 text-left transition-all hover:ring-2 hover:ring-amber-400/40 active:scale-[0.98]"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-500">
+                <ClipboardList className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="font-semibold leading-tight">Lançamentos</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">Editar ou excluir registros</div>
+              </div>
+            </button>
+
+            {/* Documentos */}
+            <button
+              type="button"
+              onClick={() => setView("documentos")}
+              className="surface-elevated group flex flex-col items-start gap-3 rounded-2xl p-4 text-left transition-all hover:ring-2 hover:ring-primary/40 active:scale-[0.98]"
+            >
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-violet-500/10 text-violet-500">
+                <FileText className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="font-semibold leading-tight">Documentos</div>
+                <div className="mt-0.5 text-xs text-muted-foreground">CRLV, laudos e arquivos</div>
+              </div>
+            </button>
+          </div>
+        )}
+
+        {/* ── SEÇÃO: Painel (ex-Visão Geral) ── */}
+        {view === "geral" && <div className="space-y-8">
           <section className="space-y-3">
             <div className="flex items-baseline justify-between">
               <h2 className="font-display text-lg font-bold">Saúde da moto</h2>
@@ -929,9 +1019,10 @@ export function MotoControlCenter({
               </AccordionContent>
             </AccordionItem>
           </Accordion>
-        </TabsContent>
+        </div>}
 
-        <TabsContent value="checkup" className="space-y-8">
+        {/* ── SEÇÃO: Check-up ── */}
+        {view === "checkup" && <div className="space-y-8">
           <section className="space-y-3">
             <div className="flex items-baseline justify-between">
               <h2 className="font-display text-lg font-bold">Check-up e Laudo</h2>
@@ -945,10 +1036,10 @@ export function MotoControlCenter({
             </div>
             <LastReportCard motoId={m.id} />
           </section>
-        </TabsContent>
+        </div>}
 
-        {isOwner && (
-          <TabsContent value="componentes" className="space-y-8">
+        {/* ── SEÇÃO: Peças & Componentes ── */}
+        {isOwner && view === "componentes" && <div className="space-y-8">
             <section className="space-y-3">
               <div className="flex items-baseline justify-between">
                 <h2 className="font-display text-lg font-bold">Componentes</h2>
@@ -962,10 +1053,10 @@ export function MotoControlCenter({
               </div>
               <ComponentsList moto={m as any} isOwner={isOwner} limitPerCategory={3} />
             </section>
-          </TabsContent>
-        )}
+        </div>}
 
-        <TabsContent value="atividade" className="space-y-4">
+        {/* ── SEÇÃO: Lançamentos (ex-Histórico/Atividade) ── */}
+        {view === "atividade" && <div className="space-y-4">
           {/* Filtros */}
           <div className="space-y-2">
             <div className="flex gap-2">
@@ -1163,9 +1254,10 @@ export function MotoControlCenter({
               </div>
             )}
           </section>
-        </TabsContent>
+        </div>}
 
-        <TabsContent value="documentos" className="space-y-8">
+        {/* ── SEÇÃO: Documentos ── */}
+        {view === "documentos" && <div className="space-y-8">
           <MotorcyclePhotos motorcycleId={m.id} />
           <MotorcycleDocuments motorcycleId={m.id} />
           <section className="space-y-3">
@@ -1176,8 +1268,8 @@ export function MotoControlCenter({
               count={(receiptsForMoto.data ?? []).length}
             />
           </section>
-        </TabsContent>
-      </Tabs>
+        </div>}
+      </div>
 
       {isAdmin && (
         <AdminMotoDangerZone
