@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   BookmarkCheck,
   Check,
   ChevronDown,
   ChevronUp,
-  Pencil,
+  GripVertical,
   Plus,
   RotateCcw,
   Save,
@@ -16,11 +16,10 @@ import {
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
-import { TBButton, TBLoadingState } from "@/design-system";
+import { TBLoadingState } from "@/design-system";
 import { useHomeShortcuts, HOME_SHORTCUTS_QUERY_KEY } from "@/hooks/useHomeShortcuts";
 import {
   DEFAULT_HOME_SHORTCUTS,
-  GROUP_LABELS,
   HOME_SHORTCUT_BY_KEY,
   HOME_SHORTCUT_CATALOG,
   SHORTCUT_COUNT_OPTIONS,
@@ -74,12 +73,9 @@ function loadPresets(): ShortcutPreset[] {
 function savePresets(presets: ShortcutPreset[]) {
   try {
     localStorage.setItem(PRESETS_STORAGE_KEY, JSON.stringify(presets));
-  } catch {
-    /* storage bloqueado — ignora */
-  }
+  } catch { /* storage bloqueado */ }
 }
 
-// Rótulos dos grupos — "Global" virou "Sistema"
 const GROUP_DISPLAY_LABELS: Record<HomeShortcutDef["group"], string> = {
   acao: "⚡ Ações Rápidas",
   moto: "🏍️ Minha Moto",
@@ -87,112 +83,163 @@ const GROUP_DISPLAY_LABELS: Record<HomeShortcutDef["group"], string> = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Componente: slot individual da grade (mobile-first)
+// Grade com drag-and-drop (pointer events — touch + mouse)
 // ─────────────────────────────────────────────────────────────────────────────
-function ShortcutSlot({
-  index,
-  shortcutKey,
-  isEditing,
-  onTap,
-  onRemove,
-}: {
-  index: number;
-  shortcutKey?: HomeShortcutKey;
-  isEditing: boolean;
-  onTap: () => void;
-  onRemove: () => void;
-}) {
-  const def = shortcutKey ? HOME_SHORTCUT_BY_KEY[shortcutKey] : undefined;
-
-  if (!def) {
-    // Slot vazio — toque para selecionar
-    return (
-      <button
-        type="button"
-        onClick={onTap}
-        aria-label={`Adicionar atalho no slot ${index + 1}`}
-        className="flex min-h-[90px] flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-border bg-card/40 px-2 py-3 text-center transition-colors active:bg-accent/30"
-      >
-        <span className="grid h-9 w-9 place-items-center rounded-xl border border-dashed border-primary/30 bg-primary/5 text-primary/40">
-          <Plus className="h-4 w-4" />
-        </span>
-        <span className="text-[10px] text-muted-foreground/50">Slot {index + 1}</span>
-      </button>
-    );
-  }
-
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={onTap}
-        aria-label={isEditing ? `Remover ${def.label}` : `Editar slot ${index + 1} — ${def.label}`}
-        className={cn(
-          "flex min-h-[90px] w-full flex-col items-center justify-center gap-1.5 rounded-2xl border-2 px-2 py-3 text-center transition-all active:scale-95",
-          isEditing
-            ? "border-destructive/60 bg-destructive/10 ring-2 ring-destructive/30"
-            : "border-primary/30 bg-card",
-        )}
-      >
-        {/* Numeração */}
-        <span
-          className={cn(
-            "absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full text-[9px] font-bold",
-            isEditing ? "bg-destructive text-destructive-foreground" : "bg-primary/20 text-primary",
-          )}
-        >
-          {isEditing ? <X className="h-3 w-3" /> : index + 1}
-        </span>
-
-        <span
-          className={cn(
-            "grid h-9 w-9 shrink-0 place-items-center rounded-xl transition-colors",
-            isEditing ? "bg-destructive/20 text-destructive" : "bg-primary/10 text-primary",
-          )}
-        >
-          <def.icon className="h-4 w-4" />
-        </span>
-        <span className="line-clamp-2 text-[10px] font-semibold leading-tight sm:text-[11px]">
-          {def.label}
-        </span>
-      </button>
-    </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Componente: grade de slots
-// ─────────────────────────────────────────────────────────────────────────────
-function SlotGrid({
+function DraggableSlotGrid({
   selected,
   count,
-  editingIndex,
-  onSlotTap,
+  onReorder,
   onRemove,
+  onAddClick,
 }: {
   selected: HomeShortcutKey[];
   count: ShortcutCountOption;
-  editingIndex: number | null;
-  onSlotTap: (i: number) => void;
-  onRemove: (i: number) => void;
+  onReorder: (from: number, to: number) => void;
+  onRemove: (index: number) => void;
+  onAddClick: (index: number) => void;
 }) {
+  // index do slot que está sendo arrastado
+  const draggingIndex = useRef<number | null>(null);
+  // index do slot sobre o qual o cursor está passando (drop target)
+  const [overIndex, setOverIndex] = useState<number | null>(null);
+  // ref para o container da grade (para calcular posições)
+  const gridRef = useRef<HTMLDivElement>(null);
+  // ref para saber se houve movimento real (tap vs drag)
+  const moved = useRef(false);
+  // pointerdown origin
+  const startPt = useRef({ x: 0, y: 0 });
+
   const slots = Array.from({ length: count });
 
+  /** Dada uma posição de pointer, retorna o índice do slot mais próximo */
+  function slotIndexAt(clientX: number, clientY: number): number | null {
+    if (!gridRef.current) return null;
+    const cells = gridRef.current.querySelectorAll<HTMLElement>("[data-slot-index]");
+    for (const cell of cells) {
+      const r = cell.getBoundingClientRect();
+      if (clientX >= r.left && clientX <= r.right && clientY >= r.top && clientY <= r.bottom) {
+        return Number(cell.dataset.slotIndex);
+      }
+    }
+    return null;
+  }
+
+  function onPointerDown(e: React.PointerEvent, index: number) {
+    if (!selected[index]) return; // slot vazio → não arrasta
+    // só botão primário / toque
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    moved.current = false;
+    startPt.current = { x: e.clientX, y: e.clientY };
+    draggingIndex.current = index;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+
+  function onPointerMove(e: React.PointerEvent, index: number) {
+    if (draggingIndex.current === null) return;
+    const dx = e.clientX - startPt.current.x;
+    const dy = e.clientY - startPt.current.y;
+    if (!moved.current && Math.abs(dx) < 6 && Math.abs(dy) < 6) return;
+    moved.current = true;
+    const over = slotIndexAt(e.clientX, e.clientY);
+    setOverIndex(over);
+  }
+
+  function onPointerUp(e: React.PointerEvent, index: number) {
+    const from = draggingIndex.current;
+    draggingIndex.current = null;
+    setOverIndex(null);
+
+    if (from === null) return;
+
+    if (!moved.current) {
+      // Foi tap: se slot preenchido, delega para remoção/edição no pai
+      if (selected[index]) onAddClick(index);
+      else onAddClick(index);
+      return;
+    }
+
+    // Drag: reordena
+    const to = slotIndexAt(e.clientX, e.clientY);
+    if (to !== null && to !== from) {
+      onReorder(from, to);
+    }
+  }
+
   return (
-    <div className="grid grid-cols-3 gap-2">
+    <div ref={gridRef} className="grid grid-cols-3 gap-2">
       {slots.map((_, i) => {
         const key = selected[i];
-        const isEditing = editingIndex === i && !!key;
+        const def = key ? HOME_SHORTCUT_BY_KEY[key] : undefined;
+        const isDragging = draggingIndex.current === i && moved.current;
+        const isOver = overIndex === i && draggingIndex.current !== null && draggingIndex.current !== i;
+
+        if (!def) {
+          // Slot vazio
+          return (
+            <div
+              key={`slot-${i}`}
+              data-slot-index={i}
+              className={cn(
+                "flex min-h-[90px] flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-border bg-card/40 px-2 py-3 text-center transition-all",
+                isOver && "border-primary border-2 bg-primary/10 scale-105",
+              )}
+            >
+              <button
+                type="button"
+                onClick={() => onAddClick(i)}
+                aria-label={`Adicionar atalho no slot ${i + 1}`}
+                className="flex flex-col items-center gap-1.5"
+              >
+                <span className="grid h-9 w-9 place-items-center rounded-xl border border-dashed border-primary/30 bg-primary/5 text-primary/40">
+                  <Plus className="h-4 w-4" />
+                </span>
+                <span className="text-[10px] text-muted-foreground/50">Slot {i + 1}</span>
+              </button>
+            </div>
+          );
+        }
 
         return (
-          <ShortcutSlot
+          <div
             key={`slot-${i}`}
-            index={i}
-            shortcutKey={key}
-            isEditing={isEditing}
-            onTap={() => (key && editingIndex === i ? onRemove(i) : onSlotTap(i))}
-            onRemove={() => onRemove(i)}
-          />
+            data-slot-index={i}
+            onPointerDown={(e) => onPointerDown(e, i)}
+            onPointerMove={(e) => onPointerMove(e, i)}
+            onPointerUp={(e) => onPointerUp(e, i)}
+            style={{ touchAction: "none", userSelect: "none" }}
+            className={cn(
+              "relative flex min-h-[90px] cursor-grab flex-col items-center justify-center gap-1.5 rounded-2xl border-2 px-2 py-3 text-center transition-all active:cursor-grabbing",
+              isDragging ? "scale-95 opacity-50 border-primary/60 bg-primary/5" : "border-primary/30 bg-card",
+              isOver && "border-primary scale-105 bg-primary/10",
+            )}
+          >
+            {/* Badge número */}
+            <span className="absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-primary/20 text-[9px] font-bold text-primary">
+              {i + 1}
+            </span>
+
+            {/* Alça de drag (visual) */}
+            <span className="absolute right-1.5 top-1.5 text-muted-foreground/30">
+              <GripVertical className="h-3.5 w-3.5" />
+            </span>
+
+            {/* Botão remover */}
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); onRemove(i); }}
+              aria-label={`Remover ${def.label}`}
+              className="absolute -right-1.5 -top-1.5 hidden h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow sm:flex"
+            >
+              <X className="h-3 w-3" />
+            </button>
+
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+              <def.icon className="h-4 w-4" />
+            </span>
+            <span className="line-clamp-2 text-[10px] font-semibold leading-tight sm:text-[11px]">
+              {def.label}
+            </span>
+          </div>
         );
       })}
     </div>
@@ -200,24 +247,19 @@ function SlotGrid({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Componente: catálogo colapsável por grupo
+// Catálogo colapsável
 // ─────────────────────────────────────────────────────────────────────────────
 function ShortcutCatalogAccordion({
-  available,
   alreadySelected,
   onAdd,
-  targetSlot,
   openGroups,
   onToggleGroup,
 }: {
-  available: HomeShortcutDef[];
   alreadySelected: HomeShortcutKey[];
   onAdd: (key: HomeShortcutKey) => void;
-  targetSlot: number | null;
   openGroups: Set<string>;
   onToggleGroup: (group: string) => void;
 }) {
-
   const groups = useMemo(() => {
     const byGroup: Partial<Record<HomeShortcutDef["group"], HomeShortcutDef[]>> = {};
     for (const def of HOME_SHORTCUT_CATALOG) {
@@ -232,12 +274,10 @@ function ShortcutCatalogAccordion({
       {(Object.keys(GROUP_DISPLAY_LABELS) as Array<HomeShortcutDef["group"]>).map((group) => {
         const items = groups[group] ?? [];
         const isOpen = openGroups.has(group);
-        const availableInGroup = items.filter((d) => !alreadySelected.includes(d.key));
         const selectedInGroup = items.filter((d) => alreadySelected.includes(d.key));
 
         return (
           <div key={group} className="overflow-hidden rounded-2xl border border-border bg-card">
-            {/* Cabeçalho do grupo */}
             <button
               type="button"
               onClick={() => onToggleGroup(group)}
@@ -249,14 +289,9 @@ function ShortcutCatalogAccordion({
                   {selectedInGroup.length}/{items.length}
                 </span>
               </div>
-              {isOpen ? (
-                <ChevronUp className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              )}
+              {isOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
             </button>
 
-            {/* Itens */}
             {isOpen && (
               <div className="divide-y divide-border/50 border-t border-border">
                 {items.map((def) => {
@@ -269,32 +304,24 @@ function ShortcutCatalogAccordion({
                       disabled={isSelected}
                       className={cn(
                         "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors",
-                        isSelected
-                          ? "opacity-40"
-                          : "hover:bg-accent/40 active:bg-accent/60",
+                        isSelected ? "opacity-40" : "hover:bg-accent/40 active:bg-accent/60",
                       )}
                     >
-                      <span
-                        className={cn(
-                          "grid h-8 w-8 shrink-0 place-items-center rounded-xl text-sm",
-                          isSelected
-                            ? "bg-primary/10 text-primary"
-                            : "bg-muted text-muted-foreground",
-                        )}
-                      >
+                      <span className={cn(
+                        "grid h-8 w-8 shrink-0 place-items-center rounded-xl text-sm",
+                        isSelected ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
+                      )}>
                         <def.icon className="h-4 w-4" />
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className="truncate text-sm font-semibold">{def.label}</div>
-                        <div className="truncate text-xs text-muted-foreground">
-                          {def.description}
-                        </div>
+                        <div className="truncate text-xs text-muted-foreground">{def.description}</div>
                       </div>
                       {isSelected ? (
                         <Check className="h-4 w-4 shrink-0 text-primary" />
                       ) : (
                         <span className="shrink-0 rounded-lg bg-primary/10 px-2 py-1 text-[10px] font-bold text-primary">
-                          {targetSlot !== null ? `→ slot ${targetSlot + 1}` : "Adicionar"}
+                          + Adicionar
                         </span>
                       )}
                     </button>
@@ -310,7 +337,7 @@ function ShortcutCatalogAccordion({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Componente: gerenciar presets
+// Presets (somente criar/carregar — o "salvar geral" é automático)
 // ─────────────────────────────────────────────────────────────────────────────
 function PresetsPanel({
   currentKeys,
@@ -345,7 +372,7 @@ function PresetsPanel({
     setPresets(updated);
     savePresets(updated);
     setNaming(false);
-    toast.success(`Configuração "${name}" salva.`);
+    toast.success(`"${name}" salva nos favoritos.`);
   }
 
   function deletePreset(id: string) {
@@ -359,7 +386,6 @@ function PresetsPanel({
 
   return (
     <div className="space-y-3">
-      {/* Presets salvos */}
       {presets.length > 0 ? (
         <div className="space-y-2">
           {presets.map((preset) => (
@@ -372,10 +398,7 @@ function PresetsPanel({
                 <div className="truncate text-sm font-semibold">{preset.name}</div>
                 <div className="text-xs text-muted-foreground">
                   {preset.keys.length} atalho{preset.keys.length !== 1 ? "s" : ""} ·{" "}
-                  {new Date(preset.savedAt).toLocaleDateString("pt-BR", {
-                    day: "2-digit",
-                    month: "short",
-                  })}
+                  {new Date(preset.savedAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
                 </div>
               </div>
               <div className="flex shrink-0 gap-1">
@@ -389,7 +412,7 @@ function PresetsPanel({
                 <button
                   type="button"
                   onClick={() => deletePreset(preset.id)}
-                  aria-label={`Excluir configuração ${preset.name}`}
+                  aria-label={`Excluir ${preset.name}`}
                   className="rounded-xl p-1.5 text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive active:bg-destructive/25"
                 >
                   <Trash2 className="h-4 w-4" />
@@ -400,11 +423,10 @@ function PresetsPanel({
         </div>
       ) : (
         <p className="rounded-xl border border-dashed border-border p-3 text-center text-xs text-muted-foreground">
-          Nenhuma configuração salva ainda. Salve a seleção atual para reutilizá-la depois.
+          Nenhum favorito salvo. Salve a configuração atual para acessá-la rapidamente depois.
         </p>
       )}
 
-      {/* Formulário inline para nomear */}
       {naming ? (
         <div className="flex gap-2">
           <input
@@ -442,7 +464,7 @@ function PresetsPanel({
             onClick={startSave}
             className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-primary/40 py-2.5 text-sm font-semibold text-primary transition-colors hover:bg-primary/5 active:bg-primary/10"
           >
-            <Save className="h-4 w-4" /> Salvar configuração atual
+            <Save className="h-4 w-4" /> Salvar como favorito
             <span className="text-xs font-normal text-muted-foreground">
               ({MAX_PRESETS - presets.length} restante{MAX_PRESETS - presets.length !== 1 ? "s" : ""})
             </span>
@@ -451,42 +473,10 @@ function PresetsPanel({
       )}
       {!canSave && !naming && (
         <p className="text-center text-xs text-muted-foreground">
-          Limite de {MAX_PRESETS} configurações atingido. Exclua uma para salvar nova.
+          Limite de {MAX_PRESETS} favoritos atingido. Exclua um para salvar novo.
         </p>
       )}
     </div>
-  );
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Botão expandir / recolher tudo
-// ─────────────────────────────────────────────────────────────────────────────
-function ExpandCollapseAllButton({
-  allGroups,
-  openGroups,
-  onChange,
-}: {
-  allGroups: string[];
-  openGroups: Set<string>;
-  onChange: (next: Set<string>) => void;
-}) {
-  const allOpen = allGroups.every((g) => openGroups.has(g));
-  return (
-    <button
-      type="button"
-      onClick={() => onChange(allOpen ? new Set() : new Set(allGroups))}
-      className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary active:text-primary/70"
-    >
-      {allOpen ? (
-        <>
-          <ChevronUp className="h-3.5 w-3.5" /> Recolher tudo
-        </>
-      ) : (
-        <>
-          <ChevronDown className="h-3.5 w-3.5" /> Expandir tudo
-        </>
-      )}
-    </button>
   );
 }
 
@@ -498,12 +488,13 @@ function EditShortcutsPage() {
   const { keys, isLoading, error } = useHomeShortcuts();
   const [selected, setSelected] = useState<HomeShortcutKey[]>([]);
   const [count, setCount] = useState<ShortcutCountOption>(6);
-  const [saving, setSaving] = useState(false);
   const [hydrated, setHydrated] = useState(false);
-  // null = nenhum slot em foco; número = slot que aguarda seleção do catálogo
-  const [activeSlot, setActiveSlot] = useState<number | null>(null);
-  // Estado dos grupos do catálogo (controlado pela página para o botão expandir/recolher tudo)
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [catalogOpenGroups, setCatalogOpenGroups] = useState<Set<string>>(new Set());
+  // Modal simples para adicionar item quando usuário toca em slot vazio
+  const [addingToSlot, setAddingToSlot] = useState<number | null>(null);
+
+  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   function toggleCatalogGroup(group: string) {
     setCatalogOpenGroups((prev) => {
@@ -520,117 +511,151 @@ function EditShortcutsPage() {
       (k) => !!HOME_SHORTCUT_BY_KEY[k],
     );
     setSelected(initial);
-    const savedLen = initial.length;
-    const nearest = SHORTCUT_COUNT_OPTIONS.find((c) => c >= savedLen) ?? 6;
+    const nearest = SHORTCUT_COUNT_OPTIONS.find((c) => c >= initial.length) ?? 6;
     setCount(nearest);
     setHydrated(true);
   }, [isLoading, hydrated, keys, error]);
 
+  // ── Auto-save com debounce de 800ms ──────────────────────────
+  const persist = useCallback(
+    async (nextSelected: HomeShortcutKey[]) => {
+      setSaveStatus("saving");
+      const { data: s } = await supabase.auth.getSession();
+      const uid = s.session?.user.id;
+      if (!uid) { setSaveStatus("idle"); return; }
+      const { error: saveError } = await supabase
+        .from("profiles")
+        .update({ home_shortcuts: nextSelected })
+        .eq("id", uid)
+        .select("id")
+        .single();
+      if (!saveError) {
+        await qc.invalidateQueries({ queryKey: HOME_SHORTCUTS_QUERY_KEY });
+        setSaveStatus("saved");
+        setTimeout(() => setSaveStatus("idle"), 2000);
+      } else {
+        setSaveStatus("idle");
+      }
+    },
+    [qc],
+  );
+
+  function scheduleAutoSave(nextSelected: HomeShortcutKey[]) {
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    setSaveStatus("saving");
+    saveTimer.current = setTimeout(() => persist(nextSelected), 800);
+  }
+
+  // Cleanup ao desmontar
+  useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current); }, []);
+
+  // ── Handlers ──────────────────────────────────────────────────
   function handleCountChange(newCount: ShortcutCountOption) {
     setCount(newCount);
-    setSelected((prev) => prev.slice(0, newCount));
-    setActiveSlot(null);
+    const trimmed = selected.slice(0, newCount);
+    setSelected(trimmed);
+    scheduleAutoSave(trimmed);
   }
 
-  // Toque num slot: se vazio → ativa para receber item do catálogo
-  //                se preenchido → marca como "em edição" (próximo toque remove)
-  function handleSlotTap(i: number) {
-    if (activeSlot === i) {
-      // Segundo toque no slot preenchido = desselecionar
-      setActiveSlot(null);
-    } else {
-      setActiveSlot(i);
-    }
-  }
-
-  function handleRemoveSlot(i: number) {
+  function handleReorder(from: number, to: number) {
     setSelected((prev) => {
       const next = [...prev];
-      next.splice(i, 1);
+      const item = next[from];
+      // remove do from, insere no to
+      next.splice(from, 1);
+      next.splice(to, 0, item);
+      scheduleAutoSave(next);
       return next;
     });
-    setActiveSlot(null);
+  }
+
+  function handleRemove(index: number) {
+    setSelected((prev) => {
+      const next = [...prev];
+      next.splice(index, 1);
+      scheduleAutoSave(next);
+      return next;
+    });
+  }
+
+  function handleSlotTap(index: number) {
+    // Se slot preenchido: remove (tap direto = liberar slot)
+    // Se slot vazio: abre seleção do catálogo
+    if (selected[index]) {
+      handleRemove(index);
+    } else {
+      setAddingToSlot(index);
+      // Abre todos os grupos do catálogo para facilitar a escolha
+      setCatalogOpenGroups(new Set(["acao", "moto", "global"]));
+      // Scroll até o catálogo
+      setTimeout(() => {
+        document.getElementById("catalogo")?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
   }
 
   function handleAddFromCatalog(key: HomeShortcutKey) {
     setSelected((prev) => {
       const next = [...prev];
-      if (activeSlot !== null) {
-        // Troca o item no slot selecionado (ou preenche um vazio)
-        next[activeSlot] = key;
-      } else {
-        // Adiciona ao próximo slot vazio
-        if (next.length < count) next.push(key);
+      if (addingToSlot !== null && addingToSlot < count) {
+        next[addingToSlot] = key;
+      } else if (next.length < count) {
+        next.push(key);
       }
+      scheduleAutoSave(next);
       return next;
     });
-    setActiveSlot(null);
+    setAddingToSlot(null);
   }
 
   function restoreDefault() {
     const defaults = DEFAULT_HOME_SHORTCUTS.filter((k) => !!HOME_SHORTCUT_BY_KEY[k]);
     const neededCount = SHORTCUT_COUNT_OPTIONS.find((c) => c >= defaults.length) ?? 6;
     const newCount = neededCount > count ? neededCount : count;
+    const trimmed = defaults.slice(0, newCount);
     setCount(newCount);
-    setSelected(defaults.slice(0, newCount));
-    setActiveSlot(null);
+    setSelected(trimmed);
+    setAddingToSlot(null);
+    scheduleAutoSave(trimmed);
   }
 
   function loadPreset(preset: { keys: HomeShortcutKey[]; count: ShortcutCountOption }) {
+    const trimmed = preset.keys.filter((k) => !!HOME_SHORTCUT_BY_KEY[k]).slice(0, preset.count);
     setCount(preset.count);
-    setSelected(preset.keys.filter((k) => !!HOME_SHORTCUT_BY_KEY[k]).slice(0, preset.count));
-    setActiveSlot(null);
-    toast.success("Configuração carregada. Salve para confirmar.");
-  }
-
-  async function save() {
-    setSaving(true);
-    const { data: s } = await supabase.auth.getSession();
-    const uid = s.session?.user.id;
-    if (!uid) {
-      setSaving(false);
-      toast.error("Sessão expirada. Entre novamente para salvar.");
-      return;
-    }
-    const { error: saveError } = await supabase
-      .from("profiles")
-      .update({ home_shortcuts: selected })
-      .eq("id", uid)
-      .select("id")
-      .single();
-    setSaving(false);
-    if (saveError) return toast.error(saveError.message);
-    await qc.invalidateQueries({ queryKey: HOME_SHORTCUTS_QUERY_KEY });
-    toast.success("Atalhos atualizados com sucesso.");
+    setSelected(trimmed);
+    setAddingToSlot(null);
+    scheduleAutoSave(trimmed);
+    toast.success("Favorito carregado.");
   }
 
   if (error)
-    return (
-      <p role="alert" className="text-sm text-destructive">
-        Não foi possível carregar seus atalhos. Tente novamente.
-      </p>
-    );
-  if (isLoading || !hydrated) return <TBLoadingState label="Carregando seus atalhos…" />;
+    return <p role="alert" className="text-sm text-destructive">Não foi possível carregar seus atalhos. Tente novamente.</p>;
+  if (isLoading || !hydrated)
+    return <TBLoadingState label="Carregando seus atalhos…" />;
 
   const slotsFilledCount = selected.length;
-  const allSlotsFilled = slotsFilledCount >= count;
-  // Slot ativo para receber item do catálogo (pode ser um vazio ou um que foi tocado para editar)
-  const targetSlot =
-    activeSlot !== null
-      ? activeSlot
-      : !allSlotsFilled
-        ? slotsFilledCount // próximo vazio
-        : null;
+  const allGroups: Array<HomeShortcutDef["group"]> = ["acao", "moto", "global"];
+  const allOpen = allGroups.every((g) => catalogOpenGroups.has(g));
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-6 pb-28">
+    <div className="mx-auto w-full max-w-2xl space-y-6 pb-10">
       <PageHeader
         title="Personalizar atalhos"
         crumbs={[{ label: "Minha Conta", to: "/perfil" }, { label: "Atalhos" }]}
-        description="Monte sua grade de atalhos. Toque em um slot para editar ou trocar. Toque em um item do catálogo para adicionar."
+        description="Arraste para reordenar. Toque num slot preenchido para removê-lo. Toque num slot vazio ou no catálogo para adicionar."
       />
 
-      {/* ── Passo 1: Quantidade ──────────────────────────────────── */}
+      {/* Status de auto-save — discreto no topo */}
+      <div className="flex items-center justify-end gap-1.5 text-xs text-muted-foreground min-h-[20px]">
+        {saveStatus === "saving" && <span className="animate-pulse">Salvando…</span>}
+        {saveStatus === "saved" && (
+          <span className="flex items-center gap-1 text-emerald-400">
+            <Check className="h-3 w-3" /> Salvo
+          </span>
+        )}
+      </div>
+
+      {/* ── 1: Quantidade ──────────────────────────────────── */}
       <section className="space-y-3">
         <SectionLabel step={1} title="Quantos atalhos?" />
         <div className="flex flex-wrap gap-2">
@@ -659,13 +684,10 @@ function EditShortcutsPage() {
         </p>
       </section>
 
-      {/* ── Passo 2: Grade de slots ──────────────────────────────── */}
+      {/* ── 2: Grade de slots (arrastar para reordenar) ────── */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
-          <SectionLabel
-            step={2}
-            title={`Seus atalhos (${slotsFilledCount}/${count})`}
-          />
+          <SectionLabel step={2} title={`Seus atalhos (${slotsFilledCount}/${count})`} />
           <button
             type="button"
             onClick={restoreDefault}
@@ -675,33 +697,34 @@ function EditShortcutsPage() {
           </button>
         </div>
 
-        <SlotGrid
+        <DraggableSlotGrid
           selected={selected}
           count={count}
-          editingIndex={activeSlot}
-          onSlotTap={handleSlotTap}
-          onRemove={handleRemoveSlot}
+          onReorder={handleReorder}
+          onRemove={handleRemove}
+          onAddClick={handleSlotTap}
         />
 
         {/* Dica contextual */}
         <div className="rounded-xl bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
-          {activeSlot !== null && selected[activeSlot] ? (
-            <span className="text-destructive/80">
-              🔴 Toque novamente no slot para <strong>remover</strong> — ou escolha outro item no catálogo para <strong>substituir</strong>.
+          {addingToSlot !== null ? (
+            <span className="text-primary">
+              ✏️ Escolha um item no catálogo abaixo para preencher o <strong>slot {addingToSlot + 1}</strong>.
             </span>
-          ) : targetSlot !== null ? (
-            <span>
-              ✏️ O próximo item do catálogo vai para o <strong>slot {targetSlot + 1}</strong>.
-            </span>
+          ) : slotsFilledCount < count ? (
+            <span>💡 Toque em um slot vazio ou escolha no catálogo para adicionar. Arraste os itens para reordenar.</span>
           ) : (
-            <span>✅ Todos os slots preenchidos. Toque em um slot para editar.</span>
+            <span>✅ Grade completa. Arraste para reordenar ou toque em um item para removê-lo.</span>
           )}
         </div>
       </section>
 
-      {/* ── Passo 3: Configurações salvas ────────────────────────── */}
+      {/* ── 3: Favoritos ─────────────────────────────────────── */}
       <section className="space-y-3">
-        <SectionLabel step={3} title="Configurações salvas" />
+        <SectionLabel step={3} title="Favoritos" />
+        <p className="text-xs text-muted-foreground -mt-1">
+          Salve a configuração atual com um nome para reutilizá-la rapidamente.
+        </p>
         <PresetsPanel
           currentKeys={selected}
           currentCount={count}
@@ -709,45 +732,29 @@ function EditShortcutsPage() {
         />
       </section>
 
-      {/* ── Passo 4: Catálogo (sempre visível, inicia recolhido) ── */}
-      <section className="space-y-3">
+      {/* ── 4: Catálogo ──────────────────────────────────────── */}
+      <section id="catalogo" className="space-y-3">
         <div className="flex items-center justify-between">
           <SectionLabel step={4} title="Catálogo de menus" />
-          <ExpandCollapseAllButton
-            allGroups={["acao", "moto", "global"]}
-            openGroups={catalogOpenGroups}
-            onChange={setCatalogOpenGroups}
-          />
+          <button
+            type="button"
+            onClick={() => setCatalogOpenGroups(allOpen ? new Set() : new Set(allGroups))}
+            className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary active:text-primary/70"
+          >
+            {allOpen ? <><ChevronUp className="h-3.5 w-3.5" /> Recolher tudo</> : <><ChevronDown className="h-3.5 w-3.5" /> Expandir tudo</>}
+          </button>
         </div>
         <ShortcutCatalogAccordion
-          available={HOME_SHORTCUT_CATALOG.filter((s) => !selected.includes(s.key))}
           alreadySelected={selected}
           onAdd={handleAddFromCatalog}
-          targetSlot={targetSlot}
           openGroups={catalogOpenGroups}
           onToggleGroup={toggleCatalogGroup}
         />
       </section>
-
-      {/* ── Salvar — sticky no mobile ────────────────────────────── */}
-      <div className="fixed inset-x-0 bottom-0 z-10 border-t border-border bg-background/95 px-4 py-3 backdrop-blur-sm sm:static sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none">
-        <TBButton onClick={save} disabled={saving} className="w-full">
-          {saving ? (
-            "Salvando…"
-          ) : (
-            <>
-              <Check className="h-4 w-4" /> Salvar atalhos
-            </>
-          )}
-        </TBButton>
-      </div>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Auxiliar visual
-// ─────────────────────────────────────────────────────────────────────────────
 function SectionLabel({ step, title }: { step: number; title: string }) {
   return (
     <div className="flex items-center gap-2">
