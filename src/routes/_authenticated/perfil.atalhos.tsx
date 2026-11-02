@@ -7,6 +7,7 @@ import {
   ChevronDown,
   ChevronUp,
   GripVertical,
+  Lock,
   Plus,
   RotateCcw,
   Save,
@@ -82,18 +83,37 @@ const GROUP_DISPLAY_LABELS: Record<HomeShortcutDef["group"], string> = {
   global: "🔧 Sistema",
 };
 
+/**
+ * Atalhos fixos do sistema — ocupam sempre os slots 0 e 1.
+ * O usuário não pode remover, reordenar ou substituir esses slots.
+ */
+const FIXED_SHORTCUTS: HomeShortcutKey[] = ["registrar-uso", "painel-moto"];
+const FIXED_COUNT = FIXED_SHORTCUTS.length;
+
+/**
+ * Garante que os slots fixos estejam sempre nas posições 0..FIXED_COUNT-1,
+ * sem duplicar caso já existam no array (preserva o restante).
+ */
+function enforceFixedSlots(keys: HomeShortcutKey[]): HomeShortcutKey[] {
+  const rest = keys.filter((k) => !FIXED_SHORTCUTS.includes(k));
+  return [...FIXED_SHORTCUTS, ...rest];
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Grade com drag-and-drop (pointer events — touch + mouse)
 // ─────────────────────────────────────────────────────────────────────────────
 function DraggableSlotGrid({
   selected,
   count,
+  fixedCount = 0,
   onReorder,
   onRemove,
   onAddClick,
 }: {
   selected: HomeShortcutKey[];
   count: ShortcutCountOption;
+  /** Quantos slots iniciais são fixos (não reordenáveis, não removíveis). */
+  fixedCount?: number;
   onReorder: (from: number, to: number) => void;
   onRemove: (index: number) => void;
   onAddClick: (index: number) => void;
@@ -126,6 +146,7 @@ function DraggableSlotGrid({
 
   function onPointerDown(e: React.PointerEvent, index: number) {
     if (!selected[index]) return; // slot vazio → não arrasta
+    if (index < fixedCount) return; // slot fixo → não arrasta
     // só botão primário / toque
     if (e.pointerType === "mouse" && e.button !== 0) return;
     moved.current = false;
@@ -152,15 +173,15 @@ function DraggableSlotGrid({
     if (from === null) return;
 
     if (!moved.current) {
-      // Foi tap: se slot preenchido, delega para remoção/edição no pai
-      if (selected[index]) onAddClick(index);
-      else onAddClick(index);
+      // Foi tap: slots fixos são intocáveis — não remove nem abre catálogo
+      if (index < fixedCount) return;
+      onAddClick(index);
       return;
     }
 
-    // Drag: reordena
+    // Drag: reordena — não permite destino em slot fixo
     const to = slotIndexAt(e.clientX, e.clientY);
-    if (to !== null && to !== from) {
+    if (to !== null && to !== from && to >= fixedCount) {
       onReorder(from, to);
     }
   }
@@ -202,6 +223,8 @@ function DraggableSlotGrid({
           );
         }
 
+        const isFixed = i < fixedCount;
+
         return (
           <div
             key={`slot-${i}`}
@@ -210,36 +233,55 @@ function DraggableSlotGrid({
             onPointerMove={(e) => onPointerMove(e, i)}
             onPointerUp={(e) => onPointerUp(e, i)}
             className={cn(
-              "relative flex min-h-[90px] cursor-grab flex-col items-center justify-center gap-1.5 rounded-2xl border-2 px-2 py-3 text-center transition-all active:cursor-grabbing",
-              isDragging ? "scale-95 opacity-50 border-primary/60 bg-primary/5" : "border-primary/30 bg-card",
-              isOver && "border-primary scale-105 bg-primary/10",
+              "relative flex min-h-[90px] flex-col items-center justify-center gap-1.5 rounded-2xl border-2 px-2 py-3 text-center transition-all",
+              isFixed
+                ? "cursor-default border-primary/20 bg-primary/5"
+                : "cursor-grab active:cursor-grabbing",
+              !isFixed && (isDragging ? "scale-95 opacity-50 border-primary/60 bg-primary/5" : "border-primary/30 bg-card"),
+              !isFixed && isOver && "border-primary scale-105 bg-primary/10",
             )}
+            title={isFixed ? "Atalho fixo do sistema — não pode ser alterado" : undefined}
           >
             {/* Badge número */}
             <span className="pointer-events-none absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-primary/20 text-[9px] font-bold text-primary">
               {i + 1}
             </span>
 
-            {/* Alça de drag (visual) */}
-            <span className="pointer-events-none absolute right-1.5 top-1.5 text-muted-foreground/30">
-              <GripVertical className="h-3.5 w-3.5" />
-            </span>
+            {isFixed ? (
+              /* Ícone de cadeado — indica slot fixo */
+              <span className="pointer-events-none absolute right-1.5 top-1.5 text-primary/30">
+                <Lock className="h-3 w-3" />
+              </span>
+            ) : (
+              /* Alça de drag (visual) */
+              <span className="pointer-events-none absolute right-1.5 top-1.5 text-muted-foreground/30">
+                <GripVertical className="h-3.5 w-3.5" />
+              </span>
+            )}
 
-            {/* Botão remover — só desktop (no mobile o tap remove) */}
-            <button
-              type="button"
-              onPointerDown={(e) => e.stopPropagation()}
-              onClick={(e) => { e.stopPropagation(); onRemove(i); }}
-              aria-label={`Remover ${def.label}`}
-              className="absolute -right-1.5 -top-1.5 hidden h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow sm:flex"
-            >
-              <X className="h-3 w-3" />
-            </button>
+            {/* Botão remover — só para slots não fixos, só desktop (no mobile o tap remove) */}
+            {!isFixed && (
+              <button
+                type="button"
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => { e.stopPropagation(); onRemove(i); }}
+                aria-label={`Remover ${def.label}`}
+                className="absolute -right-1.5 -top-1.5 hidden h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow sm:flex"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
 
-            <span className="pointer-events-none grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+            <span className={cn(
+              "pointer-events-none grid h-9 w-9 shrink-0 place-items-center rounded-xl",
+              isFixed ? "bg-primary/15 text-primary/70" : "bg-primary/10 text-primary",
+            )}>
               <def.icon className="h-4 w-4" />
             </span>
-            <span className="pointer-events-none line-clamp-2 text-[10px] font-semibold leading-tight sm:text-[11px]">
+            <span className={cn(
+              "pointer-events-none line-clamp-2 text-[10px] font-semibold leading-tight sm:text-[11px]",
+              isFixed && "text-foreground/60",
+            )}>
               {def.label}
             </span>
           </div>
@@ -266,6 +308,8 @@ function ShortcutCatalogAccordion({
   const groups = useMemo(() => {
     const byGroup: Partial<Record<HomeShortcutDef["group"], HomeShortcutDef[]>> = {};
     for (const def of HOME_SHORTCUT_CATALOG) {
+      // Atalhos fixos do sistema não aparecem no catálogo — estão sempre nos slots 1 e 2
+      if (FIXED_SHORTCUTS.includes(def.key)) continue;
       if (!byGroup[def.group]) byGroup[def.group] = [];
       byGroup[def.group]!.push(def);
     }
@@ -510,9 +554,11 @@ function EditShortcutsPage() {
 
   useEffect(() => {
     if (isLoading || hydrated || error) return;
-    const initial = ((keys ?? DEFAULT_HOME_SHORTCUTS) as HomeShortcutKey[]).filter(
+    const raw = ((keys ?? DEFAULT_HOME_SHORTCUTS) as HomeShortcutKey[]).filter(
       (k) => !!HOME_SHORTCUT_BY_KEY[k],
     );
+    // Sempre garante slots fixos nas posições 0 e 1 — mesmo se o banco tiver dados diferentes
+    const initial = enforceFixedSlots(raw);
     setSelected(initial);
     const nearest = SHORTCUT_COUNT_OPTIONS.find((c) => c >= initial.length) ?? 6;
     setCount(nearest);
@@ -555,12 +601,18 @@ function EditShortcutsPage() {
   // ── Handlers ──────────────────────────────────────────────────
   function handleCountChange(newCount: ShortcutCountOption) {
     setCount(newCount);
-    const trimmed = selected.slice(0, newCount);
-    setSelected(trimmed);
-    scheduleAutoSave(trimmed);
+    // Ao reduzir, garante que os slots fixos permanecem (trim preserva as primeiras posições)
+    const trimmed = selected.slice(0, Math.max(newCount, FIXED_COUNT));
+    // Se o newCount for menor que FIXED_COUNT (impossível nos valores atuais, mas defensivo),
+    // mantém ao menos os fixos. Caso contrário, corta no newCount.
+    const final = trimmed.slice(0, newCount);
+    setSelected(final);
+    scheduleAutoSave(final);
   }
 
   function handleReorder(from: number, to: number) {
+    // Slots fixos não podem ser origem nem destino de reordenação
+    if (from < FIXED_COUNT || to < FIXED_COUNT) return;
     setSelected((prev) => {
       const next = [...prev];
       const item = next[from];
@@ -573,6 +625,8 @@ function EditShortcutsPage() {
   }
 
   function handleRemove(index: number) {
+    // Slots fixos não podem ser removidos
+    if (index < FIXED_COUNT) return;
     setSelected((prev) => {
       const next = [...prev];
       next.splice(index, 1);
@@ -582,6 +636,8 @@ function EditShortcutsPage() {
   }
 
   function handleSlotTap(index: number) {
+    // Slots fixos são intocáveis
+    if (index < FIXED_COUNT) return;
     // Se slot preenchido: remove (tap direto = liberar slot)
     // Se slot vazio: abre seleção do catálogo
     if (selected[index]) {
@@ -598,6 +654,11 @@ function EditShortcutsPage() {
   }
 
   function handleAddFromCatalog(key: HomeShortcutKey) {
+    // Não permite adicionar sobre um slot fixo via catálogo
+    if (addingToSlot !== null && addingToSlot < FIXED_COUNT) {
+      setAddingToSlot(null);
+      return;
+    }
     setSelected((prev) => {
       const next = [...prev];
       if (addingToSlot !== null && addingToSlot < count) {
@@ -612,7 +673,9 @@ function EditShortcutsPage() {
   }
 
   function restoreDefault() {
-    const defaults = DEFAULT_HOME_SHORTCUTS.filter((k) => !!HOME_SHORTCUT_BY_KEY[k]);
+    const raw = DEFAULT_HOME_SHORTCUTS.filter((k) => !!HOME_SHORTCUT_BY_KEY[k]);
+    // Garante sempre os slots fixos nas posições certas
+    const defaults = enforceFixedSlots(raw);
     const neededCount = SHORTCUT_COUNT_OPTIONS.find((c) => c >= defaults.length) ?? 6;
     const newCount = neededCount > count ? neededCount : count;
     const trimmed = defaults.slice(0, newCount);
@@ -623,11 +686,13 @@ function EditShortcutsPage() {
   }
 
   function loadPreset(preset: { keys: HomeShortcutKey[]; count: ShortcutCountOption }) {
-    const trimmed = preset.keys.filter((k) => !!HOME_SHORTCUT_BY_KEY[k]).slice(0, preset.count);
+    const valid = preset.keys.filter((k) => !!HOME_SHORTCUT_BY_KEY[k]);
+    // Garante sempre os slots fixos nas posições certas, mesmo se o preset não os tinha
+    const withFixed = enforceFixedSlots(valid).slice(0, preset.count);
     setCount(preset.count);
-    setSelected(trimmed);
+    setSelected(withFixed);
     setAddingToSlot(null);
-    scheduleAutoSave(trimmed);
+    scheduleAutoSave(withFixed);
     toast.success("Favorito carregado.");
   }
 
@@ -645,7 +710,7 @@ function EditShortcutsPage() {
       <PageHeader
         title="Personalizar atalhos"
         crumbs={[{ label: "Minha Conta", to: "/perfil" }, { label: "Atalhos" }]}
-        description="Arraste para reordenar. Toque num slot preenchido para removê-lo. Toque num slot vazio ou no catálogo para adicionar."
+        description="Os 2 primeiros atalhos são fixos do sistema (🔒). Os demais você pode arrastar para reordenar, tocar para remover ou adicionar."
       />
 
       {/* Status de auto-save — discreto no topo */}
@@ -703,6 +768,7 @@ function EditShortcutsPage() {
         <DraggableSlotGrid
           selected={selected}
           count={count}
+          fixedCount={FIXED_COUNT}
           onReorder={handleReorder}
           onRemove={handleRemove}
           onAddClick={handleSlotTap}
