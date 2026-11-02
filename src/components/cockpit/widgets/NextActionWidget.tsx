@@ -1,7 +1,7 @@
 import type { CockpitSnapshot } from "@/lib/til";
 import { Button } from "@/components/ui/button";
 import { Link } from "@tanstack/react-router";
-import { NewEventDialog } from "@/components/NewEventDialog";
+import { LayoutDashboard } from "lucide-react";
 import type { Database } from "@/integrations/supabase/types";
 
 type Moto = Database["public"]["Tables"]["motorcycles"]["Row"];
@@ -38,9 +38,19 @@ export function NextActionWidget({
             </Button>
           )}
           {action.kind === "register_maintenance" && (
-            <NewEventDialog moto={moto} triggerLabel={action.label} />
+            /* Manutenção vencida → leva direto ao Painel de Manutenção */
+            <Button asChild size="lg" className="btn-glow w-full sm:w-auto gap-2">
+              <Link
+                to="/motorcycles/$id/control"
+                params={{ id: moto.id }}
+                search={{ tab: "geral", action: undefined }}
+              >
+                <LayoutDashboard className="h-4 w-4" />
+                Painel de Manutenção
+              </Link>
+            </Button>
           )}
-{(action.kind === "renew_document" || action.kind === "add_photo") && (
+          {(action.kind === "renew_document" || action.kind === "add_photo") && (
             <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
               <Link to="/motorcycles/$id/control" search={{ action: undefined, tab: undefined }} params={{ id: moto.id }}>
                 {action.label}
