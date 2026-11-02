@@ -166,7 +166,13 @@ function DraggableSlotGrid({
   }
 
   return (
-    <div ref={gridRef} className="grid grid-cols-3 gap-2">
+    // touch-action: none no container inteiro — impede scroll da página
+    // durante qualquer arrasto dentro da grade
+    <div
+      ref={gridRef}
+      className="grid grid-cols-3 gap-2"
+      style={{ touchAction: "none", userSelect: "none", WebkitUserSelect: "none" } as React.CSSProperties}
+    >
       {slots.map((_, i) => {
         const key = selected[i];
         const def = key ? HOME_SHORTCUT_BY_KEY[key] : undefined;
@@ -174,27 +180,24 @@ function DraggableSlotGrid({
         const isOver = overIndex === i && draggingIndex.current !== null && draggingIndex.current !== i;
 
         if (!def) {
-          // Slot vazio
+          // Slot vazio — toque abre catálogo (não precisa de drag)
           return (
             <div
               key={`slot-${i}`}
               data-slot-index={i}
+              onClick={() => onAddClick(i)}
+              role="button"
+              tabIndex={0}
+              aria-label={`Adicionar atalho no slot ${i + 1}`}
               className={cn(
-                "flex min-h-[90px] flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-border bg-card/40 px-2 py-3 text-center transition-all",
-                isOver && "border-primary border-2 bg-primary/10 scale-105",
+                "flex min-h-[90px] flex-col items-center justify-center gap-1.5 rounded-2xl border-2 border-dashed border-border bg-card/40 px-2 py-3 text-center transition-all active:bg-accent/30",
+                isOver && "border-primary bg-primary/10 scale-105",
               )}
             >
-              <button
-                type="button"
-                onClick={() => onAddClick(i)}
-                aria-label={`Adicionar atalho no slot ${i + 1}`}
-                className="flex flex-col items-center gap-1.5"
-              >
-                <span className="grid h-9 w-9 place-items-center rounded-xl border border-dashed border-primary/30 bg-primary/5 text-primary/40">
-                  <Plus className="h-4 w-4" />
-                </span>
-                <span className="text-[10px] text-muted-foreground/50">Slot {i + 1}</span>
-              </button>
+              <span className="grid h-9 w-9 place-items-center rounded-xl border border-dashed border-primary/30 bg-primary/5 text-primary/40 pointer-events-none">
+                <Plus className="h-4 w-4" />
+              </span>
+              <span className="text-[10px] text-muted-foreground/50 pointer-events-none">Slot {i + 1}</span>
             </div>
           );
         }
@@ -206,7 +209,6 @@ function DraggableSlotGrid({
             onPointerDown={(e) => onPointerDown(e, i)}
             onPointerMove={(e) => onPointerMove(e, i)}
             onPointerUp={(e) => onPointerUp(e, i)}
-            style={{ touchAction: "none", userSelect: "none" }}
             className={cn(
               "relative flex min-h-[90px] cursor-grab flex-col items-center justify-center gap-1.5 rounded-2xl border-2 px-2 py-3 text-center transition-all active:cursor-grabbing",
               isDragging ? "scale-95 opacity-50 border-primary/60 bg-primary/5" : "border-primary/30 bg-card",
@@ -214,18 +216,19 @@ function DraggableSlotGrid({
             )}
           >
             {/* Badge número */}
-            <span className="absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-primary/20 text-[9px] font-bold text-primary">
+            <span className="pointer-events-none absolute left-1.5 top-1.5 grid h-5 w-5 place-items-center rounded-full bg-primary/20 text-[9px] font-bold text-primary">
               {i + 1}
             </span>
 
             {/* Alça de drag (visual) */}
-            <span className="absolute right-1.5 top-1.5 text-muted-foreground/30">
+            <span className="pointer-events-none absolute right-1.5 top-1.5 text-muted-foreground/30">
               <GripVertical className="h-3.5 w-3.5" />
             </span>
 
-            {/* Botão remover */}
+            {/* Botão remover — só desktop (no mobile o tap remove) */}
             <button
               type="button"
+              onPointerDown={(e) => e.stopPropagation()}
               onClick={(e) => { e.stopPropagation(); onRemove(i); }}
               aria-label={`Remover ${def.label}`}
               className="absolute -right-1.5 -top-1.5 hidden h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow sm:flex"
@@ -233,10 +236,10 @@ function DraggableSlotGrid({
               <X className="h-3 w-3" />
             </button>
 
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+            <span className="pointer-events-none grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
               <def.icon className="h-4 w-4" />
             </span>
-            <span className="line-clamp-2 text-[10px] font-semibold leading-tight sm:text-[11px]">
+            <span className="pointer-events-none line-clamp-2 text-[10px] font-semibold leading-tight sm:text-[11px]">
               {def.label}
             </span>
           </div>
