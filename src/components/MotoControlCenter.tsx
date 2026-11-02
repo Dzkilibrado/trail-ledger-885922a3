@@ -453,7 +453,7 @@ export function MotoControlCenter({
             {isOwner && !isArchived && (
               <div className="grid grid-cols-2 gap-3">
                 <Button
-                  className="btn-glow col-span-2 h-12 text-base"
+                  className="btn-glow h-12 text-sm gap-1.5"
                   onClick={() =>
                     navigate({
                       to: "/motorcycles/$id/registrar-manutencao" as never,
@@ -461,11 +461,13 @@ export function MotoControlCenter({
                     })
                   }
                 >
-                  <Wrench className="h-4 w-4" /> Registrar manutenção
+                  <Wrench className="h-4 w-4 shrink-0" />
+                  <span className="truncate">Registrar manutenção</span>
                 </Button>
                 <NewEventDialog
                   moto={m}
                   triggerLabel="Registrar atividade"
+                  triggerClassName="btn-glow h-12 w-full text-sm gap-1.5"
                   open={autoOpenEvent}
                   onOpenChange={(v) => setAutoOpenEvent(v ? true : undefined)}
                 />

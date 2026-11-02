@@ -73,12 +73,15 @@ export function NewEventDialog({
   open: controlledOpen,
   onOpenChange,
   triggerLabel,
+  triggerClassName,
 }: {
   moto: Motorcycle;
   preset?: SchedulePreset;
   open?: boolean;
   onOpenChange?: (v: boolean) => void;
   triggerLabel?: string;
+  /** Classe CSS extra aplicada ao botão trigger (ex: para igualar altura com botões adjacentes). */
+  triggerClassName?: string;
 }) {
   const qc = useQueryClient();
   const [internalOpen, setInternalOpen] = useState(false);
@@ -493,7 +496,7 @@ export function NewEventDialog({
     <Dialog open={open} onOpenChange={setOpen}>
       {controlledOpen === undefined && (
         <DialogTrigger asChild>
-          <Button className="btn-glow">
+          <Button className={triggerClassName ?? "btn-glow"}>
             <Plus className="h-4 w-4" /> {triggerLabel ?? "Registrar atividade"}
           </Button>
         </DialogTrigger>
