@@ -14,7 +14,8 @@ export function NextActionWidget({
   moto: Moto;
 }) {
   const action = snapshot.nextAction;
-  if (!action) return null;
+  // "register_activity" (registrar uso) não é sugestão de manutenção — não exibir aqui.
+  if (!action || action.kind === "register_activity") return null;
 
   return (
     <section
@@ -39,10 +40,7 @@ export function NextActionWidget({
           {action.kind === "register_maintenance" && (
             <NewEventDialog moto={moto} triggerLabel={action.label} />
           )}
-          {action.kind === "register_activity" && (
-            <NewEventDialog moto={moto} triggerLabel={action.label} />
-          )}
-          {(action.kind === "renew_document" || action.kind === "add_photo") && (
+{(action.kind === "renew_document" || action.kind === "add_photo") && (
             <Button asChild size="lg" variant="outline" className="w-full sm:w-auto">
               <Link to="/motorcycles/$id/control" search={{ action: undefined, tab: undefined }} params={{ id: moto.id }}>
                 {action.label}
