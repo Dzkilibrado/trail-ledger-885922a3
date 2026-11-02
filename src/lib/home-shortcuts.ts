@@ -106,11 +106,11 @@ export const HOME_SHORTCUT_CATALOG: HomeShortcutDef[] = [
   // ── Moto ───────────────────────────────────────────────────
   {
     key: "painel-moto",
-    label: "Painel",
+    label: "Painel de Manutenção",
     description: "Saúde, próximas revisões e índice de conservação",
     icon: LayoutDashboard,
     group: "moto",
-    to: "/motorcycles/$id",
+    to: "/motorcycles/$id/control",
     search: { tab: "geral" },
   },
   {
