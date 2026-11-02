@@ -207,24 +207,16 @@ function ShortcutCatalogAccordion({
   alreadySelected,
   onAdd,
   targetSlot,
+  openGroups,
+  onToggleGroup,
 }: {
   available: HomeShortcutDef[];
   alreadySelected: HomeShortcutKey[];
   onAdd: (key: HomeShortcutKey) => void;
   targetSlot: number | null;
+  openGroups: Set<string>;
+  onToggleGroup: (group: string) => void;
 }) {
-  const [openGroups, setOpenGroups] = useState<Set<string>>(
-    new Set(["acao", "moto", "global"]),
-  );
-
-  const toggleGroup = (g: string) => {
-    setOpenGroups((prev) => {
-      const next = new Set(prev);
-      if (next.has(g)) next.delete(g);
-      else next.add(g);
-      return next;
-    });
-  };
 
   const groups = useMemo(() => {
     const byGroup: Partial<Record<HomeShortcutDef["group"], HomeShortcutDef[]>> = {};
@@ -248,7 +240,7 @@ function ShortcutCatalogAccordion({
             {/* Cabeçalho do grupo */}
             <button
               type="button"
-              onClick={() => toggleGroup(group)}
+              onClick={() => onToggleGroup(group)}
               className="flex w-full items-center justify-between px-4 py-3 text-left transition-colors hover:bg-accent/30 active:bg-accent/50"
             >
               <div className="flex items-center gap-2">
@@ -467,6 +459,38 @@ function PresetsPanel({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Botão expandir / recolher tudo
+// ─────────────────────────────────────────────────────────────────────────────
+function ExpandCollapseAllButton({
+  allGroups,
+  openGroups,
+  onChange,
+}: {
+  allGroups: string[];
+  openGroups: Set<string>;
+  onChange: (next: Set<string>) => void;
+}) {
+  const allOpen = allGroups.every((g) => openGroups.has(g));
+  return (
+    <button
+      type="button"
+      onClick={() => onChange(allOpen ? new Set() : new Set(allGroups))}
+      className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary active:text-primary/70"
+    >
+      {allOpen ? (
+        <>
+          <ChevronUp className="h-3.5 w-3.5" /> Recolher tudo
+        </>
+      ) : (
+        <>
+          <ChevronDown className="h-3.5 w-3.5" /> Expandir tudo
+        </>
+      )}
+    </button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Página principal
 // ─────────────────────────────────────────────────────────────────────────────
 function EditShortcutsPage() {
@@ -478,6 +502,17 @@ function EditShortcutsPage() {
   const [hydrated, setHydrated] = useState(false);
   // null = nenhum slot em foco; número = slot que aguarda seleção do catálogo
   const [activeSlot, setActiveSlot] = useState<number | null>(null);
+  // Estado dos grupos do catálogo (controlado pela página para o botão expandir/recolher tudo)
+  const [catalogOpenGroups, setCatalogOpenGroups] = useState<Set<string>>(new Set());
+
+  function toggleCatalogGroup(group: string) {
+    setCatalogOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(group)) next.delete(group);
+      else next.add(group);
+      return next;
+    });
+  }
 
   useEffect(() => {
     if (isLoading || hydrated || error) return;
@@ -664,24 +699,33 @@ function EditShortcutsPage() {
         </div>
       </section>
 
-      {/* ── Passo 3: Catálogo (sempre visível) ──────────────────── */}
+      {/* ── Passo 3: Configurações salvas ────────────────────────── */}
       <section className="space-y-3">
-        <SectionLabel step={3} title="Catálogo de menus" />
+        <SectionLabel step={3} title="Configurações salvas" />
+        <PresetsPanel
+          currentKeys={selected}
+          currentCount={count}
+          onLoad={loadPreset}
+        />
+      </section>
+
+      {/* ── Passo 4: Catálogo (sempre visível, inicia recolhido) ── */}
+      <section className="space-y-3">
+        <div className="flex items-center justify-between">
+          <SectionLabel step={4} title="Catálogo de menus" />
+          <ExpandCollapseAllButton
+            allGroups={["acao", "moto", "global"]}
+            openGroups={catalogOpenGroups}
+            onChange={setCatalogOpenGroups}
+          />
+        </div>
         <ShortcutCatalogAccordion
           available={HOME_SHORTCUT_CATALOG.filter((s) => !selected.includes(s.key))}
           alreadySelected={selected}
           onAdd={handleAddFromCatalog}
           targetSlot={targetSlot}
-        />
-      </section>
-
-      {/* ── Presets ──────────────────────────────────────────────── */}
-      <section className="space-y-3">
-        <SectionLabel step={4} title="Configurações salvas" />
-        <PresetsPanel
-          currentKeys={selected}
-          currentCount={count}
-          onLoad={loadPreset}
+          openGroups={catalogOpenGroups}
+          onToggleGroup={toggleCatalogGroup}
         />
       </section>
 
