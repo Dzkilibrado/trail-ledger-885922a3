@@ -249,11 +249,11 @@ const QuickActions = memo(function QuickActions({ motoId }: { motoId: string }) 
           <Settings2 className="h-4 w-4" aria-hidden /> Escolha seus atalhos
         </Link>
       ) : (
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+        <div className="grid grid-cols-3 gap-2">
           {shortcuts.map((it) => it.key === "registrar-uso" ? (
-            <TBButton key={it.key} variant="ghost" onClick={() => setUsageOpen(true)} className="group flex h-auto min-h-[90px] flex-col gap-1.5 whitespace-normal rounded-2xl border border-border bg-card px-2 py-3 hover:border-primary/40 hover:bg-accent/40">
+            <TBButton key={it.key} variant="ghost" onClick={() => setUsageOpen(true)} className="group flex h-auto min-h-[82px] flex-col items-center gap-1.5 whitespace-normal rounded-2xl border border-border bg-card px-2 py-3 hover:border-primary/40 hover:bg-accent/40">
               <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><it.icon className="h-4 w-4" /></span>
-              <span className="text-[11px] font-semibold leading-tight sm:text-xs">{it.label}</span>
+              <span className="line-clamp-2 text-[10px] font-semibold leading-tight sm:text-[11px]">{it.label}</span>
             </TBButton>
           ) : (
             <Link
@@ -261,12 +261,12 @@ const QuickActions = memo(function QuickActions({ motoId }: { motoId: string }) 
               to={it.to as any}
               params={(it.needsMoto === false ? undefined : { id: motoId }) as any}
               search={(it.search ?? undefined) as any}
-              className="group flex flex-col items-center justify-center gap-1.5 rounded-2xl border border-border bg-card px-2 py-3 text-center transition-colors hover:border-primary/40 hover:bg-accent/40"
+              className="group flex min-h-[82px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-border bg-card px-2 py-3 text-center transition-colors hover:border-primary/40 hover:bg-accent/40"
             >
               <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
                 <it.icon className="h-4 w-4" />
               </span>
-              <span className="text-[11px] font-semibold leading-tight sm:text-xs">{it.label}</span>
+              <span className="line-clamp-2 text-[10px] font-semibold leading-tight sm:text-[11px]">{it.label}</span>
             </Link>
           ))}
         </div>

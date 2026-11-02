@@ -14,6 +14,15 @@ import {
   CalendarDays,
   QrCode,
   Gauge,
+  LayoutDashboard,
+  Package,
+  Bike,
+  MapPin,
+  LifeBuoy,
+  CreditCard,
+  FileText,
+  Activity,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 
@@ -25,30 +34,40 @@ import {
  * `needsMoto: false` — o Dashboard não injeta o parâmetro de moto nesses.
  */
 export type HomeShortcutKey =
+  // Moto — ações rápidas
   | "registrar-uso"
-  | "passaporte"
-  | "documentos"
-  | "recibo"
-  | "selos"
-  | "saude"
-  | "manutencoes"
-  | "cockpit"
-  | "checkups"
-  | "central-moto"
-  | "central-revisao"
   | "registrar-atividade"
   | "registrar-manutencao"
+  // Moto — navegação
+  | "cockpit"
+  | "painel-moto"
+  | "central-moto"
+  | "central-revisao"
   | "historico-manutencao"
+  | "checkups"
+  | "saude"
+  | "manutencoes"
+  | "passaporte"
+  | "passaporte-qr"
+  | "selos"
+  | "documentos"
+  | "recibo"
+  | "pecas"
+  // Global
   | "financeiro"
   | "agenda"
   | "oficinas"
-  | "certificados";
+  | "certificados"
+  | "suporte"
+  | "assinatura";
 
 export interface HomeShortcutDef {
   key: HomeShortcutKey;
   label: string;
   description: string;
   icon: LucideIcon;
+  /** Categoria para agrupamento no gestor. */
+  group: "acao" | "moto" | "global";
   to: string;
   /** Parâmetros de busca opcionais — ex: abrir um formulário direto na tela de destino. */
   search?: Record<string, string>;
@@ -57,129 +76,177 @@ export interface HomeShortcutDef {
 }
 
 export const HOME_SHORTCUT_CATALOG: HomeShortcutDef[] = [
+  // ── Ações rápidas ──────────────────────────────────────────
   {
     key: "registrar-uso",
     label: "Registrar Uso",
     description: "Leitura acumulada do horímetro ou da quilometragem",
     icon: Gauge,
+    group: "acao",
     to: "/dashboard",
   },
   {
-    key: "cockpit",
-    label: "Cockpit",
-    description: "Visão geral da moto",
-    icon: FolderOpen,
-    to: "/motorcycles/$id",
-  },
-  {
-    key: "central-moto",
-    label: "Central da moto",
-    description: "Documentos, recibos e ações da moto",
-    icon: ShieldCheck,
-    to: "/motorcycles/$id/control",
-  },
-  {
-    key: "central-revisao",
-    label: "Central de Revisão",
-    description: "Editar ou excluir qualquer lançamento: uso, manutenção, sinistro e mais",
-    icon: ClipboardList,
-    to: "/motorcycles/$id/control",
-    search: { tab: "atividade" },
-  },
-  {
     key: "registrar-atividade",
-    label: "Registrar atividade",
+    label: "Registrar Atividade",
     description: "Sinistro, acessório, garantia, nota e outros eventos",
     icon: Plus,
+    group: "acao",
     to: "/motorcycles/$id/control",
     search: { action: "registrar" },
   },
   {
     key: "registrar-manutencao",
-    label: "Registrar manutenção",
+    label: "Registrar Manutenção",
     description: "Novo fluxo: busca, catálogo, mapa visual e leitura de NF",
     icon: Wrench,
+    group: "acao",
     to: "/motorcycles/$id/registrar-manutencao",
+  },
+
+  // ── Moto ───────────────────────────────────────────────────
+  {
+    key: "painel-moto",
+    label: "Painel",
+    description: "Saúde, próximas revisões e índice de conservação",
+    icon: LayoutDashboard,
+    group: "moto",
+    to: "/motorcycles/$id",
+    search: { tab: "geral" },
+  },
+  {
+    key: "cockpit",
+    label: "Cockpit",
+    description: "Visão geral completa da moto ativa",
+    icon: Bike,
+    group: "moto",
+    to: "/motorcycles/$id",
+  },
+  {
+    key: "central-revisao",
+    label: "Lançamentos",
+    description: "Editar ou excluir lançamentos: uso, manutenção, sinistro e mais",
+    icon: ClipboardList,
+    group: "moto",
+    to: "/motorcycles/$id/control",
+    search: { tab: "atividade" },
   },
   {
     key: "historico-manutencao",
     label: "Histórico",
     description: "Consultar, editar e excluir manutenções registradas",
     icon: Search,
+    group: "moto",
     to: "/motorcycles/$id/historico-manutencao",
   },
   {
     key: "checkups",
-    label: "Check-ups e Laudos",
+    label: "Check-up",
     description: "Histórico de check-ups e laudos emitidos",
     icon: Stethoscope,
+    group: "moto",
     to: "/motorcycles/$id/checkups",
   },
   {
     key: "saude",
     label: "Saúde",
-    description: "Estado geral de conservação",
+    description: "Estado geral de conservação da moto",
     icon: Heart,
+    group: "moto",
     to: "/motorcycles/$id/health",
   },
   {
     key: "manutencoes",
     label: "Manutenções",
-    description: "Plano de manutenção da moto",
-    icon: Wrench,
+    description: "Plano de manutenção e próximas revisões programadas",
+    icon: Activity,
+    group: "moto",
     to: "/motorcycles/$id/plan",
+  },
+  {
+    key: "pecas",
+    label: "Peças",
+    description: "Componentes instalados e histórico de substituição",
+    icon: Package,
+    group: "moto",
+    to: "/motorcycles/$id/components",
   },
   {
     key: "passaporte",
     label: "Passaporte",
-    description: "Compartilhar histórico com terceiros",
+    description: "Compartilhar histórico verificável com terceiros",
     icon: Share2,
+    group: "moto",
     to: "/motorcycles/$id/passport",
+  },
+  {
+    key: "passaporte-qr",
+    label: "QR Passaporte",
+    description: "Exibir QR Code do passaporte para leitura imediata",
+    icon: QrCode,
+    group: "moto",
+    to: "/motorcycles/$id/passport",
+    search: { view: "qr" },
   },
   {
     key: "selos",
     label: "Selos",
     description: "Selos e conquistas da moto",
     icon: Award,
+    group: "moto",
     to: "/motorcycles/$id/passport",
   },
   {
     key: "documentos",
     label: "Documentos",
-    description: "Documentação da motocicleta",
+    description: "Cofre de documentos: CRLV, laudos e arquivos",
     icon: ShieldCheck,
+    group: "moto",
     to: "/motorcycles/$id/control",
     search: { tab: "documentos" },
   },
   {
     key: "recibo",
     label: "Recibo",
-    description: "Emitir recibo/comprovante",
+    description: "Emitir recibo de compra e venda",
     icon: FileSignature,
+    group: "moto",
     to: "/motorcycles/$id/control",
     search: { tab: "documentos" },
   },
+  {
+    key: "central-moto",
+    label: "Central da Moto",
+    description: "Documentos, recibos e ações administrativas da moto",
+    icon: FolderOpen,
+    group: "moto",
+    to: "/motorcycles/$id/control",
+  },
+
+  // ── Global (não depende de moto) ───────────────────────────
   {
     key: "financeiro",
     label: "Financeiro",
     description: "Custos e gastos de todas as motos",
     icon: Wallet,
+    group: "global",
     to: "/financial",
     needsMoto: false,
   },
   {
     key: "agenda",
     label: "Agenda",
-    description: "Compromissos e lembretes",
+    description: "Compromissos, vistorias e lembretes",
     icon: CalendarDays,
+    group: "global",
     to: "/agenda",
     needsMoto: false,
   },
   {
     key: "oficinas",
     label: "Oficinas",
-    description: "Oficinas parceiras e de confiança",
-    icon: Wrench,
+    description: "Oficinas parceiras e credenciadas no mapa",
+    icon: MapPin,
+    group: "global",
     to: "/workshops",
     needsMoto: false,
   },
@@ -187,8 +254,27 @@ export const HOME_SHORTCUT_CATALOG: HomeShortcutDef[] = [
     key: "certificados",
     label: "Certificados",
     description: "Certificados digitais emitidos",
-    icon: QrCode,
+    icon: FileText,
+    group: "global",
     to: "/certificates",
+    needsMoto: false,
+  },
+  {
+    key: "suporte",
+    label: "Suporte",
+    description: "Abrir chamado ou consultar central de ajuda",
+    icon: LifeBuoy,
+    group: "global",
+    to: "/tickets",
+    needsMoto: false,
+  },
+  {
+    key: "assinatura",
+    label: "Minha Assinatura",
+    description: "Seu plano e histórico de pagamentos",
+    icon: CreditCard,
+    group: "global",
+    to: "/assinatura",
     needsMoto: false,
   },
 ];
@@ -197,24 +283,32 @@ export const HOME_SHORTCUT_BY_KEY: Record<string, HomeShortcutDef> = Object.from
   HOME_SHORTCUT_CATALOG.map((s) => [s.key, s]),
 );
 
+/** Quantidades válidas de atalhos — múltiplos de 3 entre 3 e 15. */
+export const SHORTCUT_COUNT_OPTIONS = [3, 6, 9, 12, 15] as const;
+export type ShortcutCountOption = (typeof SHORTCUT_COUNT_OPTIONS)[number];
+
+/** Quantidade máxima absoluta de atalhos. */
+export const MAX_HOME_SHORTCUTS: ShortcutCountOption = 15;
+
 /** Conjunto padrão para quem nunca personalizou (mantém o comportamento atual). */
 export const DEFAULT_HOME_SHORTCUTS: HomeShortcutKey[] = [
   "registrar-uso",
-  "passaporte",
+  "painel-moto",
+  "checkups",
+  "pecas",
+  "central-revisao",
   "documentos",
-  "recibo",
-  "selos",
-  "saude",
-  "manutencoes",
-  "cockpit",
 ];
-
-// 9 preenche perfeitamente 3 linhas completas no grid de 3 colunas (mobile),
-// evitando um espaço vago sobrando na última linha (ex: com 8, sobra 1 vazio).
-export const MAX_HOME_SHORTCUTS = 10;
 
 /** Resolve as chaves salvas do usuário para definições válidas, ignorando chaves desconhecidas. */
 export function resolveHomeShortcuts(keys: string[] | null | undefined): HomeShortcutDef[] {
   const source = keys ?? DEFAULT_HOME_SHORTCUTS;
   return source.map((k) => HOME_SHORTCUT_BY_KEY[k]).filter((s): s is HomeShortcutDef => !!s);
 }
+
+/** Rótulos dos grupos para exibição no gestor. */
+export const GROUP_LABELS: Record<HomeShortcutDef["group"], string> = {
+  acao: "⚡ Ações Rápidas",
+  moto: "🏍️ Minha Moto",
+  global: "🌐 Global",
+};
