@@ -85,7 +85,8 @@ export function NewEventDialog({
   const setOpen = (v: boolean) => {
     onOpenChange ? onOpenChange(v) : setInternalOpen(v);
   };
-  const [type, setType] = useState<EventType>(preset ? "maintenance" : "usage");
+  // Sem preset: tipo padrão é "incident" — "uso" tem fluxo dedicado (RegisterUsageDialog).
+  const [type, setType] = useState<EventType>(preset ? "maintenance" : "incident");
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState<FileList | null>(null);
   const [docFiles, setDocFiles] = useState<FileList | null>(null);
@@ -514,7 +515,7 @@ export function NewEventDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ACTIVITY_EVENT_TYPES.map((v) => (
+                {ACTIVITY_EVENT_TYPES.filter((v) => preset || v !== "usage").map((v) => (
                   <SelectItem key={v} value={v}>
                     {EVENT_TYPE_LABEL[v]}
                   </SelectItem>

@@ -30,7 +30,7 @@ export function computeNextAction(input: {
   if (overdue) {
     return {
       kind: "register_maintenance",
-      label: "Registrar manutenção agora",
+      label: "Registrar Atividade",
       reason: `${overdue.label} está vencida.`,
       scheduleId: overdue.schedule.id,
     };
@@ -40,7 +40,7 @@ export function computeNextAction(input: {
   if (due) {
     return {
       kind: "register_maintenance",
-      label: "Registrar manutenção",
+      label: "Registrar Atividade",
       reason: `${due.label} vence agora.`,
       scheduleId: due.schedule.id,
     };
