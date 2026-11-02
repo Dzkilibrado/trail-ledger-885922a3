@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { RegisterUsageForm } from "@/components/RegisterUsageForm";
 import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -508,14 +509,47 @@ export function NewEventDialog({
               : "O formulário se adapta ao tipo escolhido. Manutenções atualizam plano, financeiro e alertas automaticamente."}
           </DialogDescription>
         </DialogHeader>
+        {/* Seletor de tipo — sempre visível (exceto quando há preset fixo) */}
+        {!preset && (
+          <div className="min-w-0 space-y-4">
+            <F label="Tipo">
+              <Select value={type} onValueChange={(v) => setType(v as EventType)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ACTIVITY_EVENT_TYPES.map((v) => (
+                    <SelectItem key={v} value={v}>
+                      {EVENT_TYPE_LABEL[v]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </F>
+          </div>
+        )}
+
+        {/* Quando "Uso" é selecionado: fluxo dedicado com etapas e preview */}
+        {!preset && type === "usage" && (
+          <RegisterUsageForm
+            moto={moto as any}
+            onClose={() => setOpen(false)}
+            cancelLabel="Cancelar"
+            onCancel={() => setOpen(false)}
+          />
+        )}
+
+        {/* Form genérico para todos os outros tipos */}
+        {(preset || type !== "usage") && (
         <form onSubmit={onSubmit} className="min-w-0 space-y-4">
+          {preset && (
           <F label="Tipo">
-            <Select value={type} onValueChange={(v) => setType(v as EventType)} disabled={!!preset}>
+            <Select value={type} onValueChange={(v) => setType(v as EventType)} disabled>
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ACTIVITY_EVENT_TYPES.filter((v) => preset || v !== "usage").map((v) => (
+                {ACTIVITY_EVENT_TYPES.map((v) => (
                   <SelectItem key={v} value={v}>
                     {EVENT_TYPE_LABEL[v]}
                   </SelectItem>
@@ -523,6 +557,7 @@ export function NewEventDialog({
               </SelectContent>
             </Select>
           </F>
+          )}
           <F label="Data">
             <Input
               name="occurred_at"
@@ -1004,6 +1039,7 @@ export function NewEventDialog({
             </Button>
           </div>
         </form>
+        )}
       </DialogContent>
     </Dialog>
   );
