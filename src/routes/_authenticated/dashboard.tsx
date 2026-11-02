@@ -227,21 +227,17 @@ const QuickActions = memo(function QuickActions({ motoId }: { motoId: string }) 
   const [usageOpen, setUsageOpen] = useState(false);
   return (
     <section aria-label="Atalhos rápidos">
-      <div className="mb-3 flex items-center justify-between gap-1.5">
-        <div className="flex items-center gap-1.5">
-          <h2 className="font-display text-sm font-bold uppercase tracking-widest text-muted-foreground">
-            Atalhos
-          </h2>
-          <HelpTooltip label="Atalhos" text={HELP.quickShortcuts} />
-        </div>
-        <Link
-          to="/perfil/atalhos"
-          className="flex items-center gap-1 text-xs font-semibold text-muted-foreground hover:text-primary"
-        >
-          <Settings2 className="h-3.5 w-3.5" aria-hidden /> Personalizar
-        </Link>
+      <div className="mb-3 flex items-center gap-1.5">
+        <h2 className="font-display text-sm font-bold uppercase tracking-widest text-muted-foreground">
+          Atalhos
+        </h2>
+        <HelpTooltip label="Atalhos" text={HELP.quickShortcuts} />
       </div>
-      {error ? <p role="alert" className="text-sm text-destructive">Não foi possível carregar seus atalhos. Tente novamente em instantes.</p> : !isLoading && shortcuts.length === 0 ? (
+      {error ? (
+        <p role="alert" className="text-sm text-destructive">
+          Não foi possível carregar seus atalhos. Tente novamente em instantes.
+        </p>
+      ) : !isLoading && shortcuts.length === 0 ? (
         <Link
           to="/perfil/atalhos"
           className="flex items-center justify-center gap-2 rounded-2xl border border-dashed border-border px-4 py-5 text-center text-sm text-muted-foreground hover:border-primary/40 hover:text-primary"
@@ -249,27 +245,51 @@ const QuickActions = memo(function QuickActions({ motoId }: { motoId: string }) 
           <Settings2 className="h-4 w-4" aria-hidden /> Escolha seus atalhos
         </Link>
       ) : (
-        <div className="grid grid-cols-3 gap-2">
-          {shortcuts.map((it) => it.key === "registrar-uso" ? (
-            <TBButton key={it.key} variant="ghost" onClick={() => setUsageOpen(true)} className="group flex h-auto min-h-[82px] flex-col items-center gap-1.5 whitespace-normal rounded-2xl border border-border bg-card px-2 py-3 hover:border-primary/40 hover:bg-accent/40">
-              <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary"><it.icon className="h-4 w-4" /></span>
-              <span className="line-clamp-2 text-[10px] font-semibold leading-tight sm:text-[11px]">{it.label}</span>
-            </TBButton>
-          ) : (
-            <Link
-              key={it.key}
-              to={it.to as any}
-              params={(it.needsMoto === false ? undefined : { id: motoId }) as any}
-              search={(it.search ?? undefined) as any}
-              className="group flex min-h-[82px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-border bg-card px-2 py-3 text-center transition-colors hover:border-primary/40 hover:bg-accent/40"
-            >
-              <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
-                <it.icon className="h-4 w-4" />
-              </span>
-              <span className="line-clamp-2 text-[10px] font-semibold leading-tight sm:text-[11px]">{it.label}</span>
-            </Link>
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-3 gap-2">
+            {shortcuts.map((it) =>
+              it.key === "registrar-uso" ? (
+                <TBButton
+                  key={it.key}
+                  variant="ghost"
+                  onClick={() => setUsageOpen(true)}
+                  className="group flex h-auto min-h-[82px] flex-col items-center gap-1.5 whitespace-normal rounded-2xl border border-border bg-card px-2 py-3 hover:border-primary/40 hover:bg-accent/40"
+                >
+                  <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-primary/10 text-primary">
+                    <it.icon className="h-4 w-4" />
+                  </span>
+                  <span className="line-clamp-2 text-[10px] font-semibold leading-tight sm:text-[11px]">
+                    {it.label}
+                  </span>
+                </TBButton>
+              ) : (
+                <Link
+                  key={it.key}
+                  to={it.to as any}
+                  params={(it.needsMoto === false ? undefined : { id: motoId }) as any}
+                  search={(it.search ?? undefined) as any}
+                  className="group flex min-h-[82px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-border bg-card px-2 py-3 text-center transition-colors hover:border-primary/40 hover:bg-accent/40"
+                >
+                  <span className="grid h-9 w-9 place-items-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/20">
+                    <it.icon className="h-4 w-4" />
+                  </span>
+                  <span className="line-clamp-2 text-[10px] font-semibold leading-tight sm:text-[11px]">
+                    {it.label}
+                  </span>
+                </Link>
+              ),
+            )}
+          </div>
+
+          {/* Botão dedicado de personalização — abaixo da grade, bem visível no mobile */}
+          <Link
+            to="/perfil/atalhos"
+            className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card py-3 text-sm font-semibold text-muted-foreground transition-colors hover:border-primary/40 hover:bg-accent/30 hover:text-primary active:bg-accent/50"
+          >
+            <Settings2 className="h-4 w-4" aria-hidden />
+            Personalizar atalhos
+          </Link>
+        </>
       )}
       {usageOpen && <RegisterUsageDialog key={motoId} moto={activeMoto?.id === motoId ? activeMoto : null} onClose={() => setUsageOpen(false)} />}
     </section>
