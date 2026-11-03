@@ -300,9 +300,27 @@ export const DEFAULT_HOME_SHORTCUTS: HomeShortcutKey[] = [
   "documentos",
 ];
 
-/** Resolve as chaves salvas do usuário para definições válidas, ignorando chaves desconhecidas. */
+/**
+ * Chaves fixas do sistema — sempre nas posições 0 e 1, independente do que o banco retornar.
+ * Duplicado aqui para que a tela inicial (useHomeShortcuts) também os enforçe sem precisar
+ * importar a constante de perfil.atalhos.tsx.
+ */
+export const SYSTEM_FIXED_SHORTCUTS: HomeShortcutKey[] = ["registrar-uso", "painel-moto"];
+
+/**
+ * Garante que os atalhos fixos do sistema estejam sempre nas primeiras posições.
+ * Remove duplicatas e reinjeta os fixos no início, preservando o restante na ordem original.
+ */
+export function enforceSystemFixedShortcuts(keys: HomeShortcutKey[]): HomeShortcutKey[] {
+  const rest = keys.filter((k) => !SYSTEM_FIXED_SHORTCUTS.includes(k));
+  return [...SYSTEM_FIXED_SHORTCUTS, ...rest];
+}
+
+/** Resolve as chaves salvas do usuário para definições válidas, ignorando chaves desconhecidas.
+ *  Sempre garante os atalhos fixos do sistema nas primeiras posições. */
 export function resolveHomeShortcuts(keys: string[] | null | undefined): HomeShortcutDef[] {
-  const source = keys ?? DEFAULT_HOME_SHORTCUTS;
+  const raw = (keys ?? DEFAULT_HOME_SHORTCUTS) as HomeShortcutKey[];
+  const source = enforceSystemFixedShortcuts(raw.filter((k) => !!HOME_SHORTCUT_BY_KEY[k]));
   return source.map((k) => HOME_SHORTCUT_BY_KEY[k]).filter((s): s is HomeShortcutDef => !!s);
 }
 

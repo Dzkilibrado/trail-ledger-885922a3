@@ -572,9 +572,11 @@ function EditShortcutsPage() {
       const { data: s } = await supabase.auth.getSession();
       const uid = s.session?.user.id;
       if (!uid) { setSaveStatus("idle"); return; }
+      // Garante sempre os slots fixos antes de salvar no banco
+      const toSave = enforceFixedSlots(nextSelected);
       const { error: saveError } = await supabase
         .from("profiles")
-        .update({ home_shortcuts: nextSelected })
+        .update({ home_shortcuts: toSave })
         .eq("id", uid)
         .select("id")
         .single();
