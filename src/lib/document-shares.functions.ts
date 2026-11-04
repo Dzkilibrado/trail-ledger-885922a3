@@ -5,9 +5,15 @@
  */
 import { createServerFn } from "@tanstack/react-start";
 import { createClient } from "@supabase/supabase-js";
+import { randomBytes } from "node:crypto";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { shareUrl } from "@/lib/external-links";
+
+/** Gera um token URL-safe de 32 caracteres na aplicação (evita dependência de pgcrypto). */
+function generateShareToken(): string {
+  return randomBytes(24).toString("base64url");
+}
 
 /** Tipos de documentos exibidos na view pública (sem dados internos). */
 export interface PublicDocRow {
@@ -86,6 +92,8 @@ export const createDocumentShare = createServerFn({ method: "POST" })
         ? new Date(Date.now() + data.validityDays * 24 * 60 * 60 * 1000).toISOString()
         : null;
 
+    const token = generateShareToken();
+
     const ins = await sb
       .from("motorcycle_document_shares" as never)
       .insert({
@@ -93,6 +101,7 @@ export const createDocumentShare = createServerFn({ method: "POST" })
         report_id: data.reportId,
         created_by: context.userId,
         expires_at: expiresAt,
+        token,
       } as never)
       .select("id, token, expires_at")
       .single();
