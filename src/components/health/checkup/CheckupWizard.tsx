@@ -26,7 +26,7 @@ import { ReportSnapshotView } from "@/components/health/reports/ReportSnapshotVi
 import { trackHealth } from "@/lib/health-reports/telemetry";
 import { cn } from "@/lib/utils";
 
-const STEPS = ["Identificação", "Revisão", "Análise", "Condições", "Prévia", "Configurar", "Emissão"] as const;
+const STEPS = ["Identificação", "Revisão", "Análise", "Condições", "Configurar", "Prévia", "Emissão"] as const;
 
 const PURPOSE_ICONS: Record<ReportPurpose, React.ElementType> = {
   comercial: Store,
@@ -384,30 +384,14 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
                   Nenhuma ressalva identificada. Os registros estão consistentes.
                 </p>
               )}
-              <TBButton onClick={() => setStep(4)}>Ver prévia do laudo</TBButton>
+              <TBButton onClick={() => setStep(4)}>Configurar laudo</TBButton>
             </TBCard>
           )}
         </div>
       )}
 
-      {step === 4 && previewSnapshot && (
-        <div className="space-y-4">
-          <TBCard className="space-y-1">
-            <h2 className="text-base font-black">Prévia do laudo</h2>
-            <p className="text-sm text-muted-foreground">
-              Este é exatamente o conteúdo que será registrado. Depois de emitido, o laudo não pode
-              ser alterado.
-            </p>
-          </TBCard>
-          <ReportSnapshotView snapshot={previewSnapshot} purpose={emissionConfig.purpose} />
-          <TBButton className="w-full" onClick={() => setStep(5)}>
-            Configurar e emitir
-          </TBButton>
-        </div>
-      )}
-
-      {/* ── Step 5: Configurar laudo ─────────────────────────────── */}
-      {step === 5 && (
+      {/* ── Step 4: Configurar laudo ─────────────────────────────── */}
+      {step === 4 && (
         <TBCard className="space-y-5">
           <div className="flex items-center gap-2">
             <Settings2 className="h-5 w-5 text-primary" aria-hidden />
@@ -511,10 +495,27 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
             )}
           </div>
 
+          <TBButton className="w-full" onClick={() => setStep(5)}>
+            Ver prévia do laudo
+          </TBButton>
+        </TBCard>
+      )}
+
+      {/* ── Step 5: Prévia do laudo ─────────────────────────────── */}
+      {step === 5 && previewSnapshot && (
+        <div className="space-y-4">
+          <TBCard className="space-y-1">
+            <h2 className="text-base font-black">Prévia do laudo</h2>
+            <p className="text-sm text-muted-foreground">
+              Este é exatamente o conteúdo que será registrado com a finalidade e configurações
+              escolhidas. Depois de emitido, o laudo não pode ser alterado.
+            </p>
+          </TBCard>
+          <ReportSnapshotView snapshot={previewSnapshot} purpose={emissionConfig.purpose} />
           <TBButton className="w-full" onClick={() => setStep(6)}>
             Confirmar e emitir
           </TBButton>
-        </TBCard>
+        </div>
       )}
 
       {step === 6 && previewSnapshot && validity && (
