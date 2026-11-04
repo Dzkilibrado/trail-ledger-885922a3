@@ -7,7 +7,11 @@ import {
 } from "@/lib/ui/evaluation";
 import autoTable from "jspdf-autotable";
 import { formatDate } from "@/lib/trailbook";
-import type { HealthReportSnapshot } from "./types";
+import {
+  REPORT_PURPOSE_DEFAULT_TITLE,
+  REPORT_PURPOSE_LABEL,
+  type HealthReportSnapshot,
+} from "./types";
 
 const M = 15;
 const W = 210;
@@ -34,6 +38,9 @@ export async function buildReportPdf(input: {
   photoDataUrl?: string | null;
 }): Promise<Blob> {
   const { snapshot: s, code } = input;
+  const purpose = s.purpose ?? "pessoal";
+  const docTitle = s.reportTitle ?? REPORT_PURPOSE_DEFAULT_TITLE[purpose];
+  const purposeLabel = REPORT_PURPOSE_LABEL[purpose];
   const doc = new jsPDF({ unit: "mm", format: "a4" });
 
   const footer = () => {
@@ -42,7 +49,7 @@ export async function buildReportPdf(input: {
       doc.setPage(i);
       doc.setFontSize(8);
       doc.setTextColor(120);
-      doc.text(`Laudo Inteligente TrailBook · ${code}`, M, H - 8);
+      doc.text(`${docTitle} TrailBook · ${code}`, M, H - 8);
       doc.text(`Página ${i} de ${pages}`, W - M, H - 8, { align: "right" });
       doc.setDrawColor(225);
       doc.line(M, H - 12, W - M, H - 12);
@@ -91,10 +98,10 @@ export async function buildReportPdf(input: {
   doc.setFontSize(22);
   doc.text("TrailBook", M, 24);
   doc.setFontSize(13);
-  doc.text("Laudo Inteligente da Motocicleta", M, 33);
+  doc.text(docTitle, M, 33);
   doc.setFont("helvetica", "normal");
   doc.setFontSize(10);
-  doc.text(`Código: ${code}`, M, 43);
+  doc.text(`Finalidade: ${purposeLabel} · Código: ${code}`, M, 43);
   doc.text(`Emitido em: ${formatDate(s.issuedAt)}`, M, 49);
   doc.text(`Situação: ${input.statusLabel}`, W - M, 43, { align: "right" });
   doc.text(`Estado geral: ${s.overall.statusLabel}`, W - M, 49, { align: "right" });

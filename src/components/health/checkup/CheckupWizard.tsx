@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Check, Loader2 } from "lucide-react";
+import { AlertTriangle, Check, FileText, Loader2, Settings2, Store, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { TBButton, TBCard, TBErrorState, TBLoadingState, TBStatusPill } from "@/design-system";
@@ -10,13 +10,35 @@ import { useHealthSnapshot } from "@/hooks/useHealthSnapshot";
 import { checkEmission } from "@/lib/health-reports/gating";
 import { computeValidity } from "@/lib/health-reports/validity";
 import { buildReportSnapshot } from "@/lib/health-reports/snapshot";
-import type { HealthReportSnapshot } from "@/lib/health-reports/types";
+import {
+  DOCS_QR_VALIDITY_OPTIONS,
+  REPORT_PURPOSE_DEFAULT_TITLE,
+  REPORT_PURPOSE_DESCRIPTION,
+  REPORT_PURPOSE_LABEL,
+  type DocsQrValidityDays,
+  type HealthReportSnapshot,
+  type ReportEmissionConfig,
+  type ReportPurpose,
+} from "@/lib/health-reports/types";
 import { issueHealthReport, startCheckRun, updateCheckRun } from "@/lib/health-reports.functions";
 import { ReportSnapshotView } from "@/components/health/reports/ReportSnapshotView";
 import { trackHealth } from "@/lib/health-reports/telemetry";
 import { cn } from "@/lib/utils";
 
-const STEPS = ["Identificação", "Revisão", "Análise", "Condições", "Prévia", "Emissão"] as const;
+const STEPS = ["Identificação", "Revisão", "Análise", "Condições", "Prévia", "Configurar", "Emissão"] as const;
+
+const PURPOSE_ICONS: Record<ReportPurpose, React.ElementType> = {
+  comercial: Store,
+  oficina: Wrench,
+  pessoal: FileText,
+};
+
+const DEFAULT_EMISSION_CONFIG: ReportEmissionConfig = {
+  purpose: "pessoal",
+  customTitle: "",
+  includeDocsQr: false,
+  docsQrValidityDays: 30,
+};
 
 export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | null }) {
   const navigate = useNavigate();
@@ -33,6 +55,7 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
   const [issuing, setIssuing] = useState(false);
   const [ownerName, setOwnerName] = useState<string | null>(null);
   const [issuedAtRef] = useState(() => new Date().toISOString());
+  const [emissionConfig, setEmissionConfig] = useState<ReportEmissionConfig>(DEFAULT_EMISSION_CONFIG);
 
   useEffect(() => {
     if (!uid) return;
@@ -66,7 +89,7 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
 
   const previewSnapshot: HealthReportSnapshot | null = useMemo(() => {
     if (!health.moto || !health.snapshot || !gating || !validity) return null;
-    return buildReportSnapshot({
+    const base = buildReportSnapshot({
       moto: health.moto,
       snapshot: health.snapshot,
       events: health.events,
@@ -80,6 +103,12 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
       validity,
       issuedAt: issuedAtRef,
     });
+    return {
+      ...base,
+      purpose: emissionConfig.purpose,
+      reportTitle: emissionConfig.customTitle.trim()
+        || REPORT_PURPOSE_DEFAULT_TITLE[emissionConfig.purpose],
+    };
   }, [
     health.moto,
     health.snapshot,
@@ -90,6 +119,8 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
     uid,
     ownerName,
     issuedAtRef,
+    emissionConfig.purpose,
+    emissionConfig.customTitle,
   ]);
 
   // Abre o Check-up assim que a tela é montada (chave de idempotência da emissão).
@@ -329,16 +360,136 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
               ser alterado.
             </p>
           </TBCard>
-          <ReportSnapshotView snapshot={previewSnapshot} />
+          <ReportSnapshotView snapshot={previewSnapshot} purpose={emissionConfig.purpose} />
           <TBButton className="w-full" onClick={() => setStep(5)}>
-            Continuar para emissão
+            Configurar e emitir
           </TBButton>
         </div>
       )}
 
-      {step === 5 && previewSnapshot && validity && (
+      {/* ── Step 5: Configurar laudo ─────────────────────────────── */}
+      {step === 5 && (
+        <TBCard className="space-y-5">
+          <div className="flex items-center gap-2">
+            <Settings2 className="h-5 w-5 text-primary" aria-hidden />
+            <h2 className="text-base font-black">Configurar laudo</h2>
+          </div>
+
+          {/* Finalidade */}
+          <div className="space-y-2">
+            <p className="text-sm font-semibold">Finalidade do laudo</p>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+              {(["comercial", "oficina", "pessoal"] as ReportPurpose[]).map((p) => {
+                const Icon = PURPOSE_ICONS[p];
+                const active = emissionConfig.purpose === p;
+                return (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setEmissionConfig((c) => ({
+                      ...c,
+                      purpose: p,
+                      includeDocsQr: p === "comercial" ? true : p === "oficina" ? false : c.includeDocsQr,
+                    }))}
+                    className={cn(
+                      "flex flex-col gap-1.5 rounded-xl border p-3 text-left transition-colors",
+                      active
+                        ? "border-primary bg-primary/5"
+                        : "border-border bg-muted/30 hover:border-primary/40",
+                    )}
+                  >
+                    <Icon className={cn("h-4 w-4", active ? "text-primary" : "text-muted-foreground")} aria-hidden />
+                    <span className={cn("text-sm font-semibold", active ? "text-primary" : "")}>
+                      {REPORT_PURPOSE_LABEL[p]}
+                    </span>
+                    <span className="text-xs text-muted-foreground leading-snug">
+                      {REPORT_PURPOSE_DESCRIPTION[p]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Título personalizado */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-semibold" htmlFor="report-title">
+              Título personalizado <span className="font-normal text-muted-foreground">(opcional)</span>
+            </label>
+            <input
+              id="report-title"
+              type="text"
+              value={emissionConfig.customTitle}
+              onChange={(e) => setEmissionConfig((c) => ({ ...c, customTitle: e.target.value }))}
+              placeholder={REPORT_PURPOSE_DEFAULT_TITLE[emissionConfig.purpose]}
+              maxLength={80}
+              className="w-full rounded-xl border border-border bg-background px-3 py-2 text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+            <p className="text-xs text-muted-foreground">
+              Se vazio, usa o título padrão: <strong>{REPORT_PURPOSE_DEFAULT_TITLE[emissionConfig.purpose]}</strong>
+            </p>
+          </div>
+
+          {/* QR Code de documentos */}
+          <div className="space-y-3 rounded-xl border border-border p-3">
+            <label className="flex items-center justify-between gap-3 cursor-pointer">
+              <div>
+                <p className="text-sm font-semibold">Incluir QR Code de documentos</p>
+                <p className="text-xs text-muted-foreground">
+                  Gera um QR Code no laudo que dá acesso ao cofre de documentos da moto
+                  (Nota Fiscal, CRLV, laudos de oficina e demais anexos).
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                className="h-4 w-4 shrink-0"
+                checked={emissionConfig.includeDocsQr}
+                onChange={(e) => setEmissionConfig((c) => ({ ...c, includeDocsQr: e.target.checked }))}
+              />
+            </label>
+
+            {emissionConfig.includeDocsQr && (
+              <div className="space-y-1.5 border-t border-border pt-3">
+                <p className="text-sm font-semibold">Validade do acesso</p>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {DOCS_QR_VALIDITY_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.days}
+                      type="button"
+                      onClick={() => setEmissionConfig((c) => ({ ...c, docsQrValidityDays: opt.days as DocsQrValidityDays }))}
+                      className={cn(
+                        "rounded-lg border px-3 py-2 text-sm transition-colors",
+                        emissionConfig.docsQrValidityDays === opt.days
+                          ? "border-primary bg-primary/5 font-semibold text-primary"
+                          : "border-border hover:border-primary/40",
+                      )}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <TBButton className="w-full" onClick={() => setStep(6)}>
+            Confirmar e emitir
+          </TBButton>
+        </TBCard>
+      )}
+
+      {step === 6 && previewSnapshot && validity && (
         <TBCard className="space-y-4">
           <h2 className="text-base font-black">Confirmação de emissão</h2>
+          <div className="rounded-xl bg-muted/40 p-3 text-sm space-y-1">
+            <p><span className="text-muted-foreground">Finalidade:</span> <strong>{REPORT_PURPOSE_LABEL[emissionConfig.purpose]}</strong></p>
+            <p><span className="text-muted-foreground">Título:</span> <strong>{emissionConfig.customTitle.trim() || REPORT_PURPOSE_DEFAULT_TITLE[emissionConfig.purpose]}</strong></p>
+            {emissionConfig.includeDocsQr && (
+              <p><span className="text-muted-foreground">QR de documentos:</span> <strong>
+                {DOCS_QR_VALIDITY_OPTIONS.find((o) => o.days === emissionConfig.docsQrValidityDays)?.label ?? "30 dias"}
+              </strong></p>
+            )}
+          </div>
           <p className="text-sm text-muted-foreground">{validity.label}</p>
           <label className="flex items-start gap-3 rounded-xl bg-muted/50 p-3 text-sm">
             <input

@@ -1,7 +1,12 @@
 import { useState } from "react";
-import { ChevronDown, ShieldCheck } from "lucide-react";
+import { AlertTriangle, ChevronDown, ShieldCheck } from "lucide-react";
 import { TBCard, TBStatusPill } from "@/design-system";
-import { SECTION_LABEL, type HealthReportSnapshot, type ReportSection } from "@/lib/health-reports/types";
+import {
+  SECTION_LABEL,
+  type HealthReportSnapshot,
+  type ReportPurpose,
+  type ReportSection,
+} from "@/lib/health-reports/types";
 import type { HealthStatus } from "@/lib/til/status";
 import { formatDate } from "@/lib/trailbook";
 import { cn } from "@/lib/utils";
@@ -73,10 +78,16 @@ function ComponentRow({ c }: { c: PublicComponent }) {
 /**
  * Renderização oficial do Laudo — SEMPRE a partir do snapshot emitido.
  * Nunca recalcula nada e nunca busca dados atuais.
+ *
+ * `purpose` controla quais seções são exibidas e em que ordem:
+ *  - comercial: histórico + conservação + componentes (sem "posso rodar", sem pendências urgentes)
+ *  - oficina:   "posso rodar" em destaque + pendências + próximas manutenções + componentes (sem índices)
+ *  - pessoal:   visão completa (padrão)
  */
 export function ReportSnapshotView({
   snapshot: s,
   sections,
+  purpose,
   code,
   sha256,
   statusLabel,
@@ -84,13 +95,300 @@ export function ReportSnapshotView({
 }: {
   snapshot: PublicHealthReportSnapshot | Partial<HealthReportSnapshot>;
   sections?: ReportSection[];
+  /** Finalidade do laudo — altera layout e seções exibidas. */
+  purpose?: ReportPurpose;
   code?: string;
   sha256?: string;
   statusLabel?: string;
   className?: string;
 }) {
+  // Finalidade efetiva: lê do snapshot se não vier como prop (tela do laudo já emitido)
+  const effectivePurpose: ReportPurpose =
+    purpose ??
+    ("purpose" in s && (s as Partial<HealthReportSnapshot>).purpose) ??
+    "pessoal";
+
   const show = (sec: ReportSection) => (sections ? sections.includes(sec) : true);
 
+  // ── Bloco "Posso rodar?" — destaque para oficina ──────────────
+  const RideAnswerBlock = () => {
+    if (!s.rideAnswer) return null;
+    const isUrgent = ["action"].includes((s.rideAnswer as { status: string }).status ?? "");
+    return (
+      <div className={cn(
+        "rounded-xl p-4 space-y-1",
+        isUrgent ? "bg-destructive/10 border border-destructive/30" : "bg-muted/50",
+      )}>
+        {isUrgent && <AlertTriangle className="h-4 w-4 text-destructive mb-1" aria-hidden />}
+        <div className={cn("text-sm font-bold", isUrgent ? "text-destructive" : "")}>
+          Posso rodar hoje? {s.rideAnswer.title}
+        </div>
+        <p className="text-sm text-muted-foreground">{s.rideAnswer.message}</p>
+        {s.rideAnswer.rationale && (
+          <p className="text-xs text-muted-foreground">{s.rideAnswer.rationale}</p>
+        )}
+      </div>
+    );
+  };
+
+  // ── Bloco de pendências / itens que precisam ação — para oficina ─
+  const PendingItemsBlock = () => {
+    if (!s.recommendations) return null;
+    const urgent = s.recommendations.filter(
+      (r) => r.status === "overdue" || r.status === "action" || r.isSafetyItem,
+    );
+    const upcoming = s.recommendations.filter(
+      (r) => r.status === "due_soon" && !r.isSafetyItem,
+    );
+    if (urgent.length === 0 && upcoming.length === 0) return null;
+    return (
+      <Section title="Itens para atenção">
+        <div className="space-y-2">
+          {urgent.length > 0 && (
+            <TBCard className="space-y-2 border-destructive/30 bg-destructive/5">
+              <p className="text-xs font-bold uppercase tracking-wide text-destructive">
+                {urgent.length} {urgent.length === 1 ? "item vencido / crítico" : "itens vencidos / críticos"}
+              </p>
+              <ul className="space-y-2">
+                {urgent.map((r) => (
+                  <li key={r.title} className="text-sm">
+                    <span className="font-semibold">{r.title}</span>
+                    <span className="block text-muted-foreground">{r.recommendation}</span>
+                    {r.dueEstimateLabel && (
+                      <span className="block text-xs text-destructive">{r.dueEstimateLabel}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </TBCard>
+          )}
+          {upcoming.length > 0 && (
+            <TBCard className="space-y-2">
+              <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+                Próximas intervenções
+              </p>
+              <ul className="space-y-2">
+                {upcoming.map((r) => (
+                  <li key={r.title} className="text-sm">
+                    <span className="font-semibold">{r.title}</span>
+                    <span className="block text-muted-foreground">{r.recommendation}</span>
+                    {r.dueEstimateLabel && (
+                      <span className="block text-xs text-muted-foreground">{r.dueEstimateLabel}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </TBCard>
+          )}
+        </div>
+      </Section>
+    );
+  };
+
+  // ── Layout por finalidade ─────────────────────────────────────
+  if (effectivePurpose === "oficina") {
+    return (
+      <div className={cn("space-y-6", className)}>
+        {/* Identificação resumida — foco em horas/km */}
+        {show("identification") && s.motorcycle && (
+          <Section title="Identificação da moto">
+            <TBCard>
+              <div className="mb-2 text-lg font-black">
+                {s.motorcycle.brand} {s.motorcycle.model}
+              </div>
+              <Row label="Horas registradas" value={`${s.motorcycle.hoursTotal} h`} />
+              <Row label="Quilometragem" value={`${s.motorcycle.kmTotal} km`} />
+              <Row label="Placa" value={s.motorcycle.plate} />
+              {"nickname" in s.motorcycle && <Row label="Apelido" value={s.motorcycle.nickname} />}
+              <Row label="Chassi" value={s.motorcycle.chassisMasked} />
+              <Row label="ID TrailBook" value={s.motorcycle.trailbookId} />
+            </TBCard>
+          </Section>
+        )}
+
+        {/* "Posso rodar?" — destaque máximo */}
+        {show("summary") && s.rideAnswer && (
+          <Section title="Avaliação de uso">
+            <RideAnswerBlock />
+          </Section>
+        )}
+
+        {/* Pendências e próximas intervenções */}
+        {show("action_plan") && <PendingItemsBlock />}
+
+        {/* Componentes */}
+        {show("components") && s.components && s.components.length > 0 && (
+          <Section title={SECTION_LABEL.components}>
+            <div className="space-y-2">
+              {s.components.map((c) => (
+                <ComponentRow key={`${c.name}-${c.category}`} c={c} />
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* Ressalvas */}
+        {show("reservations") && (s.reservations?.length || s.conflicts?.length || s.missingData?.length) ? (
+          <Section title={SECTION_LABEL.reservations}>
+            <TBCard className="space-y-3">
+              {s.reservations && s.reservations.length > 0 && (
+                <ul className="list-disc space-y-1 pl-5 text-sm">{s.reservations.map((r, i) => <li key={i}>{r}</li>)}</ul>
+              )}
+              {s.conflicts && s.conflicts.length > 0 && (
+                <div>
+                  <div className="text-sm font-bold">Conflitos</div>
+                  <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">{s.conflicts.map((c, i) => <li key={i}>{c}</li>)}</ul>
+                </div>
+              )}
+            </TBCard>
+          </Section>
+        ) : null}
+
+        <Section title="Validade e integridade">
+          <TBCard className="space-y-2 text-sm">
+            {statusLabel && <Row label="Situação" value={statusLabel} />}
+            {s.validity && <Row label="Validade" value={s.validity.label} />}
+            {code && <Row label="Código" value={code} />}
+            {s.issuedAt && <Row label="Emitido em" value={formatDate(s.issuedAt)} />}
+          </TBCard>
+        </Section>
+      </div>
+    );
+  }
+
+  if (effectivePurpose === "comercial") {
+    return (
+      <div className={cn("space-y-6", className)}>
+        {/* Identificação completa */}
+        {show("identification") && s.motorcycle && (
+          <Section title={SECTION_LABEL.identification}>
+            <TBCard>
+              <div className="mb-2 text-lg font-black">
+                {s.motorcycle.brand} {s.motorcycle.model}
+              </div>
+              {"nickname" in s.motorcycle && <Row label="Apelido" value={s.motorcycle.nickname} />}
+              <Row
+                label="Ano"
+                value={
+                  s.motorcycle.yearMake || s.motorcycle.yearModel
+                    ? `${s.motorcycle.yearMake ?? "—"}/${s.motorcycle.yearModel ?? "—"}`
+                    : null
+                }
+              />
+              <Row label="Placa" value={s.motorcycle.plate} />
+              <Row label="Chassi" value={s.motorcycle.chassisMasked} />
+              <Row label="Horas" value={`${s.motorcycle.hoursTotal} h`} />
+              <Row label="Quilometragem" value={`${s.motorcycle.kmTotal} km`} />
+              <Row label="ID TrailBook" value={s.motorcycle.trailbookId} />
+            </TBCard>
+          </Section>
+        )}
+
+        {/* Estado geral — sem "posso rodar" */}
+        {show("summary") && s.overall && (
+          <Section title="Estado geral da moto">
+            <TBCard className="space-y-3">
+              <TBStatusPill status={asStatus(s.overall.status)} label={s.overall.statusLabel} />
+              <p className="text-sm leading-relaxed">{s.overall.headline}</p>
+            </TBCard>
+          </Section>
+        )}
+
+        {/* Índice de conservação */}
+        {show("indices") && s.indices && (
+          <Section title={SECTION_LABEL.indices}>
+            <TBCard className="space-y-2">
+              <EvaluationPill state={stateFromScore(s.indices.conservation)} />
+              <p className="text-sm text-muted-foreground">{s.indices.conservationExplanation}</p>
+              <p className="text-sm">
+                Confiabilidade da avaliação: <strong>{s.indices.confidenceLabel}</strong>
+              </p>
+            </TBCard>
+          </Section>
+        )}
+
+        {/* Histórico */}
+        {show("history") && s.history && (
+          <Section title={SECTION_LABEL.history}>
+            <TBCard className="space-y-3">
+              {s.history.lastMaintenances?.length > 0 ? (
+                <ul className="space-y-1 text-sm">
+                  {s.history.lastMaintenances.map((m, i) => (
+                    <li key={i} className="text-muted-foreground">
+                      <span className="font-semibold text-foreground">{formatDate(m.date)}</span> — {"title" in m ? `${m.title} (${m.type})` : m.type}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">Nenhuma manutenção registrada até a emissão.</p>
+              )}
+              {s.history.incidents?.length > 0 && (
+                <div>
+                  <div className="text-sm font-bold">Ocorrências</div>
+                  <ul className="space-y-1 text-sm text-muted-foreground">
+                    {s.history.incidents.map((i, idx) => (
+                      <li key={idx}>{formatDate(i.date)} — {"title" in i ? i.title : "Ocorrência registrada"}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">Registros na linha do tempo: {s.history.totalEvents}</p>
+            </TBCard>
+          </Section>
+        )}
+
+        {/* Componentes */}
+        {show("components") && s.components && s.components.length > 0 && (
+          <Section title={SECTION_LABEL.components}>
+            <div className="space-y-2">
+              {s.components.map((c) => (
+                <ComponentRow key={`${c.name}-${c.category}`} c={c} />
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* Ressalvas */}
+        {show("reservations") && (s.reservations?.length || s.conflicts?.length || s.missingData?.length) ? (
+          <Section title={SECTION_LABEL.reservations}>
+            <TBCard className="space-y-3">
+              {s.reservations && s.reservations.length > 0 && (
+                <ul className="list-disc space-y-1 pl-5 text-sm">{s.reservations.map((r, i) => <li key={i}>{r}</li>)}</ul>
+              )}
+              {s.missingData && s.missingData.length > 0 && (
+                <div>
+                  <div className="text-sm font-bold">Dados ausentes</div>
+                  <ul className="list-disc space-y-1 pl-5 text-sm text-muted-foreground">{s.missingData.slice(0, 20).map((c, i) => <li key={i}>{c}</li>)}</ul>
+                </div>
+              )}
+            </TBCard>
+          </Section>
+        ) : null}
+
+        <Section title="Validade e integridade">
+          <TBCard className="space-y-2 text-sm">
+            {statusLabel && <Row label="Situação" value={statusLabel} />}
+            {s.validity && <Row label="Validade" value={s.validity.label} />}
+            {s.validity?.reason && <p className="text-xs text-muted-foreground">{s.validity.reason}</p>}
+            {code && <Row label="Código" value={code} />}
+            {s.issuedAt && <Row label="Emitido em" value={formatDate(s.issuedAt)} />}
+            {sha256 && (
+              <p className="flex items-start gap-2 break-all pt-2 text-[11px] text-muted-foreground">
+                <ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+                SHA-256: {sha256}
+              </p>
+            )}
+          </TBCard>
+        </Section>
+
+        {s.disclaimer && (
+          <p className="rounded-2xl bg-muted/40 p-4 text-xs leading-relaxed text-muted-foreground">{s.disclaimer}</p>
+        )}
+      </div>
+    );
+  }
+
+  // ── pessoal (padrão) — visão completa ──────────────────────────
   return (
     <div className={cn("space-y-6", className)}>
       {show("identification") && s.motorcycle && (
