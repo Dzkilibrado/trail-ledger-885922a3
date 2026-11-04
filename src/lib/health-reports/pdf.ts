@@ -294,10 +294,13 @@ export async function buildReportPdf(input: {
     }
   }
 
-  if (input.qrDataUrl) {
+  // QR de verificação do laudo — omitido no laudo Comercial quando já existe o QR do Cofre
+  // de Documentos acima (evita dois QR Codes na mesma página, o que confunde o leitor).
+  const showVerificationQr = input.qrDataUrl && !(purpose === "comercial" && effectiveDocsQrUrl);
+  if (showVerificationQr) {
     ensure(42);
     try {
-      doc.addImage(input.qrDataUrl, "PNG", M, y, 32, 32);
+      doc.addImage(input.qrDataUrl!, "PNG", M, y, 32, 32);
     } catch {
       /* QR opcional */
     }
