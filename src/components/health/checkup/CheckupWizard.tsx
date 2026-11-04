@@ -20,7 +20,7 @@ import {
   type ReportEmissionConfig,
   type ReportPurpose,
 } from "@/lib/health-reports/types";
-import { issueHealthReport, patchReportSnapshotDocsQr, startCheckRun, updateCheckRun } from "@/lib/health-reports.functions";
+import { issueHealthReport, startCheckRun, updateCheckRun } from "@/lib/health-reports.functions";
 import { createDocumentShare } from "@/lib/document-shares.functions";
 import { ReportSnapshotView } from "@/components/health/reports/ReportSnapshotView";
 import { trackHealth } from "@/lib/health-reports/telemetry";
@@ -48,7 +48,7 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
   const start = useServerFn(startCheckRun);
   const update = useServerFn(updateCheckRun);
   const issue = useServerFn(issueHealthReport);
-  const patchQr = useServerFn(patchReportSnapshotDocsQr);
+
 
   const [step, setStep] = useState(0);
   const [runId, setRunId] = useState<string | null>(null);
@@ -207,26 +207,19 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
         },
       });
 
-      // 2. Se QR Code habilitado, cria o compartilhamento e reitera o laudo com a URL
+      // 2. Se QR Code habilitado, cria o token de compartilhamento de documentos.
+      // O token é armazenado em motorcycle_document_shares e lido na hora de gerar
+      // o PDF — o snapshot é imutável (trigger health_snapshots_no_update) e não
+      // pode ser atualizado após emissão.
       if (emissionConfig.includeDocsQr && res.report?.id) {
         try {
-          const share = await shareCreate({
+          await shareCreate({
             data: {
               motorcycleId: motoId,
               reportId: res.report.id,
               validityDays: emissionConfig.docsQrValidityDays,
             },
           });
-          // Grava docsQrUrl no snapshot já emitido (patch direto — issueHealthReport é idempotente)
-          if (share?.publicUrl) {
-            await patchQr({
-              data: {
-                reportId: res.report.id,
-                motorcycleId: motoId,
-                docsQrUrl: share.publicUrl,
-              },
-            }).catch(() => null); // best-effort — não bloqueia navegação
-          }
         } catch {
           // QR Code é melhor-esforço; não bloqueia emissão do laudo
           toast.error("QR Code de documentos não pôde ser gerado. O laudo foi emitido normalmente.");

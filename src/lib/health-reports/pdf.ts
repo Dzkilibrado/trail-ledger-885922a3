@@ -37,6 +37,8 @@ export async function buildReportPdf(input: {
   qrDataUrl?: string | null;
   publicUrl?: string | null;
   photoDataUrl?: string | null;
+  /** URL do cofre de documentos — passada externamente pois o snapshot é imutável. */
+  docsQrUrl?: string | null;
 }): Promise<Blob> {
   const { snapshot: s, code } = input;
   const purpose = s.purpose ?? "pessoal";
@@ -255,11 +257,14 @@ export async function buildReportPdf(input: {
   para(`Fontes de dados: ${s.dataSources.join("; ")}`);
 
   // ---------- QR Code do cofre de documentos (apenas laudo Comercial) ----------
-  if (purpose === "comercial" && s.docsQrUrl) {
+  // docsQrUrl vem de input.docsQrUrl (buscado em motorcycle_document_shares na hora
+  // do download) — o snapshot é imutável e não pode ser atualizado após emissão.
+  const effectiveDocsQrUrl = input.docsQrUrl ?? (s as unknown as Record<string, unknown>).docsQrUrl as string | null | undefined;
+  if (purpose === "comercial" && effectiveDocsQrUrl) {
     ensure(50);
     title("Documentos da moto");
     try {
-      const docsQrCanvas = await QRCode.toDataURL(s.docsQrUrl, {
+      const docsQrCanvas = await QRCode.toDataURL(effectiveDocsQrUrl, {
         width: 128,
         margin: 1,
         color: { dark: "#000000", light: "#ffffff" },
@@ -282,7 +287,7 @@ export async function buildReportPdf(input: {
         M + 42,
         y + 21,
       );
-      doc.text(s.docsQrUrl, M + 42, y + 29, { maxWidth: W - M - 46 });
+      doc.text(effectiveDocsQrUrl, M + 42, y + 29, { maxWidth: W - M - 46 });
       y += 44;
     } catch {
       /* QR de documentos opcional — não bloqueia PDF */

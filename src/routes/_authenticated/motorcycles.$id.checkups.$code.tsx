@@ -107,15 +107,29 @@ function ReportPage() {
     setSaving(true);
     try {
       trackHealth("pdf_iniciado", { code: report.code ?? code });
-      const share = (
-        await supabase
+
+      // Busca share de laudo (rota /l/) e share de documentos (rota /d/) em paralelo
+      const [shareResult, docShareResult] = await Promise.all([
+        supabase
           .from("health_report_shares")
           .select("public_token")
           .eq("report_id", report.id)
           .is("revoked_at", null)
-          .limit(1)
-      ).data?.[0];
+          .limit(1),
+        supabase
+          .from("motorcycle_document_shares" as never)
+          .select("token")
+          .eq("report_id", report.id)
+          .is("revoked_at", null)
+          .limit(1),
+      ]);
+
+      const share = shareResult.data?.[0];
+      const docShare = (docShareResult.data as Array<{ token: string }> | null)?.[0];
+
       const publicUrl = share ? shareUrl(`/l/${share.public_token}`) : null;
+      const docsQrUrl = docShare ? shareUrl(`/d/${docShare.token}`) : null;
+
       const qrDataUrl = publicUrl
         ? await QRCode.toDataURL(publicUrl, { width: 320, margin: 1 })
         : null;
@@ -126,6 +140,7 @@ function ReportPage() {
         statusLabel: REPORT_STATUS_LABEL[eff.status as ReportStatus] ?? eff.label,
         qrDataUrl,
         publicUrl,
+        docsQrUrl,
       });
       const res = await saveFile({
         blob,
