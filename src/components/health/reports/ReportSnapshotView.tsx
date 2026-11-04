@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AlertTriangle, ChevronDown, ShieldCheck } from "lucide-react";
 import { TBCard, TBStatusPill } from "@/design-system";
 import {
@@ -76,6 +76,51 @@ function ComponentRow({ c }: { c: PublicComponent }) {
 }
 
 /**
+ * QR Code do cofre de documentos — renderizado via canvas (qrcode).
+ * Exibido apenas no layout Comercial quando snapshot.docsQrUrl existe.
+ */
+function DocsQrBlock({ url }: { url: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (!canvasRef.current) return;
+    import("qrcode").then((QRCode) => {
+      QRCode.toCanvas(canvasRef.current!, url, {
+        width: 128,
+        margin: 1,
+        color: { dark: "#000000", light: "#ffffff" },
+      }, (err: Error | null) => {
+        if (err) setError(true);
+      });
+    }).catch(() => setError(true));
+  }, [url]);
+
+  if (error) return null;
+
+  return (
+    <TBCard className="flex flex-col items-center gap-3 py-4 text-center sm:flex-row sm:text-left">
+      <canvas ref={canvasRef} className="shrink-0 rounded-lg" aria-label="QR Code do cofre de documentos" />
+      <div className="space-y-1">
+        <p className="text-sm font-bold">Cofre de documentos</p>
+        <p className="text-xs text-muted-foreground leading-snug">
+          Escaneie o QR Code para acessar os documentos desta moto: Nota Fiscal,
+          Recibo de Compra e Venda e demais anexos registrados pelo proprietário.
+        </p>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-block break-all text-[11px] text-primary hover:underline"
+        >
+          {url}
+        </a>
+      </div>
+    </TBCard>
+  );
+}
+
+/**
  * Renderização oficial do Laudo — SEMPRE a partir do snapshot emitido.
  * Nunca recalcula nada e nunca busca dados atuais.
  *
@@ -103,10 +148,8 @@ export function ReportSnapshotView({
   className?: string;
 }) {
   // Finalidade efetiva: lê do snapshot se não vier como prop (tela do laudo já emitido)
-  const effectivePurpose: ReportPurpose =
-    purpose ??
-    ("purpose" in s && (s as Partial<HealthReportSnapshot>).purpose) ??
-    "pessoal";
+  const snapshotPurpose = ("purpose" in s ? (s as Partial<HealthReportSnapshot>).purpose : undefined);
+  const effectivePurpose: ReportPurpose = purpose ?? snapshotPurpose ?? "pessoal";
 
   const show = (sec: ReportSection) => (sections ? sections.includes(sec) : true);
 
@@ -281,6 +324,13 @@ export function ReportSnapshotView({
               <Row label="Quilometragem" value={`${s.motorcycle.kmTotal} km`} />
               <Row label="ID TrailBook" value={s.motorcycle.trailbookId} />
             </TBCard>
+          </Section>
+        )}
+
+        {/* QR Code do cofre de documentos */}
+        {"docsQrUrl" in s && (s as Partial<HealthReportSnapshot>).docsQrUrl && (
+          <Section title="Documentos da moto">
+            <DocsQrBlock url={(s as Partial<HealthReportSnapshot>).docsQrUrl!} />
           </Section>
         )}
 

@@ -21,6 +21,7 @@ import {
   type ReportPurpose,
 } from "@/lib/health-reports/types";
 import { issueHealthReport, startCheckRun, updateCheckRun } from "@/lib/health-reports.functions";
+import { createDocumentShare } from "@/lib/document-shares.functions";
 import { ReportSnapshotView } from "@/components/health/reports/ReportSnapshotView";
 import { trackHealth } from "@/lib/health-reports/telemetry";
 import { cn } from "@/lib/utils";
@@ -56,6 +57,7 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
   const [ownerName, setOwnerName] = useState<string | null>(null);
   const [issuedAtRef] = useState(() => new Date().toISOString());
   const [emissionConfig, setEmissionConfig] = useState<ReportEmissionConfig>(DEFAULT_EMISSION_CONFIG);
+  const shareCreate = useServerFn(createDocumentShare);
 
   useEffect(() => {
     if (!uid) return;
@@ -171,6 +173,7 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
     if (!runId || !previewSnapshot || !validity || !gating) return;
     setIssuing(true);
     try {
+      // 1. Emite o laudo (snapshot sem docsQrUrl ainda — URL ainda não existe)
       const res = await issue({
         data: {
           runId,
@@ -187,6 +190,42 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
           accepted,
         },
       });
+
+      // 2. Se QR Code habilitado, cria o compartilhamento e reitera o laudo com a URL
+      if (emissionConfig.includeDocsQr && res.report?.id) {
+        try {
+          const share = await shareCreate({
+            data: {
+              motorcycleId: motoId,
+              reportId: res.report.id,
+              validityDays: emissionConfig.docsQrValidityDays,
+            },
+          });
+          // Atualiza snapshot armazenado com docsQrUrl (best-effort — não bloqueia navegação)
+          if (share?.publicUrl) {
+            await issue({
+              data: {
+                runId,
+                motorcycleId: motoId,
+                snapshot: { ...previewSnapshot, docsQrUrl: share.publicUrl },
+                confidenceLevel: gating.confidenceLevel,
+                reservations: gating.reservations,
+                validity: {
+                  validUntil: validity.validUntil,
+                  hoursLimit: validity.hoursLimit,
+                  kmLimit: validity.kmLimit,
+                  reason: validity.reason,
+                },
+                accepted,
+              },
+            }).catch(() => null); // idempotente — ignora erro silenciosamente
+          }
+        } catch {
+          // QR Code é melhor-esforço; não bloqueia emissão do laudo
+          toast.error("QR Code de documentos não pôde ser gerado. O laudo foi emitido normalmente.");
+        }
+      }
+
       await qc.invalidateQueries({ queryKey: ["health-reports", motoId] });
       await qc.invalidateQueries({ queryKey: ["health-report-last", motoId] });
       toast.success(

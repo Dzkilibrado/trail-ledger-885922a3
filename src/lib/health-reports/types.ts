@@ -181,6 +181,8 @@ export interface HealthReportSnapshot {
   purpose?: ReportPurpose;
   /** Título exibido no laudo (personalizado ou padrão da finalidade). */
   reportTitle?: string;
+  /** URL pública do cofre de documentos — gerada quando includeDocsQr=true na emissão Comercial. */
+  docsQrUrl?: string;
   validity: {
     validUntil: string | null;
     hoursLimit: number | null;

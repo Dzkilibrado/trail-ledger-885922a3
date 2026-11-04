@@ -1,4 +1,5 @@
 import jsPDF from "jspdf";
+import QRCode from "qrcode";
 import {
   EVALUATION_INTRO,
   EVALUATION_LABEL,
@@ -252,6 +253,41 @@ export async function buildReportPdf(input: {
   para(`Formato: ${s.formatVersion} · TIL: ${s.tilVersion} · Regras: ${s.ruleVersion}`);
   para(`Emissão: ${formatDate(s.issuedAt)} (${s.timezone})`);
   para(`Fontes de dados: ${s.dataSources.join("; ")}`);
+
+  // ---------- QR Code do cofre de documentos (apenas laudo Comercial) ----------
+  if (purpose === "comercial" && s.docsQrUrl) {
+    ensure(50);
+    title("Documentos da moto");
+    try {
+      const docsQrCanvas = await QRCode.toDataURL(s.docsQrUrl, {
+        width: 128,
+        margin: 1,
+        color: { dark: "#000000", light: "#ffffff" },
+      });
+      doc.addImage(docsQrCanvas, "PNG", M, y, 36, 36);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(10);
+      doc.setTextColor(20);
+      doc.text("Cofre de Documentos", M + 42, y + 8);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(9);
+      doc.setTextColor(60);
+      doc.text(
+        "Escaneie para acessar os documentos desta moto: Nota Fiscal,",
+        M + 42,
+        y + 15,
+      );
+      doc.text(
+        "Recibo de Compra e Venda e demais anexos do proprietário.",
+        M + 42,
+        y + 21,
+      );
+      doc.text(s.docsQrUrl, M + 42, y + 29, { maxWidth: W - M - 46 });
+      y += 44;
+    } catch {
+      /* QR de documentos opcional — não bloqueia PDF */
+    }
+  }
 
   if (input.qrDataUrl) {
     ensure(42);
