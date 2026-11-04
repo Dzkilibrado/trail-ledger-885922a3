@@ -59,7 +59,7 @@ export function checkEmission(input: {
     };
   }
 
-  const hasIdentification = !!moto.chassis;
+  const hasIdentification = !!(moto.chassis ?? "").trim();
   if (!hasIdentification) {
     blockers.push({
       code: "no_identification",

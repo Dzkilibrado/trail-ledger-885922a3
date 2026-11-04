@@ -75,7 +75,7 @@ export function computeHealth(input: {
     hasDocs: {
       plate: !!input.moto.plate,
       renavam: !!input.moto.renavam,
-      chassis: !!input.moto.chassis,
+      chassis: !!(input.moto.chassis ?? "").trim(),
     },
   });
   const score = c.score;
