@@ -1,15 +1,17 @@
 import { shareUrl } from "@/lib/external-links";
+import { useModule } from "@/hooks/useModules";
 import { createFileRoute } from "@tanstack/react-router";
 import { useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import QRCode from "qrcode";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { PageHeader } from "@/components/PageHeader";
 import { TBButton, TBErrorState, TBLoadingState } from "@/design-system";
 import { ReportSnapshotView } from "@/components/health/reports/ReportSnapshotView";
 import { SharePanel } from "@/components/health/reports/SharePanel";
+import { FiscalShareDialog } from "@/components/health/reports/FiscalShareDialog";
 import { buildReportPdf, reportFileName } from "@/lib/health-reports/pdf";
 import {
   REPORT_PURPOSE_LABEL,
@@ -52,6 +54,10 @@ export const Route = createFileRoute("/_authenticated/motorcycles/$id/checkups/$
 function ReportPage() {
   const { id, code } = Route.useParams();
   const [saving, setSaving] = useState(false);
+  const [fiscalOpen, setFiscalOpen] = useState(false);
+  const fiscalModule = useModule("fiscalizacao");
+  const fiscalEnabled = fiscalModule.status === "active" || fiscalModule.status === "beta";
+  const fiscalBeta = fiscalModule.status === "beta";
   const [reopenPdf, setReopenPdf] = useState<(() => void | Promise<void>) | null>(null);
   const lastRunRef = useRef(0);
 
@@ -221,11 +227,35 @@ function ReportPage() {
         </p>
       )}
 
-      <SharePanel
+      <SharePanel reportId={report.id} canManage />
+
+      {/* Fiscalização — card dedicado, visualmente distinto */}
+      {fiscalEnabled && (
+        <div className="rounded-xl border border-border/60 bg-muted/20 p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <ShieldAlert className="h-4 w-4 shrink-0" aria-hidden />
+              <span>Acesso para Fiscalização</span>
+              {fiscalBeta && (
+                <span className="rounded-sm bg-primary/10 px-1 py-0.5 text-[10px] font-bold text-primary uppercase tracking-wide">β</span>
+              )}
+            </div>
+            <TBButton variant="outline" size="sm" onClick={() => setFiscalOpen(true)}>
+              Gerar acesso
+            </TBButton>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground pl-6">
+            Acesso temporário para agente fiscal — expira automaticamente.
+          </p>
+        </div>
+      )}
+
+      <FiscalShareDialog
         reportId={report.id}
-        reportCode={report.code ?? code}
         reportStatus={report.status as string}
-        canManage
+        reportCode={report.code ?? ""}
+        open={fiscalOpen}
+        onClose={() => setFiscalOpen(false)}
       />
 
       {snapshot ? (

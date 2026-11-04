@@ -15,7 +15,8 @@ export type HealthTelemetryEvent =
   | "pagina_publica_acessada"
   | "link_expirado"
   | "link_revogado"
-  | "comparacao_executada";
+  | "comparacao_executada"
+  | "acesso_fiscal_gerado";
 
 type Payload = Record<string, string | number | boolean | null | undefined>;
 

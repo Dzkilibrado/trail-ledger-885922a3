@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Check, FileText, Info, Loader2, Settings2, Store, Wrench } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, Check, FileText, Info, Loader2, QrCode, Settings2, ShieldAlert, ShieldOff, Store, Timer, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { TBButton, TBCard, TBErrorState, TBLoadingState, TBStatusPill } from "@/design-system";
@@ -24,6 +24,10 @@ import { issueHealthReport, startCheckRun, updateCheckRun } from "@/lib/health-r
 import { createDocumentShare } from "@/lib/document-shares.functions";
 import { ReportSnapshotView } from "@/components/health/reports/ReportSnapshotView";
 import { trackHealth } from "@/lib/health-reports/telemetry";
+import { useModule } from "@/hooks/useModules";
+import { shareUrl } from "@/lib/external-links";
+import { FISCAL_DEFAULT_MINUTES, FISCAL_EXPIRY_OPTIONS, FISCAL_PRIVACY_NOTICE } from "@/lib/health-reports/sections";
+import QRCode from "qrcode";
 import { cn } from "@/lib/utils";
 
 const STEPS = ["Identificação", "Revisão", "Análise", "Condições", "Configurar", "Prévia", "Emissão"] as const;
@@ -33,6 +37,268 @@ const PURPOSE_ICONS: Record<ReportPurpose, React.ElementType> = {
   oficina: Wrench,
   pessoal: FileText,
 };
+
+// ── Helpers fiscalização ────────────────────────────────────────
+function newFiscalToken() {
+  const bytes = new Uint8Array(24);
+  crypto.getRandomValues(bytes);
+  return Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function minutesToIso(minutes: number): string {
+  return new Date(Date.now() + minutes * 60_000).toISOString();
+}
+
+function formatExpiry(iso: string): string {
+  return new Date(iso).toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" });
+}
+
+type FiscalShareRow = {
+  id: string;
+  public_token: string;
+  expires_at: string | null;
+  revoked_at: string | null;
+};
+
+/** Tela de fiscalização embutida no wizard — gera acesso temporário sem emitir laudo. */
+function FiscalWizardStep({ motoId, latestReportId }: { motoId: string; latestReportId: string | null }) {
+  const qc = useQueryClient();
+  const fiscalModule = useModule("fiscalizacao");
+  const [selectedMinutes, setSelectedMinutes] = useState(FISCAL_DEFAULT_MINUTES);
+  const [qrMap, setQrMap] = useState<Record<string, string>>({});
+
+  const shares = useQuery<FiscalShareRow[]>({
+    queryKey: ["fiscal-wizard-shares", latestReportId],
+    queryFn: async () => {
+      if (!latestReportId) return [];
+      const { data } = await supabase
+        .from("health_report_shares")
+        .select("id, public_token, expires_at, revoked_at")
+        .eq("report_id", latestReportId)
+        .eq("preset", "fiscal" as never)
+        .order("created_at", { ascending: false })
+        .limit(5);
+      return (data ?? []) as FiscalShareRow[];
+    },
+    enabled: !!latestReportId,
+  });
+
+  const active = (shares.data ?? []).filter(
+    (s) => !s.revoked_at && s.expires_at && new Date(s.expires_at) > new Date(),
+  );
+
+  const generateQr = useCallback(async (token: string) => {
+    if (qrMap[token]) return;
+    try {
+      const url = shareUrl(`/l/${token}`);
+      const dataUrl = await QRCode.toDataURL(url, { width: 300, margin: 1 });
+      setQrMap((m) => ({ ...m, [token]: dataUrl }));
+    } catch { /* opcional */ }
+  }, [qrMap]);
+
+  const create = useMutation({
+    mutationFn: async () => {
+      if (!latestReportId) throw new Error("Nenhum laudo válido encontrado para esta moto.");
+      const session = await supabase.auth.getSession();
+      const uid = session.data.session?.user.id ?? "";
+      const token = newFiscalToken();
+      const { error } = await supabase.from("health_report_shares").insert({
+        report_id: latestReportId,
+        created_by: uid,
+        preset: "fiscal" as never,
+        allowed_sections: ["identification", "summary"] as never,
+        public_token: token,
+        expires_at: minutesToIso(selectedMinutes),
+      });
+      if (error) throw new Error(error.message);
+      return token;
+    },
+    onSuccess: (token) => {
+      qc.invalidateQueries({ queryKey: ["fiscal-wizard-shares", latestReportId] });
+      toast.success("Acesso gerado. Mostre o QR Code ao fiscal.");
+      generateQr(token);
+      trackHealth("acesso_fiscal_gerado", { motoId, minutos: selectedMinutes });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const revoke = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase
+        .from("health_report_shares")
+        .update({ revoked_at: new Date().toISOString(), revoked_reason: "Revogado pelo proprietário" })
+        .eq("id", id);
+      if (error) throw new Error(error.message);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["fiscal-wizard-shares", latestReportId] });
+      toast.success("Acesso revogado.");
+    },
+  });
+
+  const shareOrCopy = async (token: string) => {
+    const url = shareUrl(`/l/${token}`);
+    if (navigator.share) {
+      try { await navigator.share({ title: "Acesso para Fiscalização — TrailBook", url }); }
+      catch { /* cancelado */ }
+    } else {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copiado.");
+    }
+  };
+
+  const downloadPdf = async (token: string) => {
+    try {
+      const { getPublicHealthReport } = await import("@/lib/health-reports.functions");
+      const { buildFiscalPdf } = await import("@/lib/health-reports/fiscal-pdf");
+      const res = await getPublicHealthReport({ data: { token } });
+      if (!res.ok) { toast.error("Não foi possível gerar o PDF."); return; }
+      const blob = await buildFiscalPdf({
+        snapshot: res.snapshot,
+        code: res.code,
+        issuedAt: res.issuedAt,
+        status: res.status,
+        fiscal: res.fiscal,
+        docImageDataUrl: null,
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `fiscalizacao-${res.code}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch { toast.error("Erro ao gerar PDF."); }
+  };
+
+  if (!latestReportId) {
+    return (
+      <TBCard className="space-y-3">
+        <div className="flex items-center gap-2">
+          <ShieldAlert className="h-5 w-5 text-primary" />
+          <h2 className="text-base font-black">Acesso para Fiscalização</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Esta moto ainda não possui um laudo válido emitido. Emita um Check-up primeiro para
+          poder gerar um acesso de fiscalização.
+        </p>
+      </TBCard>
+    );
+  }
+
+  if (fiscalModule.status === "maintenance") {
+    return (
+      <TBCard className="space-y-3">
+        <div className="flex items-center gap-2">
+          <ShieldAlert className="h-5 w-5 text-primary" />
+          <h2 className="text-base font-black">Acesso para Fiscalização</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Este recurso está temporariamente em manutenção. Tente novamente em instantes.
+        </p>
+      </TBCard>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <TBCard className="space-y-4">
+        <div className="flex items-center gap-2">
+          <ShieldAlert className="h-5 w-5 text-primary" />
+          <h2 className="text-base font-black">Acesso para Fiscalização</h2>
+        </div>
+
+        <p className="text-xs text-muted-foreground leading-relaxed">{FISCAL_PRIVACY_NOTICE}</p>
+
+        {/* Seletor de validade */}
+        <div className="space-y-2">
+          <p className="text-sm font-semibold">Validade do acesso</p>
+          <div className="grid grid-cols-2 gap-2">
+            {FISCAL_EXPIRY_OPTIONS.map((opt) => (
+              <button
+                key={opt.minutes}
+                type="button"
+                onClick={() => setSelectedMinutes(opt.minutes)}
+                className={cn(
+                  "rounded-xl border px-3 py-2 text-sm font-medium transition",
+                  selectedMinutes === opt.minutes
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border bg-card text-muted-foreground hover:border-primary/40",
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <TBButton
+          className="w-full"
+          onClick={() => create.mutate()}
+          disabled={create.isPending}
+        >
+          {create.isPending
+            ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Gerando…</>
+            : <><QrCode className="mr-2 h-4 w-4" /> Gerar QR Code</>
+          }
+        </TBButton>
+      </TBCard>
+
+      {/* Acessos ativos */}
+      {active.length > 0 && (
+        <div className="space-y-3">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground px-1">
+            Acessos ativos
+          </p>
+          {active.map((s) => {
+            if (!qrMap[s.public_token]) generateQr(s.public_token);
+            const qrImg = qrMap[s.public_token];
+            return (
+              <TBCard key={s.id} className="space-y-4">
+                {/* QR Code grande, centralizado */}
+                {qrImg
+                  ? <img src={qrImg} alt="QR Code fiscal" className="mx-auto rounded-xl w-56 h-56 bg-white p-2" />
+                  : <div className="mx-auto w-56 h-56 rounded-xl bg-muted animate-pulse" />
+                }
+
+                {/* Expiração */}
+                <div className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
+                  <Timer className="h-4 w-4 shrink-0" />
+                  <span>
+                    Expira em <strong>{s.expires_at ? formatExpiry(s.expires_at) : "?"}</strong>
+                  </span>
+                </div>
+
+                {/* Ações */}
+                <div className="grid grid-cols-2 gap-2">
+                  <TBButton variant="outline" onClick={() => shareOrCopy(s.public_token)}>
+                    Compartilhar
+                  </TBButton>
+                  <TBButton variant="outline" onClick={() => downloadPdf(s.public_token)}>
+                    Baixar PDF
+                  </TBButton>
+                </div>
+
+                <TBButton
+                  variant="ghost"
+                  className="w-full text-destructive hover:bg-destructive/10"
+                  onClick={() => revoke.mutate(s.id)}
+                  disabled={revoke.isPending}
+                >
+                  <ShieldOff className="mr-2 h-4 w-4" /> Revogar acesso
+                </TBButton>
+              </TBCard>
+            );
+          })}
+        </div>
+      )}
+
+      <p className="text-xs text-muted-foreground text-center px-4 leading-relaxed">
+        Este acesso foi gerado voluntariamente pelo proprietário e possui validade temporária.
+        Não substitui documento oficial governamental.
+      </p>
+    </div>
+  );
+}
 
 const DEFAULT_EMISSION_CONFIG: ReportEmissionConfig = {
   purpose: "pessoal",
@@ -48,7 +314,12 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
   const start = useServerFn(startCheckRun);
   const update = useServerFn(updateCheckRun);
   const issue = useServerFn(issueHealthReport);
+  const fiscalModule = useModule("fiscalizacao");
+  const fiscalEnabled = fiscalModule.status === "active" || fiscalModule.status === "beta";
+  const fiscalBeta = fiscalModule.status === "beta";
 
+  // Modo fiscalização: fluxo independente, sem emitir laudo
+  const [fiscalMode, setFiscalMode] = useState(false);
 
   const [step, setStep] = useState(0);
   const [runId, setRunId] = useState<string | null>(null);
@@ -59,6 +330,23 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
   const [issuedAtRef] = useState(() => new Date().toISOString());
   const [emissionConfig, setEmissionConfig] = useState<ReportEmissionConfig>(DEFAULT_EMISSION_CONFIG);
   const shareCreate = useServerFn(createDocumentShare);
+
+  // Último laudo válido — usado pelo modo Fiscalização para criar share sem emitir novo laudo
+  const { data: latestReportId } = useQuery<string | null>({
+    queryKey: ["latest-report-id", motoId],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("health_reports")
+        .select("id")
+        .eq("motorcycle_id", motoId)
+        .in("status", ["valid", "expiring"])
+        .order("issued_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return (data as { id: string } | null)?.id ?? null;
+    },
+    enabled: fiscalMode || fiscalEnabled,
+  });
 
   // Contagem de documentos ativos desta moto — usado para avisar antes de habilitar o QR Code
   const { data: docCount } = useQuery({
@@ -401,19 +689,22 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
           {/* Finalidade */}
           <div className="space-y-2">
             <p className="text-sm font-semibold">Finalidade do laudo</p>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-2">
               {(["comercial", "oficina", "pessoal"] as ReportPurpose[]).map((p) => {
                 const Icon = PURPOSE_ICONS[p];
-                const active = emissionConfig.purpose === p;
+                const active = !fiscalMode && emissionConfig.purpose === p;
                 return (
                   <button
                     key={p}
                     type="button"
-                    onClick={() => setEmissionConfig((c) => ({
-                      ...c,
-                      purpose: p,
-                      includeDocsQr: p === "comercial" ? true : p === "oficina" ? false : c.includeDocsQr,
-                    }))}
+                    onClick={() => {
+                      setFiscalMode(false);
+                      setEmissionConfig((c) => ({
+                        ...c,
+                        purpose: p,
+                        includeDocsQr: p === "comercial" ? true : p === "oficina" ? false : c.includeDocsQr,
+                      }));
+                    }}
                     className={cn(
                       "flex flex-col gap-1.5 rounded-xl border p-3 text-left transition-colors",
                       active
@@ -431,6 +722,33 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
                   </button>
                 );
               })}
+
+              {/* Quarto card — Fiscalização (módulo controlado) */}
+              {fiscalEnabled && (
+                <button
+                  type="button"
+                  onClick={() => setFiscalMode(true)}
+                  className={cn(
+                    "flex flex-col gap-1.5 rounded-xl border p-3 text-left transition-colors",
+                    fiscalMode
+                      ? "border-primary bg-primary/5"
+                      : "border-border bg-muted/30 hover:border-primary/40",
+                  )}
+                >
+                  <div className="flex items-center gap-1.5">
+                    <ShieldAlert className={cn("h-4 w-4", fiscalMode ? "text-primary" : "text-muted-foreground")} aria-hidden />
+                    {fiscalBeta && (
+                      <span className="rounded-sm bg-primary/10 px-1 py-0.5 text-[10px] font-bold text-primary uppercase tracking-wide">β</span>
+                    )}
+                  </div>
+                  <span className={cn("text-sm font-semibold", fiscalMode ? "text-primary" : "")}>
+                    Fiscalização
+                  </span>
+                  <span className="text-xs text-muted-foreground leading-snug">
+                    Identificação da moto e situação geral — acesso temporário para fiscalização.
+                  </span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -516,14 +834,25 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
             )}
           </div>
 
-          <TBButton className="w-full" onClick={() => setStep(5)}>
-            Ver prévia do laudo
-          </TBButton>
+          {fiscalMode ? (
+            <TBButton className="w-full" onClick={() => setStep(5)}>
+              <ShieldAlert className="mr-2 h-4 w-4" /> Gerar acesso para fiscalização
+            </TBButton>
+          ) : (
+            <TBButton className="w-full" onClick={() => setStep(5)}>
+              Ver prévia do laudo
+            </TBButton>
+          )}
         </TBCard>
       )}
 
-      {/* ── Step 5: Prévia do laudo ─────────────────────────────── */}
-      {step === 5 && previewSnapshot && (
+      {/* ── Step 5 (Fiscalização): QR Code + compartilhar ─────── */}
+      {step === 5 && fiscalMode && (
+        <FiscalWizardStep motoId={motoId} latestReportId={latestReportId ?? null} />
+      )}
+
+      {/* ── Step 5: Prévia do laudo (apenas modo normal) ─────────── */}
+      {step === 5 && !fiscalMode && previewSnapshot && (
         <div className="space-y-4">
           <TBCard className="space-y-1">
             <h2 className="text-base font-black">Prévia do laudo</h2>
@@ -539,7 +868,7 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
         </div>
       )}
 
-      {step === 6 && previewSnapshot && validity && (
+      {step === 6 && !fiscalMode && previewSnapshot && validity && (
         <TBCard className="space-y-4">
           <h2 className="text-base font-black">Confirmação de emissão</h2>
           <div className="rounded-xl bg-muted/40 p-3 text-sm space-y-1">
