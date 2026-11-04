@@ -169,11 +169,17 @@ function PublicDocumentVaultPage() {
 
       {/* Lista de documentos */}
       {docs.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-border p-8 text-center">
-          <Inbox className="mx-auto h-8 w-8 text-muted-foreground" />
-          <p className="mt-3 text-sm font-semibold">Nenhum documento disponível</p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            O proprietário ainda não cadastrou documentos nesta moto.
+        <div className="rounded-2xl border border-dashed border-border p-8 text-center space-y-3">
+          <Inbox className="mx-auto h-10 w-10 text-muted-foreground/50" />
+          <div>
+            <p className="text-base font-bold">Cofre vazio</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              O proprietário ainda não adicionou documentos a esta moto no TrailBook.
+            </p>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Documentos como Nota Fiscal, Recibo de Compra e Venda e histórico de manutenção
+            podem ser cadastrados pelo proprietário e ficam disponíveis aqui.
           </p>
         </div>
       ) : (

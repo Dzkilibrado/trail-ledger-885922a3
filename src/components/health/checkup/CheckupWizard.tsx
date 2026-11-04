@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useQueryClient } from "@tanstack/react-query";
-import { AlertTriangle, Check, FileText, Loader2, Settings2, Store, Wrench } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { AlertTriangle, Check, FileText, Info, Loader2, Settings2, Store, Wrench } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { TBButton, TBCard, TBErrorState, TBLoadingState, TBStatusPill } from "@/design-system";
@@ -58,6 +58,21 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
   const [issuedAtRef] = useState(() => new Date().toISOString());
   const [emissionConfig, setEmissionConfig] = useState<ReportEmissionConfig>(DEFAULT_EMISSION_CONFIG);
   const shareCreate = useServerFn(createDocumentShare);
+
+  // Contagem de documentos ativos desta moto — usado para avisar antes de habilitar o QR Code
+  const { data: docCount } = useQuery({
+    queryKey: ["moto-doc-count", motoId],
+    queryFn: async () => {
+      const { count } = await supabase
+        .from("motorcycle_documents" as never)
+        .select("id", { count: "exact", head: true })
+        .eq("motorcycle_id" as never, motoId as never)
+        .eq("is_current" as never, true as never)
+        .is("deleted_at" as never, null);
+      return count ?? 0;
+    },
+    staleTime: 60_000,
+  });
 
   useEffect(() => {
     if (!uid) return;
@@ -470,6 +485,27 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
                 onChange={(e) => setEmissionConfig((c) => ({ ...c, includeDocsQr: e.target.checked }))}
               />
             </label>
+
+            {/* Aviso: moto sem documentos cadastrados */}
+            {docCount === 0 && (
+              <div className="flex items-start gap-2 rounded-lg border border-amber-500/40 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-100">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+                <div className="space-y-1">
+                  <p className="font-semibold">Esta moto não possui documentos cadastrados.</p>
+                  <p>
+                    O QR Code será gerado, mas quem escanear verá um cofre vazio.{" "}
+                    <Link
+                      to="/motorcycles/$id"
+                      params={{ id: motoId }}
+                      className="underline underline-offset-2 hover:text-amber-800 dark:hover:text-amber-200"
+                    >
+                      Adicione documentos antes de emitir
+                    </Link>{" "}
+                    para aproveitar este recurso.
+                  </p>
+                </div>
+              </div>
+            )}
 
             {emissionConfig.includeDocsQr && (
               <div className="space-y-1.5 border-t border-border pt-3">
