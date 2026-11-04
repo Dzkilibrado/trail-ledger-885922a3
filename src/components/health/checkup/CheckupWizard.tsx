@@ -61,7 +61,7 @@ type FiscalShareRow = {
 };
 
 /** Tela de fiscalização embutida no wizard — gera acesso temporário sem emitir laudo. */
-function FiscalWizardStep({ motoId, latestReportId }: { motoId: string; latestReportId: string | null }) {
+function FiscalWizardStep({ motoId, latestReportId, isLoading }: { motoId: string; latestReportId: string | null; isLoading?: boolean }) {
   const qc = useQueryClient();
   const fiscalModule = useModule("fiscalizacao");
   const [selectedMinutes, setSelectedMinutes] = useState(FISCAL_DEFAULT_MINUTES);
@@ -170,6 +170,15 @@ function FiscalWizardStep({ motoId, latestReportId }: { motoId: string; latestRe
       URL.revokeObjectURL(url);
     } catch { toast.error("Erro ao gerar PDF."); }
   };
+
+  if (isLoading) {
+    return (
+      <TBCard className="flex items-center justify-center gap-3 py-8">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        <span className="text-sm text-muted-foreground">Verificando laudo válido…</span>
+      </TBCard>
+    );
+  }
 
   if (!latestReportId) {
     return (
@@ -333,7 +342,7 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
   const shareCreate = useServerFn(createDocumentShare);
 
   // Último laudo válido — usado pelo modo Fiscalização para criar share sem emitir novo laudo
-  const { data: latestReportId } = useQuery<string | null>({
+  const { data: latestReportId, isLoading: latestReportLoading } = useQuery<string | null>({
     queryKey: ["latest-report-id", motoId],
     queryFn: async () => {
       const { data } = await supabase
@@ -836,8 +845,15 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
           </div>
 
           {fiscalMode ? (
-            <TBButton className="w-full" onClick={() => setStep(5)}>
-              <ShieldAlert className="mr-2 h-4 w-4" /> Gerar acesso para fiscalização
+            <TBButton
+              className="w-full"
+              disabled={latestReportLoading}
+              onClick={() => setStep(5)}
+            >
+              {latestReportLoading
+                ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Verificando laudo…</>
+                : <><ShieldAlert className="mr-2 h-4 w-4" /> Gerar acesso para fiscalização</>
+              }
             </TBButton>
           ) : (
             <TBButton className="w-full" onClick={() => setStep(5)}>
@@ -849,7 +865,7 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
 
       {/* ── Step 5 (Fiscalização): QR Code + compartilhar ─────── */}
       {step === 5 && fiscalMode && (
-        <FiscalWizardStep motoId={motoId} latestReportId={latestReportId ?? null} />
+        <FiscalWizardStep motoId={motoId} latestReportId={latestReportId ?? null} isLoading={latestReportLoading} />
       )}
 
       {/* ── Step 5: Prévia do laudo (apenas modo normal) ─────────── */}
