@@ -109,10 +109,7 @@ export async function buildFiscalPdf(input: FiscalPdfInput): Promise<Blob> {
     }
   };
 
-  // Cabecalho com QR Code à direita
-  const QR_SIZE = 38; // mm
-  const QR_X = W - M - QR_SIZE;
-
+  // Cabecalho
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.setTextColor(20);
@@ -127,18 +124,6 @@ export async function buildFiscalPdf(input: FiscalPdfInput): Promise<Blob> {
   doc.line(M, y, W - M, y);
   doc.setLineWidth(0.2);
   y += 8;
-
-  // QR Code — inserido no canto superior direito alinhado ao cabecalho
-  if (qrDataUrl) {
-    try {
-      const qrY = M;
-      doc.addImage(qrDataUrl, "PNG", QR_X, qrY, QR_SIZE, QR_SIZE, undefined, "FAST");
-      doc.setFontSize(7);
-      doc.setTextColor(100);
-      doc.setFont("helvetica", "normal");
-      doc.text("Escaneie para verificar", QR_X + QR_SIZE / 2, qrY + QR_SIZE + 3.5, { align: "center" });
-    } catch (_) { /* falha silenciosa */ }
-  }
 
   // Proprietario
   heading("PROPRIETARIO");
@@ -199,7 +184,7 @@ export async function buildFiscalPdf(input: FiscalPdfInput): Promise<Blob> {
       if (qrDataUrl) {
         try {
           const docQrSize = 50;
-          ensure(docQrSize + 20);
+          ensure(docQrSize + 24);
           doc.setFont("helvetica", "bold");
           doc.setFontSize(9);
           doc.setTextColor(60);
@@ -207,18 +192,18 @@ export async function buildFiscalPdf(input: FiscalPdfInput): Promise<Blob> {
           y += 5;
           const centerX = (W - docQrSize) / 2;
           doc.addImage(qrDataUrl, "PNG", centerX, y, docQrSize, docQrSize, undefined, "FAST");
-          y += docQrSize + 3;
+          y += docQrSize + 5;
           doc.setFont("helvetica", "italic");
           doc.setFontSize(8);
           doc.setTextColor(120);
           doc.text(
             isPdf ? "Documento em PDF — acesse a versao eletronica para visualizacao." :
                     "Acesse a versao eletronica do acesso de fiscalizacao para visualizar o documento.",
-            M,
+            W / 2,
             y,
-            { maxWidth: W - M * 2 },
+            { align: "center", maxWidth: W - M * 2 },
           );
-          y += 6;
+          y += 7;
         } catch (_) {
           note(isPdf
             ? "Documento em formato PDF. Consulte a versao eletronica do acesso de fiscalizacao."
