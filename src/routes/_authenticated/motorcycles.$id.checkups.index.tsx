@@ -59,20 +59,26 @@ function CheckupsHub() {
         .eq("motorcycle_id", id)
         .neq("status", "revoked")
         .order("issued_at", { ascending: false });
-      if (error) throw error;
+      if (error) {
+        console.error("[checkups] erro ao carregar:", error.code, error.message, error.details);
+        throw error;
+      }
       return data ?? [];
     },
+    retry: 2,
   });
 
   if (reports.isLoading) return <TBLoadingState label="Carregando seus check-ups…" />;
-  if (reports.isError)
+  if (reports.isError) {
+    const err = reports.error as { code?: string; message?: string } | null;
     return (
       <TBErrorState
         title="Não foi possível carregar seus check-ups"
-        description="Verifique sua conexão e tente novamente."
+        description={err?.message ? `Erro: ${err.message}` : "Verifique sua conexão e tente novamente."}
         onRetry={() => reports.refetch()}
       />
     );
+  }
   const list = reports.data ?? [];
   const current = {
     hours: Number(moto.data?.hours_total ?? 0),
