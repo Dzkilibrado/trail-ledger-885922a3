@@ -159,6 +159,7 @@ function FiscalWizardStep({ motoId, latestReportId }: { motoId: string; latestRe
         issuedAt: res.issuedAt,
         status: res.status,
         fiscal: res.fiscal,
+        fiscalToken: token,
         docImageDataUrl: null,
       });
       const url = URL.createObjectURL(blob);

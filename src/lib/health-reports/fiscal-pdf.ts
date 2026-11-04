@@ -4,7 +4,9 @@
 // ============================================================
 
 import jsPDF from "jspdf";
+import QRCode from "qrcode";
 import { formatDate } from "@/lib/trailbook";
+import { shareUrl } from "@/lib/external-links";
 import type { PublicHealthReportSnapshot } from "./public-types";
 import type { HealthReportSnapshot } from "./types";
 
@@ -37,15 +39,26 @@ export interface FiscalPdfInput {
     origin_doc_number: string | null;
     origin_doc_mime: string | null;
   } | null;
+  // Token público do share fiscal — para gerar QR Code no PDF
+  fiscalToken?: string | null;
   // Data URL da imagem do documento (JPEG/PNG) — obtida pelo chamador autenticado
   docImageDataUrl?: string | null;
 }
 
 export async function buildFiscalPdf(input: FiscalPdfInput): Promise<Blob> {
-  const { snapshot: s, code, issuedAt, status, fiscal, docImageDataUrl } = input;
+  const { snapshot: s, code, issuedAt, status, fiscal, fiscalToken, docImageDataUrl } = input;
   const moto = s.motorcycle;
   const rideAnswer = s.rideAnswer;
   const doc = new jsPDF({ unit: "mm", format: "a4" });
+
+  // Pré-gera QR Code se token disponível
+  let qrDataUrl: string | null = null;
+  if (fiscalToken) {
+    try {
+      const fiscalUrl = shareUrl(`/l/${fiscalToken}`);
+      qrDataUrl = await QRCode.toDataURL(fiscalUrl, { width: 400, margin: 1, errorCorrectionLevel: "M" });
+    } catch (_) { /* QR Code opcional */ }
+  }
 
   let y = M;
   const ensure = (need: number) => {
@@ -96,7 +109,10 @@ export async function buildFiscalPdf(input: FiscalPdfInput): Promise<Blob> {
     }
   };
 
-  // Cabecalho
+  // Cabecalho com QR Code à direita
+  const QR_SIZE = 38; // mm
+  const QR_X = W - M - QR_SIZE;
+
   doc.setFont("helvetica", "bold");
   doc.setFontSize(18);
   doc.setTextColor(20);
@@ -111,6 +127,18 @@ export async function buildFiscalPdf(input: FiscalPdfInput): Promise<Blob> {
   doc.line(M, y, W - M, y);
   doc.setLineWidth(0.2);
   y += 8;
+
+  // QR Code — inserido no canto superior direito alinhado ao cabecalho
+  if (qrDataUrl) {
+    try {
+      const qrY = M;
+      doc.addImage(qrDataUrl, "PNG", QR_X, qrY, QR_SIZE, QR_SIZE, undefined, "FAST");
+      doc.setFontSize(7);
+      doc.setTextColor(100);
+      doc.setFont("helvetica", "normal");
+      doc.text("Escaneie para verificar", QR_X + QR_SIZE / 2, qrY + QR_SIZE + 3.5, { align: "center" });
+    } catch (_) { /* falha silenciosa */ }
+  }
 
   // Proprietario
   heading("PROPRIETARIO");
@@ -166,10 +194,41 @@ export async function buildFiscalPdf(input: FiscalPdfInput): Promise<Blob> {
       } catch (_) {
         note("Nao foi possivel incorporar a imagem do documento.");
       }
-    } else if (isPdf) {
-      note("Documento em formato PDF. Consulte a versao eletronica do acesso de fiscalizacao.");
-    } else {
-      note("Documento referenciado. Consulte a versao eletronica do acesso de fiscalizacao.");
+    } else if (isPdf || (!isImage && !isPdf)) {
+      // Para PDF ou outros tipos: exibe QR Code do acesso fiscal para visualizacao do documento
+      if (qrDataUrl) {
+        try {
+          const docQrSize = 50;
+          ensure(docQrSize + 20);
+          doc.setFont("helvetica", "bold");
+          doc.setFontSize(9);
+          doc.setTextColor(60);
+          doc.text("Visualize o documento escaneando o QR Code abaixo:", M, y);
+          y += 5;
+          const centerX = (W - docQrSize) / 2;
+          doc.addImage(qrDataUrl, "PNG", centerX, y, docQrSize, docQrSize, undefined, "FAST");
+          y += docQrSize + 3;
+          doc.setFont("helvetica", "italic");
+          doc.setFontSize(8);
+          doc.setTextColor(120);
+          doc.text(
+            isPdf ? "Documento em PDF — acesse a versao eletronica para visualizacao." :
+                    "Acesse a versao eletronica do acesso de fiscalizacao para visualizar o documento.",
+            M,
+            y,
+            { maxWidth: W - M * 2 },
+          );
+          y += 6;
+        } catch (_) {
+          note(isPdf
+            ? "Documento em formato PDF. Consulte a versao eletronica do acesso de fiscalizacao."
+            : "Documento referenciado. Consulte a versao eletronica do acesso de fiscalizacao.");
+        }
+      } else {
+        note(isPdf
+          ? "Documento em formato PDF. Consulte a versao eletronica do acesso de fiscalizacao."
+          : "Documento referenciado. Consulte a versao eletronica do acesso de fiscalizacao.");
+      }
     }
   } else {
     note("Nenhum documento de origem cadastrado.");

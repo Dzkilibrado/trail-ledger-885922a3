@@ -126,6 +126,7 @@ export function FiscalShareDialog({ reportId, reportStatus, reportCode, open, on
         issuedAt: res.issuedAt,
         status: res.status,
         fiscal: res.fiscal,
+        fiscalToken: token,
         docImageDataUrl: null, // proprietario autenticado pode buscar — pendencia de homologacao
       });
       const url = URL.createObjectURL(blob);
