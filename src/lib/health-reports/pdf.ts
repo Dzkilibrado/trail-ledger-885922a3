@@ -132,7 +132,7 @@ export async function buildReportPdf(input: {
       : null,
     s.motorcycle.plate ? `Placa: ${s.motorcycle.plate}` : null,
     s.motorcycle.chassisMasked ? `Chassi: ${s.motorcycle.chassisMasked}` : null,
-    `Horas: ${s.motorcycle.hoursTotal} h · Km: ${s.motorcycle.kmTotal}`,
+    `Horas: ${s.motorcycle.hoursTotal} h`,
     s.motorcycle.trailbookId ? `ID TrailBook: ${s.motorcycle.trailbookId}` : null,
   ].filter(Boolean) as string[];
   let iy = y + 13;

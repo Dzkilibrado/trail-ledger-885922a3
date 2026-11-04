@@ -309,31 +309,18 @@ function EditarManutencao() {
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Horímetro atual (h)
-            </Label>
-            <Input
-              type="number"
-              inputMode="decimal"
-              value={currentHours}
-              onChange={(e) => setCurrentHours(e.target.value)}
-              placeholder={`Atual: ${Number(moto.data?.hours_total ?? 0).toFixed(1)} h`}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs uppercase tracking-widest text-muted-foreground">
-              KM atual
-            </Label>
-            <Input
-              type="number"
-              inputMode="decimal"
-              value={currentKm}
-              onChange={(e) => setCurrentKm(e.target.value)}
-              placeholder={`Atual: ${Number(moto.data?.km_total ?? 0).toFixed(0)} km`}
-            />
-          </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+            Horímetro atual (h)
+          </Label>
+          <Input
+            type="number"
+            inputMode="decimal"
+            value={currentHours}
+            onChange={(e) => setCurrentHours(e.target.value)}
+            placeholder={`Atual: ${Number(moto.data?.hours_total ?? 0).toFixed(1)} h`}
+          />
+          {/* Campo KM oculto — foco atual em horímetro */}
         </div>
 
         <div className="space-y-1.5">

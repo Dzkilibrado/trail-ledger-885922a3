@@ -62,10 +62,14 @@ export function RegisterUsageForm({ moto, onClose, cancelLabel = "Cancelar", onC
   const busy = useRef(false);
   const request = useRef<string | null>(null);
 
-  const supported = moto?.control_type === "hours" || moto?.control_type === "km";
-  const current = Number(moto?.control_type === "hours" ? moto.hours_total : moto?.km_total);
-  const preview = usageIncrementPreview(moto?.control_type ?? "", current, reading);
-  const unit = moto?.control_type === "hours" ? "h" : "km";
+  // Motos cadastradas como 'both' ou 'not_informed' são tratadas como 'hours'
+  // enquanto o suporte a KM não for habilitado. Isso desbloqueia motos legadas.
+  const effectiveControlType =
+    moto?.control_type === "km" ? "km" : "hours";
+  const supported = !!moto && (moto.control_type === "hours" || moto.control_type === "km" || moto.control_type === "both");
+  const current = Number(effectiveControlType === "hours" ? moto?.hours_total : moto?.km_total);
+  const preview = usageIncrementPreview(effectiveControlType, current, reading);
+  const unit = effectiveControlType === "hours" ? "h" : "km";
   const format = (value: number) =>
     `${value.toLocaleString("pt-BR", { maximumFractionDigits: 2 })} ${unit}`;
 
@@ -73,7 +77,7 @@ export function RegisterUsageForm({ moto, onClose, cancelLabel = "Cancelar", onC
     queryKey: ["usage-history-avg", moto?.id],
     queryFn: async () => {
       if (!moto?.id) return [];
-      const field = moto.control_type === "hours" ? "hours_delta" : "km_delta";
+      const field = effectiveControlType === "hours" ? "hours_delta" : "km_delta";
       const { data } = await supabase
         .from("events")
         .select(field)
@@ -96,7 +100,7 @@ export function RegisterUsageForm({ moto, onClose, cancelLabel = "Cancelar", onC
 
   function handleFormSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const validation = validateUsageIncrement(moto!.control_type, reading, date);
+    const validation = validateUsageIncrement(effectiveControlType, reading, date);
     if (validation) { setError(validation); return; }
     setError(null);
     setStep("confirm");
@@ -155,7 +159,7 @@ export function RegisterUsageForm({ moto, onClose, cancelLabel = "Cancelar", onC
   }
 
   const handleCancel = onCancel ?? onClose;
-  const labelField = moto?.control_type === "hours" ? "Horas utilizadas (h)" : "Quilômetros percorridos (km)";
+  const labelField = effectiveControlType === "hours" ? "Horas utilizadas (h)" : "Quilômetros percorridos (km)";
   const dateFormatted = date
     ? new Date(`${date}T12:00:00`).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
     : "—";
@@ -186,7 +190,7 @@ export function RegisterUsageForm({ moto, onClose, cancelLabel = "Cancelar", onC
             />
           </TBFormField>
           <TBFormField label={labelField} htmlFor="usage-reading">
-            {moto?.control_type === "hours" ? (
+            {effectiveControlType === "hours" ? (
               <TBHourmeterInput
                 id="usage-reading"
                 required

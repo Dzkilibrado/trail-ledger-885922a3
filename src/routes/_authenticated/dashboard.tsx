@@ -199,8 +199,7 @@ function Dashboard() {
                         {m.nickname || m.model || "Motocicleta"}
                       </div>
                       <div className="truncate text-xs text-muted-foreground">
-                        {m.brand || "Moto"} · {Number(m.hours_total).toFixed(1)} h ·{" "}
-                        {Number(m.km_total).toFixed(0)} km
+                        {m.brand || "Moto"} · {Number(m.hours_total).toFixed(1)} h
                       </div>
                     </div>
                     <EvaluationPill

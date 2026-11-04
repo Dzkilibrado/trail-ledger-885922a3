@@ -863,18 +863,17 @@ export function NewEventDialog({
                   onClick={() => setReadingMode("delta")}
                   className={`rounded-full border px-2 py-0.5 ${readingMode === "delta" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground"}`}
                 >
-                  Informar horas/KM utilizados
+                  Informar horas utilizadas
                 </button>
               </div>
             </div>
             {readingMode === "current" ? (
               <>
                 <p className="mb-2 text-[11px] leading-relaxed text-muted-foreground">
-                  Informe o horímetro e/ou KM atual da moto. O TrailBook calcula automaticamente
-                  quanto rodou desde o último registro
+                  Informe o horímetro atual da moto. O TrailBook calcula automaticamente
+                  quanto utilizou desde o último registro
                   <span className="ml-1 opacity-70">
-                    (atual: {Number(moto.hours_total).toFixed(1)}h ·{" "}
-                    {Number(moto.km_total).toFixed(0)}km).
+                    (atual: {Number(moto.hours_total).toFixed(1)} h).
                   </span>
                 </p>
                 <div className="grid grid-cols-2 items-end gap-x-3 gap-y-3 sm:grid-cols-4">
@@ -899,16 +898,7 @@ export function NewEventDialog({
                       onChange={(e) => setCurrentMinutes(e.target.value)}
                     />
                   </F>
-                  <F label="KM atual">
-                    <Input
-                      type="number"
-                      step="1"
-                      min="0"
-                      placeholder="0"
-                      value={currentKm}
-                      onChange={(e) => setCurrentKm(e.target.value)}
-                    />
-                  </F>
+                  {/* Campo KM oculto — foco atual em horímetro */}
                   <F label="Custo R$">
                     <Input name="cost" type="number" step="0.01" placeholder="0,00" />
                   </F>
@@ -917,7 +907,7 @@ export function NewEventDialog({
             ) : (
               <>
                 <p className="mb-2 text-[11px] leading-relaxed text-muted-foreground">
-                  Modo alternativo — use quando não souber a leitura atual do horímetro/hodômetro.
+                  Modo alternativo — use quando não souber a leitura atual do horímetro.
                 </p>
                 <div className="grid grid-cols-2 items-end gap-x-3 gap-y-3 sm:grid-cols-4">
                   <F label="+ Horas">
@@ -941,16 +931,7 @@ export function NewEventDialog({
                       onChange={(e) => setDeltaMinutes(e.target.value)}
                     />
                   </F>
-                  <F label="+ KM">
-                    <Input
-                      type="number"
-                      step="1"
-                      min="0"
-                      placeholder="0"
-                      value={deltaKm}
-                      onChange={(e) => setDeltaKm(e.target.value)}
-                    />
-                  </F>
+                  {/* Campo + KM oculto — foco atual em horímetro */}
                   <F label="Custo R$">
                     <Input name="cost" type="number" step="0.01" placeholder="0,00" />
                   </F>

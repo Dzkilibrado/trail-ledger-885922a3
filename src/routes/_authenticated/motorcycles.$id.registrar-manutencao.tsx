@@ -1781,31 +1781,18 @@ function DetailsStep({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label className="text-xs uppercase tracking-widest text-muted-foreground">
-              Horímetro (h)
-            </Label>
-            <Input
-              type="number"
-              inputMode="decimal"
-              value={currentHours}
-              onChange={(e) => onCurrentHours(e.target.value)}
-              placeholder={`${moto?.hours_total ?? "0"} h atual`}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label className="text-xs uppercase tracking-widest text-muted-foreground">
-              KM atual
-            </Label>
-            <Input
-              type="number"
-              inputMode="decimal"
-              value={currentKm}
-              onChange={(e) => onCurrentKm(e.target.value)}
-              placeholder={`${moto?.km_total ?? "0"} km atual`}
-            />
-          </div>
+        <div className="space-y-1.5">
+          <Label className="text-xs uppercase tracking-widest text-muted-foreground">
+            Horímetro (h)
+          </Label>
+          <Input
+            type="number"
+            inputMode="decimal"
+            value={currentHours}
+            onChange={(e) => onCurrentHours(e.target.value)}
+            placeholder={`${moto?.hours_total ?? "0"} h atual`}
+          />
+          {/* Campo KM oculto — foco atual em horímetro */}
         </div>
 
         {costItems > 0 && (

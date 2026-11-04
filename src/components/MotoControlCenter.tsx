@@ -444,9 +444,8 @@ export function MotoControlCenter({
               <OriginPendencyBanner motoId={m.id} userId={currentUserId} pendency={pendency.data} />
             )}
             {/* Selos de qualidade removidos por decisão de UX — código preservado */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <Stat label="Horas" value={`${Number(m.hours_total).toFixed(1)} h`} />
-              <Stat label="Km" value={Number(m.km_total).toFixed(0)} />
               <Stat label="Investido" value={brl(totalCost)} />
             </div>
             {/* ── AÇÕES PRINCIPAIS ── */}
@@ -967,9 +966,6 @@ export function MotoControlCenter({
                                     {s.remaining.hours != null && (
                                       <span>{s.remaining.hours.toFixed(1)} h restantes</span>
                                     )}
-                                    {s.remaining.km != null && (
-                                      <span>{s.remaining.km.toFixed(0)} km restantes</span>
-                                    )}
                                     {s.remaining.days != null && (
                                       <span>{Math.round(s.remaining.days)} dias restantes</span>
                                     )}
@@ -1077,7 +1073,7 @@ export function MotoControlCenter({
           {lancamentoFilter === "menu" && (() => {
             const cats = [
               { key: "maintenance" as const, emoji: "🔧", label: "Manutenções", desc: "Revisões, trocas e reparos", color: "bg-orange-500/10 text-orange-500" },
-              { key: "usage"       as const, emoji: "🏍", label: "Uso",          desc: "Horas e quilômetros rodados", color: "bg-primary/10 text-primary" },
+              { key: "usage"       as const, emoji: "🏍", label: "Uso",          desc: "Horas de uso registradas", color: "bg-primary/10 text-primary" },
               { key: "incident"    as const, emoji: "⚠️", label: "Sinistros",    desc: "Quedas, roubos e avarias", color: "bg-destructive/10 text-destructive" },
               { key: "accessory"   as const, emoji: "🎽", label: "Acessórios",   desc: "Equipamentos e proteções", color: "bg-sky-500/10 text-sky-500" },
               { key: "note"        as const, emoji: "📝", label: "Notas",        desc: "Observações e registros livres", color: "bg-violet-500/10 text-violet-500" },
@@ -1239,7 +1235,6 @@ export function MotoControlCenter({
                                 )}
                                 <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
                                   {e.hours_at_event != null && <span>{Number(e.hours_at_event).toFixed(1)} h</span>}
-                                  {e.km_at_event != null && <span>{Number(e.km_at_event).toFixed(0)} km</span>}
                                   {e.location && <span>{e.location}</span>}
                                   {e.cost != null && (
                                     <span className="font-semibold text-primary">{brl(Number(e.cost))}</span>

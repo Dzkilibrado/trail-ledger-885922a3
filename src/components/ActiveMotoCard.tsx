@@ -68,9 +68,6 @@ export function ActiveMotoCard({ motos }: { motos: ActiveMotorcycle[] }) {
             <span className="text-muted-foreground">
               {Number(active.hours_total).toFixed(1)} h
             </span>
-            <span className="text-muted-foreground">
-              {Number(active.km_total).toFixed(0)} km
-            </span>
           </div>
         </div>
         <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
@@ -115,8 +112,7 @@ export function ActiveMotoCard({ motos }: { motos: ActiveMotorcycle[] }) {
                     </div>
                     <div className="truncate text-xs text-muted-foreground">
                       {m.brand || "Moto"} ·{" "}
-                      {Number(m.hours_total).toFixed(1)} h ·{" "}
-                      {Number(m.km_total).toFixed(0)} km
+                      {Number(m.hours_total).toFixed(1)} h
                     </div>
                   </div>
                   {isActive && (

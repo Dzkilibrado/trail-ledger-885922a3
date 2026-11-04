@@ -81,7 +81,7 @@ const schema = z.object({
   year_make: z.coerce.number().int().min(1950).max(2100).optional(),
   year_model: z.coerce.number().int().min(1950).max(2100).optional(),
   displacement: z.coerce.number().int().min(50).max(2000).optional(),
-  control_type: z.enum(["hours", "km", "both", "not_informed"]),
+  control_type: z.enum(["hours", "km", "both", "not_informed"]).default("hours"),
   chassis: z.string().max(60).optional(),
   engine_number: z.string().max(60).optional(),
   plate: z.string().max(10).optional(),
@@ -140,15 +140,10 @@ function NewMotorcycle() {
   const legacyModels = MODELS_BY_BRAND[brand] ?? [];
   const showModelFallback = !!brand && !brandId && legacyModels.length > 0;
 
-  // Aplica sugestão de tipo de controle vinda do catálogo
-  const suggested = catDefaults.data?.suggested_control_type;
-  const suggestionApplied = useMemo(() => ({ modelId, suggested }), [modelId, suggested]);
-  useMemo(() => {
-    if (suggestionApplied.suggested && suggestionApplied.modelId) {
-      setControlType(suggestionApplied.suggested);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [suggestionApplied.modelId, suggestionApplied.suggested]);
+  // Tipo de controle fixo em "hours" — KM não é suportado nesta versão
+  // A sugestão do catálogo é ignorada intencionalmente.
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const _suggested = catDefaults.data?.suggested_control_type;
 
   const motoCount = useQuery({
     queryKey: ["motorcycles", "count"],
@@ -190,17 +185,13 @@ function NewMotorcycle() {
     const parsedKm = hasUse ? Number(kmTotal || 0) : 0;
 
     if (hasUse) {
-      if ((controlType === "hours" || controlType === "both") && !(parsedHours > 0)) {
+      if (!(parsedHours > 0)) {
         toast.error("Informe o horímetro atual da moto.");
         return;
       }
-      if ((controlType === "km" || controlType === "both") && !(parsedKm > 0)) {
-        toast.error("Informe o KM atual da moto.");
-        return;
-      }
     }
-    if (hasPriorUse === null && controlType !== "not_informed") {
-      toast.error("Informe se a moto já possui horas ou km de uso.");
+    if (hasPriorUse === null) {
+      toast.error("Informe se a moto já possui horas de uso.");
       return;
     }
     const raw = {
@@ -210,11 +201,11 @@ function NewMotorcycle() {
       displacement: finalDisp || undefined,
       year_make: yearMake || undefined,
       year_model: yearModel || undefined,
-      control_type: controlType,
+      control_type: "hours" as const,
       condition,
       catalog_model_id: modelId,
       hours_total: parsedHours,
-      km_total: parsedKm,
+      km_total: 0,
     };
     const parsed = schema.safeParse(raw);
     if (!parsed.success) {
@@ -463,7 +454,6 @@ function NewMotorcycle() {
         }
         const hasUse = hasPriorUse === true;
         const parsedHours = hasUse ? Number(hoursTotal || 0) : 0;
-        const parsedKm = hasUse ? Number(kmTotal || 0) : 0;
         const b = brand === OTHER ? customBrand.trim() : brand;
         const m = model === OTHER ? customModel.trim() : model;
         const payload: Record<string, unknown> = {
@@ -473,20 +463,17 @@ function NewMotorcycle() {
           displacement: displacement === OTHER ? customDisplacement.trim() : displacement || null,
           year_make: yearMake ? parseInt(yearMake) : null,
           year_model: yearModel ? parseInt(yearModel) : null,
-          control_type: controlType,
+          control_type: "hours",
           condition,
           hours_initial: parsedHours,
-          km_initial: parsedKm,
+          km_initial: 0,
           hours_total: parsedHours,
-          km_total: parsedKm,
+          km_total: 0,
           use_profile: planProfile,
           use_profile_note: planProfile === "other" ? planProfileNote.trim() || null : null,
           incident_declaration: incident === "no" ? INCIDENT_DECLARATION_TEXT : null,
           nickname: nickname.trim() || null,
-          plan_review_status:
-            controlType === "not_informed" || (parsedHours === 0 && parsedKm === 0)
-              ? "skipped"
-              : "pending",
+          plan_review_status: parsedHours === 0 ? "skipped" : "pending",
         };
         const { data: motoData, error: motoErr } = await supabase
           .from("motorcycles")
@@ -1055,72 +1042,44 @@ function NewMotorcycle() {
               </div>
             </div>
 
-            <Field label="Tipo de controle">
-              <Select value={controlType} onValueChange={setControlType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CONTROL_TYPES.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </Field>
+            {/* Tipo de controle fixo em Horímetro — oculto intencionalmente */}
 
-            {controlType !== "not_informed" && (
-              <div className="space-y-2">
-                <p className="text-sm font-semibold">A moto já possui horas ou km de uso?</p>
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant={hasPriorUse === false ? "default" : "outline"}
-                    className="flex-1"
-                    onClick={() => {
-                      setHasPriorUse(false);
-                      setHoursTotal("0");
-                      setKmTotal("0");
-                    }}
-                  >
-                    Não
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={hasPriorUse === true ? "default" : "outline"}
-                    className="flex-1"
-                    onClick={() => setHasPriorUse(true)}
-                  >
-                    Sim
-                  </Button>
-                </div>
-                {hasPriorUse === true && (
-                  <div className="grid grid-cols-2 gap-3 pt-1">
-                    {(controlType === "hours" || controlType === "both") && (
-                      <Field label="Horímetro (h)" required>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          value={hoursTotal}
-                          onChange={(e) => setHoursTotal(e.target.value)}
-                        />
-                      </Field>
-                    )}
-                    {(controlType === "km" || controlType === "both") && (
-                      <Field label="KM atual" required>
-                        <Input
-                          type="number"
-                          step="1"
-                          value={kmTotal}
-                          onChange={(e) => setKmTotal(e.target.value)}
-                        />
-                      </Field>
-                    )}
-                  </div>
-                )}
+            <div className="space-y-2">
+              <p className="text-sm font-semibold">A moto já possui horas de uso?</p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={hasPriorUse === false ? "default" : "outline"}
+                  className="flex-1"
+                  onClick={() => {
+                    setHasPriorUse(false);
+                    setHoursTotal("0");
+                  }}
+                >
+                  Não
+                </Button>
+                <Button
+                  type="button"
+                  variant={hasPriorUse === true ? "default" : "outline"}
+                  className="flex-1"
+                  onClick={() => setHasPriorUse(true)}
+                >
+                  Sim
+                </Button>
               </div>
-            )}
+              {hasPriorUse === true && (
+                <div className="pt-1">
+                  <Field label="Horímetro atual (h)" required>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={hoursTotal}
+                      onChange={(e) => setHoursTotal(e.target.value)}
+                    />
+                  </Field>
+                </div>
+              )}
+            </div>
 
             <div className="space-y-2">
               <p className="text-sm font-semibold">Perfil de uso</p>
@@ -1166,19 +1125,13 @@ function NewMotorcycle() {
             <Button
               className="flex-1 btn-glow"
               onClick={() => {
-                if (controlType !== "not_informed" && hasPriorUse === null) {
-                  toast.error("Informe se a moto já possui uso acumulado.");
+                if (hasPriorUse === null) {
+                  toast.error("Informe se a moto já possui horas de uso.");
                   return;
                 }
-                if (hasPriorUse === true) {
-                  if ((controlType === "hours" || controlType === "both") && !Number(hoursTotal)) {
-                    toast.error("Informe o horímetro atual.");
-                    return;
-                  }
-                  if ((controlType === "km" || controlType === "both") && !Number(kmTotal)) {
-                    toast.error("Informe o KM atual.");
-                    return;
-                  }
+                if (hasPriorUse === true && !Number(hoursTotal)) {
+                  toast.error("Informe o horímetro atual.");
+                  return;
                 }
                 setWizPlanLoaded(false);
                 setWizStep(3);
@@ -1402,11 +1355,7 @@ function NewMotorcycle() {
                 {condition === "new" ? "Nova" : "Usada / Seminova"}
               </p>
               {hasPriorUse === true && (
-                <p className="text-xs text-muted-foreground">
-                  {(controlType === "hours" || controlType === "both") && `${hoursTotal} h`}
-                  {controlType === "both" && " · "}
-                  {(controlType === "km" || controlType === "both") && `${kmTotal} km`}
-                </p>
+                <p className="text-xs text-muted-foreground">{hoursTotal} h</p>
               )}
             </SummaryCard>
 

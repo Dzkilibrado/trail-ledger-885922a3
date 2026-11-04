@@ -64,7 +64,6 @@ function MotorcyclesList() {
                     <div className="font-display text-lg font-bold">{m.nickname || m.model}</div>
                     <div className="mt-2 flex gap-4 text-sm text-muted-foreground">
                       <span>{Number(m.hours_total).toFixed(1)} h</span>
-                      <span>{Number(m.km_total).toFixed(0)} km</span>
                     </div>
                   </div>
                 </Link>

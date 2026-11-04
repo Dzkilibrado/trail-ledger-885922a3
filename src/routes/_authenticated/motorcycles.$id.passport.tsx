@@ -324,9 +324,7 @@ function Passport() {
                   <Clock className="h-3 w-3" /> {Number(m.hours_total).toFixed(1)} h
                 </span>
               )}
-              {Number(m.km_total ?? 0) > 0 && (
-                <span>{Number(m.km_total).toLocaleString("pt-BR")} km</span>
-              )}
+              {/* km oculto — foco atual em horímetro */}
               <button
                 type="button"
                 onClick={() => {
