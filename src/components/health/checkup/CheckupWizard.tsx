@@ -188,8 +188,8 @@ function FiscalWizardStep({ motoId, latestReportId, isLoading }: { motoId: strin
           <h2 className="text-base font-black">Acesso para Fiscalização</h2>
         </div>
         <p className="text-sm text-muted-foreground">
-          Esta moto ainda não possui um laudo válido emitido. Emita um Check-up primeiro para
-          poder gerar um acesso de fiscalização.
+          Esta moto ainda não possui nenhum laudo emitido. Conclua este Check-up primeiro —
+          em seguida você poderá gerar o acesso de fiscalização a partir do laudo.
         </p>
       </TBCard>
     );
@@ -341,7 +341,7 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
   const [emissionConfig, setEmissionConfig] = useState<ReportEmissionConfig>(DEFAULT_EMISSION_CONFIG);
   const shareCreate = useServerFn(createDocumentShare);
 
-  // Último laudo válido — usado pelo modo Fiscalização para criar share sem emitir novo laudo
+  // Último laudo (qualquer status exceto revogado) — usado pelo modo Fiscalização
   const { data: latestReportId, isLoading: latestReportLoading } = useQuery<string | null>({
     queryKey: ["latest-report-id", motoId],
     queryFn: async () => {
@@ -349,7 +349,7 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
         .from("health_reports")
         .select("id")
         .eq("motorcycle_id", motoId)
-        .in("status", ["valid", "expiring"])
+        .neq("status", "revoked")
         .order("issued_at", { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -438,6 +438,18 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
     emissionConfig.purpose,
     emissionConfig.customTitle,
   ]);
+
+  // Invalida cache da moto quando o usuário retorna à aba (ex: após resolver pendências)
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        qc.invalidateQueries({ queryKey: ["motorcycle", motoId] });
+        qc.invalidateQueries({ queryKey: ["health-snapshot", motoId] });
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [motoId, qc]);
 
   // Abre o Check-up assim que a tela é montada (chave de idempotência da emissão).
   useEffect(() => {

@@ -54,7 +54,7 @@ function CheckupsHub() {
       const { data, error } = await supabase
         .from("health_reports")
         .select(
-          "id, code, status, issued_at, overall_status, conservation_index, valid_until, valid_hours_limit, valid_km_limit, outdated_reason, has_reservations",
+          "id, code, status, issued_at, overall_status, conservation_index, valid_until, valid_hours_limit, valid_km_limit, outdated_reason",
         )
         .eq("motorcycle_id", id)
         .neq("status", "revoked")
@@ -139,7 +139,7 @@ function CheckupsHub() {
                   <div className="truncate text-xs text-muted-foreground">
                     {formatDate(r.issued_at)} · {eff.label}
                   </div>
-                  {r.has_reservations && (
+                  {(r as any).has_reservations && (
                     <div className="text-xs text-muted-foreground">Emitido com ressalvas</div>
                   )}
                 </Link>

@@ -112,9 +112,10 @@ function ReportPage() {
       const [shareResult, docShareResult] = await Promise.all([
         supabase
           .from("health_report_shares")
-          .select("public_token")
+          .select("id, public_token, preset")
           .eq("report_id", report.id)
           .is("revoked_at", null)
+          .neq("preset", "fiscal")
           .limit(1),
         supabase
           .from("motorcycle_document_shares" as never)
@@ -124,8 +125,36 @@ function ReportPage() {
           .limit(1),
       ]);
 
-      const share = shareResult.data?.[0];
+      let share = shareResult.data?.[0] as { id: string; public_token: string } | undefined;
       const docShare = (docShareResult.data as Array<{ token: string }> | null)?.[0];
+
+      // Se não existe share ativo, cria um automaticamente para o QR Code do PDF
+      if (!share) {
+        const session = await supabase.auth.getSession();
+        const uid = session.data.session?.user.id ?? "";
+        const bytes = new Uint8Array(24);
+        crypto.getRandomValues(bytes);
+        const autoToken = Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+        const purpose = snapshot.purpose ?? "pessoal";
+        const preset = purpose === "comercial" ? "buyer" : purpose === "oficina" ? "workshop" : "buyer";
+        const { data: newShare } = await supabase
+          .from("health_report_shares")
+          .insert({
+            report_id: report.id,
+            created_by: uid,
+            preset,
+            allowed_sections: (purpose === "pessoal"
+              ? ["identification", "summary", "components", "history", "indices", "action_plan"]
+              : purpose === "oficina"
+              ? ["identification", "summary", "components", "action_plan", "history"]
+              : ["identification", "summary", "components", "history", "indices", "action_plan", "reservations"]) as never,
+            public_token: autoToken,
+            expires_at: null, // sem expiração para o QR do PDF
+          })
+          .select("id, public_token")
+          .single();
+        if (newShare) share = newShare as { id: string; public_token: string };
+      }
 
       const publicUrl = share ? shareUrl(`/l/${share.public_token}`) : null;
       const docsQrUrl = docShare ? shareUrl(`/d/${docShare.token}`) : null;
