@@ -52,6 +52,7 @@ import {
   ChevronDown,
   FileText,
   KeyRound,
+  LogOut,
   Pencil,
   ScrollText,
   ShieldAlert,
@@ -161,6 +162,7 @@ function AdminUsers() {
   const [role, setRole] = useState("all");
   const [loginProv, setLoginProv] = useState("all");
   const [search, setSearch] = useState("");
+  const [appVersion, setAppVersion] = useState("all");
   const [detailsUser, setDetailsUser] = useState<string | null>(null);
   const [moreFiltersOpen, setMoreFiltersOpen] = useState(false);
 
@@ -173,6 +175,7 @@ function AdminUsers() {
     hasMoto !== "any",
     hasTicket !== "any",
     hasDocs !== "any",
+    appVersion !== "all",
   ].filter(Boolean).length;
 
   const filters = useMemo(
@@ -187,8 +190,9 @@ function AdminUsers() {
       role,
       loginProv,
       search,
+      appVersion,
     }),
-    [status, plan, period, hasMoto, hasTicket, hasDocs, isHomolog, role, loginProv, search],
+    [status, plan, period, hasMoto, hasTicket, hasDocs, isHomolog, role, loginProv, search, appVersion],
   );
 
   const users = useQuery({
@@ -214,6 +218,27 @@ function AdminUsers() {
       return (data ?? []) as any[];
     },
   });
+
+  // Filtro client-side por versão do app (admin_list_users não tem parâmetro de versão)
+  const filteredUsers = useMemo(() => {
+    const all = users.data ?? [];
+    if (appVersion === "all") return all;
+    if (appVersion === "none") return all.filter((u) => !u.app_version);
+    return all.filter((u) => u.app_version === appVersion);
+  }, [users.data, appVersion]);
+
+  // Lista de versões únicas para o select de filtro
+  const versionOptions = useMemo(() => {
+    const versions = new Set<string>();
+    for (const u of users.data ?? []) {
+      if (u.app_version) versions.add(u.app_version);
+    }
+    return [
+      { value: "all", label: "Todas as versões" },
+      { value: "none", label: "Sem versão registrada" },
+      ...[...versions].sort().reverse().map((v) => ({ value: v, label: `v${v}` })),
+    ];
+  }, [users.data]);
 
   const me = useQuery({
     queryKey: ["me"],
@@ -295,13 +320,16 @@ function AdminUsers() {
             <Field label="Possui documentos">
               <SelectBox value={hasDocs} onChange={setHasDocs} options={YESNO} />
             </Field>
+            <Field label="Versão do app">
+              <SelectBox value={appVersion} onChange={setAppVersion} options={versionOptions} />
+            </Field>
           </div>
         )}
       </div>
 
       {/* Mobile: lista de cartões — sem rolagem lateral de tabela */}
       <div className="space-y-2 md:hidden">
-        {(users.data ?? []).map((u) => (
+        {filteredUsers.map((u) => (
           <div key={u.id} className="rounded-xl border border-border bg-card p-4">
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
@@ -354,7 +382,7 @@ function AdminUsers() {
             </div>
           </div>
         ))}
-        {!users.isLoading && !users.data?.length && (
+        {!users.isLoading && !filteredUsers.length && (
           <div className="rounded-xl border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
             Nenhum usuário encontrado com os filtros atuais.
           </div>
@@ -373,11 +401,12 @@ function AdminUsers() {
               <TableHead className="text-right">Motos</TableHead>
               <TableHead className="text-right">Chamados</TableHead>
               <TableHead>Cadastro</TableHead>
+              <TableHead>Versão</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(users.data ?? []).map((u) => {
+            {filteredUsers.map((u) => {
               const isSelf = me.data?.id === u.id;
               return (
                 <TableRow key={u.id}>
@@ -413,6 +442,9 @@ function AdminUsers() {
                   <TableCell className="text-right">{u.motorcycles_count}</TableCell>
                   <TableCell className="text-right">{u.open_tickets}</TableCell>
                   <TableCell className="text-xs">{formatDate(u.created_at)}</TableCell>
+                  <TableCell className="text-xs font-mono text-muted-foreground">
+                    {u.app_version ? `v${u.app_version}` : "—"}
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-1">
                       <Button
@@ -434,9 +466,9 @@ function AdminUsers() {
                 </TableRow>
               );
             })}
-            {!users.isLoading && !users.data?.length && (
+            {!users.isLoading && !filteredUsers.length && (
               <TableRow>
-                <TableCell colSpan={9} className="py-8 text-center text-muted-foreground">
+                <TableCell colSpan={10} className="py-8 text-center text-muted-foreground">
                   Nenhum usuário encontrado com os filtros atuais.
                 </TableCell>
               </TableRow>
@@ -725,6 +757,18 @@ function UserDetailsSheet({
                   <Info label="Último acesso">
                     {profile.last_seen_at ? formatDate(profile.last_seen_at) : "—"}
                   </Info>
+                  <Info label="Versão do app">
+                    {profile.app_version ? (
+                      <span className="font-mono">v{profile.app_version}</span>
+                    ) : (
+                      "Não registrada"
+                    )}
+                  </Info>
+                  {profile.app_last_seen_at && (
+                    <Info label="Último acesso via app">
+                      {formatDate(profile.app_last_seen_at)}
+                    </Info>
+                  )}
                 </div>
                 <div className="space-y-3 rounded-lg border border-border p-4">
                   <SectionTitle
@@ -845,6 +889,29 @@ function UserDetailsSheet({
                 <div className="space-y-3 rounded-lg border border-border p-4">
                   <SectionTitle title="Acesso" />
                   <div className="grid gap-2 sm:grid-cols-2">
+                    <ConfirmDialog
+                      trigger={
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          disabled={!!isSelf}
+                        >
+                          <LogOut className="mr-1 h-4 w-4" />
+                          Forçar logout
+                        </Button>
+                      }
+                      title="Forçar logout do usuário?"
+                      description="A sessão ativa será encerrada na próxima vez que o usuário interagir com o app. O usuário precisará fazer login novamente para acessar o sistema."
+                      confirmLabel="Forçar logout"
+                      onConfirm={async () => {
+                        const { error } = await supabase.rpc("admin_force_logout" as any, {
+                          _user: userId,
+                        });
+                        if (error) { toast.error(error.message || "Falha ao forçar logout"); return; }
+                        toast.success("Logout forçado. O usuário será desconectado na próxima interação.");
+                        refetchAll();
+                      }}
+                    />
                     <ConfirmDialog
                       trigger={
                         <Button variant="outline" className="w-full justify-start">

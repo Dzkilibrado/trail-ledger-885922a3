@@ -8,7 +8,7 @@ import {
   Scripts,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -16,6 +16,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Toaster } from "@/components/ui/sonner";
 import { useVersionWatcher } from "@/lib/version/useVersionWatcher";
 import { UpdateBanner } from "@/lib/version/UpdateBanner";
+import { useVersionReporter } from "@/hooks/useVersionReporter";
+import { useForceLogoutGuard } from "@/hooks/useForceLogoutGuard";
 
 function NotFoundComponent() {
   return (
@@ -153,9 +155,18 @@ function RootComponent() {
   const { queryClient } = Route.useRouteContext();
   useVersionWatcher(queryClient);
 
+  // Rastreia o userId da sessão ativa para os hooks de versão e guard
+  const [userId, setUserId] = useState<string | null>(null);
+
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+    // Inicializa com a sessão atual
+    supabase.auth.getSession().then(({ data }) => {
+      setUserId(data.session?.user?.id ?? null);
+    });
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
+      setUserId(session?.user?.id ?? null);
       if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
       if (event === "SIGNED_IN") {
         // Verificação leve após login (respeita throttle interno).
@@ -164,6 +175,11 @@ function RootComponent() {
     });
     return () => sub.subscription.unsubscribe();
   }, [queryClient]);
+
+  // Registra a versão do frontend no perfil do usuário (fire-and-forget)
+  useVersionReporter(userId);
+  // Verifica se o admin forçou logout e encerra a sessão silenciosamente
+  useForceLogoutGuard(userId);
 
   return (
     <QueryClientProvider client={queryClient}>

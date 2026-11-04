@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { APP_VERSION } from "@/lib/version/build-info";
 import { Button } from "@/components/ui/button";
 import { usePlan } from "@/hooks/usePlan";
 import { useIsAdmin } from "@/hooks/useIsAdmin";
@@ -34,8 +35,6 @@ export const Route = createFileRoute("/_authenticated/perfil/")({
   head: () => ({ meta: [{ title: "Minha Conta — TrailBook" }] }),
   component: AccountCenter,
 });
-
-const APP_VERSION = "1.2.1";
 
 type Row = { to: string; label: string; icon: any; hint?: string; external?: boolean };
 
