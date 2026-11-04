@@ -123,5 +123,8 @@
   ],
   "missingData": [
     "string"
-  ]
+  ],
+  "purpose": "string",
+  "reportTitle": "string",
+  "docsQrUrl": "string"
 }

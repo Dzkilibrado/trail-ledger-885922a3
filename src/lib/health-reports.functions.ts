@@ -226,6 +226,61 @@ export const getPublicHealthReport = createServerFn({ method: "GET" })
     };
   });
 
+/**
+ * Adiciona a URL do QR Code de documentos ao snapshot já armazenado.
+ * Usada após a criação do token de compartilhamento quando o laudo já foi emitido
+ * (issueHealthReport é idempotente por runId e não permite atualizar snapshots existentes).
+ *
+ * Segurança: verifica que o laudo pertence à moto e ao usuário autenticado antes de atualizar.
+ * O patch usa service role apenas para o UPDATE no snapshot, após a verificação de propriedade
+ * com o client autenticado (que tem RLS ativa).
+ */
+export const patchReportSnapshotDocsQr = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator(
+    (data: { reportId: string; motorcycleId: string; docsQrUrl: string }) => {
+      if (!data.reportId) throw new Error("reportId obrigatório.");
+      if (!data.docsQrUrl || !data.docsQrUrl.startsWith("https://")) throw new Error("docsQrUrl inválida.");
+      return data;
+    },
+  )
+  .handler(async ({ data, context }) => {
+    const sb = context.supabase;
+
+    // 1. Verifica propriedade com client autenticado (RLS ativa)
+    const report = await sb
+      .from("health_reports")
+      .select("id")
+      .eq("id", data.reportId)
+      .eq("motorcycle_id", data.motorcycleId)
+      .eq("issued_by", context.userId)
+      .single();
+    if (report.error || !report.data) throw new Error("Laudo não encontrado ou sem permissão.");
+
+    // 2. Lê snapshot atual via service role (health_report_snapshots pode não ter UPDATE via RLS)
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const { data: snap, error: selectErr } = await supabaseAdmin
+      .from("health_report_snapshots")
+      .select("payload")
+      .eq("report_id", data.reportId)
+      .single();
+    if (selectErr || !snap) throw new Error("Snapshot não encontrado.");
+
+    // 3. Merge no lado da aplicação e grava de volta
+    const updatedPayload = {
+      ...(snap.payload as Record<string, unknown>),
+      docsQrUrl: data.docsQrUrl,
+    };
+    const { error: updateErr } = await supabaseAdmin
+      .from("health_report_snapshots")
+      .update({ payload: updatedPayload as never })
+      .eq("report_id", data.reportId);
+    if (updateErr) throw new Error(updateErr.message);
+
+    return { ok: true };
+  });
+
 /** Validação pública por código (QR / conferência) — não expõe conteúdo. */
 export const validateHealthReportPublic = createServerFn({ method: "GET" })
   .inputValidator((data: { code: string }) => ({ code: String(data?.code ?? "").trim().toUpperCase() }))

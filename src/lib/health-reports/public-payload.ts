@@ -37,6 +37,7 @@ function project(value: unknown, shape: unknown): unknown {
 
 export function sanitizePublicSnapshot(snapshot: unknown, allowed: unknown, preset = 'custom'): PublicHealthReportSnapshot {
   const keys = ['issuedAt', 'timezone', 'formatVersion', 'disclaimer', 'validity',
+    'purpose', 'reportTitle', 'docsQrUrl',
     ...publicSections(allowed, preset).flatMap(s => sections[s])];
   const source = policy as Record<string, unknown>;
   const shape = Object.fromEntries(keys.map(k => [k, source[k]]));

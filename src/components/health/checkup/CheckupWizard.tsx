@@ -20,7 +20,7 @@ import {
   type ReportEmissionConfig,
   type ReportPurpose,
 } from "@/lib/health-reports/types";
-import { issueHealthReport, startCheckRun, updateCheckRun } from "@/lib/health-reports.functions";
+import { issueHealthReport, patchReportSnapshotDocsQr, startCheckRun, updateCheckRun } from "@/lib/health-reports.functions";
 import { createDocumentShare } from "@/lib/document-shares.functions";
 import { ReportSnapshotView } from "@/components/health/reports/ReportSnapshotView";
 import { trackHealth } from "@/lib/health-reports/telemetry";
@@ -48,6 +48,7 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
   const start = useServerFn(startCheckRun);
   const update = useServerFn(updateCheckRun);
   const issue = useServerFn(issueHealthReport);
+  const patchQr = useServerFn(patchReportSnapshotDocsQr);
 
   const [step, setStep] = useState(0);
   const [runId, setRunId] = useState<string | null>(null);
@@ -216,24 +217,15 @@ export function CheckupWizard({ motoId, uid }: { motoId: string; uid: string | n
               validityDays: emissionConfig.docsQrValidityDays,
             },
           });
-          // Atualiza snapshot armazenado com docsQrUrl (best-effort — não bloqueia navegação)
+          // Grava docsQrUrl no snapshot já emitido (patch direto — issueHealthReport é idempotente)
           if (share?.publicUrl) {
-            await issue({
+            await patchQr({
               data: {
-                runId,
+                reportId: res.report.id,
                 motorcycleId: motoId,
-                snapshot: { ...previewSnapshot, docsQrUrl: share.publicUrl },
-                confidenceLevel: gating.confidenceLevel,
-                reservations: gating.reservations,
-                validity: {
-                  validUntil: validity.validUntil,
-                  hoursLimit: validity.hoursLimit,
-                  kmLimit: validity.kmLimit,
-                  reason: validity.reason,
-                },
-                accepted,
+                docsQrUrl: share.publicUrl,
               },
-            }).catch(() => null); // idempotente — ignora erro silenciosamente
+            }).catch(() => null); // best-effort — não bloqueia navegação
           }
         } catch {
           // QR Code é melhor-esforço; não bloqueia emissão do laudo
