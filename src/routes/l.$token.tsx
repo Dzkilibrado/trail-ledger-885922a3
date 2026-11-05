@@ -1,13 +1,80 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ShieldCheck, Eye, Loader2 } from "lucide-react";
+import { ShieldCheck, Eye, Loader2, FileDown } from "lucide-react";
 import { getPublicHealthReport, getFiscalDocumentUrl } from "@/lib/health-reports.functions";
 import { Button } from "@/components/ui/button";
 import { ReportSnapshotView } from "@/components/health/reports/ReportSnapshotView";
 import { TBErrorState, TBLoadingState } from "@/design-system";
 import { trackHealth } from "@/lib/health-reports/telemetry";
 import { REPORT_STATUS_LABEL, type HealthReportSnapshot, type ReportStatus } from "@/lib/health-reports/types";
+import { buildOficinaChecklistPdf, oficinaChecklistFileName } from "@/lib/health-reports/oficina-pdf";
+import { saveFile } from "@/lib/save-file";
+
+// ── Botão de download para mecânicos ────────────────────────────
+function OficinaDownloadButton({
+  snapshot,
+  code,
+  sha256,
+  statusLabel,
+  ownerName,
+}: {
+  snapshot: HealthReportSnapshot;
+  code: string;
+  sha256: string;
+  statusLabel: string;
+  ownerName: string | null;
+}) {
+  const [downloading, setDownloading] = useState(false);
+
+  async function handleDownload() {
+    if (downloading) return;
+    setDownloading(true);
+    try {
+      const blob = await buildOficinaChecklistPdf({
+        snapshot,
+        code,
+        sha256,
+        statusLabel,
+        ownerName,
+        ownerPhone: null,
+        ownerEmail: null,
+      });
+      const fileName = oficinaChecklistFileName(code, snapshot.issuedAt);
+      await saveFile({ blob, fileName, mime: "application/pdf", shareTitle: "Checklist de Manutenção — TrailBook" });
+    } catch {
+      // fallback: abre direto
+      try {
+        const blob = await buildOficinaChecklistPdf({ snapshot, code, sha256, statusLabel, ownerName, ownerPhone: null, ownerEmail: null });
+        const url = URL.createObjectURL(blob);
+        window.open(url, "_blank", "noopener");
+      } catch { /* silencia */ }
+    } finally {
+      setDownloading(false);
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 p-4 space-y-2">
+      <p className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+        Checklist de Manutenção
+      </p>
+      <p className="text-xs text-amber-700/80 dark:text-amber-400/80">
+        Baixe o checklist para imprimir ou visualizar no seu dispositivo.
+      </p>
+      <Button
+        onClick={handleDownload}
+        disabled={downloading}
+        className="w-full gap-2 bg-amber-600 hover:bg-amber-700 text-white dark:bg-amber-500 dark:hover:bg-amber-600"
+      >
+        {downloading
+          ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+          : <FileDown className="h-4 w-4" aria-hidden />}
+        {downloading ? "Preparando PDF…" : "Baixar PDF do Checklist"}
+      </Button>
+    </div>
+  );
+}
 
 export const Route = createFileRoute("/l/$token")({
   head: () => ({
@@ -65,6 +132,7 @@ function PublicReportPage() {
   }
 
   const isFiscal = (data as any).preset === "fiscal";
+  const isWorkshop = (data as any).preset === "workshop";
 
   if (isFiscal) {
     return <FiscalPublicView data={{ ...data, _token: token }} />;
@@ -81,6 +149,17 @@ function PublicReportPage() {
           {REPORT_STATUS_LABEL[data.status as ReportStatus] ?? data.status}
         </p>
       </header>
+
+      {/* Botão de download do checklist — exibido apenas no laudo de oficina */}
+      {isWorkshop && data.snapshot && (
+        <OficinaDownloadButton
+          snapshot={data.snapshot as HealthReportSnapshot}
+          code={data.code}
+          sha256={data.sha256 ?? ""}
+          statusLabel={REPORT_STATUS_LABEL[data.status as ReportStatus] ?? data.status}
+          ownerName={(data.snapshot as HealthReportSnapshot).owner?.name ?? null}
+        />
+      )}
 
       <ReportSnapshotView
         snapshot={data.snapshot}
