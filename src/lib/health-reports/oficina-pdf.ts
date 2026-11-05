@@ -357,8 +357,8 @@ export async function buildOficinaChecklistPdf(input: {
 
       // larguras (total = W - ML - MR = 186):
       //  # | Item/Componente | Categoria | Prazo | Ação | SIM | NÃO | Observação
-      //  6 |      40         |    22     |  30   |  40  | 12  | 12  |    24
-      const colWidths = [6, 40, 22, 30, 40, 12, 12, 24];
+      //  9 |      38         |    22     |  30   |  38  | 12  | 12  |    25
+      const colWidths = [9, 38, 22, 30, 38, 12, 12, 25];
 
       (autoTable as any)(doc, {
         startY: y,
@@ -387,7 +387,7 @@ export async function buildOficinaChecklistPdf(input: {
         },
         alternateRowStyles: { fillColor: COLOR.rowAlt },
         columnStyles: {
-          0: { cellWidth: colWidths[0], halign: "center" },
+          0: { cellWidth: colWidths[0], halign: "center", overflow: "hidden" },
           1: { cellWidth: colWidths[1] },
           2: { cellWidth: colWidths[2] },
           3: { cellWidth: colWidths[3] },
