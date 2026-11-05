@@ -234,99 +234,145 @@ export function SharePanel({
         title={isOficina ? "Compartilhar com a oficina" : "Compartilhar laudo"}
         description={
           isOficina
-            ? "Gere um link para o mecânico ver o diagnóstico completo e baixar o checklist."
+            ? "Gere um link para o mecânico ver o diagnóstico e baixar o checklist."
             : "Escolha o que a outra pessoa poderá ver."
         }
       >
-        <div className="space-y-4">
-          {/* Seleção de preset — oculta para oficina (preset já fixo em workshop) */}
-          {!isOficina && (
-            <div className="space-y-2">
-              {(Object.keys(PRESET_LABEL) as Preset[]).map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => {
-                    setPreset(p);
-                    setSections(PRESET_SECTIONS[p]);
-                  }}
-                  className={`w-full rounded-xl border p-3 text-left text-sm ${
-                    preset === p ? "border-primary bg-primary/5" : "border-border"
-                  }`}
-                >
-                  <span className="block font-bold">{PRESET_LABEL[p]}</span>
-                  <span className="block text-muted-foreground">{PRESET_DESCRIPTION[p]}</span>
-                </button>
-              ))}
-            </div>
-          )}
+        <div className="space-y-5">
+          {/* ── MODO OFICINA ── layout compacto e direto */}
+          {isOficina ? (
+            <>
+              {/* O que o mecânico verá — chips discretos */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  O mecânico verá
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {["Diagnóstico por componente", "Plano de Ação", "Histórico de manutenção", "Download do checklist PDF"].map((item) => (
+                    <span
+                      key={item}
+                      className="inline-flex items-center rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-1 text-xs font-medium text-amber-700 dark:text-amber-300"
+                    >
+                      {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
 
-          {/* Descrição do que será compartilhado no modo oficina */}
-          {isOficina && (
-            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
-              O mecânico terá acesso ao diagnóstico completo da moto — componentes, Plano de Ação e histórico de manutenção — além de um botão para baixar o checklist em PDF.
-            </div>
-          )}
+              {/* Validade — segmentado horizontal */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Validade do link
+                </p>
+                <div className="grid grid-cols-4 gap-1.5 rounded-xl border border-border p-1">
+                  {[{ label: "7 dias", val: 7 }, { label: "30 dias", val: 30 }, { label: "90 dias", val: 90 }, { label: "Sem prazo", val: 0 }].map(({ label, val }) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => setDays(val)}
+                      className={`rounded-lg py-1.5 text-xs font-semibold transition-colors ${
+                        days === val
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          {/* Seções incluídas — ocultas para oficina (fixas pelo preset workshop) */}
-          {!isOficina && (
-            <div className="space-y-2">
-              <div className="text-sm font-bold">Seções incluídas</div>
-              {ALL_SECTIONS.map((sec) => (
-                <label key={sec} className="flex items-center gap-3 text-sm">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4"
-                    checked={sections.includes(sec)}
-                    onChange={(e) => {
-                      setPreset("custom");
-                      setSections((prev) =>
-                        e.target.checked ? [...prev, sec] : prev.filter((x) => x !== sec),
-                      );
-                    }}
-                  />
-                  {SECTION_LABEL[sec]}
-                </label>
-              ))}
-            </div>
-          )}
-
-          {/* Validade do link — sempre visível */}
-          <div className="space-y-2">
-            <div className="text-sm font-bold">Validade do link</div>
-            <div className="flex flex-wrap gap-2">
-              {[7, 30, 90, 0].map((d) => (
+              {/* Botão compacto, não full-width brutal */}
+              <div className="flex items-center justify-between gap-3 pt-1">
+                <p className="text-xs text-muted-foreground">
+                  CPF, telefone e dados pessoais nunca são compartilhados.
+                </p>
                 <TBButton
-                  key={d}
                   size="sm"
-                  variant={days === d ? "default" : "outline"}
-                  onClick={() => setDays(d)}
+                  disabled={create.isPending}
+                  onClick={() => create.mutate()}
+                  className="shrink-0"
                 >
-                  {d === 0 ? "Sem expiração" : `${d} dias`}
+                  {create.isPending ? "Gerando…" : "Gerar link"}
                 </TBButton>
-              ))}
-            </div>
-          </div>
-
-          {/* Nunca compartilhado — oculto para oficina para não poluir a UI */}
-          {!isOficina && (
-            <div className="rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground">
-              <div className="mb-1 font-bold text-foreground">Nunca é compartilhado</div>
-              <ul className="list-disc space-y-0.5 pl-4">
-                {NEVER_SHARED.map((n) => (
-                  <li key={n}>{n}</li>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* ── MODO PADRÃO (buyer / custom / fiscal) ── */}
+              <div className="space-y-2">
+                {(Object.keys(PRESET_LABEL) as Preset[]).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => {
+                      setPreset(p);
+                      setSections(PRESET_SECTIONS[p]);
+                    }}
+                    className={`w-full rounded-xl border p-3 text-left text-sm ${
+                      preset === p ? "border-primary bg-primary/5" : "border-border"
+                    }`}
+                  >
+                    <span className="block font-bold">{PRESET_LABEL[p]}</span>
+                    <span className="block text-muted-foreground">{PRESET_DESCRIPTION[p]}</span>
+                  </button>
                 ))}
-              </ul>
-            </div>
-          )}
+              </div>
 
-          <TBButton
-            className="w-full"
-            disabled={sections.length === 0 || create.isPending}
-            onClick={() => create.mutate()}
-          >
-            {isOficina ? "Gerar link para a oficina" : "Criar link"}
-          </TBButton>
+              <div className="space-y-2">
+                <div className="text-sm font-bold">Seções incluídas</div>
+                {ALL_SECTIONS.map((sec) => (
+                  <label key={sec} className="flex items-center gap-3 text-sm">
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4"
+                      checked={sections.includes(sec)}
+                      onChange={(e) => {
+                        setPreset("custom");
+                        setSections((prev) =>
+                          e.target.checked ? [...prev, sec] : prev.filter((x) => x !== sec),
+                        );
+                      }}
+                    />
+                    {SECTION_LABEL[sec]}
+                  </label>
+                ))}
+              </div>
+
+              <div className="space-y-2">
+                <div className="text-sm font-bold">Validade do link</div>
+                <div className="flex flex-wrap gap-2">
+                  {[7, 30, 90, 0].map((d) => (
+                    <TBButton
+                      key={d}
+                      size="sm"
+                      variant={days === d ? "default" : "outline"}
+                      onClick={() => setDays(d)}
+                    >
+                      {d === 0 ? "Sem expiração" : `${d} dias`}
+                    </TBButton>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground">
+                <div className="mb-1 font-bold text-foreground">Nunca é compartilhado</div>
+                <ul className="list-disc space-y-0.5 pl-4">
+                  {NEVER_SHARED.map((n) => (
+                    <li key={n}>{n}</li>
+                  ))}
+                </ul>
+              </div>
+
+              <TBButton
+                className="w-full"
+                disabled={sections.length === 0 || create.isPending}
+                onClick={() => create.mutate()}
+              >
+                Criar link
+              </TBButton>
+            </>
+          )}
         </div>
       </TBBottomSheet>
     </div>
