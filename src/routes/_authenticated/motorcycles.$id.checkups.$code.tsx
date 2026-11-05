@@ -276,7 +276,7 @@ function ReportPage() {
         </p>
       )}
 
-      <SharePanel reportId={report.id} canManage />
+      <SharePanel reportId={report.id} canManage purpose={purpose} />
 
       {/* Fiscalização — card dedicado, visualmente distinto (não exibido no laudo de oficina) */}
       {fiscalEnabled && purpose !== "oficina" && (

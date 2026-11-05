@@ -64,14 +64,20 @@ function newToken() {
 export function SharePanel({
   reportId,
   canManage,
+  purpose,
 }: {
   reportId: string;
   canManage: boolean;
+  /** Finalidade do laudo — define o preset padrão e simplifica a UI quando for "oficina". */
+  purpose?: "comercial" | "oficina" | "pessoal";
 }) {
+  const isOficina = purpose === "oficina";
+  const defaultPreset: Preset = isOficina ? "workshop" : "buyer";
+
   const qc = useQueryClient();
   const [open, setOpen] = useState(false);
-  const [preset, setPreset] = useState<Preset>("buyer");
-  const [sections, setSections] = useState<ReportSection[]>(PRESET_SECTIONS.buyer);
+  const [preset, setPreset] = useState<Preset>(defaultPreset);
+  const [sections, setSections] = useState<ReportSection[]>(PRESET_SECTIONS[defaultPreset]);
   const [days, setDays] = useState(30);
   const [qr, setQr] = useState<Record<string, string>>({});
 
@@ -225,49 +231,67 @@ export function SharePanel({
       <TBBottomSheet
         open={open}
         onOpenChange={setOpen}
-        title="Compartilhar laudo"
-        description="Escolha o que a outra pessoa poderá ver."
+        title={isOficina ? "Compartilhar com a oficina" : "Compartilhar laudo"}
+        description={
+          isOficina
+            ? "Gere um link para o mecânico ver o diagnóstico completo e baixar o checklist."
+            : "Escolha o que a outra pessoa poderá ver."
+        }
       >
         <div className="space-y-4">
-          <div className="space-y-2">
-            {(Object.keys(PRESET_LABEL) as Preset[]).map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => {
-                  setPreset(p);
-                  setSections(PRESET_SECTIONS[p]);
-                }}
-                className={`w-full rounded-xl border p-3 text-left text-sm ${
-                  preset === p ? "border-primary bg-primary/5" : "border-border"
-                }`}
-              >
-                <span className="block font-bold">{PRESET_LABEL[p]}</span>
-                <span className="block text-muted-foreground">{PRESET_DESCRIPTION[p]}</span>
-              </button>
-            ))}
-          </div>
-
-          <div className="space-y-2">
-            <div className="text-sm font-bold">Seções incluídas</div>
-            {ALL_SECTIONS.map((sec) => (
-              <label key={sec} className="flex items-center gap-3 text-sm">
-                <input
-                  type="checkbox"
-                  className="h-4 w-4"
-                  checked={sections.includes(sec)}
-                  onChange={(e) => {
-                    setPreset("custom");
-                    setSections((prev) =>
-                      e.target.checked ? [...prev, sec] : prev.filter((x) => x !== sec),
-                    );
+          {/* Seleção de preset — oculta para oficina (preset já fixo em workshop) */}
+          {!isOficina && (
+            <div className="space-y-2">
+              {(Object.keys(PRESET_LABEL) as Preset[]).map((p) => (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => {
+                    setPreset(p);
+                    setSections(PRESET_SECTIONS[p]);
                   }}
-                />
-                {SECTION_LABEL[sec]}
-              </label>
-            ))}
-          </div>
+                  className={`w-full rounded-xl border p-3 text-left text-sm ${
+                    preset === p ? "border-primary bg-primary/5" : "border-border"
+                  }`}
+                >
+                  <span className="block font-bold">{PRESET_LABEL[p]}</span>
+                  <span className="block text-muted-foreground">{PRESET_DESCRIPTION[p]}</span>
+                </button>
+              ))}
+            </div>
+          )}
 
+          {/* Descrição do que será compartilhado no modo oficina */}
+          {isOficina && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
+              O mecânico terá acesso ao diagnóstico completo da moto — componentes, Plano de Ação e histórico de manutenção — além de um botão para baixar o checklist em PDF.
+            </div>
+          )}
+
+          {/* Seções incluídas — ocultas para oficina (fixas pelo preset workshop) */}
+          {!isOficina && (
+            <div className="space-y-2">
+              <div className="text-sm font-bold">Seções incluídas</div>
+              {ALL_SECTIONS.map((sec) => (
+                <label key={sec} className="flex items-center gap-3 text-sm">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4"
+                    checked={sections.includes(sec)}
+                    onChange={(e) => {
+                      setPreset("custom");
+                      setSections((prev) =>
+                        e.target.checked ? [...prev, sec] : prev.filter((x) => x !== sec),
+                      );
+                    }}
+                  />
+                  {SECTION_LABEL[sec]}
+                </label>
+              ))}
+            </div>
+          )}
+
+          {/* Validade do link — sempre visível */}
           <div className="space-y-2">
             <div className="text-sm font-bold">Validade do link</div>
             <div className="flex flex-wrap gap-2">
@@ -284,21 +308,24 @@ export function SharePanel({
             </div>
           </div>
 
-          <div className="rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground">
-            <div className="mb-1 font-bold text-foreground">Nunca é compartilhado</div>
-            <ul className="list-disc space-y-0.5 pl-4">
-              {NEVER_SHARED.map((n) => (
-                <li key={n}>{n}</li>
-              ))}
-            </ul>
-          </div>
+          {/* Nunca compartilhado — oculto para oficina para não poluir a UI */}
+          {!isOficina && (
+            <div className="rounded-xl bg-muted/50 p-3 text-xs text-muted-foreground">
+              <div className="mb-1 font-bold text-foreground">Nunca é compartilhado</div>
+              <ul className="list-disc space-y-0.5 pl-4">
+                {NEVER_SHARED.map((n) => (
+                  <li key={n}>{n}</li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <TBButton
             className="w-full"
             disabled={sections.length === 0 || create.isPending}
             onClick={() => create.mutate()}
           >
-            Criar link
+            {isOficina ? "Gerar link para a oficina" : "Criar link"}
           </TBButton>
         </div>
       </TBBottomSheet>
