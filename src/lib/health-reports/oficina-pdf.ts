@@ -70,7 +70,7 @@ function prazoLabel(c: SnapshotComponent): string {
     const pct = Math.max(0, Math.round(c.lifeRemainingPct));
     return pct === 0 ? "Vida útil esgotada" : `${pct}% de vida restante`;
   }
-  return "—";
+  return "-";
 }
 
 // ─── Texto de ação recomendada ────────────────────────────────────────────────
@@ -104,11 +104,11 @@ function rodape(doc: jsPDF, code: string, docTitle: string) {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(7);
     doc.setTextColor(...COLOR.muted);
-    doc.text(`${docTitle} · Código: ${code}`, ML, lineY + 4);
+    doc.text(`${docTitle} - Codigo: ${code}`, ML, lineY + 4);
     doc.text(`Página ${i} / ${pages}`, W - MR, lineY + 4, { align: "right" });
     doc.setFontSize(6.5);
     doc.text(
-      "TrailBook — Checklist gerado automaticamente. Não substitui avaliação técnica presencial do profissional responsável.",
+      "TrailBook - Checklist gerado automaticamente. Nao substitui avaliacao tecnica presencial do profissional responsavel.",
       ML,
       lineY + 8,
       { maxWidth: W - ML - MR },
@@ -141,7 +141,7 @@ export async function buildOficinaChecklistPdf(input: {
   ownerEmail?: string | null;
 }): Promise<Blob> {
   const { snapshot: s, code } = input;
-  const docTitle = "Checklist de Manutenção — Oficina";
+  const docTitle = "Checklist de Manutencao - Oficina";
   const doc = new jsPDF({ unit: "mm", format: "a4" });
 
   // ── 1. CABEÇALHO ─────────────────────────────────────────────────────────────
@@ -168,16 +168,16 @@ export async function buildOficinaChecklistPdf(input: {
   doc.setFontSize(7.5);
   doc.text("SHA-256:", W - MR, 33, { align: "right" });
   doc.setFontSize(7);
-  doc.text(input.sha256.slice(0, 28) + "…", W - MR, 38, { align: "right" });
+  doc.text(input.sha256.slice(0, 28) + "...", W - MR, 38, { align: "right" });
 
   let y = 49;
 
   // ── 2. DADOS DA MOTO ─────────────────────────────────────────────────────────
   const moto = s.motorcycle;
-  const motoName = [moto.brand, moto.model].filter(Boolean).join(" ") || "—";
+  const motoName = [moto.brand, moto.model].filter(Boolean).join(" ") || "-";
   const motoYear = [moto.yearMake, moto.yearModel]
     .filter(Boolean)
-    .join("/") || "—";
+    .join("/") || "-";
 
   drawBox(doc, y, 30, COLOR.boxBg);
 
@@ -200,11 +200,11 @@ export async function buildOficinaChecklistPdf(input: {
   doc.setFont("helvetica", "bold"); doc.text("Ano:", col1X, y + 20);
   doc.setFont("helvetica", "normal"); doc.text(motoYear, col1X + 10, y + 20);
   doc.setFont("helvetica", "bold"); doc.text("ID TrailBook:", col2X, y + 20);
-  doc.setFont("helvetica", "normal"); doc.text(moto.trailbookId || "—", col2X + 27, y + 20);
+  doc.setFont("helvetica", "normal"); doc.text(moto.trailbookId || "-", col2X + 27, y + 20);
 
   // Linha 3
   doc.setFont("helvetica", "bold"); doc.text("Placa:", col1X, y + 27);
-  doc.setFont("helvetica", "normal"); doc.text(moto.plate || "—", col1X + 13, y + 27);
+  doc.setFont("helvetica", "normal"); doc.text(moto.plate || "-", col1X + 13, y + 27);
   if (moto.chassisMasked) {
     doc.setFont("helvetica", "bold"); doc.text("Chassi:", col2X, y + 27);
     doc.setFont("helvetica", "normal"); doc.text(moto.chassisMasked, col2X + 15, y + 27);
@@ -259,9 +259,9 @@ export async function buildOficinaChecklistPdf(input: {
   doc.setFontSize(7.8);
   doc.setTextColor(120, 60, 0);
   doc.text(
-    "⚠  Este checklist lista APENAS os itens que requerem atenção do mecânico. " +
-    "Para cada item: marque ✓ SIM quando o serviço foi executado, " +
-    "✗ NÃO quando está pendente, e anote observações no campo livre.",
+    "ATENCAO: Este checklist exibe APENAS os itens que requerem atencao ou manutencao. " +
+    "Para cada item: marque [SIM] se o servico foi executado " +
+    "ou [NAO] se esta pendente. Utilize o campo Observacao para detalhes.",
     ML + 3,
     y + 4.5,
     { maxWidth: W - ML - MR - 6 },
@@ -289,7 +289,7 @@ export async function buildOficinaChecklistPdf(input: {
     doc.setFont("helvetica", "bold");
     doc.setFontSize(10);
     doc.setTextColor(21, 128, 61);
-    doc.text("✓  Nenhum item crítico identificado", ML + 4, y + 9);
+    doc.text("OK - Nenhum item critico identificado", ML + 4, y + 9);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8.5);
     doc.text(
@@ -347,7 +347,7 @@ export async function buildOficinaChecklistPdf(input: {
       const rows = items.map((c, idx) => [
         String(idx + 1),
         c.name,
-        c.categoryLabel || "—",
+        c.categoryLabel || "-",
         prazoLabel(c),
         acaoLabel(c, groupKey),
         "", // SIM
@@ -357,13 +357,14 @@ export async function buildOficinaChecklistPdf(input: {
 
       // larguras (total = W - ML - MR = 186):
       //  # | Item/Componente | Categoria | Prazo | Ação | SIM | NÃO | Observação
-      //  7 |      40         |    24     |  26   |  43  | 11  | 11  |    24
-      const colWidths = [7, 40, 24, 26, 43, 11, 11, 24];
+      //  6 |      40         |    22     |  30   |  40  | 12  | 12  |    24
+      const colWidths = [6, 40, 22, 30, 40, 12, 12, 24];
 
       (autoTable as any)(doc, {
         startY: y,
         margin: { left: ML, right: MR },
         tableWidth: W - ML - MR,
+        rowPageBreak: "avoid",   // nunca quebra uma linha no meio entre páginas
         styles: {
           font: "helvetica",
           fontSize: 7.5,
@@ -378,10 +379,11 @@ export async function buildOficinaChecklistPdf(input: {
           fillColor: [245, 245, 245],
           textColor: COLOR.ink,
           fontStyle: "bold",
-          fontSize: 7,
+          fontSize: 6.8,
           lineColor: COLOR.border,
           lineWidth: 0.3,
-          minCellHeight: 10,
+          minCellHeight: 12,
+          valign: "middle",
         },
         alternateRowStyles: { fillColor: COLOR.rowAlt },
         columnStyles: {
@@ -401,8 +403,8 @@ export async function buildOficinaChecklistPdf(input: {
           "Categoria",
           "Prazo / Vida útil",
           "Ação recomendada",
-          "SIM\n✓ feito",
-          "NÃO\n✗ pend.",
+          "SIM\n(feito)",
+          "NÃO\n(pend.)",
           "Observação do mecânico",
         ]],
         body: rows,
