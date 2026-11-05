@@ -139,6 +139,10 @@ export async function buildOficinaChecklistPdf(input: {
   ownerName?: string | null;
   ownerPhone?: string | null;
   ownerEmail?: string | null;
+  /** data-URL do QR Code (gerado externamente via qrcode lib) */
+  qrDataUrl?: string | null;
+  /** URL pública que o QR Code aponta */
+  publicUrl?: string | null;
 }): Promise<Blob> {
   const { snapshot: s, code } = input;
   const docTitle = "Checklist de Manutencao - Oficina";
@@ -427,10 +431,43 @@ export async function buildOficinaChecklistPdf(input: {
     }
   }
 
-  // ── 6. ASSINATURA — sempre na última página, perto do fim ─────────────────────
-  // Calcula onde está o fim da última página e posiciona a 45 mm do rodapé
+  // ── 6. QR CODE — última página, antes da assinatura ──────────────────────────
   const lastPage = doc.getNumberOfPages();
   doc.setPage(lastPage);
+
+  if (input.qrDataUrl) {
+    // Dimensões do bloco de QR
+    const QR = 28;        // tamanho do quadrado da imagem
+    const qrX = W - MR - QR; // alinhado à direita
+    const qrLabelY = y + 6;
+
+    // Só desenha se houver espaço antes do rodapé (precisa de ~40mm)
+    if (y + 40 < H - MB - 55) {
+      // Texto explicativo à esquerda do QR
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(7.5);
+      doc.setTextColor(...COLOR.ink);
+      doc.text("Acesso digital ao laudo:", ML, qrLabelY);
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(6.5);
+      doc.setTextColor(...COLOR.muted);
+      doc.text("Escaneie para ver o laudo completo", ML, qrLabelY + 5);
+      doc.text("e baixar este checklist no celular.", ML, qrLabelY + 9.5);
+      if (input.publicUrl) {
+        // URL curta abaixo do QR
+        const shortUrl = input.publicUrl.replace(/^https?:\/\//, "");
+        doc.setFontSize(5.5);
+        doc.text(shortUrl, qrX + QR / 2, qrLabelY + QR + 3, { align: "center", maxWidth: QR + 4 });
+      }
+
+      // Imagem do QR Code
+      doc.addImage(input.qrDataUrl, "PNG", qrX, y, QR, QR);
+      y += QR + 8;
+    }
+  }
+
+  // ── 7. ASSINATURA — sempre na última página, perto do fim ─────────────────────
+  // Calcula onde está o fim da última página e posiciona a 45 mm do rodapé
   const signY = H - MB - 48; // 48 mm acima do rodapé
 
   // Só desenha se não colidir com o conteúdo atual
@@ -469,7 +506,7 @@ export async function buildOficinaChecklistPdf(input: {
     doc.text(label, sx + sigW / 2, finalSignY + 20, { align: "center" });
   });
 
-  // ── 7. RODAPÉ ─────────────────────────────────────────────────────────────────
+  // ── 8. RODAPÉ ─────────────────────────────────────────────────────────────────
   rodape(doc, code, docTitle);
 
   return doc.output("blob");

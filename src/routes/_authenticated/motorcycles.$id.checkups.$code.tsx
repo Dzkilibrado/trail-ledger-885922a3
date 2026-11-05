@@ -175,6 +175,8 @@ function ReportPage() {
           ownerName: snapshot.owner?.name ?? null,
           ownerPhone: null,
           ownerEmail: null,
+          qrDataUrl,
+          publicUrl,
         });
         pdfFileName = oficinaChecklistFileName(report.code ?? code, report.issued_at);
       } else {

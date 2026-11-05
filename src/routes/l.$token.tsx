@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ShieldCheck, Eye, Loader2, FileDown } from "lucide-react";
+import QRCode from "qrcode";
 import { getPublicHealthReport, getFiscalDocumentUrl } from "@/lib/health-reports.functions";
 import { Button } from "@/components/ui/button";
 import { ReportSnapshotView } from "@/components/health/reports/ReportSnapshotView";
@@ -18,12 +19,14 @@ function OficinaDownloadButton({
   sha256,
   statusLabel,
   ownerName,
+  publicUrl,
 }: {
   snapshot: HealthReportSnapshot;
   code: string;
   sha256: string;
   statusLabel: string;
   ownerName: string | null;
+  publicUrl: string;
 }) {
   const [downloading, setDownloading] = useState(false);
 
@@ -31,6 +34,9 @@ function OficinaDownloadButton({
     if (downloading) return;
     setDownloading(true);
     try {
+      // Gera QR Code apontando para esta mesma página pública
+      const qrDataUrl = await QRCode.toDataURL(publicUrl, { width: 320, margin: 1 }).catch(() => null);
+
       const blob = await buildOficinaChecklistPdf({
         snapshot,
         code,
@@ -39,13 +45,16 @@ function OficinaDownloadButton({
         ownerName,
         ownerPhone: null,
         ownerEmail: null,
+        qrDataUrl,
+        publicUrl,
       });
       const fileName = oficinaChecklistFileName(code, snapshot.issuedAt);
       await saveFile({ blob, fileName, mime: "application/pdf", shareTitle: "Checklist de Manutenção — TrailBook" });
     } catch {
       // fallback: abre direto
       try {
-        const blob = await buildOficinaChecklistPdf({ snapshot, code, sha256, statusLabel, ownerName, ownerPhone: null, ownerEmail: null });
+        const qrDataUrl = await QRCode.toDataURL(publicUrl, { width: 320, margin: 1 }).catch(() => null);
+        const blob = await buildOficinaChecklistPdf({ snapshot, code, sha256, statusLabel, ownerName, ownerPhone: null, ownerEmail: null, qrDataUrl, publicUrl });
         const url = URL.createObjectURL(blob);
         window.open(url, "_blank", "noopener");
       } catch { /* silencia */ }
@@ -158,6 +167,7 @@ function PublicReportPage() {
           sha256={data.sha256 ?? ""}
           statusLabel={REPORT_STATUS_LABEL[data.status as ReportStatus] ?? data.status}
           ownerName={(data.snapshot as HealthReportSnapshot).owner?.name ?? null}
+          publicUrl={`${window.location.origin}/l/${token}`}
         />
       )}
 
