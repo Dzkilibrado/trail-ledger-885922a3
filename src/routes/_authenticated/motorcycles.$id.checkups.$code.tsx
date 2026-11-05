@@ -13,6 +13,7 @@ import { ReportSnapshotView } from "@/components/health/reports/ReportSnapshotVi
 import { SharePanel } from "@/components/health/reports/SharePanel";
 import { FiscalShareDialog } from "@/components/health/reports/FiscalShareDialog";
 import { buildReportPdf, reportFileName } from "@/lib/health-reports/pdf";
+import { buildOficinaChecklistPdf, oficinaChecklistFileName } from "@/lib/health-reports/oficina-pdf";
 import {
   REPORT_PURPOSE_LABEL,
   REPORT_PURPOSE_DEFAULT_TITLE,
@@ -162,18 +163,35 @@ function ReportPage() {
       const qrDataUrl = publicUrl
         ? await QRCode.toDataURL(publicUrl, { width: 320, margin: 1 })
         : null;
-      const blob = await buildReportPdf({
-        snapshot,
-        code: report.code ?? code,
-        sha256: report.snapshot_sha256,
-        statusLabel: REPORT_STATUS_LABEL[eff.status as ReportStatus] ?? eff.label,
-        qrDataUrl,
-        publicUrl,
-        docsQrUrl,
-      });
+      // Laudo para Oficina usa builder especializado (checklist de mecânico)
+      let blob: Blob;
+      let pdfFileName: string;
+      if (snapshot.purpose === "oficina") {
+        blob = await buildOficinaChecklistPdf({
+          snapshot,
+          code: report.code ?? code,
+          sha256: report.snapshot_sha256 ?? "",
+          statusLabel: REPORT_STATUS_LABEL[eff.status as ReportStatus] ?? eff.label,
+          ownerName: snapshot.owner?.name ?? null,
+          ownerPhone: null,
+          ownerEmail: null,
+        });
+        pdfFileName = oficinaChecklistFileName(report.code ?? code, report.issued_at);
+      } else {
+        blob = await buildReportPdf({
+          snapshot,
+          code: report.code ?? code,
+          sha256: report.snapshot_sha256,
+          statusLabel: REPORT_STATUS_LABEL[eff.status as ReportStatus] ?? eff.label,
+          qrDataUrl,
+          publicUrl,
+          docsQrUrl,
+        });
+        pdfFileName = reportFileName(report.code ?? code, report.issued_at);
+      }
       const res = await saveFile({
         blob,
-        fileName: reportFileName(report.code ?? code, report.issued_at),
+        fileName: pdfFileName,
         mime: "application/pdf",
         shareTitle: "Laudo Inteligente TrailBook",
       });
